@@ -23,6 +23,10 @@ if (vercelEnvironment === "production" || vercelEnvironment === "preview") {
     vercelEnvironment as DeploymentTarget,
   );
   run("npm", ["run", "db:migrate"]);
+  if (vercelEnvironment === "production") {
+    run("npm", ["run", "seed:production"]);
+    run("npm", ["run", "verify:replay"]);
+  }
 } else {
   console.log("Skipping deployment migration outside Vercel production/preview.");
 }
