@@ -1,0 +1,83 @@
+import { EPS } from "./types.js";
+
+const SQRT_TWO = Math.sqrt(2);
+
+/**
+ * Returns the median implied by a bucket PMF, interpolating uniformly in log
+ * space within the bucket that contains the 50th percentile.
+ */
+export function impliedValuationMedian(
+  probabilities: readonly number[],
+  boundaries: readonly number[],
+): number {
+  if (probabilities.length === 0 || boundaries.length !== probabilities.length - 1) {
+    throw new RangeError("probabilities must contain exactly one more value than boundaries");
+  }
+
+  let probabilitySum = 0;
+  for (const probability of probabilities) {
+    if (!Number.isFinite(probability) || probability < 0 || probability > 1) {
+      throw new RangeError("probabilities must be finite values between zero and one");
+    }
+    probabilitySum += probability;
+  }
+  if (!Number.isFinite(probabilitySum) || Math.abs(probabilitySum - 1) > EPS) {
+    throw new RangeError("probabilities must sum to one");
+  }
+
+  let previousBoundary = 0;
+  for (const boundary of boundaries) {
+    if (!Number.isFinite(boundary) || boundary <= 0 || boundary <= previousBoundary) {
+      throw new RangeError("boundaries must be finite, positive, and strictly increasing");
+    }
+    previousBoundary = boundary;
+  }
+
+  if (boundaries.length === 0) {
+    throw new RangeError("a valuation distribution requires at least one boundary");
+  }
+
+  const firstBoundary = boundaries[0];
+  const lastBoundary = boundaries[boundaries.length - 1];
+  if (firstBoundary === undefined || lastBoundary === undefined) {
+    throw new RangeError("a valuation distribution requires at least one boundary");
+  }
+
+  const virtualLowerEdge = firstBoundary / SQRT_TWO;
+  const virtualUpperEdge = lastBoundary * SQRT_TWO;
+  if (
+    !Number.isFinite(virtualLowerEdge) ||
+    virtualLowerEdge <= 0 ||
+    !Number.isFinite(virtualUpperEdge)
+  ) {
+    throw new RangeError("boundaries must have finite, positive virtual edges");
+  }
+
+  let cumulativeBefore = 0;
+  for (let bucketIndex = 0; bucketIndex < probabilities.length; bucketIndex += 1) {
+    const bucketProbability = probabilities[bucketIndex];
+    if (bucketProbability === undefined) {
+      throw new RangeError("probability vector is incomplete");
+    }
+
+    const cumulativeAfter = cumulativeBefore + bucketProbability;
+    if (bucketProbability > 0 && cumulativeAfter >= 0.5) {
+      const lowerEdge =
+        bucketIndex === 0 ? virtualLowerEdge : boundaries[bucketIndex - 1];
+      const upperEdge =
+        bucketIndex === boundaries.length ? virtualUpperEdge : boundaries[bucketIndex];
+      if (lowerEdge === undefined || upperEdge === undefined) {
+        throw new RangeError("boundary vector is incomplete");
+      }
+
+      const fraction = (0.5 - cumulativeBefore) / bucketProbability;
+      const interpolated = Math.exp(
+        Math.log(lowerEdge) + fraction * (Math.log(upperEdge) - Math.log(lowerEdge)),
+      );
+      return Math.min(upperEdge, Math.max(lowerEdge, interpolated));
+    }
+    cumulativeBefore = cumulativeAfter;
+  }
+
+  throw new RangeError("probabilities do not contain the median percentile");
+}

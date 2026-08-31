@@ -1,0 +1,460 @@
+.tableViewport {
+  overflow-x: auto;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.table {
+  width: 100%;
+  min-width: 56rem;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.table thead {
+  background: var(--color-surface);
+}
+
+.table thead th {
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.table thead th:first-child,
+.identityCell {
+  padding-left: var(--space-4);
+}
+
+.marketRow {
+  background: var(--color-bg);
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.marketRow:hover {
+  background: var(--color-surface);
+}
+
+.marketRow + .marketRow {
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.marketRow th,
+.marketRow td {
+  height: 5rem;
+  padding: var(--space-3);
+  vertical-align: middle;
+}
+
+.identityCell {
+  min-width: 13rem;
+  font-weight: 400;
+  text-align: left;
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.logoFrame {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-elevated);
+  place-items: center;
+}
+
+.logoFallback {
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+}
+
+.logo {
+  position: absolute;
+  background: var(--color-surface-elevated);
+  width: 1.75rem;
+  height: 1.75rem;
+  object-fit: contain;
+}
+
+.marketLink {
+  display: inline-block;
+  font-weight: 700;
+  line-height: var(--line-height-tight);
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1px;
+  text-underline-offset: var(--space-1);
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    text-decoration-color var(--duration-fast) var(--ease-out);
+}
+
+.marketLink:hover {
+  color: var(--color-primary-hover);
+  text-decoration-color: currentColor;
+}
+
+.metricLabel {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+.metricCell {
+  min-width: 8rem;
+}
+
+.metricValue {
+  font-size: var(--font-size-lg);
+  font-weight: 680;
+  letter-spacing: -0.015em;
+}
+
+.changeCell {
+  min-width: 8rem;
+  font-size: var(--font-size-sm);
+  font-weight: 620;
+}
+
+.up {
+  color: var(--color-positive);
+}
+
+.down {
+  color: var(--color-negative);
+}
+
+.flat,
+.unavailable,
+.noHistory {
+  color: var(--color-ink-muted);
+}
+
+.historyCell {
+  width: 9rem;
+}
+
+.sparkline {
+  width: 7.5rem;
+  height: 2rem;
+  overflow: visible;
+}
+
+.sparklineBaseline {
+  fill: none;
+  stroke: var(--color-border-subtle);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.sparklineLine {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.noHistory,
+.unavailable {
+  font-size: var(--font-size-xs);
+}
+
+.anchor {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.anchor strong {
+  font-size: var(--font-size-sm);
+  font-weight: 650;
+}
+
+.anchor time {
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+}
+
+.claimsCell,
+.statusCell {
+  font-size: var(--font-size-sm);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+.statusGroup {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-1);
+}
+
+.settledDate {
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+}
+
+
+.statusOpen,
+.statusSettled {
+  display: inline-flex;
+  min-height: 1.625rem;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  align-items: center;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+}
+
+.statusOpen {
+  background: var(--color-positive-subtle);
+  color: var(--color-positive);
+}
+
+.statusSettled {
+  background: var(--color-surface-elevated);
+  color: var(--color-ink-muted);
+}
+
+.visuallyHidden {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.state {
+  display: flex;
+  min-height: 8rem;
+  padding: var(--space-5);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  background: var(--color-surface);
+}
+
+.state strong {
+  font-size: var(--font-size-md);
+}
+
+.state p {
+  max-width: 60ch;
+  margin: var(--space-1) 0 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+}
+
+.retry {
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  flex: 0 0 auto;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-elevated);
+  color: var(--color-ink);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: 650;
+  white-space: nowrap;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
+}
+
+.retry:hover {
+  border-color: var(--color-primary);
+  background: var(--color-surface-hover);
+}
+
+.skeleton {
+  overflow: hidden;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.skeletonHeader {
+  height: 2rem;
+  background: var(--color-surface);
+}
+
+.skeletonRow {
+  display: grid;
+  height: 5rem;
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border-subtle);
+  align-items: center;
+  grid-template-columns: 2.25rem 2fr 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.skeletonLogo,
+.skeletonName,
+.skeletonMetric,
+.skeletonChart {
+  display: block;
+  border-radius: var(--radius-sm);
+  background: var(--color-skeleton);
+  animation: skeletonPulse 1.6s ease-in-out infinite;
+}
+
+.skeletonLogo {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.skeletonName {
+  width: min(10rem, 75%);
+  height: 0.875rem;
+}
+
+.skeletonMetric {
+  width: 5rem;
+  height: 1.25rem;
+}
+
+.skeletonChart {
+  width: 7.5rem;
+  height: 2rem;
+}
+
+@keyframes skeletonPulse {
+  50% {
+    background: var(--color-skeleton-shine);
+  }
+}
+
+@media (max-width: 58rem) {
+  .tableViewport {
+    overflow: visible;
+  }
+
+  .table,
+  .table tbody,
+  .marketRow {
+    display: block;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .table thead {
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+  }
+
+  .marketRow {
+    display: grid;
+    padding: var(--space-4) 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--space-5);
+    row-gap: var(--space-3);
+  }
+
+  .marketRow:hover {
+    background: var(--color-bg);
+  }
+
+  .marketRow th,
+  .marketRow td {
+    display: flex;
+    width: auto;
+    min-width: 0;
+    height: auto;
+    padding: 0;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+    text-align: right;
+  }
+
+  .identityCell {
+    grid-column: 1 / -1;
+  }
+
+  .identityCell .identity {
+    text-align: left;
+  }
+
+  .marketRow td::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    color: var(--color-ink-muted);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .historyCell,
+  .anchorCell {
+    grid-column: 1 / -1;
+  }
+
+  .anchor {
+    text-align: right;
+  }
+
+  .statusGroup {
+    justify-items: end;
+  }
+}
+
+@media (max-width: 34rem) {
+  .marketRow {
+    grid-template-columns: 1fr;
+  }
+
+  .identityCell,
+  .historyCell,
+  .anchorCell {
+    grid-column: auto;
+  }
+
+  .state {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .skeletonRow {
+    grid-template-columns: 2.25rem 1fr;
+  }
+
+  .skeletonMetric,
+  .skeletonChart {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeletonLogo,
+  .skeletonName,
+  .skeletonMetric,
+  .skeletonChart {
+    animation: none;
+  }
+}

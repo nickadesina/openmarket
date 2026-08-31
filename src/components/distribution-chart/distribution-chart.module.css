@@ -1,0 +1,76 @@
+.section {
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.section summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  color: var(--color-ink);
+  cursor: pointer;
+  list-style: none;
+}
+
+.section summary::-webkit-details-marker {
+  display: none;
+}
+
+.section summary:focus-visible {
+  outline: none;
+  box-shadow: inset var(--focus-ring);
+}
+
+.section summary > span:first-child {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.section summary strong {
+  font-size: var(--font-size-sm);
+}
+
+.section summary small,
+.section summary > span:last-child,
+.textSummary {
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+}
+
+.section[open] summary > span:last-child {
+  visibility: hidden;
+}
+
+.section[open] summary > span:last-child::after {
+  content: "Collapse";
+  visibility: visible;
+}
+
+.textSummary {
+  max-width: 72ch;
+  margin: 0;
+  padding: 0 var(--space-5) var(--space-2);
+}
+
+.chart {
+  width: 100%;
+  overflow: hidden;
+  padding-inline: var(--space-4);
+}
+
+.bar {
+  fill: var(--color-primary);
+  opacity: 0.78;
+}
+
+.winningBar {
+  fill: var(--color-positive);
+}
+
+.axisLabel {
+  fill: var(--color-ink-muted);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+}

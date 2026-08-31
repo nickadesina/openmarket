@@ -1,0 +1,62 @@
+import { randomUUID } from "node:crypto";
+import type { Kysely } from "kysely";
+
+import type { Database } from "../db/schema.js";
+import { getRuntimeDatabase } from "../db/runtime.js";
+import { logReadRequest } from "../logging/server-log.js";
+import { isServiceError, type ErrorCode } from "./errors.js";
+import {
+  errorCode,
+  jsonError,
+  jsonUnexpectedError,
+  REQUEST_ID_HEADER,
+} from "./response.js";
+
+export interface ReadRouteContext {
+  readonly requestId: string;
+  readonly db: Kysely<Database>;
+}
+
+export type ReadRouteHandler = (
+  context: ReadRouteContext,
+) => Response | Promise<Response>;
+
+export async function withReadRoute(
+  request: Request,
+  handler: ReadRouteHandler,
+): Promise<Response> {
+  const requestId = randomUUID();
+  const startedAt = performance.now();
+  let response: Response;
+  let failureCode: ErrorCode | "INTERNAL_ERROR" | undefined;
+
+  const context: ReadRouteContext = {
+    requestId,
+    get db() {
+      return getRuntimeDatabase();
+    },
+  };
+
+  try {
+    response = await handler(context);
+    response.headers.set("Content-Type", "application/json; charset=utf-8");
+    response.headers.set("Cache-Control", "no-store");
+    response.headers.set(REQUEST_ID_HEADER, requestId);
+  } catch (error: unknown) {
+    failureCode = errorCode(error);
+    response = isServiceError(error)
+      ? jsonError(error, requestId)
+      : jsonUnexpectedError(requestId);
+  }
+
+  logReadRequest({
+    requestId,
+    method: request.method,
+    pathname: new URL(request.url).pathname,
+    status: response.status,
+    durationMs: performance.now() - startedAt,
+    ...(failureCode === undefined ? {} : { errorCode: failureCode }),
+  });
+
+  return response;
+}

@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: openmarket_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d openmarket_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL_TEST: postgresql://postgres:postgres@127.0.0.1:5432/openmarket_test
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Run unit and property tests
+        run: npm run test:unit
+
+      - name: Run PostgreSQL integration tests
+        run: npm run test:integration
+
+      - name: Build Next.js
+        run: npm run build
+
+      - name: Install Playwright Chromium
+        if: ${{ hashFiles('playwright.config.*') != '' && hashFiles('tests/browser/**') != '' }}
+        run: npm exec -- playwright install --with-deps chromium
+
+      - name: Configure ephemeral browser credentials
+        if: ${{ hashFiles('playwright.config.*') != '' && hashFiles('tests/browser/**') != '' }}
+        run: >-
+          node --input-type=module -e "import { appendFileSync } from 'node:fs';
+          import { randomBytes, scryptSync } from 'node:crypto';
+          const passphrase = randomBytes(24).toString('base64url');
+          const salt = randomBytes(16);
+          const key = scryptSync(passphrase, salt, 64, { N: 16384, r: 8, p: 1 });
+          appendFileSync(process.env.GITHUB_ENV,
+          'USER_COOKIE_SECRET=' + randomBytes(32).toString('base64url') + '\n' +
+          'ADMIN_COOKIE_SECRET=' + randomBytes(32).toString('base64url') + '\n' +
+          'ADMIN_PASSPHRASE_HASH=' +
+          ['scrypt', '16384', '8', '1', salt.toString('base64url'), key.toString('base64url')].join(String.fromCharCode(36)) + '\n' +
+          'PLAYWRIGHT_ADMIN_PASSPHRASE=' + passphrase + '\n');"
+
+      - name: Prepare disposable browser database
+        if: ${{ hashFiles('playwright.config.*') != '' && hashFiles('tests/browser/**') != '' }}
+        run: npm run db:migrate
+        env:
+          DATABASE_URL_UNPOOLED: postgresql://postgres:postgres@127.0.0.1:5432/openmarket_test
+
+      - name: Run Playwright critical flow
+        if: ${{ hashFiles('playwright.config.*') != '' && hashFiles('tests/browser/**') != '' }}
+        run: npm exec -- playwright test
+        env:
+          APP_ORIGIN: http://127.0.0.1:3000
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/openmarket_test
+          DATABASE_URL_UNPOOLED: postgresql://postgres:postgres@127.0.0.1:5432/openmarket_test

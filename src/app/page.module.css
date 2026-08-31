@@ -1,0 +1,124 @@
+.page {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-5);
+}
+
+.header h1 {
+  margin: 0;
+  font-size: var(--font-size-2xl);
+  font-weight: 680;
+  letter-spacing: -0.025em;
+  line-height: var(--line-height-tight);
+  text-wrap: balance;
+}
+
+.header p {
+  max-width: 65ch;
+  margin: var(--space-2) 0 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+  text-wrap: pretty;
+}
+
+.refreshNote {
+  flex: 0 0 auto;
+  padding-bottom: var(--space-1);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.workspace {
+  display: grid;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr) minmax(19rem, 22rem);
+  gap: var(--space-6);
+}
+
+.section,
+.activity {
+  min-width: 0;
+}
+
+.sectionHeader {
+  display: flex;
+  min-height: 2.5rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.sectionHeader h2 {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: 700;
+}
+
+.sectionHeader p {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+}
+
+.disclosure {
+  max-width: 72ch;
+  margin: calc(var(--space-4) * -1) 0 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}
+
+.disclosure strong {
+  color: var(--color-ink);
+  font-weight: 620;
+}
+
+@media (max-width: 84rem) {
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .activity {
+    max-width: 48rem;
+  }
+}
+
+@media (max-width: 42rem) {
+  .page {
+    gap: var(--space-5);
+  }
+
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .header h1 {
+    font-size: var(--font-size-xl);
+  }
+
+  .refreshNote {
+    padding: 0;
+  }
+
+  .sectionHeader {
+    min-height: auto;
+    margin-bottom: var(--space-3);
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .disclosure {
+    margin-top: 0;
+  }
+}

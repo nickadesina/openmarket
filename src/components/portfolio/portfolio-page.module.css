@@ -1,0 +1,629 @@
+.page,
+.skeletonPage {
+  width: min(var(--content-max), calc(100% - var(--page-gutter) - var(--page-gutter)));
+  margin: 0 auto;
+  padding: var(--space-7) 0 var(--space-8);
+}
+
+.pageHeader,
+.sectionHeader,
+.marketHeader,
+.sellFlowHeader,
+.actionRow,
+.fieldSupport,
+.pagination,
+.successNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.pageHeader {
+  align-items: flex-end;
+  margin-bottom: var(--space-6);
+}
+
+.pageHeader h1,
+.statePanel h1 {
+  margin: var(--space-1) 0 var(--space-2);
+  font-size: 2rem;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+.pageHeader p,
+.sectionHeader p,
+.emptyState p,
+.statePanel p,
+.sellFlowHeader p,
+.residual p,
+.quoteTime {
+  margin: 0;
+  color: var(--color-ink-muted);
+  line-height: 1.55;
+}
+
+.stateLabel {
+  color: var(--color-accent) !important;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.summaryBand {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0 0 var(--space-7);
+  border-top: 1px solid var(--color-border-strong);
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+.summaryBand > div {
+  padding: var(--space-5) var(--space-4);
+  border-right: 1px solid var(--color-border);
+}
+
+.summaryBand > div:first-child {
+  padding-left: 0;
+}
+
+.summaryBand > div:last-child {
+  padding-right: 0;
+  border-right: 0;
+}
+
+.summaryBand dt,
+.positionMetrics dt,
+.quoteReview dt {
+  color: var(--color-ink-muted);
+  font-size: 0.75rem;
+}
+
+.summaryBand dd {
+  margin: var(--space-2) 0 0;
+  font-size: 1.45rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.015em;
+}
+
+.accountValue dd {
+  color: var(--color-accent);
+  font-weight: 650;
+}
+
+.section {
+  margin-top: var(--space-8);
+}
+
+.sectionHeader {
+  align-items: flex-end;
+  margin-bottom: var(--space-4);
+}
+
+.sectionHeader h2 {
+  margin: 0 0 var(--space-1);
+  font-size: 1.25rem;
+}
+
+.sectionHeader > span {
+  color: var(--color-ink-muted);
+  font-size: 0.8125rem;
+}
+
+.marketList {
+  border-top: 1px solid var(--color-border-strong);
+}
+
+.marketSection {
+  padding: var(--space-5) 0;
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+.marketHeader {
+  margin-bottom: var(--space-3);
+}
+
+.marketHeader > div {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.marketHeader a {
+  color: var(--color-ink);
+  font-size: 1.0625rem;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.marketHeader a:hover {
+  color: var(--color-accent);
+}
+
+.marketHeader span,
+.positionMain span,
+.historyRow span {
+  color: var(--color-ink-muted);
+  font-size: 0.8125rem;
+}
+
+.marketHeader > strong {
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.positionList,
+.historyList {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.positionRow {
+  border-top: 1px solid var(--color-border);
+}
+
+.positionMain {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1.05fr) minmax(24rem, 2fr) minmax(8.5rem, auto);
+  gap: var(--space-5);
+  align-items: center;
+  padding: var(--space-4) 0;
+}
+
+.positionMain > div:first-child,
+.positionAction,
+.historyRow > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.positionMain strong,
+.historyRow strong {
+  font-size: 0.875rem;
+  font-weight: 620;
+}
+
+.positionMetrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.positionMetrics dd,
+.quoteReview dd {
+  margin: var(--space-1) 0 0;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.positionAction {
+  align-items: flex-end;
+}
+
+.positive::before {
+  content: "Gain ";
+  color: var(--color-positive);
+}
+
+.negative::before {
+  content: "Loss ";
+  color: var(--color-negative);
+}
+
+.sellFlow {
+  padding: var(--space-4);
+  margin: 0 0 var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-elevated);
+}
+
+.sellFlowHeader {
+  align-items: flex-start;
+  margin-bottom: var(--space-4);
+}
+
+.sellFlowHeader h4 {
+  margin: 0 0 var(--space-1);
+  font-size: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.field input {
+  width: 100%;
+  height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.fieldSupport {
+  margin: var(--space-2) 0 var(--space-4);
+  color: var(--color-ink-muted);
+  font-size: 0.75rem;
+}
+
+.quoteReview {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.quoteReview dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0 0 var(--space-3);
+}
+
+.quoteTime {
+  font-size: 0.75rem;
+}
+
+.actionRow {
+  justify-content: flex-end;
+  margin-top: var(--space-4);
+}
+
+.primaryButton,
+.secondaryButton,
+.primaryLink,
+.secondaryLink {
+  display: inline-flex;
+  min-height: var(--control-height);
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
+}
+
+.primaryButton,
+.primaryLink {
+  border: 1px solid var(--color-primary-action);
+  background: var(--color-primary-action);
+  color: var(--color-ink);
+}
+
+.primaryButton:hover,
+.primaryLink:hover {
+  border-color: var(--color-primary-action-hover);
+  background: var(--color-primary-action-hover);
+}
+
+.secondaryButton,
+.secondaryLink {
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+.secondaryButton:hover,
+.secondaryLink:hover {
+  border-color: var(--color-primary);
+  background: var(--color-surface-elevated);
+}
+
+.primaryButton:active,
+.secondaryButton:active,
+.primaryLink:active,
+.secondaryLink:active {
+  transform: translateY(1px);
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.textButton {
+  padding: var(--space-1);
+  border: 0;
+  background: transparent;
+  color: var(--color-accent);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.textButton:hover {
+  color: var(--color-ink);
+}
+
+.textButton:disabled {
+  color: var(--color-ink-muted);
+  cursor: not-allowed;
+}
+
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible,
+.textButton:focus-visible,
+.primaryLink:focus-visible,
+.secondaryLink:focus-visible,
+.marketHeader a:focus-visible,
+.field input:focus-visible,
+.residual summary:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+.inlineError {
+  margin: var(--space-3) 0 0;
+  color: var(--color-negative);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.successNotice {
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-5);
+  border: 1px solid var(--color-positive);
+  border-radius: var(--radius-sm);
+  color: var(--color-ink);
+  font-size: 0.875rem;
+}
+
+.residual {
+  padding: var(--space-3) 0 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.residual summary {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  color: var(--color-ink);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.residual p {
+  max-width: 65ch;
+  margin-top: var(--space-3);
+  font-size: 0.8125rem;
+}
+
+.residual ol {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--space-2) var(--space-5);
+  padding: var(--space-3) 0 0;
+  margin: 0;
+  list-style: none;
+}
+
+.residual li {
+  display: flex;
+  justify-content: space-between;
+  color: var(--color-ink-muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.historyList {
+  border-top: 1px solid var(--color-border-strong);
+}
+
+.historyRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.historyValues {
+  align-items: flex-end;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.pagination {
+  justify-content: flex-end;
+  margin-top: var(--space-4);
+}
+
+.emptyState,
+.statePanel {
+  padding: var(--space-6);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.emptyState h3 {
+  margin: 0 0 var(--space-2);
+  font-size: 1rem;
+}
+
+.emptyState a,
+.statePanel a,
+.statePanel button {
+  margin-top: var(--space-4);
+}
+
+.statePanel {
+  width: min(38rem, calc(100% - var(--page-gutter) - var(--page-gutter)));
+  margin: var(--space-8) auto;
+}
+
+.skeletonTitle,
+.skeletonSummary div,
+.skeletonPanel {
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-elevated);
+  animation: pulse 1.4s var(--ease-out) infinite alternate;
+}
+
+.skeletonTitle {
+  width: 14rem;
+  height: 3.5rem;
+  margin-bottom: var(--space-6);
+}
+
+.skeletonSummary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-7);
+}
+
+.skeletonSummary div {
+  height: 5.5rem;
+}
+
+.skeletonPanel {
+  height: 15rem;
+  margin-top: var(--space-6);
+}
+
+@keyframes pulse {
+  from { opacity: 0.52; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 900px) {
+  .positionMain {
+    grid-template-columns: 1fr auto;
+  }
+
+  .positionMetrics {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .positionAction {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .page,
+  .skeletonPage {
+    width: calc(100% - var(--page-gutter) - var(--page-gutter));
+    padding-top: var(--space-5);
+  }
+
+  .pageHeader,
+  .sectionHeader,
+  .marketHeader {
+    align-items: flex-start;
+  }
+
+  .pageHeader,
+  .marketHeader {
+    flex-direction: column;
+  }
+
+  .summaryBand {
+    grid-template-columns: 1fr;
+  }
+
+  .summaryBand > div,
+  .summaryBand > div:first-child,
+  .summaryBand > div:last-child {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: var(--space-3) 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .summaryBand > div:last-child {
+    border-bottom: 0;
+  }
+
+  .summaryBand dd {
+    margin: 0;
+    font-size: 1.125rem;
+  }
+
+  .positionMain {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  .positionMetrics {
+    grid-column: 1;
+    grid-row: auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .positionAction {
+    grid-column: 1;
+    grid-row: auto;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .quoteReview dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .historyRow {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .historyValues {
+    flex-direction: row !important;
+    align-items: baseline;
+    justify-content: space-between;
+    text-align: left;
+  }
+
+  .pagination {
+    justify-content: stretch;
+  }
+
+  .pagination button {
+    flex: 1;
+  }
+
+  .emptyState,
+  .statePanel {
+    padding: var(--space-5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primaryButton,
+  .secondaryButton,
+  .primaryLink,
+  .secondaryLink {
+    transition: none;
+  }
+
+  .skeletonTitle,
+  .skeletonSummary div,
+  .skeletonPanel {
+    animation: none;
+  }
+}

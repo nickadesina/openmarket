@@ -1,0 +1,183 @@
+.list {
+  padding: 0;
+  margin: 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  min-height: 4.5rem;
+  padding: var(--space-3) var(--space-2);
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.item + .item {
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.logoFrame {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-elevated);
+  place-items: center;
+}
+
+.logoFallback {
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+}
+
+.logo {
+  position: absolute;
+  background: var(--color-surface-elevated);
+  width: 1.5rem;
+  height: 1.5rem;
+  object-fit: contain;
+}
+
+.event {
+  min-width: 0;
+}
+
+.event p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+}
+
+.buy,
+.sell {
+  font-weight: 700;
+}
+
+.buy {
+  color: var(--color-positive);
+}
+
+.sell {
+  color: var(--color-negative);
+}
+
+.muted,
+.meta {
+  color: var(--color-ink-muted);
+}
+
+.event .meta {
+  display: flex;
+  margin-top: var(--space-1);
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.meta a {
+  color: var(--color-ink);
+  font-weight: 620;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.1875rem;
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    text-decoration-color var(--duration-fast) var(--ease-out);
+}
+
+.meta a:hover {
+  color: var(--color-primary-hover);
+  text-decoration-color: currentColor;
+}
+
+.state {
+  min-height: 10rem;
+  padding: var(--space-5) var(--space-3);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.state strong {
+  font-size: var(--font-size-sm);
+}
+
+.state p {
+  max-width: 38ch;
+  margin: var(--space-1) 0 var(--space-4);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+}
+
+.state button {
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-elevated);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: 650;
+}
+
+.state button:hover {
+  border-color: var(--color-primary);
+  background: var(--color-surface-hover);
+}
+
+.skeleton {
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.skeletonRow {
+  display: grid;
+  min-height: 4.5rem;
+  padding: var(--space-3) var(--space-2);
+  align-items: center;
+  grid-template-columns: 2rem 1fr;
+  gap: var(--space-3);
+}
+
+.skeletonRow + .skeletonRow {
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.skeletonLogo,
+.skeletonCopy {
+  display: block;
+  border-radius: var(--radius-sm);
+  background: var(--color-skeleton);
+  animation: skeletonPulse 1.6s ease-in-out infinite;
+}
+
+.skeletonLogo {
+  width: 2rem;
+  height: 2rem;
+}
+
+.skeletonCopy {
+  width: min(16rem, 86%);
+  height: 1.75rem;
+}
+
+@keyframes skeletonPulse {
+  50% {
+    background: var(--color-skeleton-shine);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeletonLogo,
+  .skeletonCopy {
+    animation: none;
+  }
+}
