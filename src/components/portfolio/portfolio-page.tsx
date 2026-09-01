@@ -1,16 +1,21 @@
 "use client";
 
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  type QueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { ApiClientError, apiRequest } from "../../lib/client/api.js";
+import {
+  contractLabel,
+  errorMessage,
+  formatCents,
+  formatDateTime,
+  formatQuantity,
+  formatUsd,
+  formatValuation,
+} from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
+import { useTradeExecution } from "../../lib/client/use-trade-execution.js";
 import type {
   Portfolio,
   PortfolioMarket,
@@ -24,27 +29,7 @@ import styles from "./portfolio-page.module.css";
 
 const HISTORY_LIMIT = 20;
 const MIN_QUANTITY = 0.000001;
-const DETERMINISTIC_TRADE_ERRORS: Readonly<Record<string, true>> = {
-  PRICE_MOVED: true,
-  INSUFFICIENT_CASH: true,
-  INSUFFICIENT_HOLDINGS: true,
-  MARKET_SETTLED: true,
-  INVALID_INPUT: true,
-  USER_REQUIRED: true,
-  IDEMPOTENCY_CONFLICT: true,
-};
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 2,
-});
-const quantityFormatter = new Intl.NumberFormat("en-US", {
-  maximumFractionDigits: 6,
-});
-const dateTimeFormatter = new Intl.DateTimeFormat("en-US", {
-  dateStyle: "medium",
-  timeStyle: "short",
-});
+const FALLBACK_ERROR = "Something went wrong. Please try again.";
 
 interface SellSelection {
   readonly market: PortfolioMarket;
@@ -56,43 +41,18 @@ interface SellFlowProps extends SellSelection {
   readonly onComplete: (result: ExecutionResult) => void;
 }
 
-function formatUsd(value: number): string {
-  return currencyFormatter.format(value);
-}
-
-function formatCents(value: string): string {
-  return formatUsd(Number(value) / 100);
-}
-
-function formatQuantity(value: number): string {
-  return quantityFormatter.format(value);
-}
-
-function formatDate(value: string): string {
-  return dateTimeFormatter.format(new Date(value));
-}
-
-function contractLabel(
+function positionLabel(
   metricKind: PortfolioMarket["metricKind"],
   side: PortfolioPosition["side"],
   strikeValue: string | null,
 ): string {
-  if (metricKind === "yes_probability") {
-    return side === "yes" ? "YES" : "NO";
-  }
-  const strike = formatUsd(Number(strikeValue));
-  return side === "yes" ? `YES above ${strike}` : `NO at or below ${strike}`;
+  return contractLabel(
+    side,
+    metricKind === "yes_probability" || strikeValue === null ? null : formatValuation(strikeValue),
+  );
 }
 
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Something went wrong. Please try again.";
-}
-
-function invalidateTradingData(queryClient: QueryClient): Promise<void> {
-  return queryClient.invalidateQueries({ queryKey: queryKeys.all });
-}
-
-function PortfolioSkeleton(): React.JSX.Element {
+function PortfolioSkeleton() {
   return (
     <div className={styles.skeletonPage} role="status" aria-label="Loading portfolio" aria-busy="true">
       <div className={styles.skeletonTitle} />
@@ -105,12 +65,13 @@ function PortfolioSkeleton(): React.JSX.Element {
   );
 }
 
-function SellFlow({ market, position, onClose, onComplete }: SellFlowProps): React.JSX.Element {
+function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
   const queryClient = useQueryClient();
   const [quantityText, setQuantityText] = useState(String(position.sellableQuantity));
   const [quote, setQuote] = useState<QuoteResult | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [retryKey, setRetryKey] = useState<string | null>(null);
+  const [selling, setSelling] = useState(false);
+  const trade = useTradeExecution();
   const quantity = Number(quantityText);
   const quantityValid = Number.isFinite(quantity)
     && quantity >= MIN_QUANTITY
@@ -133,66 +94,52 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps): Rea
     },
     onError: (error) => {
       setQuote(null);
-      setNotice(errorMessage(error));
+      setNotice(errorMessage(error, FALLBACK_ERROR));
     },
   });
 
-  const tradeMutation = useMutation({
-    mutationFn: (idempotencyKey: string) => {
-      if (quote === null) {
-        throw new Error("Refresh the quote before selling.");
-      }
-      return apiRequest<ExecutionResult>("/api/trade", {
-        method: "POST",
-        body: JSON.stringify({
-          slug: market.company.slug,
-          action: "sell",
-          side: position.side,
-          strike_index: position.strikeIndex,
-          quantity: quote.quantity,
-          min_proceeds_usd: (Number(quote.cash_amount_cents) / 100).toFixed(2),
-          idempotency_key: idempotencyKey,
-        }),
-      });
-    },
-    onSuccess: async (result) => {
-      setRetryKey(null);
-      await invalidateTradingData(queryClient);
-      onComplete(result);
-    },
-    onError: (error) => {
-      if (
-        !(error instanceof ApiClientError)
-        || error.status === 0
-        || DETERMINISTIC_TRADE_ERRORS[error.code] !== true
-      ) {
-        setNotice("Execution status is unknown. Retry the sale to safely reuse the same request key.");
-        return;
-      }
-      setRetryKey(null);
-      if (error.code === "PRICE_MOVED") {
-        setQuote(null);
-        const movedCents = error.details.cash_amount_cents;
-        const movedProceeds = typeof movedCents === "string" ? formatCents(movedCents) : null;
-        setNotice(
-          movedProceeds === null
-            ? "The market moved. Review a fresh quote before confirming the sale."
-            : `The market moved. New authoritative proceeds: ${movedProceeds}. Review a fresh quote before confirming.`,
-        );
-        return;
-      }
-      setNotice(errorMessage(error));
-    },
-  });
+  async function sellShares() {
+    if (quote === null) return;
+    setSelling(true);
+    const outcome = await trade.execute({
+      slug: market.company.slug,
+      action: "sell",
+      side: position.side,
+      strike_index: position.strikeIndex,
+      quantity: quote.quantity,
+      min_proceeds_usd: (Math.floor(Number(quote.cash_amount_cents) * 0.99) / 100).toFixed(2),
+    });
+    if (outcome.status === "executed") {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.all });
+      onComplete(outcome.result);
+      return;
+    }
+    setSelling(false);
+    if (outcome.status === "unknown") {
+      setNotice("Execution status is unknown. Retry the sale to safely reuse the same request key.");
+      return;
+    }
+    if (outcome.error.code === "PRICE_MOVED") {
+      setQuote(null);
+      const movedProceeds = outcome.movedPrice === null ? null : formatCents(outcome.movedPrice.cashAmountCents);
+      setNotice(
+        movedProceeds === null
+          ? "The market moved. Review a fresh quote before confirming the sale."
+          : `The market moved. New authoritative proceeds: ${movedProceeds}. Review a fresh quote before confirming.`,
+      );
+      return;
+    }
+    setNotice(errorMessage(outcome.error, FALLBACK_ERROR));
+  }
 
-  const busy = quoteMutation.isPending || tradeMutation.isPending;
+  const busy = quoteMutation.isPending || selling;
 
   return (
-    <div className={styles.sellFlow} aria-label={`Sell ${contractLabel(market.metricKind, position.side, position.strikeValueUsd)}`}>
+    <div className={styles.sellFlow} aria-label={`Sell ${positionLabel(market.metricKind, position.side, position.strikeValueUsd)}`}>
       <div className={styles.sellFlowHeader}>
         <div>
           <h4>Sell shares</h4>
-          <p>{contractLabel(market.metricKind, position.side, position.strikeValueUsd)}</p>
+          <p>{positionLabel(market.metricKind, position.side, position.strikeValueUsd)}</p>
         </div>
         <button type="button" className={styles.textButton} onClick={onClose} disabled={busy}>Close</button>
       </div>
@@ -210,7 +157,7 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps): Rea
             setQuantityText(event.target.value);
             setQuote(null);
             setNotice(null);
-            setRetryKey(null);
+            trade.reset();
           }}
           disabled={busy}
           aria-describedby={`sellable-${market.marketId}-${position.side}-${position.strikeIndex}`}
@@ -224,7 +171,7 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps): Rea
           onClick={() => {
             setQuantityText(String(position.sellableQuantity));
             setQuote(null);
-            setRetryKey(null);
+            trade.reset();
           }}
           disabled={busy}
         >
@@ -246,19 +193,19 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps): Rea
           <dl>
             <div><dt>Shares</dt><dd>{formatQuantity(quote.quantity)}</dd></div>
             <div><dt>Average price</dt><dd>{formatUsd(quote.average_price)}</dd></div>
-            <div><dt>Minimum proceeds</dt><dd>{formatCents(quote.cash_amount_cents)}</dd></div>
+            <div><dt>Estimated proceeds</dt><dd>{formatCents(quote.cash_amount_cents)}</dd></div>
             {quote.expected_redemption_quantity > 0 ? (
               <div><dt>Full-set redemption</dt><dd>{formatCents(quote.expected_redemption_cents)}</dd></div>
             ) : null}
           </dl>
-          <p className={styles.quoteTime}>Quoted {formatDate(quote.quoted_at)}. Quotes are previews, not reservations.</p>
+          <p className={styles.quoteTime}>Quoted {formatDateTime(quote.quoted_at)}. Quotes are previews, not reservations.</p>
           <div className={styles.actionRow}>
             <button
               type="button"
               className={styles.secondaryButton}
               onClick={() => {
                 setQuote(null);
-                setRetryKey(null);
+                trade.reset();
               }}
               disabled={busy}
             >
@@ -267,14 +214,10 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps): Rea
             <button
               type="button"
               className={styles.primaryButton}
-              onClick={() => {
-                const idempotencyKey = retryKey ?? crypto.randomUUID();
-                setRetryKey(idempotencyKey);
-                tradeMutation.mutate(idempotencyKey);
-              }}
+              onClick={() => void sellShares()}
               disabled={busy}
             >
-              {tradeMutation.isPending ? "Selling…" : retryKey === null ? "Sell shares" : "Retry sale"}
+              {selling ? "Selling…" : trade.canRetry ? "Retry sale" : "Sell shares"}
             </button>
           </div>
         </div>
@@ -299,18 +242,23 @@ function PositionRow({
   readonly onSell: () => void;
   readonly onClose: () => void;
   readonly onComplete: (result: ExecutionResult) => void;
-}): React.JSX.Element {
+}) {
   const basis = position.approximateCostBasis;
   const approximatePnl = basis === null
     ? null
     : position.markedValueUsd - Number(basis.approximateNetCostCents) / 100;
+  const pnlDisplay = approximatePnl === null
+    ? { className: undefined, text: "Not available" }
+    : approximatePnl >= 0
+      ? { className: styles.positive, text: `+${formatUsd(Math.abs(approximatePnl))}` }
+      : { className: styles.negative, text: `−${formatUsd(Math.abs(approximatePnl))}` };
   const canSell = market.status === "open" && position.sellableQuantity >= MIN_QUANTITY;
 
   return (
     <li className={styles.positionRow}>
       <div className={styles.positionMain}>
         <div>
-          <strong>{contractLabel(market.metricKind, position.side, position.strikeValueUsd)}</strong>
+          <strong>{positionLabel(market.metricKind, position.side, position.strikeValueUsd)}</strong>
           <span>{formatQuantity(position.quantity)} shares</span>
         </div>
         <dl className={styles.positionMetrics}>
@@ -326,9 +274,7 @@ function PositionRow({
           </div>
           <div>
             <dt>Approx. P&L</dt>
-            <dd className={approximatePnl === null ? undefined : approximatePnl >= 0 ? styles.positive : styles.negative}>
-              {approximatePnl === null ? "Not available" : `${approximatePnl >= 0 ? "+" : "−"}${formatUsd(Math.abs(approximatePnl))}`}
-            </dd>
+            <dd className={pnlDisplay.className}>{pnlDisplay.text}</dd>
           </div>
         </dl>
         <div className={styles.positionAction}>
@@ -345,11 +291,12 @@ function PositionRow({
   );
 }
 
-function HistoryRow({ trade }: { readonly trade: PortfolioTrade }): React.JSX.Element {
+function HistoryRow({ trade }: { readonly trade: PortfolioTrade }) {
   const direction = trade.action === "buy" ? "Bought" : "Sold";
-  const marketLabel = trade.strikeValueUsd === null
-    ? trade.side.toUpperCase()
-    : contractLabel("valuation_median", trade.side, trade.strikeValueUsd);
+  const marketLabel = contractLabel(
+    trade.side,
+    trade.strikeValueUsd === null ? null : formatValuation(trade.strikeValueUsd),
+  );
   const cash = formatCents(trade.cashAmountCents);
 
   return (
@@ -362,15 +309,15 @@ function HistoryRow({ trade }: { readonly trade: PortfolioTrade }): React.JSX.El
         <strong>{trade.action === "buy" ? `Cash debit ${cash}` : `Cash proceeds ${cash}`}</strong>
         <span>
           {trade.redemptionQuantity > 0
-            ? `${formatCents(trade.redemptionCents)} redeemed · ${formatDate(trade.createdAt)}`
-            : formatDate(trade.createdAt)}
+            ? `${formatCents(trade.redemptionCents)} redeemed · ${formatDateTime(trade.createdAt)}`
+            : formatDateTime(trade.createdAt)}
         </span>
       </div>
     </li>
   );
 }
 
-export function PortfolioPage(): React.JSX.Element {
+export function PortfolioPage() {
   const [offset, setOffset] = useState(0);
   const [selection, setSelection] = useState<SellSelection | null>(null);
   const [completion, setCompletion] = useState<string | null>(null);
@@ -378,19 +325,22 @@ export function PortfolioPage(): React.JSX.Element {
   const portfolioQuery = useQuery({
     queryKey: [...queryKeys.portfolio, offset, HISTORY_LIMIT],
     queryFn: () => apiRequest<Portfolio>(`/api/portfolio?offset=${offset}&limit=${HISTORY_LIMIT}`),
-    retry: (failureCount, error) => {
-      if (error instanceof ApiClientError && error.code === "USER_REQUIRED") return false;
-      return failureCount < 2;
-    },
   });
+  // The header seeds this identity the instant an account switches; the page holds
+  // its skeleton until the positions below belong to that same user.
+  const identity = useQuery({
+    queryKey: queryKeys.portfolio,
+    queryFn: () => apiRequest<Pick<Portfolio, "username">>("/api/portfolio?offset=0&limit=1"),
+  }).data;
 
   const portfolio = portfolioQuery.data;
-  const hasPositions = useMemo(
-    () => portfolio?.markets.some((market) => market.positions.length > 0 || market.residualExposure.buckets.some((value) => value > 0)) ?? false,
-    [portfolio],
-  );
+  const hasPositions = portfolio?.markets.some(
+    (market) => market.positions.length > 0 || market.residualExposure.buckets.some((value) => value > 0),
+  ) ?? false;
 
-  if (portfolioQuery.isLoading) return <PortfolioSkeleton />;
+  if (portfolioQuery.isLoading || (identity !== undefined && portfolio !== undefined && portfolio.username !== identity.username)) {
+    return <PortfolioSkeleton />;
+  }
 
   if (portfolioQuery.error instanceof ApiClientError && portfolioQuery.error.code === "USER_REQUIRED") {
     return (
@@ -414,7 +364,7 @@ export function PortfolioPage(): React.JSX.Element {
       <section className={styles.statePanel}>
         <p className={styles.stateLabel}>Portfolio unavailable</p>
         <h1>We could not load your account</h1>
-        <p>{errorMessage(portfolioQuery.error)}</p>
+        <p>{errorMessage(portfolioQuery.error, FALLBACK_ERROR)}</p>
         <button type="button" className={styles.primaryButton} onClick={() => portfolioQuery.refetch()}>
           Retry portfolio
         </button>
@@ -560,10 +510,8 @@ export function PortfolioPage(): React.JSX.Element {
             className={styles.secondaryButton}
             disabled={portfolio.tradeHistory.nextOffset === null || portfolioQuery.isFetching}
             onClick={() => {
-              if (portfolio.tradeHistory.nextOffset !== null) {
-                setSelection(null);
-                setOffset(portfolio.tradeHistory.nextOffset);
-              }
+              setSelection(null);
+              setOffset(portfolio.tradeHistory.nextOffset ?? 0);
             }}
           >
             Older trades

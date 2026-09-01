@@ -166,8 +166,8 @@ postgresDescribe(suiteName, () => {
     expect(businessTables).toEqual([
       "companies",
       "holdings",
-      "marks",
       "markets",
+      "marks",
       "settlements",
       "trades",
       "users",

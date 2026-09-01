@@ -2,18 +2,25 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import type { SyntheticEvent } from "react";
+import { useState } from "react";
 
-import { apiRequest } from "../../lib/client/api.js";
+import { apiRequest, POLL_INTERVAL_MS } from "../../lib/client/api.js";
+import {
+  formatDate,
+  formatProbability,
+  formatValuation,
+} from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
+import type { MarketDetail } from "../../lib/services/get-market.js";
 import type {
   MarketListHistoryPoint,
   MarketListItem,
   MarketListResult,
 } from "../../lib/services/list-markets.js";
+import { CompanyLogo } from "../company-logo/company-logo.js";
+import { MovementArrow } from "../icons/icons.js";
 import styles from "./market-board.module.css";
 
-const POLL_INTERVAL_MS = 4_000;
 const SPARKLINE_WIDTH = 120;
 const SPARKLINE_HEIGHT = 32;
 const SPARKLINE_PADDING = 2;
@@ -22,41 +29,29 @@ const compactNumberFormatter = new Intl.NumberFormat("en-US", {
   notation: "compact",
   maximumFractionDigits: 1,
 });
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-  timeZone: "UTC",
-});
-function hideBrokenLogo(event: SyntheticEvent<HTMLImageElement>) {
-  event.currentTarget.hidden = true;
-}
 
-function formatUsd(value: number): string {
+function formatCompactUsd(value: number): string {
   return `$${compactNumberFormatter.format(value)}`;
 }
 
 function formatMetric(market: MarketListItem, value = market.metric.current): string {
   return market.metric.format === "usd"
-    ? formatUsd(value)
+    ? formatCompactUsd(value)
     : `${(value * 100).toFixed(1)}%`;
 }
 
 function formatChange(market: MarketListItem): {
-  readonly icon: string;
   readonly direction: "up" | "down" | "flat";
   readonly label: string;
 } {
   const change = market.metric.change24Hours;
   const direction = change > 0 ? "up" : change < 0 ? "down" : "flat";
-  const icon = direction === "up" ? "↑" : direction === "down" ? "↓" : "→";
   const amount =
     market.metric.format === "usd"
-      ? formatUsd(Math.abs(change))
+      ? formatCompactUsd(Math.abs(change))
       : `${(Math.abs(change) * 100).toFixed(1)} pts`;
 
   return {
-    icon,
     direction,
     label:
       direction === "flat"
@@ -93,12 +88,9 @@ function Sparkline({ market }: { readonly market: MarketListItem }) {
     return <span className={styles.noHistory}>No history</span>;
   }
 
-  const first = market.history[0];
-  const last = market.history.at(-1);
-  const summary =
-    first === undefined || last === undefined
-      ? "No history"
-      : `${market.metric.label} moved from ${formatMetric(market, first.value)} to ${formatMetric(market, last.value)} across ${market.history.length} observations.`;
+  const first = market.history[0]!;
+  const last = market.history.at(-1)!;
+  const summary = `${market.metric.label} moved from ${formatMetric(market, first.value)} to ${formatMetric(market, last.value)} across ${market.history.length} observations.`;
 
   return (
     <svg
@@ -117,28 +109,138 @@ function Sparkline({ market }: { readonly market: MarketListItem }) {
   );
 }
 
-function MarketRow({ market }: { readonly market: MarketListItem }) {
+function InlineLadder({ market }: { readonly market: MarketListItem }) {
+  const slug = market.company.slug;
+  const detailQuery = useQuery({
+    queryKey: queryKeys.market(slug),
+    queryFn: () => apiRequest<MarketDetail>(`/api/markets/${encodeURIComponent(slug)}`),
+    refetchInterval: POLL_INTERVAL_MS,
+  });
+
+  if (detailQuery.isPending) {
+    return (
+      <div className={styles.ladderState} role="status" aria-busy="true">
+        Loading probabilities…
+      </div>
+    );
+  }
+
+  if (detailQuery.isError) {
+    return (
+      <div className={styles.ladderState} role="alert">
+        Probabilities are unavailable right now.
+      </div>
+    );
+  }
+
+  const allContracts = detailQuery.data.contracts;
+  const isBinary = detailQuery.data.metric.kind === "yes_probability";
+  // The board's inline ladder is a summary: a 12-row window centered on the
+  // money (the strike whose YES probability sits nearest 50%), so the
+  // expansion shows the contested region rather than a pinned tail.
+  const pivot = allContracts.reduce(
+    (best, contract, index) =>
+      Math.abs(contract.yesProbability - 0.5)
+        < Math.abs(allContracts[best]!.yesProbability - 0.5)
+        ? index
+        : best,
+    0,
+  );
+  const windowStart = Math.max(
+    0,
+    Math.min(pivot - 6, allContracts.length - 12),
+  );
+  const contracts = allContracts.slice(windowStart, windowStart + 12);
+  const omitted = allContracts.length - contracts.length;
+  const pivotStrike = allContracts[pivot]?.strikeIndex;
+  const split = Math.ceil(contracts.length / 2);
+  const columns = [contracts.slice(0, split), contracts.slice(split)].filter(
+    (column) => column.length > 0,
+  );
+
+  return (
+    <div className={styles.ladderWrap}>
+      <div className={styles.ladderColumns}>
+        {columns.map((column, columnIndex) => (
+          <table className={styles.ladderTable} key={columnIndex}>
+            <caption className={styles.visuallyHidden}>
+              {market.company.name} probabilities by valuation strike
+              {columns.length > 1 ? ` (part ${columnIndex + 1})` : ""}
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">{isBinary ? "Contract" : "Valuation above"}</th>
+                <th scope="col" className={styles.ladderPct}>YES</th>
+                <th scope="col" className={styles.ladderPct}>NO</th>
+              </tr>
+            </thead>
+            <tbody>
+              {column.map((contract) => (
+                <tr
+                  key={contract.strikeIndex}
+                  className={
+                    contract.strikeIndex === pivotStrike
+                      ? styles.ladderPivotRow
+                      : undefined
+                  }
+                >
+                  <th scope="row">
+                    {contract.strikeValueUsd === null
+                      ? "Outcome"
+                      : formatValuation(contract.strikeValueUsd)}
+                  </th>
+                  <td className={`${styles.ladderPct} ${styles.ladderYes}`}>
+                    {formatProbability(contract.yesProbability)}
+                  </td>
+                  <td className={styles.ladderPct}>
+                    {formatProbability(contract.noProbability)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ))}
+      </div>
+      <Link className={styles.ladderLink} href={`/m/${slug}`}>
+        {omitted > 0
+          ? `All ${allContracts.length} strikes in the ${market.company.name} market ›`
+          : `Open ${market.company.name} market ›`}
+      </Link>
+    </div>
+  );
+}
+
+function MarketRow({
+  market,
+  expanded,
+  onToggle,
+}: {
+  readonly market: MarketListItem;
+  readonly expanded: boolean;
+  readonly onToggle: () => void;
+}) {
   const movement = formatChange(market);
   const anchorValue =
-    market.anchor === null ? null : formatUsd(Number(market.anchor.valuationUsd));
+    market.anchor === null ? null : formatCompactUsd(Number(market.anchor.valuationUsd));
 
   return (
     <tr className={styles.marketRow}>
+      <td className={styles.expandCell}>
+        <button
+          type="button"
+          className={styles.expandButton}
+          aria-expanded={expanded}
+          aria-label={`${expanded ? "Hide" : "Show"} ${market.company.name} probability ladder`}
+          onClick={onToggle}
+        >
+          <svg viewBox="0 0 12 12" aria-hidden="true" className={styles.expandGlyph}>
+            <path d="M4 2.5 L8 6 L4 9.5" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      </td>
       <th className={styles.identityCell} scope="row">
         <div className={styles.identity}>
-          <span className={styles.logoFrame} aria-hidden="true">
-            <span className={styles.logoFallback}>
-              {market.company.name.slice(0, 2).toUpperCase()}
-            </span>
-            <img
-              className={styles.logo}
-              src={market.company.logoPath}
-              alt=""
-              width="32"
-              height="32"
-              onError={hideBrokenLogo}
-            />
-          </span>
+          <CompanyLogo name={market.company.name} logoPath={market.company.logoPath} size="lg" />
           <span>
             <Link className={styles.marketLink} href={`/m/${market.company.slug}`}>
               {market.company.name}
@@ -152,7 +254,7 @@ function MarketRow({ market }: { readonly market: MarketListItem }) {
       </td>
       <td className={styles.changeCell} data-label="24h change">
         <span className={styles[movement.direction]}>
-          <span aria-hidden="true">{movement.icon}</span> {movement.label}
+          <MovementArrow direction={movement.direction} /> {movement.label}
         </span>
       </td>
       <td className={styles.historyCell} data-label="History">
@@ -165,7 +267,7 @@ function MarketRow({ market }: { readonly market: MarketListItem }) {
           <span className={styles.anchor} title={market.anchor.description}>
             <strong>{anchorValue}</strong>
             <time dateTime={market.anchor.date}>
-              {dateFormatter.format(new Date(market.anchor.date))}
+              {formatDate(market.anchor.date)}
             </time>
             <span className={styles.visuallyHidden}>{market.anchor.description}</span>
           </span>
@@ -178,21 +280,44 @@ function MarketRow({ market }: { readonly market: MarketListItem }) {
       </td>
       <td className={styles.statusCell} data-label="Status">
         <span className={styles.statusGroup}>
-          <span
-            className={
-              market.status === "open" ? styles.statusOpen : styles.statusSettled
-            }
-          >
-            {market.status === "open" ? "Open" : "Settled"}
-          </span>
+          {market.status === "open" ? (
+            <Link className={styles.tradeLink} href={`/m/${market.company.slug}`}>
+              Trade ›
+            </Link>
+          ) : (
+            <span className={styles.statusSettled}>Settled</span>
+          )}
           {market.settledAt === null ? null : (
             <time className={styles.settledDate} dateTime={market.settledAt}>
-              {dateFormatter.format(new Date(market.settledAt))}
+              {formatDate(market.settledAt)}
             </time>
           )}
         </span>
       </td>
     </tr>
+  );
+}
+
+function MarketRowGroup({
+  market,
+  expanded,
+  onToggle,
+}: {
+  readonly market: MarketListItem;
+  readonly expanded: boolean;
+  readonly onToggle: () => void;
+}) {
+  return (
+    <>
+      <MarketRow market={market} expanded={expanded} onToggle={onToggle} />
+      {expanded ? (
+        <tr className={styles.ladderRow}>
+          <td colSpan={8}>
+            <InlineLadder market={market} />
+          </td>
+        </tr>
+      ) : null}
+    </>
   );
 }
 
@@ -222,6 +347,7 @@ export function MarketBoard({
 }: {
   readonly initialData?: MarketListResult | undefined;
 }) {
+  const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
   const initialQueryData =
     initialData === undefined
       ? {}
@@ -278,6 +404,9 @@ export function MarketBoard({
         </caption>
         <thead>
           <tr>
+            <th scope="col" className={styles.expandHeader}>
+              <span className={styles.visuallyHidden}>Probability ladder</span>
+            </th>
             <th scope="col">Market</th>
             <th scope="col">Current</th>
             <th scope="col">24h</th>
@@ -288,9 +417,19 @@ export function MarketBoard({
           </tr>
         </thead>
         <tbody>
-          {marketsQuery.data.markets.map((market) => (
-            <MarketRow key={market.marketId} market={market} />
-          ))}
+          {marketsQuery.data.markets.map((market) => {
+            const expanded = expandedSlug === market.company.slug;
+            return (
+              <MarketRowGroup
+                key={market.marketId}
+                market={market}
+                expanded={expanded}
+                onToggle={() =>
+                  setExpandedSlug(expanded ? null : market.company.slug)
+                }
+              />
+            );
+          })}
         </tbody>
       </table>
     </div>

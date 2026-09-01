@@ -1,4 +1,4 @@
-export type MarkRange = "1h" | "1d" | "1w" | "all";
+import type { MarkRange } from "../services/get-marks.js";
 
 export const queryKeys = {
   all: ["openmarket"] as const,

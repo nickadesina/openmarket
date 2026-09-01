@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>OpenMarket hero repro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Averia+Libre:wght@700&family=Noto+Sans:wght@400;500;600;700&family=Roboto+Condensed:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#131315; --ink-soft:#434343; --ink-faint:#808080;
+    --rule:#c5c5c5; --rule-soft:#e0e0e0;
+    --red:#d70909; --red-pale:#fdeaea;
+    --ground:#ffffff;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:var(--ground);color:var(--ink);font-family:"Noto Sans",sans-serif;font-variant-numeric:tabular-nums;overflow:hidden}
+  .frame{position:relative;width:1536px;height:1024px;overflow:hidden;background:var(--ground)}
+  .caps{font-family:"Roboto Condensed",sans-serif;text-transform:uppercase;letter-spacing:.06em}
+  .num{font-variant-numeric:tabular-nums}
+  .red{color:var(--red)}
+  /* top bar */
+  .topbar{position:absolute;left:0;top:0;width:1536px;height:66px;border-bottom:1px solid var(--ink);display:flex;align-items:center}
+  .wordmark{font-family:"Averia Libre",sans-serif;font-weight:700;font-size:31px;margin-left:24px;letter-spacing:-0.012em}
+  .nav{display:flex;align-items:center;gap:26px;margin-left:56px}
+  .nav .tab{background:var(--red);color:#fff;font-family:"Roboto Condensed";font-weight:700;font-size:16px;letter-spacing:.08em;padding:8px 18px}
+  .nav .link{font-family:"Roboto Condensed";font-weight:700;font-size:16px;letter-spacing:.08em;color:var(--ink)}
+  .account{margin-left:auto;display:flex;align-items:center;height:100%}
+  .user{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;padding:0 26px;height:100%;border-left:1px solid var(--rule)}
+  .chev{width:10px;height:10px;border-right:2px solid var(--ink);border-bottom:2px solid var(--ink);transform:rotate(45deg);margin-top:-4px}
+  .cash{display:flex;flex-direction:column;justify-content:center;gap:2px;padding:0 26px;height:100%;border-left:1px solid var(--rule)}
+  .cash .lbl{font-family:"Roboto Condensed";font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--ink)}
+  .cash .val{font-size:21px;font-weight:700;color:var(--red)}
+  /* stat strip */
+  .stats{position:absolute;left:0;top:66px;width:1536px;height:46px;border-bottom:1px solid var(--rule);display:flex;align-items:center;letter-spacing:normal}
+  .stat{display:flex;align-items:center;gap:10px;padding:0 22px;height:100%;border-right:1px solid var(--rule-soft)}
+  .stat:last-child{border-right:0}
+  .stat .lbl{font-family:"Roboto Condensed";font-size:11.5px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--ink)}
+  .stat .val{font-size:14.5px;font-weight:700}
+  /* module tabs */
+  .modtab{position:absolute;background:var(--red);color:#fff;font-family:"Roboto Condensed";font-weight:700;font-size:13.5px;letter-spacing:.09em;text-transform:uppercase;display:flex;align-items:center;justify-content:center;z-index:2}
+  #board-tab{left:20px;top:128px;width:130px;height:28px}
+  #activity-tab{left:1034px;top:128px;width:120px;height:28px}
+  /* modules */
+  .module{position:absolute;border:1px solid var(--rule);background:#fff}
+  #board{left:20px;top:156px;width:996px;height:804px}
+  #activity{left:1034px;top:156px;width:482px;height:804px}
+  table{border-collapse:collapse;width:100%}
+  th,td{text-align:left;vertical-align:middle}
+  /* board table */
+  #board thead th{font-family:"Roboto Condensed";font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink);border-bottom:1px solid var(--rule);border-right:1px solid var(--rule-soft);padding:12px 10px;height:50px;vertical-align:middle}
+  #board thead th:last-child{border-right:0}
+  #board td{border-bottom:1px solid var(--rule-soft);border-right:1px solid var(--rule-soft);padding:8px 10px;font-size:13px}
+  #board td:last-child{border-right:0}
+  .mrow td{height:62px}
+  tbody tr.mrow:first-child td{height:70px}
+  .mrow2 td{height:55px;padding-top:5px;padding-bottom:5px}
+  .mrow2 .chip{width:32px;height:32px;font-size:15px;border-radius:7px}
+  .mrow2 .ival{font-size:30px}
+  .rank{color:var(--ink-faint);font-size:12px;width:16px}
+  .expand{width:26px;color:var(--ink-soft);font-size:12px}
+  .chip{width:38px;height:38px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:17px;vertical-align:middle;margin-right:10px}
+  .cname{font-size:15.5px;font-weight:600;display:inline-block;vertical-align:middle}
+  .ival{font-size:38px;font-weight:700;color:var(--red);letter-spacing:-0.02em;white-space:nowrap}
+  .chg{font-size:12.5px;font-weight:600;line-height:1.35}
+  .chg .arrow{font-size:10px}
+  .chg.up{color:var(--red)}
+  .chg.down{color:var(--ink)}
+  .spark{display:block}
+  .anchor .a1{font-size:13.5px;font-weight:700;display:block}
+  .anchor .a2{font-size:10.5px;color:var(--ink-faint);display:block;margin-top:2px}
+  .claims{font-size:13px;font-weight:500}
+  .open{display:inline-block;border:1.5px solid var(--red);color:var(--red);font-family:"Roboto Condensed";font-weight:700;font-size:11px;letter-spacing:.08em;padding:4px 12px}
+  /* expanded ladder */
+  .ladderwrap{padding:0 16px 14px 26px;border-bottom:1px solid var(--rule-soft)}
+  .ladder{display:grid;grid-template-columns:1fr 1fr;gap:0 24px}
+  .ladder table th{font-family:"Roboto Condensed";font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--rule);padding:10px 8px;color:var(--ink)}
+  .ladder table td{padding:8px 8px;font-size:13.5px;font-weight:600;border-bottom:1px solid #eee}
+  .ladder .yes{color:var(--red);font-weight:700}
+  .ladder tr.hot td{background:var(--red-pale)}
+  .ladder .strike{font-weight:600}
+  .ladder td.pct,.ladder th.pct{text-align:right}
+  /* board footer */
+  .bfoot{position:absolute;left:0;bottom:0;width:100%;height:40px;border-top:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;padding:0 18px;background:#fff}
+  .bfoot .count{font-family:"Roboto Condensed";font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--ink);text-transform:uppercase}
+  .viewall{font-family:"Roboto Condensed";font-size:12.5px;font-weight:700;letter-spacing:.1em;color:var(--red);text-transform:uppercase;text-decoration:none}
+  /* activity */
+  #activity thead th{font-family:"Roboto Condensed";font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--rule);padding:0 8px;height:52px;color:var(--ink)}
+  #activity td{border-bottom:1px solid var(--rule-soft);padding:0 8px;font-size:11.5px;height:46.5px}
+  #activity .t{font-weight:500;white-space:nowrap}
+  #activity .u{font-weight:600;white-space:nowrap}
+  #activity .act{font-family:"Roboto Condensed";font-weight:700;font-size:10.5px;letter-spacing:.05em}
+  #activity .d{color:var(--ink-soft);font-size:11px}
+  #activity .amt{color:var(--red);font-weight:700;text-align:right;white-space:nowrap}
+  .afoot{position:absolute;left:0;bottom:0;width:100%;height:40px;border-top:1px solid var(--rule);display:flex;align-items:center;justify-content:center;background:#fff}
+  /* footer */
+  .footer{position:absolute;left:0;top:968px;width:1536px;height:56px;border-top:1px solid var(--rule);display:flex;align-items:center;padding:0 24px;background:#fff}
+  .footer .c{font-size:11.5px;color:var(--ink-soft)}
+  .footer .mid{position:absolute;left:0;width:100%;text-align:center;font-family:"Roboto Condensed";font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--ink)}
+  .footer .links{margin-left:auto;display:flex;gap:26px;font-family:"Roboto Condensed";font-size:11.5px;font-weight:700;letter-spacing:.08em;z-index:1;background:#fff;padding-left:20px}
+</style>
+</head>
+<body>
+<div class="frame">
+  <header class="topbar">
+    <span class="wordmark">OpenMarket</span>
+    <nav class="nav"><span class="tab">MARKETS</span><span class="link">PORTFOLIO</span></nav>
+    <div class="account">
+      <span class="user">john.doe <span class="chev"></span></span>
+      <span class="cash"><span class="lbl">PAPER CASH</span><span class="val num">$1,000,000.00</span></span>
+    </div>
+  </header>
+
+  <div class="stats caps">
+    <span class="stat"><span class="lbl">Paper cash balance</span><span class="val red num">$1,000,000.00</span></span>
+    <span class="stat"><span class="lbl">Total claims outstanding</span><span class="val num">$285,734,215.18</span></span>
+    <span class="stat"><span class="lbl">24h volume</span><span class="val num">$14,526,832.47</span></span>
+    <span class="stat"><span class="lbl">Markets</span><span class="val num">32</span></span>
+    <span class="stat"><span class="lbl">Active traders</span><span class="val num">2,842</span></span>
+    <span class="stat"><span class="lbl">Last price update</span><span class="val num">11:24:32</span><span class="lbl red">(Refresh every 4s)</span></span>
+  </div>
+
+  <div class="modtab" id="board-tab">Market board</div>
+  <div class="modtab" id="activity-tab">Live activity</div>
+  <section class="module" id="board">
+    <table>
+      <thead><tr>
+        <th style="width:26px"></th><th style="width:20px">#</th><th style="width:214px">Company</th>
+        <th style="width:126px">Implied valuation (paper)</th><th style="width:118px">24h change</th>
+        <th style="width:146px">24h sparkline</th><th style="width:140px">Public anchor (latest)</th>
+        <th style="width:130px">Claims outstanding</th><th>Status</th>
+      </tr></thead>
+      <tbody>
+        <tr class="mrow"><td class="expand">›</td><td class="rank">1</td>
+          <td><span class="chip" style="background:#181210">A\</span><span class="cname">Anthropic</span></td>
+          <td class="ival num">$1.50T</td>
+          <td><span class="chg up"><span class="arrow">▲</span> $1.40T<br>(+1,390.0%)</span></td>
+          <td><svg class="spark" width="130" height="34" viewBox="0 0 130 34"><path d="M2 28 L12 24 L20 26 L30 20 L38 22 L48 16 L58 18 L68 12 L78 15 L88 9 L98 12 L108 6 L118 9 L128 4" fill="none" stroke="#d70909" stroke-width="1.6"/></svg></td>
+          <td class="anchor"><span class="a1 num">$18.40B</span><span class="a2">Series F (Mar 2024)</span></td>
+          <td class="claims num">$38,752,193.45</td>
+          <td><span class="open">OPEN</span></td></tr>
+        <tr class="mrow"><td class="expand">⌄</td><td class="rank">2</td>
+          <td><span class="chip" style="background:#635bff">S</span><span class="cname">Stripe</span></td>
+          <td class="ival num">$59.20B</td>
+          <td><span class="chg down"><span class="arrow">▼</span> $5.50B<br>(-8.50%)</span></td>
+          <td><svg class="spark" width="130" height="34" viewBox="0 0 130 34"><path d="M2 6 L12 10 L22 8 L32 14 L42 12 L52 18 L62 16 L72 21 L82 19 L92 24 L102 22 L112 27 L122 25 L128 29" fill="none" stroke="#d70909" stroke-width="1.6"/></svg></td>
+          <td class="anchor"><span class="a1 num">$65.00B</span><span class="a2">Last Round (Mar 2023)</span></td>
+          <td class="claims num">$27,814,662.33</td>
+          <td><span class="open">OPEN</span></td></tr>
+        <tr><td colspan="9" style="padding:0;border-right:0">
+          <div class="ladderwrap"><div class="ladder">
+            <table>
+              <thead><tr><th>Valuation above (USD)</th><th class="pct">YES %</th><th class="pct">NO %</th></tr></thead>
+              <tbody>
+                <tr><td class="strike num">$100.0B</td><td class="pct yes num">15.6¢</td><td class="pct num">84.4¢</td></tr>
+                <tr><td class="strike num">$80.0B</td><td class="pct yes num">32.8¢</td><td class="pct num">67.2¢</td></tr>
+                <tr><td class="strike num">$60.0B</td><td class="pct yes num">55.7¢</td><td class="pct num">44.3¢</td></tr>
+                <tr class="hot"><td class="strike num">$50.0B</td><td class="pct yes num">71.6¢</td><td class="pct num">28.4¢</td></tr>
+                <tr><td class="strike num">$40.0B</td><td class="pct yes num">88.1¢</td><td class="pct num">11.9¢</td></tr>
+              </tbody>
+            </table>
+            <table>
+              <thead><tr><th>Valuation above (USD)</th><th class="pct">YES %</th><th class="pct">NO %</th></tr></thead>
+              <tbody>
+                <tr><td class="strike num">$30.5B</td><td class="pct yes num">96.2¢</td><td class="pct num">3.8¢</td></tr>
+                <tr><td class="strike num">$25.0B</td><td class="pct yes num">98.5¢</td><td class="pct num">1.5¢</td></tr>
+                <tr><td class="strike num">$20.0B</td><td class="pct yes num">99.4¢</td><td class="pct num">0.6¢</td></tr>
+                <tr><td class="strike num">$15.0B</td><td class="pct yes num">99.8¢</td><td class="pct num">0.2¢</td></tr>
+                <tr><td class="strike num">$10.0B</td><td class="pct yes num">99.9¢</td><td class="pct num">0.1¢</td></tr>
+              </tbody>
+            </table>
+          </div></div>
+        </td></tr>
+        <tr class="mrow mrow2"><td class="expand">›</td><td class="rank">3</td>
+          <td><span class="chip" style="background:#10a37f">◯</span><span class="cname">OpenAI</span></td>
+          <td class="ival num">$86.70B</td>
+          <td><span class="chg up"><span class="arrow">▲</span> $6.70B<br>(+8.39%)</span></td>
+          <td><svg class="spark" width="130" height="34" viewBox="0 0 130 34"><path d="M2 26 L14 22 L26 24 L38 18 L50 20 L62 14 L74 16 L86 11 L98 13 L110 8 L122 10 L128 6" fill="none" stroke="#d70909" stroke-width="1.6"/></svg></td>
+          <td class="anchor"><span class="a1 num">$80.00B</span><span class="a2">Series H (Oct 2024)</span></td>
+          <td class="claims num">$62,998,443.21</td>
+          <td><span class="open">OPEN</span></td></tr>
+        <tr class="mrow mrow2"><td class="expand">›</td><td class="rank">4</td>
+          <td><span class="chip" style="background:#1b1c1d">◆</span><span class="cname">Databricks</span></td>
+          <td class="ival num">$43.80B</td>
+          <td><span class="chg up"><span class="arrow">▲</span> $3.30B<br>(+8.16%)</span></td>
+          <td><svg class="spark" width="130" height="34" viewBox="0 0 130 34"><path d="M2 27 L14 24 L26 25 L38 20 L50 22 L62 17 L74 18 L86 13 L98 15 L110 10 L122 11 L128 8" fill="none" stroke="#d70909" stroke-width="1.6"/></svg></td>
+          <td class="anchor"><span class="a1 num">$43.00B</span><span class="a2">Series I (Jan 2024)</span></td>
+          <td class="claims num">$19,443,229.76</td>
+          <td><span class="open">OPEN</span></td></tr>
+        <tr class="mrow mrow2"><td class="expand">›</td><td class="rank">5</td>
+          <td><span class="chip" style="background:#7b1fa2">R</span><span class="cname">Revolut</span></td>
+          <td class="ival num">$33.60B</td>
+          <td><span class="chg down"><span class="arrow">▼</span> $2.40B<br>(-6.67%)</span></td>
+          <td><svg class="spark" width="130" height="34" viewBox="0 0 130 34"><path d="M2 8 L14 11 L26 9 L38 14 L50 12 L62 17 L74 15 L86 20 L98 18 L110 23 L122 21 L128 25" fill="none" stroke="#d70909" stroke-width="1.6"/></svg></td>
+          <td class="anchor"><span class="a1 num">$33.00B</span><span class="a2">Series E (Aug 2023)</span></td>
+          <td class="claims num">$12,470,551.84</td>
+          <td><span class="open">OPEN</span></td></tr>
+        <tr class="mrow mrow2"><td class="expand">›</td><td class="rank">6</td>
+          <td><span class="chip" style="background:#ffb3c7;color:#17120f">K</span><span class="cname">Klarna</span></td>
+          <td class="ival num">$14.10B</td>
+          <td><span class="chg down"><span class="arrow">▼</span> $900.0M<br>(-6.00%)</span></td>
+          <td><svg class="spark" width="130" height="34" viewBox="0 0 130 34"><path d="M2 9 L14 12 L26 10 L38 15 L50 13 L62 18 L74 16 L86 21 L98 19 L110 24 L122 22 L128 26" fill="none" stroke="#d70909" stroke-width="1.6"/></svg></td>
+          <td class="anchor"><span class="a1 num">$15.00B</span><span class="a2">Series J (Jun 2022)</span></td>
+          <td class="claims num">$8,219,331.07</td>
+          <td><span class="open">OPEN</span></td></tr>
+        <tr class="mrow mrow2"><td class="expand">›</td><td class="rank">7</td>
+          <td><span class="chip" style="background:#111">F</span><span class="cname">Scale AI</span></td>
+          <td class="ival num">$13.20B</td>
+          <td><span class="chg up"><span class="arrow">▲</span> $1.20B<br>(+10.00%)</span></td>
+          <td><svg class="spark" width="130" height="34" viewBox="0 0 130 34"><path d="M2 25 L14 22 L26 23 L38 19 L50 21 L62 16 L74 17 L86 12 L98 14 L110 9 L122 11 L128 7" fill="none" stroke="#d70909" stroke-width="1.6"/></svg></td>
+          <td class="anchor"><span class="a1 num">$13.80B</span><span class="a2">Series F (May 2024)</span></td>
+          <td class="claims num">$6,079,447.66</td>
+          <td><span class="open">OPEN</span></td></tr>
+        <tr class="mrow mrow2"><td class="expand">›</td><td class="rank">8</td>
+          <td><span class="chip" style="background:#fa4616">Ui</span><span class="cname">UiPath</span></td>
+          <td class="ival num">$9.10B</td>
+          <td><span class="chg down"><span class="arrow">▼</span> $500.0M<br>(-6.61%)</span></td>
+          <td><svg class="spark" width="130" height="34" viewBox="0 0 130 34"><path d="M2 10 L14 13 L26 11 L38 16 L50 14 L62 19 L74 17 L86 22 L98 20 L110 25 L122 23 L128 27" fill="none" stroke="#d70909" stroke-width="1.6"/></svg></td>
+          <td class="anchor"><span class="a1 num">$10.00B</span><span class="a2">Series F (Apr 2021)</span></td>
+          <td class="claims num">$4,512,353.26</td>
+          <td><span class="open">OPEN</span></td></tr>
+      </tbody>
+    </table>
+    <div class="bfoot"><span class="count">1–8 of 32 markets</span><a class="viewall" href="#">View all markets ›</a></div>
+  </section>
+
+  <section class="module" id="activity">
+    <table>
+      <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Details</th><th style="text-align:right">Amount (paper)</th></tr></thead>
+      <tbody>
+        <tr><td class="t num">11:24:28</td><td class="u">alpha_trader</td><td class="act">BOUGHT</td><td class="d">1,168.70 YES above $30.5B — Stripe</td><td class="amt num">$1,100.00</td></tr>
+        <tr><td class="t num">11:24:24</td><td class="u">quant_kate</td><td class="act">SOLD</td><td class="d">500.00 NO above $50.0B — Stripe</td><td class="amt num">$260.00</td></tr>
+        <tr><td class="t num">11:24:20</td><td class="u">value_hawk</td><td class="act">BOUGHT</td><td class="d">2,000.00 YES above $60.0B — Anthropic</td><td class="amt num">$1,240.00</td></tr>
+        <tr><td class="t num">11:24:16</td><td class="u">market_maker</td><td class="act">SOLD</td><td class="d">750.00 YES above $40.0B — Stripe</td><td class="amt num">$585.00</td></tr>
+        <tr><td class="t num">11:24:12</td><td class="u">long_term</td><td class="act">BOUGHT</td><td class="d">600.00 YES above $80.0B — OpenAI</td><td class="amt num">$528.00</td></tr>
+        <tr><td class="t num">11:24:08</td><td class="u">alpha_trader</td><td class="act">SOLD</td><td class="d">1,000.00 YES above $100.0B — OpenAI</td><td class="amt num">$180.00</td></tr>
+        <tr><td class="t num">11:24:04</td><td class="u">event_driven</td><td class="act">BOUGHT</td><td class="d">2,500.00 YES above $50.0B — Stripe</td><td class="amt num">$1,787.50</td></tr>
+        <tr><td class="t num">11:24:00</td><td class="u">quant_kate</td><td class="act">SOLD</td><td class="d">1,200.00 NO above $30.5B — Stripe</td><td class="amt num">$312.00</td></tr>
+        <tr><td class="t num">11:23:56</td><td class="u">value_hawk</td><td class="act">BOUGHT</td><td class="d">1,000.00 YES above $100.0B — Anthropic</td><td class="amt num">$150.00</td></tr>
+        <tr><td class="t num">11:23:52</td><td class="u">market_maker</td><td class="act">SOLD</td><td class="d">3,000.00 YES above $60.0B — Anthropic</td><td class="amt num">$1,530.00</td></tr>
+        <tr><td class="t num">11:23:48</td><td class="u">deep_value</td><td class="act">BOUGHT</td><td class="d">750.00 YES above $40.0B — Databricks</td><td class="amt num">$560.25</td></tr>
+        <tr><td class="t num">11:23:44</td><td class="u">momentum_jay</td><td class="act">SOLD</td><td class="d">1,500.00 NO above $50.0B — Stripe</td><td class="amt num">$585.00</td></tr>
+        <tr><td class="t num">11:23:40</td><td class="u">alpha_trader</td><td class="act">BOUGHT</td><td class="d">500.00 YES above $25.0B — Stripe</td><td class="amt num">$497.50</td></tr>
+        <tr><td class="t num">11:23:36</td><td class="u">quant_kate</td><td class="act">SOLD</td><td class="d">1,000.00 YES above $15.0B — Klarna</td><td class="amt num">$820.00</td></tr>
+        <tr><td class="t num">11:23:32</td><td class="u">event_driven</td><td class="act">BOUGHT</td><td class="d">2,000.00 YES above $30.5B — Stripe</td><td class="amt num">$1,880.00</td></tr>
+      </tbody>
+    </table>
+    <div class="afoot"><a class="viewall" href="#">View full activity feed ›</a></div>
+  </section>
+
+  <footer class="footer">
+    <span class="mid">Paper trading only. Not real money. No purchases or withdrawals.</span>
+    <span class="c num">© 2025 OpenMarket</span>
+    <span class="links"><span>Terms</span><span>Privacy</span><span>Help</span><span>Contact</span></span>
+  </footer>
+</div>
+</body>
+</html>

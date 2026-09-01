@@ -14,8 +14,16 @@
 }
 
 .header h2 {
+  display: inline-flex;
   margin: 0;
-  font-size: var(--font-size-lg);
+  padding: 0.375rem 0.875rem;
+  background: var(--color-primary);
+  color: #ffffff;
+  font-family: var(--font-caps);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
 }
 
 .header p,
@@ -52,23 +60,183 @@
   padding: var(--space-5);
 }
 
-.contractSummary {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-
-.contractSummary span,
 .field > span:first-child {
   color: var(--color-ink-muted);
   font-size: var(--font-size-xs);
   font-weight: 600;
 }
 
-.contractSummary strong {
-  font-size: var(--font-size-xl);
+/* Rakuten-style variant picker: the two contracts as two large plates. */
+.sideToggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.sideYes,
+.sideNo {
+  display: grid;
+  gap: 0.125rem;
+  min-height: var(--control-height-lg);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-bg);
+  color: var(--color-ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.sideYes span,
+.sideNo span {
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+}
+
+.sideYes strong,
+.sideNo strong {
+  font-family: var(--font-num);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
+}
+
+.sideYes:hover:not(:disabled),
+.sideNo:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+}
+
+.sideYes[aria-pressed="true"],
+.sideYes[aria-pressed="true"]:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.sideNo[aria-pressed="true"],
+.sideNo[aria-pressed="true"]:hover {
+  border-color: var(--color-ink);
+  background: var(--color-ink);
+  color: #ffffff;
+}
+
+.sideYes:disabled,
+.sideNo:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.sideYes:focus-visible,
+.sideNo:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+.strikeField {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.strikeLabel {
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+}
+
+.strikeControl {
+  display: grid;
+  grid-template-columns: var(--control-height) minmax(0, 1fr) var(--control-height);
+  border: 1px solid var(--color-border-strong);
+}
+
+.strikeStep {
+  min-height: var(--control-height);
+  border: 0;
+  background: var(--color-surface-elevated);
+  color: var(--color-ink);
+  cursor: pointer;
+  font-family: var(--font-num);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.strikeStep:first-child {
+  border-right: 1px solid var(--color-border);
+}
+
+.strikeStep:last-child {
+  border-left: 1px solid var(--color-border);
+}
+
+.strikeStep:hover:not(:disabled) {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+.strikeStep:disabled {
+  color: var(--color-ink-muted);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.strikeSelect {
+  min-width: 0;
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: 0;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font: inherit;
+  font-family: var(--font-num);
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  appearance: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.strikeSelect:focus-visible,
+.strikeStep:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: 0;
+}
+
+.quickAmounts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-1);
+  margin-top: calc(var(--space-2) * -1);
+}
+
+.quickAmounts button {
+  min-height: var(--control-height-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-ink);
+  cursor: pointer;
+  font: inherit;
+  font-family: var(--font-num);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.quickAmounts button:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.quickAmounts button[aria-pressed="true"] {
+  border-color: var(--color-ink);
+  background: var(--color-ink);
+  color: #ffffff;
+}
+
+.quickAmounts button:focus-visible {
+  box-shadow: var(--focus-ring);
 }
 
 .segmented,
@@ -91,14 +259,14 @@
   background: transparent;
   font: inherit;
   font-size: var(--font-size-sm);
-  font-weight: 650;
+  font-weight: 600;
   cursor: pointer;
 }
 
 .segmented button[aria-pressed="true"],
 .mode button[aria-pressed="true"] {
-  color: var(--color-ink);
-  background: var(--color-surface-elevated);
+  color: #ffffff;
+  background: var(--color-primary);
 }
 
 .segmented button:disabled,
@@ -172,7 +340,9 @@
 }
 
 .quote strong {
-  font-size: var(--font-size-sm);
+  font-family: var(--font-num);
+  font-size: var(--font-size-md);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
@@ -196,8 +366,15 @@
 
 .primary {
   border: 1px solid var(--color-primary-action);
-  color: var(--color-ink);
+  color: #ffffff;
   background: var(--color-primary-action);
+}
+
+.primary,
+.secondary {
+  font-family: var(--font-caps);
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
 }
 
 .primary:hover:not(:disabled) {
@@ -233,12 +410,12 @@
 }
 
 .error {
-  border: 1px solid var(--color-negative);
-  background: var(--color-negative-soft);
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary-subtle);
 }
 
 .error strong {
-  color: var(--color-negative);
+  color: var(--color-primary);
 }
 
 .error button {
@@ -246,12 +423,15 @@
 }
 
 .success {
-  border: 1px solid var(--color-positive);
-  background: var(--color-positive-subtle);
+  border: 1px solid var(--color-ink);
+  background: var(--color-surface-elevated);
 }
 
 .success strong {
-  color: var(--color-positive);
+  color: var(--color-ink);
+  font-family: var(--font-caps);
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
 }
 
 .username {

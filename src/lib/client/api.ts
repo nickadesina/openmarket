@@ -1,10 +1,6 @@
 import { z } from "zod";
 
-export interface ApiErrorPayload {
-  readonly code: string;
-  readonly message: string;
-  readonly details: Readonly<Record<string, unknown>>;
-}
+export const POLL_INTERVAL_MS = 4_000;
 
 export class ApiClientError extends Error {
   readonly status: number;

@@ -4,7 +4,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 
 import { ApiClientError, apiRequest } from "../../lib/client/api.js";
+import { formatCents } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
+import { UserIcon } from "../icons/icons.js";
 import styles from "./account-control.module.css";
 
 interface PortfolioIdentity {
@@ -12,19 +14,8 @@ interface PortfolioIdentity {
   readonly cashBalanceCents: string;
 }
 
-interface UserSession {
-  readonly username: string;
-  readonly cash_balance_cents: string;
-}
-
-const cashFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
 /** Cross-page request for the app shell to reveal its shared username editor. */
 export const OPEN_ACCOUNT_EDITOR_EVENT = "openmarket:open-account-editor";
-
 
 export function AccountControl() {
   const queryClient = useQueryClient();
@@ -32,7 +23,6 @@ export function AccountControl() {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const [editing, setEditing] = useState(false);
   const [username, setUsername] = useState("");
-  const [createdSession, setCreatedSession] = useState<UserSession | null>(null);
 
   const portfolioQuery = useQuery({
     queryKey: queryKeys.portfolio,
@@ -41,12 +31,16 @@ export function AccountControl() {
 
   const userMutation = useMutation({
     mutationFn: (nextUsername: string) =>
-      apiRequest<UserSession>("/api/user", {
+      apiRequest<{ readonly username: string; readonly cash_balance_cents: string }>("/api/user", {
         method: "POST",
         body: JSON.stringify({ username: nextUsername }),
       }),
     onSuccess(session) {
-      setCreatedSession(session);
+      // Seed the identity immediately; the invalidation refetches the authoritative portfolio.
+      queryClient.setQueryData<PortfolioIdentity>(queryKeys.portfolio, {
+        username: session.username,
+        cashBalanceCents: session.cash_balance_cents,
+      });
       setEditing(false);
       setUsername("");
       void queryClient.invalidateQueries({ queryKey: queryKeys.portfolio });
@@ -59,14 +53,7 @@ export function AccountControl() {
     return () => window.removeEventListener(OPEN_ACCOUNT_EDITOR_EVENT, openEditor);
   }, []);
 
-
-  const identity = portfolioQuery.data ??
-    (createdSession === null
-      ? null
-      : {
-          username: createdSession.username,
-          cashBalanceCents: createdSession.cash_balance_cents,
-        });
+  const identity = portfolioQuery.data ?? null;
 
   function closeEditor() {
     setEditing(false);
@@ -86,7 +73,7 @@ export function AccountControl() {
     }
   }
 
-  if (portfolioQuery.isPending && createdSession === null) {
+  if (portfolioQuery.isPending) {
     return (
       <div
         className={styles.skeleton}
@@ -96,6 +83,9 @@ export function AccountControl() {
     );
   }
 
+  const submitLabels = identity === null
+    ? { idle: "Open account", pending: "Opening account…" }
+    : { idle: "Use account", pending: "Switching account…" };
   const mutationError = userMutation.error;
   const errorMessage =
     mutationError instanceof ApiClientError
@@ -117,14 +107,14 @@ export function AccountControl() {
           setEditing((current) => !current);
         }}
       >
-        <span aria-hidden="true">@</span>
+        <UserIcon />
         {identity === null ? (
           <span className={styles.signedOutLabel}>Enter username</span>
         ) : (
           <span className={styles.accountText}>
             <span className={styles.username}>{identity.username}</span>
             <span className={styles.balance}>
-              {cashFormatter.format(Number(identity.cashBalanceCents) / 100)} cash
+              {formatCents(identity.cashBalanceCents)} cash
             </span>
           </span>
         )}
@@ -177,13 +167,7 @@ export function AccountControl() {
               type="submit"
               disabled={userMutation.isPending}
             >
-              {userMutation.isPending
-                ? identity === null
-                  ? "Opening account…"
-                  : "Switching account…"
-                : identity === null
-                  ? "Open account"
-                  : "Use account"}
+              {submitLabels[userMutation.isPending ? "pending" : "idle"]}
             </button>
           </div>
         </form>

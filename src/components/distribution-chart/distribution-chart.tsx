@@ -5,15 +5,16 @@ import { Group } from "@visx/group";
 import { scaleBand, scaleLinear } from "@visx/scale";
 import { Bar } from "@visx/shape";
 
+import { formatProbability, formatValuation } from "../../lib/client/format.js";
+import type { MarketDetail } from "../market-workspace/types.js";
 import styles from "./distribution-chart.module.css";
-import { formatProbability, formatValuation, type MarketDetail } from "../market-workspace/types.js";
 
 interface DistributionChartProps {
   readonly market: MarketDetail;
 }
 
 const HEIGHT = 220;
-const MARGIN = { top: 12, right: 8, bottom: 34, left: 8 } as const;
+const MARGIN = { top: 12, right: 8, bottom: 34, left: 44 } as const;
 
 export function DistributionChart({ market }: DistributionChartProps) {
   const frame = useRef<HTMLDivElement>(null);
@@ -41,6 +42,8 @@ export function DistributionChart({ market }: DistributionChartProps) {
     .sort((left, right) => right.probability - left.probability)
     .slice(0, 3), [labels, market.pmf]);
 
+  const winningLabel = market.settlement === null ? null : labels[market.settlement.winningBucket] ?? null;
+
   const innerWidth = width - MARGIN.left - MARGIN.right;
   const innerHeight = HEIGHT - MARGIN.top - MARGIN.bottom;
   const xScale = scaleBand<number>({ domain: market.pmf.map((_value, index) => index), range: [0, innerWidth], padding: market.pmf.length > 2 ? 0.12 : 0.35 });
@@ -57,12 +60,21 @@ export function DistributionChart({ market }: DistributionChartProps) {
       </summary>
       <p className={styles.textSummary}>
         Highest-probability outcomes: {topBuckets.map((bucket) => `${bucket.label} at ${formatProbability(bucket.probability)}`).join(", ")}.
+        {winningLabel === null ? "" : ` Settled winning outcome (★): ${winningLabel}.`}
       </p>
       <div ref={frame} className={styles.chart}>
         <svg width={width} height={HEIGHT} role="img" aria-labelledby="distribution-title distribution-description">
           <title id="distribution-title">Implied probability distribution</title>
-          <desc id="distribution-description">{topBuckets.map((bucket) => `${bucket.label}, ${formatProbability(bucket.probability)}`).join("; ")}</desc>
+          <desc id="distribution-description">{topBuckets.map((bucket) => `${bucket.label}, ${formatProbability(bucket.probability)}`).join("; ")}{winningLabel === null ? "" : `. Winning outcome: ${winningLabel}`}</desc>
           <Group left={MARGIN.left} top={MARGIN.top}>
+            {yScale.ticks(3).map((tick) => (
+              <g key={`tick-${tick}`}>
+                <line x1={0} x2={innerWidth} y1={yScale(tick)} y2={yScale(tick)} className={styles.gridLine} />
+                <text x={-8} y={yScale(tick)} dy="0.32em" textAnchor="end" className={styles.axisLabel}>
+                  {formatProbability(tick)}
+                </text>
+              </g>
+            ))}
             {market.pmf.map((probability, index) => {
               const barX = xScale(index) ?? 0;
               const barY = yScale(probability);
@@ -70,15 +82,28 @@ export function DistributionChart({ market }: DistributionChartProps) {
               const barHeight = innerHeight - barY;
               const isWinning = market.settlement?.winningBucket === index;
               return (
-                <Bar
-                  key={index}
-                  x={barX}
-                  y={barY}
-                  width={barWidth}
-                  height={barHeight}
-                  rx={2}
-                  className={(isWinning ? styles.winningBar : styles.bar)!}
-                />
+                <g key={index}>
+                  <title>{`${labels[index]!}: ${formatProbability(probability)}`}</title>
+                  <Bar
+                    x={barX}
+                    y={barY}
+                    width={barWidth}
+                    height={barHeight}
+                    rx={2}
+                    className={(isWinning ? styles.winningBar : styles.bar)!}
+                  />
+                  {isWinning ? (
+                    <text
+                      x={barX + barWidth / 2}
+                      y={Math.max(barY - 4, 10)}
+                      textAnchor="middle"
+                      className={styles.winnerMarker}
+                      aria-hidden="true"
+                    >
+                      ★
+                    </text>
+                  ) : null}
+                </g>
               );
             })}
             {market.pmf.length === 2 ? market.pmf.map((probability, index) => (
@@ -87,6 +112,19 @@ export function DistributionChart({ market }: DistributionChartProps) {
               </text>
             )) : (
               <>
+                {[9, 19, 29].map((strikeIndex) => {
+                  const strike = market.contracts[strikeIndex]?.strikeValueUsd;
+                  if (strike == null) return null;
+                  const boundaryX = (xScale(strikeIndex) ?? 0) + xScale.bandwidth() + (xScale.step() - xScale.bandwidth()) / 2;
+                  return (
+                    <g key={`strike-${strikeIndex}`}>
+                      <line x1={boundaryX} x2={boundaryX} y1={innerHeight} y2={innerHeight + 5} className={styles.tickLine} />
+                      <text x={boundaryX} y={innerHeight + 22} textAnchor="middle" className={styles.axisLabel}>
+                        {formatValuation(strike)}
+                      </text>
+                    </g>
+                  );
+                })}
                 <text x="0" y={innerHeight + 22} className={styles.axisLabel}>Lower valuation</text>
                 <text x={innerWidth} y={innerHeight + 22} textAnchor="end" className={styles.axisLabel}>Higher valuation</text>
               </>

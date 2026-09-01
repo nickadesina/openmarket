@@ -29,7 +29,16 @@
 }
 
 .section summary strong {
+  display: inline-flex;
+  align-self: start;
+  padding: 0.375rem 0.875rem;
+  background: var(--color-primary);
+  color: #ffffff;
+  font-family: var(--font-caps);
   font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
 }
 
 .section summary small,
@@ -62,15 +71,30 @@
 
 .bar {
   fill: var(--color-primary);
-  opacity: 0.78;
+  opacity: 0.55;
 }
 
 .winningBar {
-  fill: var(--color-positive);
+  fill: var(--color-primary);
+  opacity: 1;
 }
 
 .axisLabel {
   fill: var(--color-ink-muted);
   font-family: var(--font-sans);
   font-size: var(--font-size-xs);
+}
+
+.winnerMarker {
+  fill: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+}
+
+.gridLine {
+  stroke: var(--color-border-subtle);
+}
+
+.tickLine {
+  stroke: var(--color-border);
 }

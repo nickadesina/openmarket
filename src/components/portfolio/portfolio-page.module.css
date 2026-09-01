@@ -27,9 +27,9 @@
 .pageHeader h1,
 .statePanel h1 {
   margin: var(--space-1) 0 var(--space-2);
-  font-size: 2rem;
-  line-height: 1.15;
-  letter-spacing: -0.025em;
+  font-size: var(--font-size-xl);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
   text-wrap: balance;
 }
 
@@ -46,10 +46,16 @@
 }
 
 .stateLabel {
-  color: var(--color-accent) !important;
+  display: inline-flex;
+  align-self: start;
+  justify-self: start;
+  padding: 0.375rem 0.875rem;
+  background: var(--color-primary);
+  color: #ffffff !important;
+  font-family: var(--font-caps);
   font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
 }
 
@@ -78,20 +84,26 @@
 .summaryBand dt,
 .positionMetrics dt,
 .quoteReview dt {
-  color: var(--color-ink-muted);
-  font-size: 0.75rem;
+  color: var(--color-ink);
+  font-family: var(--font-caps);
+  font-size: 0.71875rem;
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
 }
 
 .summaryBand dd {
   margin: var(--space-2) 0 0;
-  font-size: 1.45rem;
+  font-family: var(--font-num);
+  font-size: 1.375rem;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.01em;
 }
 
 .accountValue dd {
   color: var(--color-accent);
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .section {
@@ -104,8 +116,16 @@
 }
 
 .sectionHeader h2 {
-  margin: 0 0 var(--space-1);
-  font-size: 1.25rem;
+  display: inline-flex;
+  margin: 0;
+  padding: 0.375rem 0.875rem;
+  background: var(--color-primary);
+  color: #ffffff;
+  font-family: var(--font-caps);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
 }
 
 .sectionHeader > span {
@@ -135,7 +155,7 @@
 .marketHeader a {
   color: var(--color-ink);
   font-size: 1.0625rem;
-  font-weight: 650;
+  font-weight: 600;
   text-decoration: none;
 }
 
@@ -185,7 +205,7 @@
 .positionMain strong,
 .historyRow strong {
   font-size: 0.875rem;
-  font-weight: 620;
+  font-weight: 600;
 }
 
 .positionMetrics {
@@ -206,14 +226,20 @@
   align-items: flex-end;
 }
 
+.positive {
+  color: var(--color-positive);
+}
+
 .positive::before {
   content: "Gain ";
-  color: var(--color-positive);
+}
+
+.negative {
+  color: var(--color-negative);
 }
 
 .negative::before {
   content: "Loss ";
-  color: var(--color-negative);
 }
 
 .sellFlow {
@@ -281,64 +307,24 @@
   margin-top: var(--space-4);
 }
 
-.primaryButton,
-.secondaryButton,
-.primaryLink,
-.secondaryLink {
-  display: inline-flex;
-  min-height: var(--control-height);
-  align-items: center;
-  justify-content: center;
-  padding: 0 var(--space-4);
-  border-radius: var(--radius-sm);
-  font: inherit;
-  font-size: 0.8125rem;
-  font-weight: 650;
-  line-height: 1;
-  text-decoration: none;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
+.primaryButton {
+  composes: primaryButton from "../../styles/shared.module.css";
 }
 
-.primaryButton,
-.primaryLink {
-  border: 1px solid var(--color-primary-action);
-  background: var(--color-primary-action);
-  color: var(--color-ink);
-}
-
-.primaryButton:hover,
-.primaryLink:hover {
-  border-color: var(--color-primary-action-hover);
-  background: var(--color-primary-action-hover);
-}
-
-.secondaryButton,
-.secondaryLink {
+.secondaryButton {
+  composes: buttonBase from "../../styles/shared.module.css";
   border: 1px solid var(--color-border-strong);
   background: var(--color-surface);
   color: var(--color-ink);
 }
 
-.secondaryButton:hover,
-.secondaryLink:hover {
+.secondaryLink {
+  composes: secondaryButton;
+}
+
+.secondaryButton:hover {
   border-color: var(--color-primary);
   background: var(--color-surface-elevated);
-}
-
-.primaryButton:active,
-.secondaryButton:active,
-.primaryLink:active,
-.secondaryLink:active {
-  transform: translateY(1px);
-}
-
-.primaryButton:disabled,
-.secondaryButton:disabled {
-  opacity: 0.48;
-  cursor: not-allowed;
-  transform: none;
 }
 
 .textButton {
@@ -360,11 +346,7 @@
   cursor: not-allowed;
 }
 
-.primaryButton:focus-visible,
-.secondaryButton:focus-visible,
 .textButton:focus-visible,
-.primaryLink:focus-visible,
-.secondaryLink:focus-visible,
 .marketHeader a:focus-visible,
 .field input:focus-visible,
 .residual summary:focus-visible {
@@ -373,7 +355,7 @@
 
 .inlineError {
   margin: var(--space-3) 0 0;
-  color: var(--color-negative);
+  color: var(--color-primary);
   font-size: 0.8125rem;
   line-height: 1.5;
 }
@@ -614,13 +596,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .primaryButton,
-  .secondaryButton,
-  .primaryLink,
-  .secondaryLink {
-    transition: none;
-  }
-
   .skeletonTitle,
   .skeletonSummary div,
   .skeletonPanel {

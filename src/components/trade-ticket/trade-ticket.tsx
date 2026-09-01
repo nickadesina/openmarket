@@ -1,83 +1,149 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { ApiClientError, apiRequest } from "../../lib/client/api.js";
-import styles from "./trade-ticket.module.css";
 import {
+  formatCents,
+  formatDateTime,
   formatMetric,
   formatProbability,
   formatQuantity,
-  formatUsdCents,
   strikeLabel,
-  type BuyInputMode,
-  type ExecutionResult,
-  type MarketDetail,
-  type QuoteResult,
-  type TradeAction,
-  type TradeSelection,
+} from "../../lib/client/format.js";
+import { useTradeExecution } from "../../lib/client/use-trade-execution.js";
+import styles from "./trade-ticket.module.css";
+import type {
+  BuyInputMode,
+  ExecutionResult,
+  MarketDetail,
+  QuoteResult,
+  TradeAction,
+  TradeSelection,
 } from "../market-workspace/types.js";
 
 interface TradeTicketProps {
   readonly market: MarketDetail;
   readonly selection: TradeSelection;
+  readonly onSelectionChange: (selection: TradeSelection) => void;
   readonly onAuthoritativeRefresh: () => Promise<void>;
   readonly onClose?: () => void;
 }
 
+const QUICK_SPEND_USD = ["25", "100", "500", "1000"] as const;
+const QUICK_QUANTITY = ["10", "100", "500", "1000"] as const;
+
 type TicketError = { readonly code: string; readonly message: string };
+
+type TicketPhase = "idle" | "quoting" | "executing";
+
+const RETRYABLE_ERROR: TicketError = {
+  code: "RETRYABLE",
+  message: "Execution status is unknown. Retry with the same request key to avoid a duplicate trade.",
+};
+
+const ERROR_TITLES: Readonly<Record<string, string>> = {
+  PRICE_MOVED: "Price moved",
+  INSUFFICIENT_CASH: "Insufficient cash",
+  INSUFFICIENT_HOLDINGS: "Insufficient holdings",
+  USER_REQUIRED: "Username required",
+};
 
 function centsToUsd(cents: string): string {
   const value = Number(cents);
   return Number.isFinite(value) ? (value / 100).toFixed(2) : "0.00";
 }
 
-export function TradeTicket({ market, selection, onAuthoritativeRefresh, onClose }: TradeTicketProps) {
+export function TradeTicket({ market, selection, onSelectionChange, onAuthoritativeRefresh, onClose }: TradeTicketProps) {
   const [action, setAction] = useState<TradeAction>("buy");
   const [buyMode, setBuyMode] = useState<BuyInputMode>("spend");
   const [amount, setAmount] = useState("100.00");
   const [quote, setQuote] = useState<QuoteResult | null>(null);
-  const [quoteLoading, setQuoteLoading] = useState(false);
-  const [executing, setExecuting] = useState(false);
+  const [phase, setPhase] = useState<TicketPhase>("idle");
   const [error, setError] = useState<TicketError | null>(null);
   const [result, setResult] = useState<ExecutionResult | null>(null);
   const [needsUsername, setNeedsUsername] = useState(false);
   const [username, setUsername] = useState("");
-  const [retryKey, setRetryKey] = useState<string | null>(null);
   const [movedPrice, setMovedPrice] = useState<{ readonly cashAmountCents: string; readonly shares: number } | null>(null);
+  const trade = useTradeExecution();
 
   const contract = market.contracts.find((item) => item.strikeIndex === selection.strikeIndex)!;
-  const selectedProbability = selection.side === "yes" ? contract.yesProbability : contract.noProbability;
+  const isBinary = market.metric.kind === "yes_probability";
+  const strikePosition = market.contracts.findIndex((item) => item.strikeIndex === selection.strikeIndex);
+  const previousStrike = market.contracts[strikePosition - 1];
+  const nextStrike = market.contracts[strikePosition + 1];
   const amountLabel = action === "buy" && buyMode === "spend" ? "Spend" : "Quantity";
+  const quickAmounts = action === "buy" && buyMode === "spend" ? QUICK_SPEND_USD : QUICK_QUANTITY;
   const parsedAmount = Number(amount);
   const validAmount = Number.isFinite(parsedAmount) && parsedAmount > 0;
+  const busy = phase !== "idle";
 
-  const requestFields = useMemo(() => {
-    const base = {
-      slug: market.company.slug,
-      action,
-      side: selection.side,
-      strike_index: selection.strikeIndex,
-    } as const;
-    if (action === "buy" && buyMode === "spend") return { ...base, spend_usd: amount };
-    return { ...base, quantity: parsedAmount };
-  }, [action, amount, buyMode, market.company.slug, parsedAmount, selection.side, selection.strikeIndex]);
+  const requestBase = {
+    slug: market.company.slug,
+    action,
+    side: selection.side,
+    strike_index: selection.strikeIndex,
+  } as const;
+  const requestFields = action === "buy" && buyMode === "spend"
+    ? { ...requestBase, spend_usd: amount }
+    : { ...requestBase, quantity: parsedAmount };
 
-  useEffect(() => {
+  // Any change to the request invalidates the quote and everything derived from it.
+  function resetTradeState() {
     setQuote(null);
     setResult(null);
     setError(null);
     setNeedsUsername(false);
-    setRetryKey(null);
     setMovedPrice(null);
-  }, [requestFields]);
+    trade.reset();
+  }
+
+  // The contract can change from the ladder or from the controls below; a
+  // quote is only valid for the contract it priced.
+  const selectedSide = selection.side;
+  const selectedStrikeIndex = selection.strikeIndex;
+  useEffect(() => {
+    setQuote(null);
+    setResult(null);
+    setError(null);
+    setMovedPrice(null);
+    trade.reset();
+    // trade.reset is stable for the hook's lifetime.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSide, selectedStrikeIndex]);
+
+  function changeSide(side: TradeSelection["side"]) {
+    if (side !== selection.side) onSelectionChange({ strikeIndex: selection.strikeIndex, side });
+  }
+
+  function changeStrike(strikeIndex: number) {
+    if (strikeIndex !== selection.strikeIndex) onSelectionChange({ strikeIndex, side: selection.side });
+  }
+
+  function changeAction(next: TradeAction) {
+    if (next === action) return;
+    setAction(next);
+    resetTradeState();
+  }
+
+  function changeBuyMode(next: BuyInputMode) {
+    if (next === buyMode) return;
+    setBuyMode(next);
+    resetTradeState();
+  }
+
+  function changeAmount(next: string) {
+    if (next === amount) return;
+    setAmount(next);
+    resetTradeState();
+  }
 
   async function requestQuote() {
     if (!validAmount) {
       setError({ code: "INVALID_INPUT", message: "Enter an amount greater than zero." });
       return;
     }
-    setQuoteLoading(true);
+    setPhase("quoting");
     setError(null);
     setResult(null);
     try {
@@ -95,15 +161,13 @@ export function TradeTicket({ market, selection, onAuthoritativeRefresh, onClose
         setError({ code: "INTERNAL_ERROR", message: "The quote could not be loaded. Try again." });
       }
     } finally {
-      setQuoteLoading(false);
+      setPhase("idle");
     }
   }
 
-  async function executeTrade(idempotencyKey?: string, confirmedCashAmountCents?: string) {
+  async function executeTrade(confirmedCashAmountCents?: string) {
     if (quote === null) return;
-    const key = idempotencyKey ?? crypto.randomUUID();
-    setRetryKey(key);
-    setExecuting(true);
+    setPhase("executing");
     setError(null);
     setResult(null);
 
@@ -121,46 +185,24 @@ export function TradeTicket({ market, selection, onAuthoritativeRefresh, onClose
             : (Math.floor(Number(quote.cash_amount_cents) * 0.99) / 100).toFixed(2),
         };
 
-    try {
-      const execution = await apiRequest<ExecutionResult>("/api/trade", {
-        method: "POST",
-        body: JSON.stringify({ ...requestFields, ...guard, idempotency_key: key }),
-      });
-      setResult(execution);
+    const outcome = await trade.execute({ ...requestFields, ...guard });
+    if (outcome.status === "executed") {
+      setResult(outcome.result);
       setQuote(null);
-      setRetryKey(null);
       setMovedPrice(null);
       try {
         await onAuthoritativeRefresh();
       } catch {
         setError({ code: "REFRESH_FAILED", message: "Trade completed, but live data could not refresh. Automatic polling will try again." });
       }
-    } catch (caught) {
-      if (caught instanceof ApiClientError) {
-        if (caught.status === 0 || caught.status >= 500 || caught.code === "INVALID_RESPONSE") {
-          setError({ code: "RETRYABLE", message: "Execution status is unknown. Retry with the same request key to avoid a duplicate trade." });
-        } else {
-          if (caught.code === "USER_REQUIRED") {
-            setNeedsUsername(true);
-            setRetryKey(null);
-          } else if (caught.code === "PRICE_MOVED") {
-            const cashAmountCents = caught.details.cash_amount_cents;
-            const shares = caught.details.shares;
-            setMovedPrice(typeof cashAmountCents === "string" && typeof shares === "number"
-              ? { cashAmountCents, shares }
-              : null);
-            setRetryKey(null);
-          } else {
-            setRetryKey(null);
-          }
-          setError({ code: caught.code, message: caught.message });
-        }
-      } else {
-        setError({ code: "RETRYABLE", message: "Execution status is unknown. Retry with the same request key to avoid a duplicate trade." });
-      }
-    } finally {
-      setExecuting(false);
+    } else if (outcome.status === "unknown") {
+      setError(RETRYABLE_ERROR);
+    } else {
+      if (outcome.error.code === "USER_REQUIRED") setNeedsUsername(true);
+      if (outcome.error.code === "PRICE_MOVED") setMovedPrice(outcome.movedPrice);
+      setError({ code: outcome.error.code, message: outcome.error.message });
     }
+    setPhase("idle");
   }
 
   async function createUsername() {
@@ -168,7 +210,7 @@ export function TradeTicket({ market, selection, onAuthoritativeRefresh, onClose
       setError({ code: "INVALID_INPUT", message: "Use 3–20 letters, numbers, or underscores." });
       return;
     }
-    setExecuting(true);
+    setPhase("executing");
     setError(null);
     try {
       await apiRequest<unknown>("/api/user", {
@@ -181,26 +223,18 @@ export function TradeTicket({ market, selection, onAuthoritativeRefresh, onClose
         // The signed username cookie is authoritative; normal polling can recover the account display.
       }
       setNeedsUsername(false);
-      setExecuting(false);
+      setPhase("idle");
       if (quote === null) await requestQuote();
       else await executeTrade();
     } catch (caught) {
       setError(caught instanceof ApiClientError
         ? { code: caught.code, message: caught.message }
         : { code: "INTERNAL_ERROR", message: "The username could not be saved. Try again." });
-      setExecuting(false);
+      setPhase("idle");
     }
   }
 
-  const errorTitle = error?.code === "PRICE_MOVED"
-    ? "Price moved"
-    : error?.code === "INSUFFICIENT_CASH"
-      ? "Insufficient cash"
-      : error?.code === "INSUFFICIENT_HOLDINGS"
-        ? "Insufficient holdings"
-        : error?.code === "USER_REQUIRED"
-          ? "Username required"
-          : "Trade unavailable";
+  const errorTitle = (error === null ? undefined : ERROR_TITLES[error.code]) ?? "Trade unavailable";
 
   return (
     <section className={styles.ticket} aria-labelledby="trade-ticket-title">
@@ -213,14 +247,67 @@ export function TradeTicket({ market, selection, onAuthoritativeRefresh, onClose
       </header>
 
       <div className={styles.body}>
-        <div className={styles.contractSummary}>
-          <span>Current probability</span>
-          <strong>{formatProbability(selectedProbability)}</strong>
+        <div className={styles.sideToggle} role="group" aria-label="Contract side">
+          {(["yes", "no"] as const).map((side) => {
+            const probability = side === "yes" ? contract.yesProbability : contract.noProbability;
+            return (
+              <button
+                key={side}
+                type="button"
+                className={side === "yes" ? styles.sideYes : styles.sideNo}
+                aria-pressed={selection.side === side}
+                onClick={() => changeSide(side)}
+                disabled={busy}
+              >
+                <span>{side.toUpperCase()}</span>
+                <strong>{formatProbability(probability)}</strong>
+              </button>
+            );
+          })}
         </div>
+
+        {!isBinary ? (
+          <div className={styles.strikeField}>
+            <span className={styles.strikeLabel} id="ticket-strike-label">Valuation above</span>
+            <div className={styles.strikeControl}>
+              <button
+                type="button"
+                className={styles.strikeStep}
+                onClick={() => previousStrike !== undefined && changeStrike(previousStrike.strikeIndex)}
+                disabled={busy || previousStrike === undefined}
+                aria-label="Lower strike"
+              >
+                −
+              </button>
+              <select
+                className={styles.strikeSelect}
+                aria-labelledby="ticket-strike-label"
+                value={selection.strikeIndex}
+                onChange={(event) => changeStrike(Number(event.target.value))}
+                disabled={busy}
+              >
+                {market.contracts.map((item) => (
+                  <option key={item.strikeIndex} value={item.strikeIndex}>
+                    {strikeLabel(market, item.strikeIndex)} · YES {formatProbability(item.yesProbability)}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className={styles.strikeStep}
+                onClick={() => nextStrike !== undefined && changeStrike(nextStrike.strikeIndex)}
+                disabled={busy || nextStrike === undefined}
+                aria-label="Higher strike"
+              >
+                +
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         <div className={styles.segmented} aria-label="Trade action">
           {(["buy", "sell"] as const).map((item) => (
-            <button key={item} type="button" aria-pressed={action === item} onClick={() => setAction(item)} disabled={executing || quoteLoading}>
+            <button key={item} type="button" aria-pressed={action === item} onClick={() => changeAction(item)} disabled={busy}>
               {item === "buy" ? "Buy" : "Sell"}
             </button>
           ))}
@@ -228,8 +315,11 @@ export function TradeTicket({ market, selection, onAuthoritativeRefresh, onClose
 
         {action === "buy" ? (
           <div className={styles.mode}>
-            <button type="button" aria-pressed={buyMode === "spend"} onClick={() => setBuyMode("spend")} disabled={executing || quoteLoading}>By spend</button>
-            <button type="button" aria-pressed={buyMode === "quantity"} onClick={() => setBuyMode("quantity")} disabled={executing || quoteLoading}>By quantity</button>
+            {(["spend", "quantity"] as const).map((mode) => (
+              <button key={mode} type="button" aria-pressed={buyMode === mode} onClick={() => changeBuyMode(mode)} disabled={busy}>
+                {mode === "spend" ? "By spend" : "By quantity"}
+              </button>
+            ))}
           </div>
         ) : null}
 
@@ -243,16 +333,33 @@ export function TradeTicket({ market, selection, onAuthoritativeRefresh, onClose
               step={action === "buy" && buyMode === "spend" ? "0.01" : "0.000001"}
               inputMode="decimal"
               value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-              disabled={executing || quoteLoading}
+              onChange={(event) => changeAmount(event.target.value)}
+              disabled={busy}
             />
           </span>
         </label>
+        <div className={styles.quickAmounts} role="group" aria-label={`Quick ${amountLabel.toLowerCase()}`}>
+          {quickAmounts.map((value) => {
+            const display = action === "buy" && buyMode === "spend" ? `$${Number(value).toLocaleString("en-US")}` : Number(value).toLocaleString("en-US");
+            const normalized = action === "buy" && buyMode === "spend" ? `${value}.00` : value;
+            return (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={amount === normalized}
+                onClick={() => changeAmount(normalized)}
+                disabled={busy}
+              >
+                {display}
+              </button>
+            );
+          })}
+        </div>
 
         {quote !== null ? (
           <div className={styles.quote} aria-live="polite">
             <div><span>Quantity</span><strong>{formatQuantity(quote.quantity)}</strong></div>
-            <div><span>{action === "buy" ? "Cost" : "Proceeds"}</span><strong>{formatUsdCents(quote.cash_amount_cents)}</strong></div>
+            <div><span>{action === "buy" ? "Cost" : "Proceeds"}</span><strong>{formatCents(quote.cash_amount_cents)}</strong></div>
             <div><span>Average price</span><strong>{formatProbability(quote.average_price)}</strong></div>
             <div><span>Price after</span><strong>{formatProbability(quote.price_after)}</strong></div>
             <div><span>Metric after</span><strong>{formatMetric(quote.current_metric_after, market.metric.kind)}</strong></div>
@@ -260,10 +367,10 @@ export function TradeTicket({ market, selection, onAuthoritativeRefresh, onClose
             {quote.expected_redemption_quantity > 0 ? (
               <div>
                 <span>Immediate redemption</span>
-                <strong>{formatQuantity(quote.expected_redemption_quantity)} shares · {formatUsdCents(quote.expected_redemption_cents)}</strong>
+                <strong>{formatQuantity(quote.expected_redemption_quantity)} shares · {formatCents(quote.expected_redemption_cents)}</strong>
               </div>
             ) : null}
-            <small>Quoted {new Date(quote.quoted_at).toLocaleTimeString()}. Quotes are previews, not reservations.</small>
+            <small>Quoted {formatDateTime(quote.quoted_at)}. Quotes are previews, not reservations.</small>
           </div>
         ) : null}
 
@@ -273,8 +380,8 @@ export function TradeTicket({ market, selection, onAuthoritativeRefresh, onClose
             <p>{error.message}</p>
             {error.code === "PRICE_MOVED" && movedPrice !== null ? (
               <>
-                <p>Updated quantity: {formatQuantity(movedPrice.shares)}. Updated {action === "buy" ? "cost" : "proceeds"}: {formatUsdCents(movedPrice.cashAmountCents)}.</p>
-                <button type="button" onClick={() => void executeTrade(undefined, movedPrice.cashAmountCents)}>Confirm new price</button>
+                <p>Updated quantity: {formatQuantity(movedPrice.shares)}. Updated {action === "buy" ? "cost" : "proceeds"}: {formatCents(movedPrice.cashAmountCents)}.</p>
+                <button type="button" onClick={() => void executeTrade(movedPrice.cashAmountCents)}>Confirm new price</button>
               </>
             ) : error.code === "PRICE_MOVED" ? (
               <button type="button" onClick={() => void requestQuote()}>Refresh quote</button>
@@ -291,7 +398,7 @@ export function TradeTicket({ market, selection, onAuthoritativeRefresh, onClose
               </span>
             </label>
             <p>{quote === null ? "A username is required to quote a sale." : "Execution requires a username."} This resumes the same paper-money account on this browser.</p>
-            <button type="button" className={styles.primary} onClick={() => void createUsername()} disabled={executing}>{quote === null ? "Save username and preview" : "Save username and trade"}</button>
+            <button type="button" className={styles.primary} onClick={() => void createUsername()} disabled={phase === "executing"}>{quote === null ? "Save username and preview" : "Save username and trade"}</button>
           </div>
         ) : null}
 
@@ -304,18 +411,18 @@ export function TradeTicket({ market, selection, onAuthoritativeRefresh, onClose
 
         {!needsUsername ? (
           quote === null ? (
-            <button type="button" className={styles.primary} onClick={() => void requestQuote()} disabled={!validAmount || quoteLoading || executing}>
-              {quoteLoading ? "Preparing quote…" : action === "buy" ? "Preview buy" : "Preview sell"}
+            <button type="button" className={styles.primary} onClick={() => void requestQuote()} disabled={!validAmount || busy}>
+              {phase === "quoting" ? "Preparing quote…" : action === "buy" ? "Preview buy" : "Preview sell"}
             </button>
           ) : (
-            <button type="button" className={styles.primary} onClick={() => void executeTrade()} disabled={executing || movedPrice !== null}>
-              {executing ? "Executing…" : movedPrice !== null ? "Confirm the moved price above" : action === "buy" ? "Confirm buy" : "Confirm sell"}
+            <button type="button" className={styles.primary} onClick={() => void executeTrade()} disabled={phase === "executing" || movedPrice !== null}>
+              {phase === "executing" ? "Executing…" : movedPrice !== null ? "Confirm the moved price above" : action === "buy" ? "Confirm buy" : "Confirm sell"}
             </button>
           )
         ) : null}
 
-        {retryKey !== null && !executing && error?.code === "RETRYABLE" ? (
-          <button type="button" className={styles.secondary} onClick={() => void executeTrade(retryKey)}>Retry same trade</button>
+        {trade.canRetry && phase !== "executing" && error?.code === "RETRYABLE" ? (
+          <button type="button" className={styles.secondary} onClick={() => void executeTrade()}>Retry same trade</button>
         ) : null}
       </div>
     </section>

@@ -55,6 +55,7 @@ export interface MarketDetail {
     readonly label: "Implied valuation" | "YES probability";
     readonly format: "usd" | "probability";
     readonly current: number;
+    readonly change24Hours: number;
     readonly mark60Minutes: number;
   };
   readonly anchor: {
@@ -88,6 +89,7 @@ interface MarkRow {
 const DEFAULT_ACTIVITY_LIMIT = 20;
 const MAX_ACTIVITY_LIMIT = 100;
 const TWAP_WINDOW_MS = 60 * 60 * 1_000;
+const CHANGE_WINDOW_MS = 24 * 60 * 60 * 1_000;
 
 function normalizeOptions(options: GetMarketOptions): {
   readonly now: Date;
@@ -215,13 +217,23 @@ export async function getMarket(
         throw new ServiceError("INVALID_INPUT", "Stored market state has invalid length.");
       }
 
-      const [claimsRow, priorMark, markRows, activityRows, settlement] =
+      const changeCutoff = new Date(now.getTime() - CHANGE_WINDOW_MS);
+      const [claimsRow, changeRow, priorMark, markRows, activityRows, settlement] =
         await Promise.all([
           transaction
             .selectNoFrom(
               sql<number>`coalesce((select sum(bucket_quantity) from holdings as claim_holding cross join lateral unnest(claim_holding.h) as bucket(bucket_quantity) where claim_holding.market_id = ${market.market_id}), 0)`.as(
                 "outstanding_claims",
               ),
+            )
+            .executeTakeFirstOrThrow(),
+          transaction
+            .selectNoFrom(
+              sql<number>`coalesce(
+                (select value from marks as prior_mark where prior_mark.market_id = ${market.market_id} and prior_mark.ts <= ${changeCutoff} order by prior_mark.ts desc, prior_mark.market_sequence desc limit 1),
+                (select value from marks as first_mark where first_mark.market_id = ${market.market_id} and first_mark.ts <= ${now} order by first_mark.ts asc, first_mark.market_sequence asc limit 1),
+                ${market.current_metric}::double precision
+              )`.as("change_baseline"),
             )
             .executeTakeFirstOrThrow(),
           transaction
@@ -312,6 +324,9 @@ export async function getMarket(
               : "YES probability",
           format: market.metric_kind === "valuation_median" ? "usd" : "probability",
           current: market.current_metric,
+          change24Hours: Number.isFinite(changeRow.change_baseline)
+            ? market.current_metric - changeRow.change_baseline
+            : 0,
           mark60Minutes,
         },
         anchor,

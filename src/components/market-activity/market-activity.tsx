@@ -1,14 +1,17 @@
 "use client";
 
-import styles from "./market-activity.module.css";
 import {
+  contractLabel,
+  formatDate,
+  formatDateTime,
   formatMetric,
-  formatQuantity,
-  formatUsdCents,
+  formatQuantityShort,
+  formatCents,
   formatValuation,
-  type ActivityPage,
-  type MarketDetail,
-} from "../market-workspace/types.js";
+} from "../../lib/client/format.js";
+import { MovementArrow } from "../icons/icons.js";
+import type { ActivityPage, MarketDetail } from "../market-workspace/types.js";
+import styles from "./market-activity.module.css";
 
 interface MarketActivityProps {
   readonly market: MarketDetail;
@@ -54,17 +57,20 @@ export function MarketActivity({ market, activity, loading, error, onRetry }: Ma
           <ol className={styles.list}>
             {activity.items.map((item) => {
               const direction = item.metricAfter > item.metricBefore ? "up" : item.metricAfter < item.metricBefore ? "down" : "flat";
-              const strike = item.strikeValueUsd === null ? item.side.toUpperCase() : `${item.side.toUpperCase()} above ${formatValuation(item.strikeValueUsd)}`;
+              const strike = contractLabel(item.side, item.strikeValueUsd === null ? null : formatValuation(item.strikeValueUsd));
               return (
                 <li key={item.marketSequence}>
                   <div>
-                    <strong>{item.action === "buy" ? "Bought" : "Sold"} {formatQuantity(item.quantity)} {strike}</strong>
-                    <span>{new Date(item.createdAt).toLocaleString()}</span>
+                    <strong>{item.action === "buy" ? "Bought" : "Sold"} {formatQuantityShort(item.quantity)} {strike}</strong>
+                    <span>{formatDateTime(item.createdAt)}</span>
                   </div>
                   <div className={styles.tradeValues}>
-                    <strong>{formatUsdCents(item.cashAmountCents)}</strong>
+                    <strong>{formatCents(item.cashAmountCents)}</strong>
                     <span className={direction === "up" ? styles.positive : direction === "down" ? styles.negative : undefined}>
-                      <span aria-hidden="true">{direction === "up" ? "↑" : direction === "down" ? "↓" : "→"}</span>{" "}
+                      <MovementArrow direction={direction} />{" "}
+                      <span className={styles.visuallyHidden}>
+                        {direction === "up" ? "moved up to" : direction === "down" ? "moved down to" : "unchanged at"}
+                      </span>
                       {formatMetric(item.metricAfter, item.metricKind)}
                     </span>
                   </div>
@@ -90,7 +96,7 @@ export function MarketActivity({ market, activity, loading, error, onRetry }: Ma
             {market.anchor !== null ? (
               <dl>
                 <div><dt>Reference</dt><dd>{formatValuation(market.anchor.valuationUsd)}</dd></div>
-                <div><dt>As of</dt><dd>{new Date(`${market.anchor.date}T00:00:00Z`).toLocaleDateString()}</dd></div>
+                <div><dt>As of</dt><dd>{formatDate(market.anchor.date)}</dd></div>
               </dl>
             ) : null}
           </>

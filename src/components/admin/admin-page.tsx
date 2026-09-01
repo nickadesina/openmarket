@@ -1,10 +1,12 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
 
 import { ApiClientError, apiRequest } from "../../lib/client/api.js";
+import { errorMessage, formatCents } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
+import type { MarketListResult } from "../../lib/services/list-markets.js";
 import type { SettlementResult } from "../../lib/services/settle-market.js";
 import type { SeedMarketOutcome } from "../../lib/services/seed-market.js";
 import styles from "./admin-page.module.css";
@@ -22,10 +24,6 @@ interface SeedResponse {
   readonly created_at: string;
 }
 
-interface LoginResponse {
-  readonly authenticated: boolean;
-}
-
 interface SettlementDraft {
   readonly slug: string;
   readonly settled_value_usd: string;
@@ -37,9 +35,7 @@ interface SettlementRequest extends SettlementDraft {
   readonly confirm_slug: string;
 }
 
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "The operation could not be completed.";
-}
+const FALLBACK_ERROR = "The operation could not be completed.";
 
 function isAdminRequired(error: unknown): boolean {
   return error instanceof ApiClientError && error.code === "ADMIN_REQUIRED";
@@ -47,17 +43,15 @@ function isAdminRequired(error: unknown): boolean {
 
 function Field({
   label,
-  name,
   children,
   support,
 }: {
   readonly label: string;
-  readonly name: string;
   readonly children: React.ReactNode;
   readonly support?: string;
-}): React.JSX.Element {
+}) {
   return (
-    <label className={styles.field} htmlFor={name}>
+    <label className={styles.field}>
       <span>{label}</span>
       {children}
       {support === undefined ? null : <small>{support}</small>}
@@ -65,10 +59,10 @@ function Field({
   );
 }
 
-function AdminLogin({ onAuthenticated }: { readonly onAuthenticated: () => void }): React.JSX.Element {
+function AdminLogin({ onAuthenticated }: { readonly onAuthenticated: () => void }) {
   const [passphrase, setPassphrase] = useState("");
   const loginMutation = useMutation({
-    mutationFn: () => apiRequest<LoginResponse>("/api/admin/login", {
+    mutationFn: () => apiRequest<unknown>("/api/admin/login", {
       method: "POST",
       body: JSON.stringify({ passphrase }),
     }),
@@ -91,9 +85,8 @@ function AdminLogin({ onAuthenticated }: { readonly onAuthenticated: () => void 
         <p>Passphrase verification sets a separate signed, HTTP-only admin cookie.</p>
       </div>
       <form onSubmit={submit} className={styles.loginForm}>
-        <Field label="Admin passphrase" name="admin-passphrase">
+        <Field label="Admin passphrase">
           <input
-            id="admin-passphrase"
             type="password"
             autoComplete="current-password"
             value={passphrase}
@@ -106,12 +99,12 @@ function AdminLogin({ onAuthenticated }: { readonly onAuthenticated: () => void 
           {loginMutation.isPending ? "Verifying…" : "Start admin session"}
         </button>
       </form>
-      {loginMutation.isError ? <p className={styles.inlineError} role="alert">{errorMessage(loginMutation.error)}</p> : null}
+      {loginMutation.isError ? <p className={styles.inlineError} role="alert">{errorMessage(loginMutation.error, FALLBACK_ERROR)}</p> : null}
     </section>
   );
 }
 
-function SeedForm({ onAdminRequired }: { readonly onAdminRequired: () => void }): React.JSX.Element {
+function SeedForm({ onAdminRequired }: { readonly onAdminRequired: () => void }) {
   const queryClient = useQueryClient();
   const [metricKind, setMetricKind] = useState<MetricKind>("valuation_median");
   const [result, setResult] = useState<SeedResponse | null>(null);
@@ -187,28 +180,28 @@ function SeedForm({ onAdminRequired }: { readonly onAdminRequired: () => void })
         </fieldset>
 
         <div className={styles.twoColumns}>
-          <Field label="Company name" name="seed-name"><input id="seed-name" name="name" required maxLength={200} /></Field>
-          <Field label="Company slug" name="seed-slug" support="Lowercase letters, numbers, and hyphens."><input id="seed-slug" name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" /></Field>
+          <Field label="Company name"><input name="name" required maxLength={200} /></Field>
+          <Field label="Company slug" support="Lowercase letters, numbers, and hyphens."><input name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" /></Field>
         </div>
         <div className={styles.twoColumns}>
-          <Field label="Logo path" name="seed-logo"><input id="seed-logo" name="logo_path" required placeholder="/logos/company.svg" /></Field>
-          <Field label="Liquidity parameter (b)" name="seed-b"><input id="seed-b" name="b" type="number" required min="0.000001" step="any" inputMode="decimal" /></Field>
+          <Field label="Logo path"><input name="logo_path" required placeholder="/logos/company.svg" /></Field>
+          <Field label="Liquidity parameter (b)"><input name="b" type="number" required min="0.000001" step="any" inputMode="decimal" /></Field>
         </div>
 
         {metricKind === "valuation_median" ? (
           <>
             <div className={styles.twoColumns}>
-              <Field label="Verified anchor value (USD)" name="seed-anchor"><input id="seed-anchor" name="anchor_valuation_usd" required inputMode="decimal" placeholder="0.00" /></Field>
-              <Field label="Anchor date" name="seed-date"><input id="seed-date" name="anchor_date" type="date" required /></Field>
+              <Field label="Verified anchor value (USD)"><input name="anchor_valuation_usd" required inputMode="decimal" placeholder="0.00" /></Field>
+              <Field label="Anchor date"><input name="anchor_date" type="date" required /></Field>
             </div>
-            <Field label="Anchor description" name="seed-description" support="Name the public event or report behind the anchor.">
-              <textarea id="seed-description" name="anchor_description" required maxLength={1000} rows={3} />
+            <Field label="Anchor description" support="Name the public event or report behind the anchor.">
+              <textarea name="anchor_description" required maxLength={1000} rows={3} />
             </Field>
-            <Field label="Distribution sigma" name="seed-sigma"><input id="seed-sigma" name="sigma" type="number" required min="0.000001" step="any" inputMode="decimal" /></Field>
+            <Field label="Distribution sigma"><input name="sigma" type="number" required min="0.000001" step="any" inputMode="decimal" /></Field>
           </>
         ) : (
-          <Field label="Initial YES probability" name="seed-probability" support="Enter a value greater than 0 and less than 1.">
-            <input id="seed-probability" name="yes_probability" type="number" required min="0.000001" max="0.999999" step="any" inputMode="decimal" />
+          <Field label="Initial YES probability" support="Enter a value greater than 0 and less than 1.">
+            <input name="yes_probability" type="number" required min="0.000001" max="0.999999" step="any" inputMode="decimal" />
           </Field>
         )}
 
@@ -219,7 +212,7 @@ function SeedForm({ onAdminRequired }: { readonly onAdminRequired: () => void })
         </div>
       </form>
 
-      {seedMutation.isError ? <p className={styles.inlineError} role="alert">{errorMessage(seedMutation.error)}</p> : null}
+      {seedMutation.isError ? <p className={styles.inlineError} role="alert">{errorMessage(seedMutation.error, FALLBACK_ERROR)}</p> : null}
       {result !== null ? (
         <div className={styles.successNotice} role="status">
           <strong>Market {result.outcome}</strong>
@@ -230,11 +223,19 @@ function SeedForm({ onAdminRequired }: { readonly onAdminRequired: () => void })
   );
 }
 
-function SettlementForm({ onAdminRequired }: { readonly onAdminRequired: () => void }): React.JSX.Element {
+function SettlementForm({ onAdminRequired }: { readonly onAdminRequired: () => void }) {
   const queryClient = useQueryClient();
   const [review, setReview] = useState<SettlementDraft | null>(null);
   const [confirmSlug, setConfirmSlug] = useState("");
   const [result, setResult] = useState<SettlementResult | null>(null);
+
+  const marketsQuery = useQuery({
+    queryKey: queryKeys.markets,
+    queryFn: () => apiRequest<MarketListResult>("/api/markets"),
+  });
+  const openSlugs = marketsQuery.data?.markets
+    .filter((market) => market.status === "open")
+    .map((market) => market.company.slug) ?? [];
 
   const settlementMutation = useMutation({
     mutationFn: (body: SettlementRequest) => apiRequest<SettlementResult>("/api/admin/settle", {
@@ -281,14 +282,19 @@ function SettlementForm({ onAdminRequired }: { readonly onAdminRequired: () => v
       {review === null ? (
         <form onSubmit={beginReview} className={styles.form}>
           <div className={styles.twoColumns}>
-            <Field label="Market slug" name="settle-slug"><input id="settle-slug" name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" /></Field>
-            <Field label="Settlement value (USD)" name="settle-value"><input id="settle-value" name="settled_value_usd" required inputMode="decimal" placeholder="0.00" /></Field>
+            <Field label="Market slug" {...(openSlugs.length > 0 ? { support: `Open markets: ${openSlugs.join(", ")}` } : {})}>
+              <input name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" list="open-market-slugs" />
+              <datalist id="open-market-slugs">
+                {openSlugs.map((slug) => <option key={slug} value={slug} />)}
+              </datalist>
+            </Field>
+            <Field label="Settlement value (USD)"><input name="settled_value_usd" required inputMode="decimal" placeholder="0.00" /></Field>
           </div>
-          <Field label="Public source URL" name="settle-source" support="HTTP or HTTPS source documenting the resolution value.">
-            <input id="settle-source" name="source_url" type="url" required placeholder="https://" />
+          <Field label="Public source URL" support="HTTP or HTTPS source documenting the resolution value.">
+            <input name="source_url" type="url" required placeholder="https://" />
           </Field>
-          <Field label="Source description" name="settle-description" support="Identify the report, announcement, or filing that establishes the outcome.">
-            <textarea id="settle-description" name="source_description" required maxLength={1000} rows={3} />
+          <Field label="Source description" support="Identify the report, announcement, or filing that establishes the outcome.">
+            <textarea name="source_description" required maxLength={1000} rows={3} />
           </Field>
           <div className={styles.formActions}>
             <button type="submit" className={styles.secondaryButton}>Review settlement</button>
@@ -304,9 +310,8 @@ function SettlementForm({ onAdminRequired }: { readonly onAdminRequired: () => v
             <div><dt>Description</dt><dd>{review.source_description}</dd></div>
           </dl>
           <p className={styles.irreversibleCopy}>Submitting will credit every eligible account and close this market. It cannot be reopened or edited.</p>
-          <Field label={`Retype “${review.slug}” exactly to confirm`} name="confirm-slug">
+          <Field label={`Retype “${review.slug}” exactly to confirm`}>
             <input
-              id="confirm-slug"
               value={confirmSlug}
               onChange={(event) => setConfirmSlug(event.target.value)}
               autoComplete="off"
@@ -322,9 +327,7 @@ function SettlementForm({ onAdminRequired }: { readonly onAdminRequired: () => v
               type="button"
               className={styles.dangerButton}
               disabled={!exactMatch || settlementMutation.isPending}
-              onClick={() => {
-                if (review !== null && exactMatch) settlementMutation.mutate({ ...review, confirm_slug: confirmSlug });
-              }}
+              onClick={() => settlementMutation.mutate({ ...review, confirm_slug: confirmSlug })}
             >
               {settlementMutation.isPending ? "Settling market…" : "Settle market permanently"}
             </button>
@@ -332,18 +335,18 @@ function SettlementForm({ onAdminRequired }: { readonly onAdminRequired: () => v
         </div>
       )}
 
-      {settlementMutation.isError ? <p className={styles.inlineError} role="alert">{errorMessage(settlementMutation.error)}</p> : null}
+      {settlementMutation.isError ? <p className={styles.inlineError} role="alert">{errorMessage(settlementMutation.error, FALLBACK_ERROR)}</p> : null}
       {result !== null ? (
         <div className={styles.successNotice} role="status">
           <strong>{result.slug} settled</strong>
-          <span>{result.credited_users} accounts credited, total payout ${(Number(result.total_payout_cents) / 100).toFixed(2)}.</span>
+          <span>{result.credited_users} accounts credited, total payout {formatCents(result.total_payout_cents)}.</span>
         </div>
       ) : null}
     </section>
   );
 }
 
-export function AdminPage(): React.JSX.Element {
+export function AdminPage() {
   const [adminState, setAdminState] = useState<AdminState>("unknown");
 
   return (

@@ -14,9 +14,6 @@ export function AppShell({ children }: { readonly children: ReactNode }) {
       <header className={styles.header}>
         <div className={styles.headerInner}>
           <Link className={styles.brand} href="/" aria-label="OpenMarket home">
-            <span className={styles.brandMark} aria-hidden="true">
-              OM
-            </span>
             <span className={styles.brandName}>OpenMarket</span>
           </Link>
           <NavLinks />
@@ -28,6 +25,17 @@ export function AppShell({ children }: { readonly children: ReactNode }) {
       <main className={styles.main} id="main-content" tabIndex={-1}>
         {children}
       </main>
+      <footer className={styles.footer}>
+        <span className={styles.footerCopyright}>
+          © {new Date().getFullYear()} OpenMarket
+        </span>
+        <span className={styles.footerDisclosure}>
+          Paper trading only. Not real money. No purchases or withdrawals.
+        </span>
+        <Link className={styles.footerLink} href="/admin">
+          Admin
+        </Link>
+      </footer>
     </div>
   );
 }

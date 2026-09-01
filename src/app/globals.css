@@ -13,6 +13,7 @@ html {
   font-family: var(--font-sans);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+  font-variant-numeric: tabular-nums;
 }
 
 body {
@@ -57,13 +58,17 @@ svg {
 
 ::selection {
   background: var(--color-primary);
-  color: var(--color-ink);
+  color: #ffffff;
 }
 
 :focus-visible {
-  border-radius: var(--radius-sm);
-  outline: 0.125rem solid var(--color-primary-hover);
-  outline-offset: 0.1875rem;
+  outline: 0.125rem solid var(--color-primary);
+  outline-offset: 0.125rem;
+}
+
+caption,
+th {
+  text-align: left;
 }
 
 @media (prefers-reduced-motion: reduce) {

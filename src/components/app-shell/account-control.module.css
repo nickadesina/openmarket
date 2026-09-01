@@ -1,8 +1,7 @@
 .root {
   position: relative;
   display: flex;
-  min-height: var(--control-height);
-  align-items: center;
+  align-items: stretch;
   justify-content: flex-end;
 }
 
@@ -10,10 +9,9 @@
 .submit,
 .cancel {
   min-height: var(--control-height);
-  border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: var(--font-size-sm);
-  font-weight: 650;
+  font-weight: 600;
   white-space: nowrap;
   transition:
     background-color var(--duration-fast) var(--ease-out),
@@ -23,18 +21,17 @@
 
 .trigger {
   display: inline-flex;
-  padding: 0 var(--space-3);
-  border: 1px solid var(--color-border-strong);
+  padding: 0 var(--space-4);
+  border-left: 1px solid var(--color-border);
   align-items: center;
   gap: var(--space-2);
-  background: var(--color-surface);
+  background: var(--color-bg);
   color: var(--color-ink);
 }
 
 .trigger:hover,
 .cancel:hover {
-  border-color: var(--color-primary);
-  background: var(--color-surface-elevated);
+  background: var(--color-surface-hover);
 }
 
 .accountText {
@@ -43,29 +40,39 @@
   text-align: left;
 }
 
+.signedOutLabel {
+  font-family: var(--font-caps);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
 .username {
   overflow: hidden;
   max-width: 9rem;
+  font-size: var(--font-size-md);
+  font-weight: 600;
   text-overflow: ellipsis;
 }
 
 .balance {
-  color: var(--color-ink-muted);
-  font-size: var(--font-size-xs);
+  color: var(--color-primary);
+  font-family: var(--font-num);
+  font-size: var(--font-size-md);
   font-variant-numeric: tabular-nums;
-  font-weight: 500;
+  font-weight: 700;
 }
 
 .formPanel {
   position: absolute;
   z-index: var(--z-popover);
-  top: calc(100% + var(--space-2));
+  top: calc(100% + 1px);
   right: 0;
   width: min(22rem, calc(100vw - (var(--page-gutter) * 2)));
   padding: var(--space-4);
   border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-elevated);
+  background: var(--color-bg);
 }
 
 .formTitle {
@@ -84,9 +91,12 @@
 .label {
   display: block;
   margin-bottom: var(--space-1);
-  color: var(--color-ink-muted);
+  color: var(--color-ink);
+  font-family: var(--font-caps);
   font-size: var(--font-size-xs);
-  font-weight: 650;
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
 }
 
 .input {
@@ -94,7 +104,6 @@
   height: var(--control-height);
   padding: 0 var(--space-3);
   border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
   background: var(--color-bg);
   color: var(--color-ink);
 }
@@ -104,7 +113,8 @@
 }
 
 .input:focus-visible {
-  border-color: var(--color-primary-hover);
+  border-color: var(--color-primary);
+  outline: none;
   box-shadow: var(--focus-ring);
 }
 
@@ -118,15 +128,19 @@
 .submit,
 .cancel {
   padding: 0 var(--space-3);
+  font-family: var(--font-caps);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
 }
 
 .submit {
-  background: var(--color-primary-action);
-  color: var(--color-ink);
+  background: var(--color-primary);
+  color: #ffffff;
 }
 
 .submit:hover:not(:disabled) {
-  background: var(--color-primary-action-hover);
+  background: var(--color-primary-hover);
 }
 
 .submit:disabled {
@@ -137,37 +151,33 @@
 .cancel {
   border: 1px solid var(--color-border);
   background: transparent;
-  color: var(--color-ink-muted);
+  color: var(--color-ink);
 }
 
 .error {
   margin: var(--space-2) 0 0;
-  color: var(--color-negative);
+  color: var(--color-primary);
   font-size: var(--font-size-xs);
+  font-weight: 600;
   line-height: 1.4;
 }
 
 .skeleton {
+  composes: skeletonBlock from "../../styles/shared.module.css";
   width: 9.5rem;
   height: var(--control-height);
-  border-radius: var(--radius-sm);
-  background: var(--color-skeleton);
-  animation: pulse 1.6s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  50% {
-    background: var(--color-skeleton-shine);
-  }
+  align-self: center;
 }
 
 @media (max-width: 42rem) {
   .trigger {
     padding: 0 var(--space-2);
+    gap: 0;
   }
 
   .balance,
-  .signedOutLabel {
+  .signedOutLabel,
+  .username {
     position: absolute;
     overflow: hidden;
     width: 1px;
@@ -177,17 +187,7 @@
     white-space: nowrap;
   }
 
-  .username {
-    max-width: 6rem;
-  }
-
   .skeleton {
     width: 3rem;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .skeleton {
-    animation: none;
   }
 }

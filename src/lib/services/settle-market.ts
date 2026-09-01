@@ -67,7 +67,9 @@ export async function settleMarket(
       ])
       .where("companies.slug", "=", input.slug)
       .where("markets.status", "=", "open")
-      .forUpdate(["markets", "companies"])
+      // Lock only markets: settlement never writes companies, and taking that
+      // lock here inverts seedMarket's companies-then-markets order.
+      .forUpdate("markets")
       .executeTakeFirst();
 
     if (market === undefined) {

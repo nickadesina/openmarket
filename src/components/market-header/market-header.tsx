@@ -1,5 +1,10 @@
+import { formatDateTime, formatMetric, formatValuation } from "../../lib/client/format.js";
+import { MovementArrow } from "../icons/icons.js";
+import { CompanyLogo } from "../company-logo/company-logo.js";
+import type { MarketDetail } from "../market-workspace/types.js";
 import styles from "./market-header.module.css";
-import { formatMetric, formatValuation, type MarketDetail } from "../market-workspace/types.js";
+
+const claimsFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 
 interface MarketHeaderProps {
   readonly market: MarketDetail;
@@ -7,14 +12,19 @@ interface MarketHeaderProps {
 }
 
 export function MarketHeader({ market, movement }: MarketHeaderProps) {
-  const movementLabel = movement === "up" ? "Moved up" : movement === "down" ? "Moved down" : "Unchanged";
-  const movementGlyph = movement === "up" ? "↑" : movement === "down" ? "↓" : "→";
+  const change = market.metric.change24Hours;
+  const changeDirection = change > 0 ? "up" : change < 0 ? "down" : "flat";
+  const changeAmount = market.metric.kind === "valuation_median"
+    ? formatValuation(Math.abs(change))
+    : `${(Math.abs(change) * 100).toFixed(1)} pts`;
+  const changeLabel = changeDirection === "flat"
+    ? "Unchanged (24h)"
+    : `Moved ${changeDirection} ${changeAmount} (24h)`;
 
   return (
     <header className={styles.header}>
       <div className={styles.identity}>
-        {/* Company-provided paths are rendered as normal images so a missing logo does not block the market title. */}
-        <img className={styles.logo} src={market.company.logoPath} alt="" width="40" height="40" />
+        <CompanyLogo name={market.company.name} logoPath={market.company.logoPath} size="lg" />
         <div>
           <div className={styles.titleRow}>
             <h1>{market.company.name}</h1>
@@ -36,8 +46,8 @@ export function MarketHeader({ market, movement }: MarketHeaderProps) {
           <strong className={movement === "up" ? styles.flashUp : movement === "down" ? styles.flashDown : undefined}>
             {formatMetric(market.metric.current, market.metric.kind)}
           </strong>
-          <small className={movement === "down" ? styles.negative : movement === "up" ? styles.positive : styles.muted}>
-            <span aria-hidden="true">{movementGlyph}</span> {movementLabel}
+          <small className={changeDirection === "down" ? styles.negative : changeDirection === "up" ? styles.positive : styles.muted}>
+            <MovementArrow direction={changeDirection} /> {changeLabel}
           </small>
         </div>
         <dl className={styles.secondaryMetrics}>
@@ -47,7 +57,7 @@ export function MarketHeader({ market, movement }: MarketHeaderProps) {
           </div>
           <div>
             <dt>Claims</dt>
-            <dd>{new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(market.outstandingClaims)}</dd>
+            <dd>{claimsFormatter.format(market.outstandingClaims)}</dd>
           </div>
           {market.anchor !== null ? (
             <div>
@@ -62,7 +72,7 @@ export function MarketHeader({ market, movement }: MarketHeaderProps) {
         <section className={styles.outcome} aria-label="Settlement outcome">
           <div>
             <strong>Resolved at {formatValuation(market.settlement.settledValueUsd)}</strong>
-            <span>{new Date(market.settlement.timestamp).toLocaleString()}</span>
+            <span suppressHydrationWarning>{formatDateTime(market.settlement.timestamp)}</span>
           </div>
           <a href={market.settlement.sourceUrl} target="_blank" rel="noreferrer">
             {market.settlement.sourceDescription ?? "View settlement source"}

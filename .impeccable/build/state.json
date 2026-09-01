@@ -1,0 +1,298 @@
+{
+  "tool": "build-phase",
+  "version": 2,
+  "startedAt": "2026-09-01T07:36:31.523Z",
+  "comp": ".impeccable/mocks/home-b.webp",
+  "direction": "3c97be4f",
+  "breakpoint": "1536x1024",
+  "artifact": null,
+  "phase": "review",
+  "phases": {
+    "comps": {
+      "status": "closed",
+      "openedAt": "2026-09-01T07:36:31.522Z",
+      "closedAt": "2026-09-01T07:41:15.793Z",
+      "attempts": 2,
+      "notes": [],
+      "gate": {
+        "ok": true,
+        "reasons": [],
+        "summary": "3 comps, 1 approved",
+        "approved": ".impeccable/mocks/home-b.webp",
+        "at": "2026-09-01T07:41:15.792Z"
+      },
+      "forced": null
+    },
+    "spec": {
+      "status": "closed",
+      "openedAt": "2026-09-01T07:41:15.824Z",
+      "closedAt": "2026-09-01T07:45:01.933Z",
+      "attempts": 3,
+      "notes": [],
+      "gate": {
+        "ok": true,
+        "reasons": [],
+        "summary": "16 regions, 0 plates, 12 text regions measured",
+        "at": "2026-09-01T07:45:01.933Z"
+      },
+      "forced": null
+    },
+    "plates": {
+      "status": "closed",
+      "openedAt": "2026-09-01T07:45:01.934Z",
+      "closedAt": "2026-09-01T07:45:05.663Z",
+      "attempts": 1,
+      "notes": [],
+      "gate": {
+        "ok": true,
+        "reasons": [],
+        "summary": "no plates owed",
+        "at": "2026-09-01T07:45:05.662Z"
+      },
+      "forced": null
+    },
+    "hero": {
+      "status": "closed",
+      "openedAt": "2026-09-01T07:45:05.663Z",
+      "closedAt": "2026-09-01T19:10:45.767Z",
+      "attempts": 1,
+      "notes": [],
+      "gate": {
+        "ok": true,
+        "reasons": [],
+        "summary": "hero 82% (match)",
+        "score": 0.8169,
+        "verdict": "match",
+        "report": ".impeccable/review/diff/hero/report.json",
+        "sideBySide": ".impeccable/review/diff/hero/side-by-side.png",
+        "worst": [
+          "activity-tape drift 67%",
+          "ladder drift 67%",
+          "nav drift 69%"
+        ],
+        "worstIds": [
+          "activity-tape",
+          "ladder",
+          "nav"
+        ],
+        "worstCrops": [
+          {
+            "id": "activity-tape",
+            "verdict": "drift",
+            "score": {
+              "overall": 0.6662,
+              "structure": 0.4236,
+              "color": 0.9685,
+              "colorIntersection": 0.9515,
+              "paletteMatch": 0.9777,
+              "detail": 0.7482,
+              "detailRaw": 0.7742,
+              "detailAdded": 0.0521,
+              "bands": 1
+            },
+            "file": ".impeccable/review/diff/hero/regions/activity-tape.png"
+          },
+          {
+            "id": "ladder",
+            "verdict": "drift",
+            "score": {
+              "overall": 0.6701,
+              "structure": 0.5688,
+              "color": 0.9545,
+              "colorIntersection": 0.9179,
+              "paletteMatch": 0.9742,
+              "detail": 0.4061,
+              "detailRaw": 0.4894,
+              "detailAdded": 0.1667,
+              "bands": 0.8615
+            },
+            "file": ".impeccable/review/diff/hero/regions/ladder.png"
+          },
+          {
+            "id": "nav",
+            "verdict": "drift",
+            "score": {
+              "overall": 0.6877,
+              "structure": 0.6435,
+              "color": 0.8308,
+              "colorIntersection": 0.6856,
+              "paletteMatch": 0.9089,
+              "detail": 0.5366,
+              "detailRaw": 0.6043,
+              "detailAdded": 0.1354,
+              "bands": 1
+            },
+            "file": ".impeccable/review/diff/hero/regions/nav.png"
+          }
+        ],
+        "advisories": [
+          "(advisory, above the 72% bar; fix in the polish pass before responsive) 6 readings:",
+          "  text row-anthropic: cap height 17.8px in the build, 31.4px in the comp (-43%); set font-size so the cap height renders at 31.4px (font-match ranked Sevillana 400 at 37px)",
+          "  text row-stripe: cap height 18.8px in the build, 29.9px in the comp (-37%); set font-size so the cap height renders at 29.9px",
+          "  text board-rest: 6 lines in the build, 3 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape",
+          "  text row-anthropic: ink is #19191a in the build, #cf9973 in the comp; use the comp's colour",
+          "  text board-foot: ink is #d80808 in the build, #1f1f25 in the comp; use the comp's colour",
+          "  text statstrip: its first line starts 15px lower than in the comp (15px vs 0px into the region box); the spacing above it is too large"
+        ],
+        "regionVerdicts": {
+          "wordmark": "match",
+          "nav": "drift",
+          "account": "drift",
+          "statstrip": "match",
+          "board-tab": "match",
+          "board-head": "drift",
+          "row-anthropic": "drift",
+          "row-stripe": "drift",
+          "ladder": "drift",
+          "board-rest": "match",
+          "board-foot": "match",
+          "activity-tab": "drift",
+          "activity-head": "drift",
+          "activity-tape": "drift",
+          "activity-foot": "match",
+          "footer": "match"
+        },
+        "at": "2026-09-01T19:10:45.764Z"
+      },
+      "forced": null,
+      "readingsSeen": {
+        "text wordmark: letter-spacing is wider than the comp's (gap 0.135 vs 0.090 of the cap height); set letter-spacing to close it by about 1px": 1,
+        "text statstrip: letter-spacing is wider than the comp's (gap 0.121 vs 0.066 of the cap height); set letter-spacing to close it by about 1px": 1,
+        "text row-anthropic: cap height 20.7px in the build, 31.4px in the comp (-34%); set font-size so the cap height renders at 31.4px (font-match ranked Sevillana 400 at 37px)": 1,
+        "text row-stripe: cap height 12.7px in the build, 29.9px in the comp (-58%); set font-size so the cap height renders at 29.9px": 1,
+        "text ladder: 5 lines in the build, 6 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 2,
+        "text board-rest: 5 lines in the build, 3 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 2,
+        "text row-anthropic: ink is #19191a in the build, #cf9973 in the comp; use the comp's colour": 3,
+        "text board-foot: ink is #d80808 in the build, #1f1f25 in the comp; use the comp's colour": 3,
+        "text statstrip: its first line starts 15px lower than in the comp (15px vs 0px into the region box); the spacing above it is too large": 3,
+        "text wordmark: cap height 6.5px in the build, 22.3px in the comp (-71%); set font-size so the cap height renders at 22.3px (font-match ranked Averia Libre 700 at 31px)": 1,
+        "text board-head: cap height 31.7px in the build, 15.8px in the comp (+101%); set font-size so the cap height renders at 15.8px (font-match ranked Ole 400 at 25px)": 1,
+        "text row-anthropic: cap height 18.8px in the build, 31.4px in the comp (-40%); set font-size so the cap height renders at 31.4px (font-match ranked Sevillana 400 at 37px)": 1,
+        "text row-stripe: cap height 8.3px in the build, 29.9px in the comp (-72%); set font-size so the cap height renders at 29.9px": 1,
+        "text row-anthropic: ink is #6858f8 in the build, #cf9973 in the comp; use the comp's colour": 1,
+        "text row-stripe: ink is #19191d in the build, #5a5df8 in the comp; use the comp's colour": 1,
+        "text wordmark: its first line starts 16px higher than in the comp (0px vs 16px into the region box); the spacing above it is too small": 1,
+        "control nav: its rule sits 15px into the box in the comp and 22px in the build (+7px), so the strip is taller than the comp's; match the height, not only the position": 1,
+        "text row-anthropic: cap height 17.8px in the build, 31.4px in the comp (-43%); set font-size so the cap height renders at 31.4px (font-match ranked Sevillana 400 at 37px)": 2,
+        "text row-stripe: cap height 18.8px in the build, 29.9px in the comp (-37%); set font-size so the cap height renders at 29.9px": 2,
+        "text board-rest: 6 lines in the build, 3 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 2
+      },
+      "records": 3,
+      "history": [
+        {
+          "at": "2026-09-01T19:10:45.764Z",
+          "score": 0.8169,
+          "worstIds": [
+            "activity-tape",
+            "ladder",
+            "nav"
+          ],
+          "regionVerdicts": {
+            "wordmark": "match",
+            "nav": "drift",
+            "account": "drift",
+            "statstrip": "match",
+            "board-tab": "match",
+            "board-head": "drift",
+            "row-anthropic": "drift",
+            "row-stripe": "drift",
+            "ladder": "drift",
+            "board-rest": "match",
+            "board-foot": "match",
+            "activity-tab": "drift",
+            "activity-head": "drift",
+            "activity-tape": "drift",
+            "activity-foot": "match",
+            "footer": "match"
+          },
+          "artifactHash": null
+        }
+      ]
+    },
+    "sections": {
+      "status": "closed",
+      "openedAt": "2026-09-01T19:10:45.767Z",
+      "closedAt": "2026-09-01T19:25:59.762Z",
+      "attempts": 1,
+      "notes": [],
+      "gate": {
+        "ok": true,
+        "reasons": [],
+        "summary": "no mechanical gate",
+        "at": "2026-09-01T19:25:59.762Z"
+      },
+      "forced": null
+    },
+    "motion": {
+      "status": "closed",
+      "openedAt": "2026-09-01T19:25:59.762Z",
+      "closedAt": "2026-09-01T19:25:59.817Z",
+      "attempts": 1,
+      "notes": [],
+      "gate": {
+        "ok": true,
+        "reasons": [],
+        "summary": "no mechanical gate",
+        "at": "2026-09-01T19:25:59.817Z"
+      },
+      "forced": null
+    },
+    "responsive": {
+      "status": "closed",
+      "openedAt": "2026-09-01T19:25:59.817Z",
+      "closedAt": "2026-09-01T19:32:11.132Z",
+      "attempts": 5,
+      "notes": [],
+      "gate": {
+        "ok": false,
+        "reasons": [
+          "the desktop capture (1440x1047; the top 1536x1024 rows scaled to the comp's width are compared, a full-page capture is fine) scores 65% against the comp, under 65%: the first viewport does not survive a common desktop width. The hero passed at 1536x1024; the layout must hold from ~1280 up, not only at the comp's exact width (grid columns in fr / minmax, not fixed px that overflow and wrap).",
+          "at desktop width, region wordmark is missing",
+          "at desktop width, region nav is missing",
+          "at desktop width, region account is missing",
+          "at desktop width, region statstrip is missing",
+          "at desktop width, region activity-tab is missing",
+          "at desktop width, region activity-head is missing",
+          "at desktop width, region footer is missing",
+          "at desktop width, region row-stripe (text) is contradicted (structure 77%)",
+          "at desktop width, region board-rest (text) is contradicted (structure 45%)"
+        ],
+        "summary": "desktop 65% (drift)",
+        "score": 0.6491,
+        "sideBySide": ".impeccable/review/diff/desktop/side-by-side.png",
+        "at": "2026-09-01T19:32:11.131Z"
+      },
+      "forced": {
+        "at": "2026-09-01T19:32:11.132Z",
+        "reason": "The user chose to drop the comp's invented stat strip and padded market rows: asked at this gate, they picked 'Real data only' instead of 'Match comp density', approving the true two markets rather than the comp's packed fiction. Their comp-round steer said the comp was 'too full' and asked for 'more minimalistic'. The comp's grammar (red tabs, ruled modules, tape, footer band, inline ladders) still governs the build.",
+        "reasons": [
+          "the desktop capture (1440x1047; the top 1536x1024 rows scaled to the comp's width are compared, a full-page capture is fine) scores 65% against the comp, under 65%: the first viewport does not survive a common desktop width. The hero passed at 1536x1024; the layout must hold from ~1280 up, not only at the comp's exact width (grid columns in fr / minmax, not fixed px that overflow and wrap).",
+          "at desktop width, region wordmark is missing",
+          "at desktop width, region nav is missing",
+          "at desktop width, region account is missing",
+          "at desktop width, region statstrip is missing",
+          "at desktop width, region activity-tab is missing",
+          "at desktop width, region activity-head is missing",
+          "at desktop width, region footer is missing",
+          "at desktop width, region row-stripe (text) is contradicted (structure 77%)",
+          "at desktop width, region board-rest (text) is contradicted (structure 45%)"
+        ]
+      }
+    },
+    "review": {
+      "status": "closed",
+      "openedAt": "2026-09-01T19:32:11.132Z",
+      "closedAt": "2026-09-01T19:48:21.019Z",
+      "attempts": 0,
+      "notes": [],
+      "gate": null,
+      "forced": null
+    }
+  },
+  "finish": {
+    "disposition": "ship",
+    "at": "2026-09-01T19:48:21.018Z",
+    "phaseAtFinish": "review"
+  },
+  "plates": {}
+}

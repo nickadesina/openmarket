@@ -1,0 +1,82 @@
+/* Primitives composed into page modules via `composes:`. */
+
+.buttonBase {
+  display: inline-flex;
+  min-height: var(--control-height);
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-4);
+  font: inherit;
+  font-family: var(--font-caps);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
+}
+
+.buttonBase:active {
+  transform: translateY(1px);
+}
+
+.buttonBase:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.buttonBase:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+.primaryButton {
+  composes: buttonBase;
+  border: 1px solid var(--color-primary-action);
+  background: var(--color-primary-action);
+  color: #ffffff;
+}
+
+.primaryButton:hover {
+  border-color: var(--color-primary-action-hover);
+  background: var(--color-primary-action-hover);
+}
+
+.visuallyHidden {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.skeletonBlock {
+  display: block;
+  border-radius: var(--radius-sm);
+  background: var(--color-skeleton);
+  animation: skeletonPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes skeletonPulse {
+  50% {
+    background: var(--color-skeleton-shine);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .buttonBase {
+    transition: none;
+  }
+
+  .skeletonBlock {
+    animation: none;
+  }
+}

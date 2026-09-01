@@ -1,0 +1,6 @@
+{
+  "prompt": "Desktop web app first viewport, landscape 1440x900, for OpenMarket, a paper-money prediction market on private-company valuations. Visual world: the category-standard clean light fintech dashboard, executed at the highest craft, played completely straight. Pure white ground, near-black ink (#111827), one blue accent (#2563eb), soft card shadows, generous grid. Layout: top nav with OpenMarket wordmark, Markets and Portfolio links, username entry; page title 'Valuation markets'; a card table of markets with logo chips, rows Anthropic $1.5T up $1.4T and Stripe $59.2B down $5.5B with small sparklines and Open pills; right column card 'Global activity' listing recent buys and sells with timestamps. System sans, clear hierarchy, tabular numerals, green/red movement cues with arrows. Familiar, polished, trustworthy. No dark mode. Production-grade UI fidelity, crisp text.",
+  "createdAt": "2026-09-01T07:36:00.030Z",
+  "tool": "generate-image.mjs",
+  "model": "gpt-image-2"
+}

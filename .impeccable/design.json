@@ -1,0 +1,169 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-01T00:00:00Z",
+  "title": "Design System: OpenMarket",
+  "extensions": {
+    "colorMeta": {
+      "utility-red": {
+        "role": "primary",
+        "displayName": "Utility Red",
+        "canonical": "#d70909",
+        "tonalRamp": ["oklch(20% 0.09 29)", "oklch(30% 0.13 29)", "oklch(40% 0.17 29)", "oklch(51% 0.21 29)", "oklch(62% 0.19 29)", "oklch(74% 0.13 29)", "oklch(86% 0.07 29)", "oklch(95% 0.025 29)"]
+      },
+      "press-ink": {
+        "role": "neutral",
+        "displayName": "Press Ink",
+        "canonical": "#131315",
+        "tonalRamp": ["#131315", "#2c2c30", "#44444a", "#55555a", "#8a8a90", "#c5c5c5", "#e4e4e6", "#f6f6f6"]
+      },
+      "paper-white": {
+        "role": "neutral",
+        "displayName": "Paper White",
+        "canonical": "#ffffff",
+        "tonalRamp": ["#ffffff", "#fafafa", "#f6f6f6", "#efeff1", "#e4e4e6", "#c5c5c5", "#55555a", "#131315"]
+      },
+      "caution-ochre": {
+        "role": "tertiary",
+        "displayName": "Caution Ochre",
+        "canonical": "#8a5a00",
+        "tonalRamp": ["oklch(20% 0.05 75)", "oklch(31% 0.08 75)", "oklch(41% 0.1 75)", "oklch(48% 0.11 75)", "oklch(62% 0.11 75)", "oklch(76% 0.09 75)", "oklch(88% 0.06 75)", "oklch(96% 0.025 75)"]
+      }
+    },
+    "typographyMeta": {
+      "brand": { "displayName": "Brand", "purpose": "The OPENMARKET wordmark in the top bar. Nowhere else." },
+      "headline": { "displayName": "Headline", "purpose": "Page h1 titles; balanced wrap." },
+      "metric": { "displayName": "Metric", "purpose": "Large red implied-valuation figures in board rows and stat strips." },
+      "body": { "displayName": "Body", "purpose": "Default copy; explanatory paragraphs cap at 50-80ch." },
+      "detail": { "displayName": "Detail", "purpose": "Table cell values, activity tape lines, metadata." },
+      "label": { "displayName": "Caps Label", "purpose": "All structural labels: table heads, tabs, stamps, buttons, disclosures. Bold Roboto Condensed uppercase." }
+    },
+    "shadows": [
+      { "name": "focus-halo", "value": "0 0 0 0.1875rem #f5b5b5", "purpose": "The :focus-visible ring on all controls. One of only two shadows in the world." },
+      { "name": "sheet-edge", "value": "0 -0.25rem 1rem color-mix(in oklch, #131315 18%, transparent)", "purpose": "Mobile trade sheet only, over a 34%-ink overlay scrim. Nothing else casts a shadow." }
+    ],
+    "motion": [
+      { "name": "duration-fast", "value": "150ms", "purpose": "Hover/press color, background, and border transitions." },
+      { "name": "duration-standard", "value": "220ms", "purpose": "Metric flash decay, sheet slide-up, overlay fade." },
+      { "name": "ease-out", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "The single easing curve for all transitions and animations." }
+    ],
+    "breakpoints": [
+      { "name": "sheet", "value": "52rem", "purpose": "Market trade rail becomes a bottom sheet." },
+      { "name": "board-stack", "value": "58rem", "purpose": "Market board table reflows to stacked label/value rows; inline ladder suppressed." },
+      { "name": "home-stack", "value": "84rem", "purpose": "Home workspace collapses to one column." },
+      { "name": "shell-compact", "value": "42rem", "purpose": "Header/nav/footer compact; footer stacks." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Utility-red filled action; trade submission and top-level primary actions.",
+      "html": "<button class=\"ds-btn-primary\">Place trade</button>",
+      "css": ".ds-btn-primary { display: inline-flex; min-height: var(--control-height, 2.25rem); align-items: center; justify-content: center; padding: 0 1rem; border: 1px solid var(--color-primary-action, #d70909); background: var(--color-primary-action, #d70909); color: #ffffff; font-family: var(--font-caps, 'Roboto Condensed', 'Arial Narrow', sans-serif); font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; line-height: 1; white-space: nowrap; cursor: pointer; border-radius: 0; transition: background 150ms cubic-bezier(0.16,1,0.3,1), border-color 150ms cubic-bezier(0.16,1,0.3,1), transform 150ms cubic-bezier(0.16,1,0.3,1); } .ds-btn-primary:hover { border-color: var(--color-primary-action-hover, #b40707); background: var(--color-primary-action-hover, #b40707); } .ds-btn-primary:active { transform: translateY(1px); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 0.1875rem #f5b5b5; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Ink-outlined white button; retry and secondary actions.",
+      "html": "<button class=\"ds-btn-secondary\">Retry</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; min-height: var(--control-height, 2.25rem); align-items: center; justify-content: center; padding: 0 0.75rem; border: 1px solid var(--color-border-strong, #131315); background: var(--color-bg, #ffffff); color: var(--color-ink, #131315); font-family: var(--font-caps, 'Roboto Condensed', 'Arial Narrow', sans-serif); font-size: 0.78125rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; cursor: pointer; border-radius: 0; transition: border-color 150ms cubic-bezier(0.16,1,0.3,1), background-color 150ms cubic-bezier(0.16,1,0.3,1); } .ds-btn-secondary:hover { border-color: var(--color-primary, #d70909); background: var(--color-primary-subtle, #fdeaea); } .ds-btn-secondary:focus-visible { outline: none; box-shadow: 0 0 0 0.1875rem #f5b5b5; }"
+    },
+    {
+      "name": "Module Header Tab",
+      "kind": "custom",
+      "refersTo": "module-tab",
+      "description": "Solid red caps tab naming a ruled module (MARKET BOARD, LIVE ACTIVITY, TRADE). A label, never a control.",
+      "html": "<h2 class=\"ds-module-tab\">Market board</h2>",
+      "css": ".ds-module-tab { display: inline-flex; margin: 0; padding: 0.375rem 0.875rem; background: var(--color-primary, #d70909); color: #ffffff; font-family: var(--font-caps, 'Roboto Condensed', 'Arial Narrow', sans-serif); font-size: 0.78125rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; }"
+    },
+    {
+      "name": "OPEN Stamp",
+      "kind": "chip",
+      "refersTo": "stamp-open",
+      "description": "Outlined red status stamp for open markets. Outlined, never filled.",
+      "html": "<span class=\"ds-stamp-open\">Open</span>",
+      "css": ".ds-stamp-open { display: inline-flex; min-height: 1.625rem; padding: 0 0.75rem; align-items: center; border: 1.5px solid var(--color-primary, #d70909); color: var(--color-primary, #d70909); font-family: var(--font-caps, 'Roboto Condensed', 'Arial Narrow', sans-serif); font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }"
+    },
+    {
+      "name": "SETTLED Stamp",
+      "kind": "chip",
+      "refersTo": "stamp-settled",
+      "description": "Outlined ink status stamp for settled markets, paired with a muted settled date.",
+      "html": "<span class=\"ds-stamp-settled\">Settled</span>",
+      "css": ".ds-stamp-settled { display: inline-flex; min-height: 1.625rem; padding: 0 0.75rem; align-items: center; border: 1.5px solid var(--color-ink, #131315); color: var(--color-ink, #131315); font-family: var(--font-caps, 'Roboto Condensed', 'Arial Narrow', sans-serif); font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }"
+    },
+    {
+      "name": "Nav Link",
+      "kind": "nav",
+      "refersTo": "nav-link-active",
+      "description": "Caps top-bar link; active route fills solid red.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-link ds-nav-link-active\" href=\"#\">Markets</a><a class=\"ds-nav-link\" href=\"#\">Portfolio</a></nav>",
+      "css": ".ds-nav { display: flex; align-items: center; gap: 1.5rem; } .ds-nav-link { display: inline-flex; padding: 0.5rem 1.125rem; align-items: center; color: var(--color-ink, #131315); text-decoration: none; font-family: var(--font-caps, 'Roboto Condensed', 'Arial Narrow', sans-serif); font-size: 0.9375rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; transition: background-color 150ms cubic-bezier(0.16,1,0.3,1), color 150ms cubic-bezier(0.16,1,0.3,1); } .ds-nav-link:hover { background: var(--color-primary-subtle, #fdeaea); } .ds-nav-link-active { background: var(--color-primary, #d70909); color: #ffffff; } .ds-nav-link-active:hover { background: var(--color-primary-hover, #b40707); color: #ffffff; }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Hairline-framed square field with tabular numerals and the focus halo.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Quantity</span><span class=\"ds-input-frame\"><input class=\"ds-input\" type=\"text\" inputmode=\"decimal\" placeholder=\"0\" /></span></label>",
+      "css": ".ds-field { display: grid; gap: 0.5rem; font-family: var(--font-sans, 'Noto Sans', 'Segoe UI', system-ui, sans-serif); } .ds-field-label { color: var(--color-ink-muted, #55555a); font-family: var(--font-caps, 'Roboto Condensed', 'Arial Narrow', sans-serif); font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; } .ds-input-frame { display: flex; align-items: center; min-height: var(--control-height, 2.25rem); padding-inline: 0.75rem; border: 1px solid var(--color-border, #c5c5c5); border-radius: 0; background: var(--color-bg, #ffffff); } .ds-input-frame:focus-within { box-shadow: 0 0 0 0.1875rem #f5b5b5; } .ds-input { width: 100%; min-width: 0; border: 0; outline: 0; color: var(--color-ink, #131315); background: transparent; font: inherit; font-size: 0.875rem; font-variant-numeric: tabular-nums; } .ds-input::placeholder { color: var(--color-ink-muted, #55555a); }"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "input",
+      "refersTo": "button-primary",
+      "description": "YES/NO side selector; pressed segment fills utility red.",
+      "html": "<div class=\"ds-segmented\"><button class=\"ds-segment\" aria-pressed=\"true\">Yes</button><button class=\"ds-segment\" aria-pressed=\"false\">No</button></div>",
+      "css": ".ds-segmented { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--color-border, #c5c5c5); background: var(--color-bg, #ffffff); border-radius: 0; } .ds-segment { min-height: var(--control-height, 2.25rem); border: 0; border-radius: 0; color: var(--color-ink-muted, #55555a); background: transparent; font-family: var(--font-sans, 'Noto Sans', 'Segoe UI', system-ui, sans-serif); font-size: 0.78125rem; font-weight: 600; cursor: pointer; transition: background-color 150ms cubic-bezier(0.16,1,0.3,1), color 150ms cubic-bezier(0.16,1,0.3,1); } .ds-segment[aria-pressed=\"true\"] { color: #ffffff; background: var(--color-primary, #d70909); } .ds-segment:focus-visible { outline: none; box-shadow: 0 0 0 0.1875rem #f5b5b5; }"
+    },
+    {
+      "name": "Movement Indicator",
+      "kind": "custom",
+      "refersTo": "stamp-open",
+      "description": "Arrow-and-Word movement cell: color, drawn 1.5px arrow, and a word — never color alone.",
+      "html": "<div class=\"ds-move-row\"><span class=\"ds-move-up\"><svg viewBox=\"0 0 12 12\" width=\"12\" height=\"12\" aria-hidden=\"true\"><path d=\"M6 10 L6 2 M2.5 5.5 L6 2 L9.5 5.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg> up 4.2%</span><span class=\"ds-move-down\"><svg viewBox=\"0 0 12 12\" width=\"12\" height=\"12\" aria-hidden=\"true\"><path d=\"M6 2 L6 10 M2.5 6.5 L6 10 L9.5 6.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg> down 1.8%</span></div>",
+      "css": ".ds-move-row { display: flex; gap: 1.5rem; font-family: var(--font-sans, 'Noto Sans', 'Segoe UI', system-ui, sans-serif); font-size: 0.78125rem; font-weight: 600; font-variant-numeric: tabular-nums; } .ds-move-up, .ds-move-down { display: inline-flex; align-items: center; gap: 0.25rem; } .ds-move-up { color: var(--color-positive, #d70909); } .ds-move-down { color: var(--color-negative, #131315); } .ds-move-up svg, .ds-move-down svg { display: inline-block; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Ruled Rack",
+    "overview": "OpenMarket's whole state reads as one ruled rack of labeled modules: a pure white ground, near-black compact type, and hairline gray rules boxing every module edge to edge. A single utility red is the only voice in the room — it carries prices, movement upward, primary actions, module header tabs, selection, and errors, and nothing else. The world explicitly refuses both the glowing dark terminal and the soft-shadow SaaS card grid: there is no dark mode, no gradients, no resting shadows, and no rounded card silhouettes. Density comes from real content only.\n\nEverything is set square. Corners are right angles everywhere except the one sanctioned curve: the company-logo chip (7px). Numbers are tabular everywhere, so columns of prices rack up like a ledger. Structural labels speak in one voice: bold Roboto Condensed uppercase with open tracking. Status is stamped, not badged: outlined red OPEN, outlined ink SETTLED, like ink stamps on paper.",
+    "keyCharacteristics": [
+      "Light-only world: white ground, ink text, hairline gray rules; depth drawn, never cast.",
+      "One accent: utility red (#d70909) for prices, up-movement, actions, tabs, selection, errors.",
+      "Movement is never color alone: red-up / ink-down always pairs a drawn arrow with a word.",
+      "Square geometry; the 7px logo chip is the only radius.",
+      "Tabular numerals globally; condensed bold caps for every structural label.",
+      "Minimal functional motion (150-220ms ease-out); reduced-motion fully honored."
+    ],
+    "rules": [
+      { "name": "The One Red Rule", "body": "Red is utility, never decoration. If an element is not a price, an upward movement, a primary action, a module tab, a selection, or an error, it does not get red.", "section": "colors" },
+      { "name": "The Arrow-and-Word Rule", "body": "Movement direction is triple-encoded: color (red up / ink down), a drawn 1.5px stroke arrow, and a word. Color alone never carries meaning; flat/unavailable states fall back to muted ink.", "section": "colors" },
+      { "name": "The Hairline Rule", "body": "Structure is drawn with 1px rules: Rule Gray (#c5c5c5) for module perimeters, Rule Faint (#e4e4e6) for interior dividers, Press Ink (#131315) only where the world needs a hard edge.", "section": "colors" },
+      { "name": "The Caps Voice Rule", "body": "Every structural label — table header, module tab, nav link, stamp, button, disclosure — is bold Roboto Condensed uppercase with at least 0.05em tracking. Content is never uppercased.", "section": "typography" },
+      { "name": "The Tabular Rule", "body": "font-variant-numeric: tabular-nums is global. Any new number-bearing surface inherits it; never opt out.", "section": "typography" },
+      { "name": "The Fixed Ramp Rule", "body": "Type sizes are fixed steps from the token ramp; responsive changes swap steps at breakpoints, never fluid clamp() type.", "section": "typography" },
+      { "name": "The Real Density Rule", "body": "Density comes from real content only. No invented rows, placeholder markets, or filler stats; empty states say what is missing and teach the next action instead.", "section": "layout" },
+      { "name": "The No-Resting-Shadow Rule", "body": "Nothing casts a shadow at rest. A shadow may appear only on the mobile sheet (a temporary overlay layer) and as the focus ring; cards, modules, buttons, and popovers are bounded by rules alone.", "section": "elevation" },
+      { "name": "The One Curve Rule", "body": "Radius exists only on logo chips (7px). Any other rounded corner is a defect.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do box every module edge to edge with a 1px Rule Gray border and divide interiors with Rule Faint hairlines.",
+      "Do give every structural label the caps voice: Roboto Condensed 700, uppercase, >=0.05em tracking.",
+      "Do triple-encode movement — color, drawn arrow, word — and set all figures in tabular numerals.",
+      "Do keep every control at the shared 2.25rem height with the 0.1875rem pale-red focus halo on :focus-visible.",
+      "Do hold WCAG 2.2 AA: visible focus rings, keyboard-operable ticket controls, semantic tables/lists, textual chart summaries, focus-trapped sheets.",
+      "Do honor prefers-reduced-motion in every module that animates, on top of the global kill switch."
+    ],
+    "donts": [
+      "Don't introduce a dark mode, a second accent hue, or gradients — the world is light-only with one red.",
+      "Don't use red decoratively, or use color as the only carrier of movement, status, or selection.",
+      "Don't round corners (except the 7px logo chip) or cast resting shadows — depth is drawn with rules.",
+      "Don't import icon fonts or third-party glyph sets; draw icons at the single 1.5px round-capped stroke.",
+      "Don't fabricate density: no invented rows, filler markets, or decorative stats; empty states teach instead.",
+      "Don't scale type fluidly; swap fixed ramp steps at structural breakpoints."
+    ]
+  }
+}

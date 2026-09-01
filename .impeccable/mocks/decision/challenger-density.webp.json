@@ -1,0 +1,6 @@
+{
+  "prompt": "Desktop web app first viewport, landscape 1440x900, for OpenMarket, a paper-money prediction market on private-company valuations. Visual world: Japanese contemporary high-density commerce web, fully committed. Pure white ground, dense near-black text at compact sizes, hairline gray module borders tiling edge to edge, small utility-red (#d0021b) header tabs on every module, no wasted pixels. Layout: multi-row compact top nav; a mosaic of ruled rectangular modules packing one screen: market board module with rows for Anthropic $1.5T up $1.4T and Stripe $59.2B down $5.5B; probability ladder module with many tight rows 'above $250B — YES 87.2% — NO 12.8%'; live activity module as a tight list of executions with timestamps; summary badges for claims outstanding and refresh cadence. Compact gothic sans, tight leading, tabular numerals, red price accents, small NEW and OPEN badges. Everything ruled, boxed, and labeled. No dark mode, no gradients. Production-grade UI fidelity, crisp text.",
+  "createdAt": "2026-09-01T07:36:13.663Z",
+  "tool": "generate-image.mjs",
+  "model": "gpt-image-2"
+}

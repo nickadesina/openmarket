@@ -1,9 +1,28 @@
 import type { Metadata, Viewport } from "next";
+import { Archivo_Black, Noto_Sans, Roboto_Condensed } from "next/font/google";
 import type { ReactNode } from "react";
 
 import { AppShell } from "../components/app-shell/app-shell.js";
 import { QueryProvider } from "../components/providers/query-provider.js";
 import "./globals.css";
+
+const notoSans = Noto_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-noto",
+});
+
+const robotoCondensed = Roboto_Condensed({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-cond",
+});
+
+const archivoBlack = Archivo_Black({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-brand-face",
+});
 
 export const metadata: Metadata = {
   title: {
@@ -15,13 +34,16 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  colorScheme: "dark",
-  themeColor: "oklch(0.105 0 0)",
+  colorScheme: "light",
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({ children }: { readonly children: ReactNode }) {
   return (
-    <html lang="en">
+    <html
+      lang="en"
+      className={`${notoSans.variable} ${robotoCondensed.variable} ${archivoBlack.variable}`}
+    >
       <body>
         <QueryProvider>
           <AppShell>{children}</AppShell>

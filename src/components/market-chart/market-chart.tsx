@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { UTCTimestamp } from "lightweight-charts";
 
+import { formatMetric } from "../../lib/client/format.js";
+import type { MarkHistory, MarkRange, MarketDetail } from "../market-workspace/types.js";
 import styles from "./market-chart.module.css";
-import { formatMetric, type MarkHistory, type MarkRange, type MarketDetail } from "../market-workspace/types.js";
 
 interface MarketChartProps {
   readonly market: MarketDetail;
@@ -18,8 +19,36 @@ interface MarketChartProps {
 
 const RANGES: readonly MarkRange[] = ["1h", "1d", "1w", "all"];
 
+let scratchContext: CanvasRenderingContext2D | null | undefined;
+
+/**
+ * lightweight-charts cannot parse oklch() design tokens, and neither
+ * getComputedStyle nor a fillStyle round-trip converts them (modern browsers
+ * keep oklch colors in their own color space through both). Rasterizing one
+ * pixel and reading it back always yields concrete sRGB channel values.
+ */
+function resolveCssColor(raw: string): string {
+  const value = raw.trim();
+  if (value === "") return value;
+  scratchContext ??= document
+    .createElement("canvas")
+    .getContext("2d", { willReadFrequently: true });
+  if (scratchContext === null || scratchContext === undefined) return value;
+  scratchContext.clearRect(0, 0, 1, 1);
+  scratchContext.fillStyle = "#000000";
+  scratchContext.fillStyle = value;
+  scratchContext.fillRect(0, 0, 1, 1);
+  const [red, green, blue, alpha] = scratchContext.getImageData(0, 0, 1, 1).data;
+  return `rgba(${red}, ${green}, ${blue}, ${((alpha ?? 255) / 255).toFixed(3)})`;
+}
+
+function cssVar(tokens: CSSStyleDeclaration, name: string): string {
+  return resolveCssColor(tokens.getPropertyValue(name));
+}
+
 export function MarketChart({ market, marks, range, loading, error, onRangeChange, onRetry }: MarketChartProps) {
   const chartNode = useRef<HTMLDivElement>(null);
+  const [renderFailed, setRenderFailed] = useState(false);
 
   const summary = useMemo(() => {
     if (marks === undefined || marks.points.length === 0) {
@@ -29,67 +58,86 @@ export function MarketChart({ market, marks, range, loading, error, onRangeChang
     const last = marks.points[marks.points.length - 1]!.value;
     const delta = last - first;
     const direction = delta > 0 ? "increased" : delta < 0 ? "decreased" : "was unchanged";
-    const magnitude = market.metric.kind === "yes_probability"
-      ? new Intl.NumberFormat("en-US", { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(Math.abs(delta))
-      : formatMetric(Math.abs(delta), market.metric.kind);
+    const magnitude = formatMetric(Math.abs(delta), market.metric.kind);
     return `${market.metric.label} ${direction}${delta === 0 ? "" : ` by ${magnitude}`} during the ${range} range, from ${formatMetric(first, market.metric.kind)} to ${formatMetric(last, market.metric.kind)}. The current 60-minute mark is ${formatMetric(marks.mark60Minutes, market.metric.kind)}.`;
   }, [market.metric.current, market.metric.kind, market.metric.label, marks, range]);
 
   useEffect(() => {
-    const container = chartNode.current;
-    if (container === null || marks === undefined || marks.points.length === 0) return;
+     const container = chartNode.current;
+     if (container === null || marks === undefined || marks.points.length === 0) return;
 
-    let disposed = false;
-    let observer: ResizeObserver | undefined;
-    let cleanupChart: (() => void) | undefined;
+     let disposed = false;
+     let observer: ResizeObserver | undefined;
+     let cleanupChart: (() => void) | undefined;
 
-    void import("lightweight-charts").then(({ ColorType, createChart, LineSeries }) => {
-      if (disposed) return;
-      const tokens = getComputedStyle(document.documentElement);
-      const chart = createChart(container, {
-        width: container.clientWidth,
-        height: container.clientHeight,
-        layout: {
-          background: { type: ColorType.Solid, color: "transparent" },
-          textColor: tokens.getPropertyValue("--color-ink-muted").trim(),
+     void import("lightweight-charts").then(({ ColorType, createChart, LineSeries }) => {
+       if (disposed) return;
+       const tokens = getComputedStyle(document.documentElement);
+       const chart = createChart(container, {
+         width: container.clientWidth,
+         height: container.clientHeight,
+         layout: {
+           background: { type: ColorType.Solid, color: "transparent" },
+          textColor: cssVar(tokens, "--color-ink-muted"),
           fontFamily: tokens.getPropertyValue("--font-sans").trim(),
-          fontSize: 11,
+           fontSize: 11,
+           // Attribution moves to the visible text credit under the chart;
+           // the in-pane logo clips against the axis at this pane size.
+           attributionLogo: false,
+         },
+         grid: {
+          vertLines: { color: cssVar(tokens, "--color-border-subtle") },
+          horzLines: { color: cssVar(tokens, "--color-border-subtle") },
+         },
+        rightPriceScale: {
+          borderColor: cssVar(tokens, "--color-border"),
+          // Keeps the topmost tick label clear of the pane edge.
+          scaleMargins: { top: 0.12, bottom: 0.08 },
         },
-        grid: {
-          vertLines: { color: tokens.getPropertyValue("--color-border-subtle").trim() },
-          horzLines: { color: tokens.getPropertyValue("--color-border-subtle").trim() },
-        },
-        rightPriceScale: { borderColor: tokens.getPropertyValue("--color-border").trim() },
-        timeScale: { borderColor: tokens.getPropertyValue("--color-border").trim(), timeVisible: range === "1h" || range === "1d" },
-        crosshair: {
-          vertLine: { color: tokens.getPropertyValue("--color-primary").trim(), labelBackgroundColor: tokens.getPropertyValue("--color-primary").trim() },
-          horzLine: { color: tokens.getPropertyValue("--color-primary").trim(), labelBackgroundColor: tokens.getPropertyValue("--color-primary").trim() },
-        },
-        handleScroll: true,
-        handleScale: true,
-      });
+        timeScale: { borderColor: cssVar(tokens, "--color-border"), timeVisible: range === "1h" || range === "1d" },
+         crosshair: {
+          vertLine: { color: cssVar(tokens, "--color-primary"), labelBackgroundColor: cssVar(tokens, "--color-primary") },
+          horzLine: { color: cssVar(tokens, "--color-primary"), labelBackgroundColor: cssVar(tokens, "--color-primary") },
+         },
+         handleScroll: true,
+         handleScale: true,
+       });
 
-      const currentSeries = chart.addSeries(LineSeries, {
-        color: tokens.getPropertyValue("--color-accent").trim(),
-        lineWidth: 2,
-        title: market.metric.label,
-        priceFormat: market.metric.kind === "yes_probability"
-          ? { type: "custom", formatter: (value: number) => `${(value * 100).toFixed(1)}%`, minMove: 0.001 }
-          : { type: "custom", formatter: (value: number) => formatMetric(value, market.metric.kind), minMove: 1 },
-      });
-      const markSeries = chart.addSeries(LineSeries, {
-        color: tokens.getPropertyValue("--color-primary").trim(),
-        lineWidth: 1,
-        lineStyle: 2,
-        title: "60m mark",
-        priceFormat: market.metric.kind === "yes_probability"
-          ? { type: "custom", formatter: (value: number) => `${(value * 100).toFixed(1)}%`, minMove: 0.001 }
-          : { type: "custom", formatter: (value: number) => formatMetric(value, market.metric.kind), minMove: 1 },
-      });
+       const priceFormat = market.metric.kind === "yes_probability"
+         ? { type: "custom", formatter: (value: number) => `${(value * 100).toFixed(1)}%`, minMove: 0.001 } as const
+         : { type: "custom", formatter: (value: number) => formatMetric(value, market.metric.kind), minMove: 1 } as const;
+       const currentSeries = chart.addSeries(LineSeries, {
+        color: cssVar(tokens, "--color-ink"),
+         lineWidth: 2,
+         title: market.metric.label,
+         priceFormat,
+       });
+       const markSeries = chart.addSeries(LineSeries, {
+        color: cssVar(tokens, "--color-primary"),
+         lineWidth: 1,
+         lineStyle: 2,
+         title: "60m mark",
+         // The mark's own axis label is redundant with the header's "60m
+         // mark" figure and collides with the metric label when they agree.
+         lastValueVisible: false,
+         priceFormat,
+       });
 
       const pointsBySecond = new Map<number, number>();
       for (const point of marks.points) pointsBySecond.set(Math.floor(Date.parse(point.timestamp) / 1000), point.value);
-      const currentData = Array.from(pointsBySecond, ([time, value]) => ({ time: time as UTCTimestamp, value }));
+      let currentData: ({ time: UTCTimestamp } | { time: UTCTimestamp; value: number })[] =
+        Array.from(pointsBySecond, ([time, value]) => ({ time: time as UTCTimestamp, value }));
+      // The x-axis spans the selected range, not just the data extent: a "1d"
+      // toggle over a one-second burst of trades must still read as a day.
+      // lightweight-charts clamps the visible range to the data, so the span
+      // is anchored with a whitespace point at the range start.
+      const rangeSeconds = { "1h": 3_600, "1d": 86_400, "1w": 604_800 }[range as string];
+      const lastPoint = currentData[currentData.length - 1];
+      const firstPoint = currentData[0];
+      if (rangeSeconds !== undefined && lastPoint !== undefined && firstPoint !== undefined) {
+        const from = (lastPoint.time - rangeSeconds) as UTCTimestamp;
+        if (from < firstPoint.time) currentData = [{ time: from }, ...currentData];
+      }
       currentSeries.setData(currentData);
       markSeries.setData(currentData.map(({ time }) => ({ time, value: marks.mark60Minutes })));
       chart.timeScale().fitContent();
@@ -99,6 +147,9 @@ export function MarketChart({ market, marks, range, loading, error, onRangeChang
       });
       observer.observe(container);
       cleanupChart = () => chart.remove();
+      setRenderFailed(false);
+    }).catch(() => {
+      if (!disposed) setRenderFailed(true);
     });
 
     return () => {
@@ -113,7 +164,17 @@ export function MarketChart({ market, marks, range, loading, error, onRangeChang
       <header className={styles.header}>
         <div>
           <h2 id="market-chart-title">Market history</h2>
-          <p>Instantaneous metric and current 60-minute time-weighted mark</p>
+          <p>
+            Instantaneous metric and current 60-minute time-weighted mark ·
+            chart by{" "}
+            <a
+              href="https://www.tradingview.com/lightweight-charts/"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              TradingView Lightweight Charts
+            </a>
+          </p>
         </div>
         <div className={styles.ranges} aria-label="Chart range">
           {RANGES.map((item) => (
@@ -140,6 +201,11 @@ export function MarketChart({ market, marks, range, loading, error, onRangeChang
         ) : null}
         {!loading && !error && marks?.points.length === 0 ? (
           <div className={styles.message}>The first trade will begin this history.</div>
+        ) : null}
+        {renderFailed ? (
+          <div className={styles.message} role="alert">
+            <span>The chart could not be rendered. The text summary above stays current.</span>
+          </div>
         ) : null}
         <div ref={chartNode} className={styles.chart} aria-hidden="true" />
       </div>

@@ -1,0 +1,8 @@
+{
+  "prompt": "Desktop web app first viewport, landscape 1440x900, English language UI, for OpenMarket, a paper-money prediction market on private-company valuations. Committed visual world: Japanese contemporary high-density site grammar \u2014 pure white ground, dense near-black compact gothic sans, hairline gray rules boxing every module edge to edge, small solid utility-red (#d0021b) header tabs on each module, red reserved for prices and primary actions, no wasted pixels, no gradients, no shadows. Structure, in order: slim top bar with OpenMarket wordmark, MARKETS and PORTFOLIO nav, username field, paper-cash balance; below it a full-width hairline summary strip of small labeled stats (paper balance, total claims, refresh every 4s). Main region: the MARKET BOARD as the dominant module spanning two-thirds width \u2014 a dense ruled table, one row per market: logo chip, company name, implied valuation in large red tabular figures ($1.5T Anthropic, up $1.4T; $59.2B Stripe, down $5.5B), 24h change with arrow, pen-thin sparkline, public anchor, claims outstanding, OPEN badge; each row expandable, one row shown expanded revealing a compact inline probability ladder (Valuation above / YES % / NO %). Right third: LIVE ACTIVITY module, a tight ruled execution tape with timestamps (Bought 1,168.70 YES above $30.5B \u2014 Stripe \u2014 $1,100.00). Bottom hairline footer with 'Paper trading only' disclosure. Tabular numerals, tiny uppercase English labels, everything ruled and labeled. Production-grade UI fidelity, crisp text.",
+  "createdAt": "2026-09-01T07:38:24.682Z",
+  "tool": "generate-image.mjs",
+  "model": "gpt-image-2",
+  "approved": true,
+  "steer": "The board-led rack but more minimalistic I think, the site is too full if that makes sense"
+}

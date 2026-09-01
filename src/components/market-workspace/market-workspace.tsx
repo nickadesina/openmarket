@@ -4,7 +4,8 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { ApiClientError, apiRequest } from "../../lib/client/api.js";
+import { ApiClientError, apiRequest, POLL_INTERVAL_MS } from "../../lib/client/api.js";
+import { formatProbability, strikeLabel } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
 import { DistributionChart } from "../distribution-chart/distribution-chart.js";
 import { MarketActivity } from "../market-activity/market-activity.js";
@@ -21,14 +22,29 @@ interface MarketWorkspaceProps {
   readonly initialMarks: MarkHistory | null;
 }
 
-const POLL_INTERVAL_MS = 4_000;
 const FLASH_DURATION_MS = 220;
 const MOBILE_QUERY = "(max-width: 52rem)";
+
+function defaultSelection(market: MarketDetail): TradeSelection | null {
+  const money = market.contracts.reduce<MarketDetail["contracts"][number] | undefined>(
+    (best, contract) =>
+      best === undefined
+      || Math.abs(contract.yesProbability - 0.5) < Math.abs(best.yesProbability - 0.5)
+        ? contract
+        : best,
+    undefined,
+  );
+  return money === undefined ? null : { strikeIndex: money.strikeIndex, side: "yes" };
+}
 
 export function MarketWorkspace({ slug, initialMarket, initialMarks }: MarketWorkspaceProps) {
   const queryClient = useQueryClient();
   const [range, setRange] = useState<MarkRange>(initialMarks?.range ?? "1d");
-  const [selection, setSelection] = useState<TradeSelection | null>(null);
+  // The order form is live from first paint: it opens on the strike nearest
+  // 50% (the money) so a trader can price a bet before touching the ladder.
+  const [selection, setSelection] = useState<TradeSelection | null>(() =>
+    initialMarket === null ? null : defaultSelection(initialMarket),
+  );
   const [sheetOpen, setSheetOpen] = useState(false);
   const [movement, setMovement] = useState<"up" | "down" | "flat">("flat");
   const previousMetric = useRef(initialMarket?.metric.current);
@@ -83,12 +99,6 @@ export function MarketWorkspace({ slug, initialMarket, initialMarks }: MarketWor
       queryClient.invalidateQueries({ queryKey: queryKeys.portfolio }),
       queryClient.invalidateQueries({ queryKey: queryKeys.markets }),
     ]);
-    await Promise.all([
-      queryClient.refetchQueries({ queryKey: queryKeys.market(slug), type: "all" }),
-      queryClient.refetchQueries({ queryKey: queryKeys.marks(slug, range), type: "all" }),
-      queryClient.refetchQueries({ queryKey: queryKeys.activity(slug), type: "all" }),
-      queryClient.refetchQueries({ queryKey: queryKeys.portfolio, type: "all" }),
-    ]);
   }, [queryClient, range, slug]);
 
   if (marketQuery.data === undefined) {
@@ -116,32 +126,24 @@ export function MarketWorkspace({ slug, initialMarket, initialMarks }: MarketWor
   }
 
   const market = marketQuery.data;
+  const activeSelection = selection ?? defaultSelection(market);
   const selectContract = (nextSelection: TradeSelection) => {
     setSelection(nextSelection);
     if (window.matchMedia(MOBILE_QUERY).matches) setSheetOpen(true);
   };
 
-  const desktopTicket = selection !== null && market.status === "open"
-    ? (
-        <TradeTicket
-          key={`desktop-${selection.strikeIndex}-${selection.side}`}
-          market={market}
-          selection={selection}
-          onAuthoritativeRefresh={refreshAuthoritativeData}
-        />
-      )
-    : null;
-  const mobileTicket = selection !== null && market.status === "open"
-    ? (
-        <TradeTicket
-          key={`mobile-${selection.strikeIndex}-${selection.side}`}
-          market={market}
-          selection={selection}
-          onAuthoritativeRefresh={refreshAuthoritativeData}
-          onClose={() => setSheetOpen(false)}
-        />
-      )
-    : null;
+  const ticket = (variant: "desktop" | "mobile") =>
+    activeSelection !== null && market.status === "open"
+      ? (
+          <TradeTicket
+            market={market}
+            selection={activeSelection}
+            onSelectionChange={setSelection}
+            onAuthoritativeRefresh={refreshAuthoritativeData}
+            {...(variant === "mobile" ? { onClose: () => setSheetOpen(false) } : {})}
+          />
+        )
+      : null;
 
   return (
     <div className={styles.page}>
@@ -164,16 +166,19 @@ export function MarketWorkspace({ slug, initialMarket, initialMarks }: MarketWor
             onRangeChange={setRange}
             onRetry={() => void marksQuery.refetch()}
           />
-          <StrikeLadder market={market} selection={selection} onSelect={selectContract} />
+          <StrikeLadder market={market} selection={activeSelection} onSelect={selectContract} />
         </div>
 
         {market.status === "open" ? (
           <aside className={styles.tradeRail} aria-label="Trade rail">
-            {desktopTicket ?? (
-              <div className={styles.ticketPrompt}>
-                <strong>Select a probability</strong>
-                <p>Choose YES or NO in the ladder to prepare a live quote.</p>
-              </div>
+            {ticket("desktop") ?? (
+              <>
+                <h2 className={styles.railTab}>Trade ticket</h2>
+                <div className={styles.ticketPrompt}>
+                  <strong>No contracts to price</strong>
+                  <p>This market has no open strikes.</p>
+                </div>
+              </>
             )}
           </aside>
         ) : null}
@@ -183,10 +188,27 @@ export function MarketWorkspace({ slug, initialMarket, initialMarks }: MarketWor
       <MarketActivity
         market={market}
         activity={activityQuery.data}
-        loading={activityQuery.isLoading || activityQuery.isFetching}
+        loading={activityQuery.isFetching}
         error={activityQuery.isError}
         onRetry={() => void activityQuery.refetch()}
       />
+
+      {market.status === "open" && activeSelection !== null ? (
+        <div className={styles.mobileTradeBar}>
+          <span className={styles.mobileTradeSummary}>
+            <span>{activeSelection.side.toUpperCase()} · {strikeLabel(market, activeSelection.strikeIndex)}</span>
+            <strong>
+              {formatProbability(
+                (market.contracts.find((item) => item.strikeIndex === activeSelection.strikeIndex)
+                  ?? market.contracts[0])?.[activeSelection.side === "yes" ? "yesProbability" : "noProbability"] ?? 0,
+              )}
+            </strong>
+          </span>
+          <button type="button" className={styles.mobileTradeButton} onClick={() => setSheetOpen(true)}>
+            Trade
+          </button>
+        </div>
+      ) : null}
 
       {market.status === "open" ? (
         <Dialog.Root open={sheetOpen} onOpenChange={setSheetOpen}>
@@ -197,7 +219,7 @@ export function MarketWorkspace({ slug, initialMarket, initialMarks }: MarketWor
               <Dialog.Description id="trade-sheet-description" className={styles.visuallyHidden}>
                 Review a quote and confirm a paper-money trade.
               </Dialog.Description>
-              {mobileTicket}
+              {ticket("mobile")}
             </Dialog.Content>
           </Dialog.Portal>
         </Dialog.Root>

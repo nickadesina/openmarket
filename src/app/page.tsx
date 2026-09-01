@@ -1,4 +1,5 @@
 import { HomeActivity } from "../components/home-activity/home-activity.js";
+import { HomeStats } from "../components/home-stats/home-stats.js";
 import { MarketBoard } from "../components/market-board/market-board.js";
 import { getRuntimeDatabase } from "../lib/db/runtime.js";
 import { getActivity, type ActivityPage } from "../lib/services/get-activity.js";
@@ -37,16 +38,7 @@ export default async function HomePage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <div>
-          <h1>Valuation markets</h1>
-          <p>
-            Paper-money markets for the next reported valuation of private
-            companies.
-          </p>
-        </div>
-        <span className={styles.refreshNote}>Live data refreshes every 4 seconds</span>
-      </header>
+      <HomeStats initialData={data.markets} />
 
       <div className={styles.workspace}>
         <section className={styles.section} aria-labelledby="market-board-title">

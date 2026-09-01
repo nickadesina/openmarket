@@ -21,9 +21,20 @@
 
 .activity h2,
 .resolution h2 {
+  display: inline-flex;
   margin: 0;
-  color: var(--color-ink);
+  padding: 0.375rem 0.875rem;
+  background: var(--color-primary);
+  color: #ffffff;
+  font-family: var(--font-caps);
   font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.resolution h2 {
+  margin-bottom: var(--space-3);
 }
 
 .activity header p,
@@ -153,9 +164,11 @@
 .resolution a {
   display: inline-block;
   margin-top: var(--space-3);
-  color: var(--color-accent);
+  color: var(--color-primary);
   font-size: var(--font-size-sm);
-  font-weight: 650;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.1875rem;
 }
 
 .resolution dl {
@@ -201,4 +214,8 @@
     align-items: flex-start;
     padding-inline: var(--space-4);
   }
+}
+
+.visuallyHidden {
+  composes: visuallyHidden from "../../styles/shared.module.css";
 }

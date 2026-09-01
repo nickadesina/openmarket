@@ -288,7 +288,7 @@ describe("settleMarket", () => {
       thirdUserId,
     ]);
     expect(records.locks).toEqual([
-      { table: "markets", tables: ["markets", "companies"] },
+      { table: "markets", tables: "markets" },
       { table: "holdings", tables: ["holdings", "users"] },
     ]);
     expect(records.orderBy).toEqual([["users.id", "asc"]]);

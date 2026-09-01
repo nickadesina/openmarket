@@ -1,0 +1,223 @@
+{
+  "regions": [
+    {
+      "id": "wordmark",
+      "kind": "text",
+      "grid": "A0:B0",
+      "box": {
+        "x": 0.013,
+        "y": 0.0078,
+        "w": 0.1302,
+        "h": 0.0488
+      },
+      "note": "OpenMarket wordmark, heavy dark grotesque",
+      "codeDrawn": true
+    },
+    {
+      "id": "nav",
+      "kind": "control",
+      "grid": "C0:D0",
+      "box": {
+        "x": 0.1797,
+        "y": 0.0117,
+        "w": 0.1432,
+        "h": 0.041
+      },
+      "note": "MARKETS solid red tab button white caps + PORTFOLIO dark caps link",
+      "codeDrawn": true
+    },
+    {
+      "id": "account",
+      "kind": "control",
+      "grid": "I0:J0",
+      "box": {
+        "x": 0.7669,
+        "y": 0.0059,
+        "w": 0.2279,
+        "h": 0.0527
+      },
+      "note": "john.doe dropdown and PAPER CASH label over red tabular $1,000,000.00",
+      "codeDrawn": true
+    },
+    {
+      "id": "statstrip",
+      "kind": "text",
+      "grid": "A0:J0",
+      "box": {
+        "x": 0.0,
+        "y": 0.0645,
+        "w": 1.0,
+        "h": 0.0449
+      },
+      "snap": false,
+      "note": "full-width hairline-ruled strip of labeled stats: tiny uppercase labels with tabular figures, red for paper cash, vertical hairline separators",
+      "codeDrawn": true
+    },
+    {
+      "id": "board-tab",
+      "kind": "chrome",
+      "grid": "A1:A1",
+      "box": {
+        "x": 0.013,
+        "y": 0.125,
+        "w": 0.0846,
+        "h": 0.0273
+      },
+      "note": "MARKET BOARD small solid red header tab, white caps"
+    },
+    {
+      "id": "board-head",
+      "kind": "text",
+      "grid": "A1:G1",
+      "box": {
+        "x": 0.013,
+        "y": 0.1543,
+        "w": 0.6484,
+        "h": 0.0488
+      },
+      "snap": false,
+      "note": "board column headers row: # COMPANY IMPLIED VALUATION (PAPER) 24H CHANGE 24H SPARKLINE PUBLIC ANCHOR CLAIMS OUTSTANDING STATUS, tiny caps, hairline rules",
+      "codeDrawn": true
+    },
+    {
+      "id": "row-anthropic",
+      "kind": "text",
+      "grid": "A2:G2",
+      "box": {
+        "x": 0.013,
+        "y": 0.2051,
+        "w": 0.6484,
+        "h": 0.0703
+      },
+      "snap": false,
+      "note": "market row: expand chevron glyph, rank 1, small company logo (existing app asset, icon-sized), Anthropic name, red $1.50T tabular figure, up-arrow red change, runtime data sparkline chart, public anchor figure with caption, claims figure, OPEN outlined red badge",
+      "codeDrawn": true
+    },
+    {
+      "id": "row-stripe",
+      "kind": "text",
+      "grid": "A3:G3",
+      "box": {
+        "x": 0.013,
+        "y": 0.2773,
+        "w": 0.6484,
+        "h": 0.0625
+      },
+      "snap": false,
+      "note": "market row, expanded state: Stripe, red $59.20B, down change, sparkline, anchor, claims, OPEN badge",
+      "codeDrawn": true
+    },
+    {
+      "id": "ladder",
+      "kind": "text",
+      "grid": "A3:G5",
+      "box": {
+        "x": 0.0234,
+        "y": 0.3438,
+        "w": 0.638,
+        "h": 0.2148
+      },
+      "snap": false,
+      "note": "inline expansion: two side-by-side ruled ladder tables, headers VALUATION ABOVE (USD) / YES % / NO %, strike rows with red YES cents figures, one row highlighted with pale red fill",
+      "codeDrawn": true
+    },
+    {
+      "id": "board-rest",
+      "kind": "text",
+      "grid": "A5:G8",
+      "box": {
+        "x": 0.013,
+        "y": 0.5625,
+        "w": 0.6484,
+        "h": 0.334
+      },
+      "snap": false,
+      "container": true,
+      "note": "six more market rows, identical anatomy to row-anthropic: OpenAI, Databricks, Revolut, Klarna, Scale AI, UiPath",
+      "codeDrawn": true
+    },
+    {
+      "id": "board-foot",
+      "kind": "text",
+      "grid": "A9:G9",
+      "box": {
+        "x": 0.013,
+        "y": 0.8984,
+        "w": 0.6484,
+        "h": 0.0391
+      },
+      "snap": false,
+      "note": "board footer rule: 1-8 OF 32 MARKETS centered left, VIEW ALL MARKETS red caps link right",
+      "codeDrawn": true
+    },
+    {
+      "id": "activity-tab",
+      "kind": "chrome",
+      "grid": "H1:H1",
+      "box": {
+        "x": 0.6732,
+        "y": 0.125,
+        "w": 0.0781,
+        "h": 0.0273
+      },
+      "note": "LIVE ACTIVITY small solid red header tab, white caps"
+    },
+    {
+      "id": "activity-head",
+      "kind": "text",
+      "grid": "H1:J1",
+      "box": {
+        "x": 0.6732,
+        "y": 0.1543,
+        "w": 0.3151,
+        "h": 0.0488
+      },
+      "snap": false,
+      "note": "activity column headers: TIME USER ACTION DETAILS AMOUNT (PAPER), tiny caps",
+      "codeDrawn": true
+    },
+    {
+      "id": "activity-tape",
+      "kind": "text",
+      "grid": "H2:J8",
+      "box": {
+        "x": 0.6732,
+        "y": 0.2051,
+        "w": 0.3151,
+        "h": 0.6914
+      },
+      "snap": false,
+      "container": true,
+      "note": "ruled execution tape, one hairline row per fill: tabular time, username, BOUGHT/SOLD caps, details line, red amount right-aligned",
+      "codeDrawn": true
+    },
+    {
+      "id": "activity-foot",
+      "kind": "text",
+      "grid": "H9:J9",
+      "box": {
+        "x": 0.6732,
+        "y": 0.8984,
+        "w": 0.3151,
+        "h": 0.0391
+      },
+      "snap": false,
+      "note": "VIEW FULL ACTIVITY FEED red caps link centered",
+      "codeDrawn": true
+    },
+    {
+      "id": "footer",
+      "kind": "text",
+      "grid": "A9:J9",
+      "box": {
+        "x": 0.0,
+        "y": 0.9453,
+        "w": 1.0,
+        "h": 0.0547
+      },
+      "snap": false,
+      "note": "footer band above hairline: copyright left, PAPER TRADING ONLY. NOT REAL MONEY. NO PURCHASES OR WITHDRAWALS. centered caps, TERMS PRIVACY HELP CONTACT right",
+      "codeDrawn": true
+    }
+  ]
+}

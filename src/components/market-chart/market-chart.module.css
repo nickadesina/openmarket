@@ -13,9 +13,16 @@
 }
 
 .header h2 {
+  display: inline-flex;
   margin: 0;
-  color: var(--color-ink);
-  font-size: var(--font-size-lg);
+  padding: 0.375rem 0.875rem;
+  background: var(--color-primary);
+  color: #ffffff;
+  font-family: var(--font-caps);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
 }
 
 .header p,
@@ -46,7 +53,7 @@
   background: transparent;
   font: inherit;
   font-size: var(--font-size-xs);
-  font-weight: 650;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -57,8 +64,8 @@
 }
 
 .ranges button[aria-pressed="true"] {
-  color: var(--color-ink);
-  background: var(--color-surface-elevated);
+  color: #ffffff;
+  background: var(--color-primary);
 }
 
 .ranges button:hover,
@@ -94,7 +101,7 @@
   color: var(--color-ink-muted);
   background: transparent;
   font: inherit;
-  font-weight: 650;
+  font-weight: 600;
   cursor: pointer;
 }
 

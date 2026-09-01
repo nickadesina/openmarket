@@ -26,10 +26,14 @@
 }
 
 .sectionLabel {
-  color: var(--color-accent) !important;
-  font-size: 0.75rem;
+  display: inline-flex;
+  padding: 0.375rem 0.875rem;
+  background: var(--color-primary);
+  color: #ffffff !important;
+  font-family: var(--font-caps);
+  font-size: var(--font-size-sm);
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
 }
 
@@ -118,7 +122,7 @@
   gap: var(--space-2);
   color: var(--color-ink);
   font-size: 0.8125rem;
-  font-weight: 620;
+  font-weight: 600;
 }
 
 .field input,
@@ -166,7 +170,7 @@
 .segmentedField legend {
   margin-bottom: var(--space-2);
   font-size: 0.8125rem;
-  font-weight: 620;
+  font-weight: 600;
 }
 
 .segmentedField > div {
@@ -215,36 +219,12 @@
   padding-top: var(--space-2);
 }
 
-.primaryButton,
-.secondaryButton,
-.dangerButton {
-  display: inline-flex;
-  min-height: var(--control-height);
-  align-items: center;
-  justify-content: center;
-  padding: 0 var(--space-4);
-  border-radius: var(--radius-sm);
-  font: inherit;
-  font-size: 0.8125rem;
-  font-weight: 650;
-  line-height: 1;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
-}
-
 .primaryButton {
-  border: 1px solid var(--color-primary-action);
-  background: var(--color-primary-action);
-  color: var(--color-ink);
-}
-
-.primaryButton:hover {
-  border-color: var(--color-primary-action-hover);
-  background: var(--color-primary-action-hover);
+  composes: primaryButton from "../../styles/shared.module.css";
 }
 
 .secondaryButton {
+  composes: buttonBase from "../../styles/shared.module.css";
   border: 1px solid var(--color-border-strong);
   background: var(--color-surface-elevated);
   color: var(--color-ink);
@@ -255,9 +235,10 @@
 }
 
 .dangerButton {
+  composes: buttonBase from "../../styles/shared.module.css";
   border: 1px solid var(--color-negative-action);
   background: var(--color-negative-action);
-  color: var(--color-ink);
+  color: #ffffff;
 }
 
 .dangerButton:hover {
@@ -265,23 +246,6 @@
   background: var(--color-negative-action-hover);
 }
 
-.primaryButton:active,
-.secondaryButton:active,
-.dangerButton:active {
-  transform: translateY(1px);
-}
-
-.primaryButton:disabled,
-.secondaryButton:disabled,
-.dangerButton:disabled {
-  opacity: 0.48;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.primaryButton:focus-visible,
-.secondaryButton:focus-visible,
-.dangerButton:focus-visible,
 .field input:focus-visible,
 .field textarea:focus-visible,
 .reviewPanel a:focus-visible {
@@ -290,11 +254,13 @@
 
 .irreversibleBadge {
   padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--color-negative);
-  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-ink);
   color: var(--color-ink);
-  font-size: 0.75rem;
-  font-weight: 650;
+  font-family: var(--font-caps);
+  font-size: 0.71875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .reviewPanel {
@@ -350,15 +316,14 @@
 .inlineError,
 .authRequired {
   margin: var(--space-3) 0 0;
-  color: var(--color-negative);
+  color: var(--color-primary);
   font-size: 0.8125rem;
   line-height: 1.5;
 }
 
 .authRequired {
   padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--color-negative);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-primary);
 }
 .gatedExplanation {
   max-width: 65ch;
@@ -427,13 +392,5 @@
 
   .formActions button {
     width: 100%;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .primaryButton,
-  .secondaryButton,
-  .dangerButton {
-    transition: none;
   }
 }
