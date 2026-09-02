@@ -29,10 +29,10 @@ Institutional, analytical, restrained. Probability and execution evidence lead. 
 
 - CSS Modules and global OKLCH tokens only; no Tailwind or CSS-in-JS.
 - One product sans stack with tabular numerals for market data.
-- Violet is restrained selection/primary action; neutral graphite architecture; cyan/green/red only for semantics.
+- One accent only: Utility Red as defined in `DESIGN.md`. No second hue, no violet/graphite/cyan palette.
 - Movement always includes an arrow/text cue, never color alone.
 - Charts expose textual summaries. Focus is visible. Controls are keyboard reachable.
-- Motion lasts 150–250ms and communicates state only.
+- Motion lasts 150–220ms and communicates state only.
 
 ## Completion gate
 

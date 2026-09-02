@@ -11,7 +11,9 @@
  * Run against DATABASE_URL_UNPOOLED, then `npm run verify:replay` and refresh
  * scripts/dev-seed.sql with the pg_dump command documented in seed-dev.ts.
  */
+
 import { randomUUID } from "node:crypto";
+import { sql } from "kysely";
 
 import { createDirectDatabase, destroyDatabase } from "../src/lib/db/client.js";
 import { VALUATION_BOUNDARIES_USD } from "../src/lib/engine/buckets.js";
@@ -255,22 +257,21 @@ async function main(): Promise<void> {
         );
       })
       .sort((a, b) => a - b);
+    // Timestamps are immutable in the schema types on purpose; backdating a dev
+    // seed is the one sanctioned exception, so it goes through raw SQL.
     for (const [index, trade] of trades.entries()) {
       const ts = new Date(timestamps[index]!);
-      await db.updateTable("trades").set({ created_at: ts }).where("id", "=", trade.id).execute();
-      await db.updateTable("marks").set({ ts }).where("trade_id", "=", trade.id).execute();
+      await sql`update trades set created_at = ${ts} where id = ${trade.id}`.execute(db);
+      await sql`update marks set ts = ${ts} where trade_id = ${trade.id}`.execute(db);
     }
     const opened = new Date(start - 86_400_000);
-    await db.updateTable("markets").set({ created_at: opened }).execute();
+    await sql`update markets set created_at = ${opened}`.execute(db);
     // The seed mark (sequence 0, no trade) must precede every trade mark.
-    await db.updateTable("marks").set({ ts: opened }).where("trade_id", "is", null).execute();
-    await db.updateTable("companies").set({ created_at: opened }).execute();
+    await sql`update marks set ts = ${opened} where trade_id is null`.execute(db);
+    await sql`update companies set created_at = ${opened}`.execute(db);
     for (const [index, user] of users.entries()) {
-      await db
-        .updateTable("users")
-        .set({ created_at: new Date(start + index * 3_600_000) })
-        .where("id", "=", user.id)
-        .execute();
+      const createdAt = new Date(start + index * 3_600_000);
+      await sql`update users set created_at = ${createdAt} where id = ${user.id}`.execute(db);
     }
 
     const summary = await db

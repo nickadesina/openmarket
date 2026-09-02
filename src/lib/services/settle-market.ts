@@ -101,6 +101,7 @@ export async function settleMarket(
 
     let totalEntitlementUsd = 0;
     let totalPayoutCents = 0n;
+    let creditedUsers = 0;
     const zeroHoldings = new Array<number>(market.n_buckets).fill(0);
 
     for (const holding of holdings) {
@@ -121,6 +122,7 @@ export async function settleMarket(
 
       totalEntitlementUsd += entitlementUsd;
       totalPayoutCents += BigInt(payoutCents);
+      if (payoutCents > 0) creditedUsers += 1;
 
       await transaction
         .updateTable("users")
@@ -179,7 +181,7 @@ export async function settleMarket(
       slug: input.slug,
       settled_value_usd: input.settled_value_usd,
       winning_bucket: winningBucketIndex,
-      credited_users: holdings.length,
+      credited_users: creditedUsers,
       total_payout_cents: totalPayoutCents.toString(),
       rounding_reserve_delta_cents: roundingReserveDeltaCents.toString(),
       settled_at: settlementTs.toISOString(),

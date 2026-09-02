@@ -85,3 +85,8 @@ jobs:
           APP_ORIGIN: http://127.0.0.1:3000
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/openmarket_test
           DATABASE_URL_UNPOOLED: postgresql://postgres:postgres@127.0.0.1:5432/openmarket_test
+
+      - name: Verify ledger replay
+        run: npm run db:migrate && npm run verify:replay
+        env:
+          DATABASE_URL_UNPOOLED: postgresql://postgres:postgres@127.0.0.1:5432/openmarket_test

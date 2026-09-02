@@ -223,7 +223,7 @@ tabular copyright line, a centered bold-caps disclosure, and caps links.
 
 - **Home:** page header row (headline + muted subline + caps refresh note over a hairline), then a two-column workspace — MARKET BOARD dominant (`minmax(0,1fr)`, roughly 2/3) with the LIVE ACTIVITY tape right rail (`minmax(20rem, 26rem)`). Collapses to one column at 84rem. Below, a muted small-print disclosure paragraph (max 80ch).
 - **Market page:** chart and strike ladder in the main region with a sticky trade rail (`position: sticky; top: --space-4`) on desktop; under 52rem the rail disappears and the selected strike opens a bottom sheet (fixed, max-height min(88dvh, 48rem), overlay scrim of 34% ink).
-- **Board table:** rows are 4.5rem tall with hairline column dividers; under 58rem the table reflows into stacked label/value grids (the `thead` goes visually hidden, `data-label` pseudo-content supplies caps labels) and the inline ladder/expand affordance is suppressed in favor of the market page.
+- **Board table:** rows are 4rem tall (`--row-board`) with hairline column dividers; under 58rem the table reflows into stacked label/value grids (the `thead` goes visually hidden, `data-label` pseudo-content supplies caps labels) and the inline ladder/expand affordance is suppressed in favor of the market page.
 - **Spacing:** the 8-step rem scale (0.25 → 4rem); modules sit `--space-5` (1.5rem) apart, cell padding is `--space-3` (0.75rem), control height is a uniform 2.25rem.
 
 **The Real Density Rule.** Density comes from real content only. No invented rows, placeholder markets, or filler stats; empty states say what is missing and teach the next action instead.

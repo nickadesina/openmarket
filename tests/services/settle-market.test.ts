@@ -258,7 +258,8 @@ describe("settleMarket", () => {
       slug: "acme",
       settled_value_usd: "1",
       winning_bucket: 1,
-      credited_users: 3,
+      // The two 0.006 USD entitlements quantize to zero cents, so only one user is credited.
+      credited_users: 1,
       total_payout_cents: "10000",
       rounding_reserve_delta_cents: "1",
       settled_at: SETTLEMENT_TS.toISOString(),

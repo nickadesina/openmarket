@@ -7,6 +7,7 @@ import { useState } from "react";
 import { apiRequest, POLL_INTERVAL_MS } from "../../lib/client/api.js";
 import {
   formatDate,
+  formatDateTime,
   formatPrice,
   formatProbability,
   formatValuation,
@@ -287,8 +288,12 @@ function MarketRow({
             <span className={styles.statusSettled}>Settled</span>
           )}
           {market.settledAt === null ? null : (
-            <time className={styles.settledDate} dateTime={market.settledAt}>
-              {formatDate(market.settledAt)}
+            <time
+              className={styles.settledDate}
+              dateTime={market.settledAt}
+              suppressHydrationWarning
+            >
+              {formatDateTime(market.settledAt)}
             </time>
           )}
         </span>
