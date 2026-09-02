@@ -39,7 +39,7 @@ async function openSellFlow(
 }
 
 async function reviewSale(page: Page, sellFlow: Locator, quantity: number): Promise<void> {
-  await sellFlow.getByLabel("Quantity").fill(String(quantity));
+  await sellFlow.getByLabel("Quantity", { exact: true }).fill(String(quantity));
   const quotePromise = page.waitForResponse((response) =>
     isApiResponse(response, "POST", "/api/quote"),
   );
@@ -88,12 +88,16 @@ test("the sale quantity is bounded by the sellable position", async ({
   await expect(
     sellFlow.getByText(`Sellable: ${purchase.sellable_quantity}`, { exact: false }),
   ).toBeVisible();
-  await sellFlow.getByLabel("Quantity").fill(String(purchase.sellable_quantity * 2));
+  await sellFlow
+    .getByLabel("Quantity", { exact: true })
+    .fill(String(purchase.sellable_quantity * 2));
   await expect(sellFlow.getByRole("button", { name: "Review sale" })).toBeDisabled();
-  await sellFlow.getByLabel("Quantity").fill("0");
+  await sellFlow.getByLabel("Quantity", { exact: true }).fill("0");
   await expect(sellFlow.getByRole("button", { name: "Review sale" })).toBeDisabled();
   await sellFlow.getByRole("button", { name: "Use maximum" }).click();
-  await expect(sellFlow.getByLabel("Quantity")).toHaveValue(String(purchase.sellable_quantity));
+  await expect(sellFlow.getByLabel("Quantity", { exact: true })).toHaveValue(
+    String(purchase.sellable_quantity),
+  );
   await expect(sellFlow.getByRole("button", { name: "Review sale" })).toBeEnabled();
 });
 
