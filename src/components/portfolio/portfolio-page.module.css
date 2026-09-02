@@ -19,8 +19,13 @@
   gap: var(--space-4);
 }
 
+.pageHeader,
+.sectionHeader {
+  /* Tab text, title, and any trailing control share a baseline. */
+  align-items: baseline;
+}
+
 .pageHeader {
-  align-items: flex-end;
   margin-bottom: var(--space-6);
 }
 

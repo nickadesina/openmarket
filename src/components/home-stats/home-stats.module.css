@@ -1,18 +1,18 @@
 .strip {
   display: flex;
-  align-items: stretch;
+  /* Everything in the strip shares one baseline: the title, the caps
+     labels, the figures, and the refresh note. Box-centering mixed fonts
+     and sizes puts each on its own line. */
+  align-items: baseline;
   gap: var(--space-4);
-  min-height: 2.875rem;
   border-bottom: 1px solid var(--color-border);
   font-variant-numeric: tabular-nums;
 }
 
 .title {
-  display: flex;
   flex: 0 0 auto;
-  align-items: center;
   margin: 0;
-  padding-right: var(--space-4);
+  padding: var(--space-3) var(--space-4) var(--space-3) 0;
   border-right: 1px solid var(--color-border);
   font-size: var(--font-size-md);
   font-weight: 700;
@@ -24,12 +24,13 @@
   min-width: 0;
   margin: 0;
   flex-wrap: wrap;
+  align-items: baseline;
   gap: var(--space-4) var(--space-6);
 }
 
 .facts > div {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: var(--space-3);
 }
 

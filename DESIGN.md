@@ -209,6 +209,8 @@ Six roles at a ~1.2 ratio: 11 / 13 / 15 / 18 / 22 / 28px. Every figure in Roboto
 
 **The Fixed Ramp Rule.** Type sizes are fixed steps from the token ramp (0.6875 / 0.8125 / 0.9375 / 1.125 / 1.375 / 1.75rem); no component declares a literal `font-size`; responsive changes swap steps at breakpoints, never fluid `clamp()` type. (The one sanctioned clamp is the page gutter, which is space, not type.)
 
+**The Baseline Rule (rows).** Wherever a tab, a label, a caption, a figure, or a trailing control shares a row with other text, the row aligns by `align-items: baseline`, never by box center: the home stat strip, every module header, the ticket header, and the portfolio headers. Mixed fonts and sizes centered by box land on different lines; baselines land on one. Box centering is reserved for rows of controls or icons with no shared text line.
+
 **The Row Rule.** Rows sit on the 4px grid via three tokens: `--row-compact` 2rem (list entries, table heads, ledger rows), `--row-table` 2.5rem (order book and data tables), `--row-board` 4rem (market board). Controls are `--control-height` 2.25rem, small 2rem, large 2.75rem.
 
 ## Layout
