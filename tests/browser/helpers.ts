@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
 
 import {
-  expect,
-  test,
   type APIResponse,
-  type Page,
   type Response as BrowserResponse,
+  expect,
+  type Page,
   type TestInfo,
+  test,
 } from "@playwright/test";
 
 export const databaseAvailable = Boolean(process.env.DATABASE_URL_TEST);
@@ -93,7 +93,10 @@ export function adminPassphrase(): string {
 }
 
 /** Unique, per-project identifiers so every test owns its own market and account. */
-export function uniqueNames(prefix: string, testInfo: TestInfo): {
+export function uniqueNames(
+  prefix: string,
+  testInfo: TestInfo,
+): {
   readonly slug: string;
   readonly companyName: string;
   readonly username: string;
@@ -118,7 +121,10 @@ function mutationHeaders(baseURL: string | undefined): Record<string, string> {
 }
 
 async function expectOk(response: APIResponse, action: string): Promise<void> {
-  expect(response.ok(), `${action} failed with ${response.status()}: ${await response.text()}`).toBe(true);
+  expect(
+    response.ok(),
+    `${action} failed with ${response.status()}: ${await response.text()}`,
+  ).toBe(true);
 }
 
 export async function loginAdmin(page: Page, baseURL: string | undefined): Promise<void> {
@@ -172,7 +178,11 @@ export async function seedValuationMarket(
   await expectOk(response, "Seeding valuation market");
 }
 
-export async function createUser(page: Page, baseURL: string | undefined, username: string): Promise<void> {
+export async function createUser(
+  page: Page,
+  baseURL: string | undefined,
+  username: string,
+): Promise<void> {
   const response = await page.request.post("/api/user", {
     headers: mutationHeaders(baseURL),
     data: { username },
@@ -184,7 +194,12 @@ export async function createUser(page: Page, baseURL: string | undefined, userna
 export async function buyViaApi(
   page: Page,
   baseURL: string | undefined,
-  input: { readonly slug: string; readonly spendUsd: string; readonly strikeIndex?: number; readonly side?: "yes" | "no" },
+  input: {
+    readonly slug: string;
+    readonly spendUsd: string;
+    readonly strikeIndex?: number;
+    readonly side?: "yes" | "no";
+  },
 ): Promise<ExecutionResponse> {
   const response = await page.request.post("/api/trade", {
     headers: mutationHeaders(baseURL),
@@ -199,12 +214,15 @@ export async function buyViaApi(
     },
   });
   await expectOk(response, "API buy");
-  return await response.json() as ExecutionResponse;
+  return (await response.json()) as ExecutionResponse;
 }
 
-export function isApiResponse(response: BrowserResponse, method: string, pathname: string): boolean {
-  return response.request().method() === method
-    && new URL(response.url()).pathname === pathname;
+export function isApiResponse(
+  response: BrowserResponse,
+  method: string,
+  pathname: string,
+): boolean {
+  return response.request().method() === method && new URL(response.url()).pathname === pathname;
 }
 
 export async function json<T>(response: BrowserResponse | APIResponse): Promise<T> {
@@ -221,13 +239,17 @@ export function formatCents(cents: string): string {
 }
 
 export async function expectNoHorizontalOverflow(page: Page): Promise<void> {
-  await expect.poll(async () => page.evaluate(() => {
-    const documentWidth = Math.max(
-      document.documentElement.scrollWidth,
-      document.body.scrollWidth,
-    );
-    return documentWidth <= document.documentElement.clientWidth + 1;
-  })).toBe(true);
+  await expect
+    .poll(async () =>
+      page.evaluate(() => {
+        const documentWidth = Math.max(
+          document.documentElement.scrollWidth,
+          document.body.scrollWidth,
+        );
+        return documentWidth <= document.documentElement.clientWidth + 1;
+      }),
+    )
+    .toBe(true);
 }
 
 /**
@@ -237,7 +259,11 @@ export async function expectNoHorizontalOverflow(page: Page): Promise<void> {
 export async function failTradesWith(
   page: Page,
   status: number,
-  error: { readonly code: string; readonly message: string; readonly details?: Readonly<Record<string, unknown>> },
+  error: {
+    readonly code: string;
+    readonly message: string;
+    readonly details?: Readonly<Record<string, unknown>>;
+  },
 ): Promise<TradeRequest[]> {
   const attempts: TradeRequest[] = [];
   await page.route("**/api/trade", async (route) => {

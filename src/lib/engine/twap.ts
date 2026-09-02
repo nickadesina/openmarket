@@ -78,8 +78,7 @@ export function calculateTimeWeightedAverage({
 
   marksWithTimestamps.sort(
     (left, right) =>
-      left.timestamp - right.timestamp ||
-      left.mark.marketSequence - right.mark.marketSequence,
+      left.timestamp - right.timestamp || left.mark.marketSequence - right.mark.marketSequence,
   );
 
   let activeValue: number | null = priorMark?.value ?? null;
@@ -92,8 +91,7 @@ export function calculateTimeWeightedAverage({
       return;
     }
     const nextCoveredDuration = coveredDuration + duration;
-    weightedAverage +=
-      (value - weightedAverage) * (duration / nextCoveredDuration);
+    weightedAverage += (value - weightedAverage) * (duration / nextCoveredDuration);
     coveredDuration = nextCoveredDuration;
   };
 

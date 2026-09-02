@@ -1,19 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  formatCentsAsUsd,
-  parseUsdToCents,
-  USD_MAX_LENGTH,
-} from "../../src/lib/api/money.js";
+import { formatCentsAsUsd, parseUsdToCents, USD_MAX_LENGTH } from "../../src/lib/api/money.js";
 
 describe("decimal USD conversion", () => {
   it("converts dollars to cents without Float64 currency arithmetic", () => {
     expect(parseUsdToCents("0")).toBe(0);
     expect(parseUsdToCents("0.01")).toBe(1);
     expect(parseUsdToCents("12.3")).toBe(1_230);
-    expect(parseUsdToCents("90071992547409.91")).toBe(
-      Number.MAX_SAFE_INTEGER,
-    );
+    expect(parseUsdToCents("90071992547409.91")).toBe(Number.MAX_SAFE_INTEGER);
     expect(parseUsdToCents("-12.34")).toBe(-1_234);
   });
 
@@ -27,9 +21,7 @@ describe("decimal USD conversion", () => {
     expect(formatCentsAsUsd(0)).toBe("0.00");
     expect(formatCentsAsUsd(1)).toBe("0.01");
     expect(formatCentsAsUsd(-1_234)).toBe("-12.34");
-    expect(formatCentsAsUsd(90_071_992_547_409_912n)).toBe(
-      "900719925474099.12",
-    );
+    expect(formatCentsAsUsd(90_071_992_547_409_912n)).toBe("900719925474099.12");
   });
 
   it("rejects ambiguous, fractional-cent, and unsafe values", () => {
@@ -53,8 +45,6 @@ describe("decimal USD conversion", () => {
   });
 
   it("rejects overlong input before numeric conversion", () => {
-    expect(() => parseUsdToCents("9".repeat(USD_MAX_LENGTH + 1))).toThrow(
-      RangeError,
-    );
+    expect(() => parseUsdToCents("9".repeat(USD_MAX_LENGTH + 1))).toThrow(RangeError);
   });
 });

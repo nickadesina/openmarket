@@ -1,7 +1,4 @@
-import {
-  createDirectDatabase,
-  destroyDatabase,
-} from "../src/lib/db/client.js";
+import { createDirectDatabase, destroyDatabase } from "../src/lib/db/client.js";
 import { verifyReplay } from "../src/lib/services/verify-replay.js";
 
 async function main(): Promise<void> {

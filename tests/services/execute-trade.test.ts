@@ -17,8 +17,8 @@ vi.mock("kysely", () => {
 import {
   deriveAdvisoryLockKey,
   deriveTradeRequestFingerprint,
-  executeTrade,
   type ExecutionResult,
+  executeTrade,
 } from "../../src/lib/services/execute-trade.js";
 
 const MARKET_ID = "00000000-0000-4000-8000-000000000010";
@@ -129,11 +129,7 @@ function createTransactionHarness(options?: {
   const transaction = {
     selectFrom: vi.fn((table: string) => {
       if (table === "trades") {
-        return queryReturning(
-          options?.replay,
-          events,
-          "replay lookup",
-        );
+        return queryReturning(options?.replay, events, "replay lookup");
       }
       if (table === "markets") {
         return queryReturning(market, events, "market lock");
@@ -147,11 +143,7 @@ function createTransactionHarness(options?: {
       throw new Error(`Unexpected select: ${table}`);
     }),
     selectNoFrom: vi.fn(() =>
-      queryReturning(
-        { execution_ts: EXECUTION_TS },
-        events,
-        "execution timestamp",
-      ),
+      queryReturning({ execution_ts: EXECUTION_TS }, events, "execution timestamp"),
     ),
     insertInto: vi.fn((table: string) => {
       const record: RecordedQuery = { table };
@@ -181,9 +173,8 @@ function createTransactionHarness(options?: {
   // The harness intentionally implements only the Kysely surface exercised here.
   const db = {
     transaction: vi.fn(() => ({
-      execute: vi.fn(
-        async (callback: (tx: typeof transaction) => Promise<unknown>) =>
-          callback(transaction),
+      execute: vi.fn(async (callback: (tx: typeof transaction) => Promise<unknown>) =>
+        callback(transaction),
       ),
     })),
   } as unknown as Kysely<Database>;
@@ -203,8 +194,7 @@ describe("deriveAdvisoryLockKey", () => {
     const upper = deriveAdvisoryLockKey(IDEMPOTENCY_KEY.toUpperCase());
 
     expect(lower).toBe(upper);
-    expect(deriveAdvisoryLockKey("10000000-0000-4000-8000-000000000030"))
-      .not.toBe(lower);
+    expect(deriveAdvisoryLockKey("10000000-0000-4000-8000-000000000030")).not.toBe(lower);
     expect(lower).toBeGreaterThanOrEqual(-(1n << 63n));
     expect(lower).toBeLessThanOrEqual((1n << 63n) - 1n);
   });
@@ -250,15 +240,9 @@ describe("executeTrade", () => {
     };
 
     expect(fingerprint).toMatch(/^[0-9a-f]{64}$/);
-    expect(deriveTradeRequestFingerprint(USER_ID, equivalentInput)).toBe(
-      fingerprint,
-    );
-    expect(deriveTradeRequestFingerprint(OTHER_USER_ID, buy)).not.toBe(
-      fingerprint,
-    );
-    expect(
-      deriveTradeRequestFingerprint(USER_ID, { ...buy, quantity: 2 }),
-    ).not.toBe(fingerprint);
+    expect(deriveTradeRequestFingerprint(USER_ID, equivalentInput)).toBe(fingerprint);
+    expect(deriveTradeRequestFingerprint(OTHER_USER_ID, buy)).not.toBe(fingerprint);
+    expect(deriveTradeRequestFingerprint(USER_ID, { ...buy, quantity: 2 })).not.toBe(fingerprint);
     expect(
       deriveTradeRequestFingerprint(USER_ID, {
         ...buy,
@@ -297,9 +281,7 @@ describe("executeTrade", () => {
       },
     });
 
-    await expect(
-      executeTrade(harness.db, OTHER_USER_ID, buy),
-    ).rejects.toMatchObject({
+    await expect(executeTrade(harness.db, OTHER_USER_ID, buy)).rejects.toMatchObject({
       code: "IDEMPOTENCY_CONFLICT",
       details: {},
     });
@@ -317,9 +299,7 @@ describe("executeTrade", () => {
     });
     const changedRequest: TradeInput = { ...buy, quantity: 2 };
 
-    await expect(
-      executeTrade(harness.db, USER_ID, changedRequest),
-    ).rejects.toMatchObject({
+    await expect(executeTrade(harness.db, USER_ID, changedRequest)).rejects.toMatchObject({
       code: "IDEMPOTENCY_CONFLICT",
       details: {},
     });
@@ -370,9 +350,7 @@ describe("executeTrade", () => {
     const holdingsUpdate = harness.writes.find(
       (write) => write.table === "holdings" && write.set !== undefined,
     );
-    const tradeInsert = harness.writes.find(
-      (write) => write.table === "trades",
-    );
+    const tradeInsert = harness.writes.find((write) => write.table === "trades");
     const markInsert = harness.writes.find((write) => write.table === "marks");
 
     expect(userUpdate?.set).toEqual({ cash_balance_cents: "9949" });
@@ -447,10 +425,7 @@ describe("executeTrade", () => {
     });
     expect(
       harness.writes.some(
-        (write) =>
-          write.set !== undefined ||
-          write.table === "trades" ||
-          write.table === "marks",
+        (write) => write.set !== undefined || write.table === "trades" || write.table === "marks",
       ),
     ).toBe(false);
   });

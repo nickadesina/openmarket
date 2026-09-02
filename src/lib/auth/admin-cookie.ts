@@ -1,8 +1,4 @@
-import {
-  requireCookieSecret,
-  signCookiePayload,
-  verifyCookiePayload,
-} from "./user-cookie.js";
+import { requireCookieSecret, signCookiePayload, verifyCookiePayload } from "./user-cookie.js";
 
 const ADMIN_COOKIE_DOMAIN = "openmarket.admin.v1";
 
@@ -14,18 +10,13 @@ export interface AdminCookiePayload {
 
 type SecretEnvironment = Readonly<Record<string, string | undefined>>;
 
-export function getAdminCookieSecret(
-  environment: SecretEnvironment = process.env,
-): string {
+export function getAdminCookieSecret(environment: SecretEnvironment = process.env): string {
   const secret = environment.ADMIN_COOKIE_SECRET;
   requireCookieSecret(secret ?? "", "ADMIN_COOKIE_SECRET");
   return secret as string;
 }
 
-export function signAdminCookie(
-  secret: string,
-  issuedAt = Date.now(),
-): string {
+export function signAdminCookie(secret: string, issuedAt = Date.now()): string {
   if (!Number.isSafeInteger(issuedAt) || issuedAt < 0) {
     throw new RangeError("Cookie issued timestamp must be a non-negative safe integer.");
   }

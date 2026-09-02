@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 
-import { sql, type Kysely, type Transaction } from "kysely";
+import { type Kysely, sql, type Transaction } from "kysely";
 
 import { ServiceError } from "../api/errors.js";
 import { formatCentsAsUsd, parseUsdToCents } from "../api/money.js";
@@ -14,11 +14,7 @@ import type {
   TradeAction,
 } from "../db/schema.js";
 import { VALUATION_BOUNDARIES_USD } from "../engine/buckets.js";
-import {
-  contractDelta,
-  contractMask,
-  sellableQuantity,
-} from "../engine/contracts.js";
+import { contractDelta, contractMask, sellableQuantity } from "../engine/contracts.js";
 import {
   probabilities,
   quantizeBuyCostCents,
@@ -63,17 +59,13 @@ export function deriveAdvisoryLockKey(idempotencyKey: string): bigint {
 }
 
 /** Hashes the authenticated caller and canonical execution request for replay binding. */
-export function deriveTradeRequestFingerprint(
-  userId: string,
-  input: TradeInput,
-): string {
+export function deriveTradeRequestFingerprint(userId: string, input: TradeInput): string {
   const isSpendOrder = input.action === "buy" && "spend_usd" in input;
   const amountMode = isSpendOrder ? "spend_cents" : "quantity";
   const amountValue = isSpendOrder
     ? parseUsdToCents(input.spend_usd).toString()
     : input.quantity.toString();
-  const slippageGuardMode =
-    input.action === "buy" ? "max_cost_cents" : "min_proceeds_cents";
+  const slippageGuardMode = input.action === "buy" ? "max_cost_cents" : "min_proceeds_cents";
   const slippageGuardValue =
     input.action === "buy"
       ? parseUsdToCents(input.max_cost_usd).toString()
@@ -90,9 +82,7 @@ export function deriveTradeRequestFingerprint(
     slippage_guard_value: slippageGuardValue,
   };
 
-  return createHash("sha256")
-    .update(JSON.stringify(canonicalRequest), "utf8")
-    .digest("hex");
+  return createHash("sha256").update(JSON.stringify(canonicalRequest), "utf8").digest("hex");
 }
 
 function parseDatabaseBigint(value: string, name: string): bigint {
@@ -106,11 +96,7 @@ function parseDatabaseBigint(value: string, name: string): bigint {
   return parsed;
 }
 
-function addDatabaseBigints(
-  left: string,
-  right: bigint,
-  name: string,
-): string {
+function addDatabaseBigints(left: string, right: bigint, name: string): string {
   const result = parseDatabaseBigint(left, name) + right;
   if (result < SIGNED_BIGINT_MIN || result > SIGNED_BIGINT_MAX) {
     throw new RangeError(`${name} is outside PostgreSQL bigint range`);
@@ -118,11 +104,7 @@ function addDatabaseBigints(
   return result.toString();
 }
 
-function assertFiniteVector(
-  vector: readonly number[],
-  expectedLength: number,
-  name: string,
-): void {
+function assertFiniteVector(vector: readonly number[], expectedLength: number, name: string): void {
   if (vector.length !== expectedLength) {
     throw new ServiceError("INVALID_INPUT", `${name} has an invalid length.`);
   }
@@ -133,10 +115,7 @@ function assertFiniteVector(
   }
 }
 
-function sumMasked(
-  values: readonly number[],
-  mask: readonly boolean[],
-): number {
+function sumMasked(values: readonly number[], mask: readonly boolean[]): number {
   let total = 0;
   for (let index = 0; index < values.length; index += 1) {
     if (mask[index]) total += values[index]!;
@@ -144,11 +123,7 @@ function sumMasked(
   return total;
 }
 
-function calculateMetric(
-  metricKind: MetricKind,
-  q: readonly number[],
-  b: number,
-): number {
+function calculateMetric(metricKind: MetricKind, q: readonly number[], b: number): number {
   const pmf = probabilities(q, b);
   if (metricKind === "valuation_median") {
     return impliedValuationMedian(pmf, VALUATION_BOUNDARIES_USD);
@@ -167,10 +142,7 @@ function validateStrike(
 ): string | null {
   if (metricKind === "yes_probability") {
     if (nBuckets !== 2 || strikeIndex !== 0) {
-      throw new ServiceError(
-        "INVALID_INPUT",
-        "Binary markets use strike index 0.",
-      );
+      throw new ServiceError("INVALID_INPUT", "Binary markets use strike index 0.");
     }
     return null;
   }
@@ -215,13 +187,11 @@ function isExecutionResult(value: JsonValue): value is ExecutionResult {
   return (
     stringFields.every((field) => typeof value[field] === "string") &&
     numberFields.every(
-      (field) =>
-        typeof value[field] === "number" && Number.isFinite(value[field]),
+      (field) => typeof value[field] === "number" && Number.isFinite(value[field]),
     ) &&
     (value.action === "buy" || value.action === "sell") &&
     (value.side === "yes" || value.side === "no") &&
-    (value.metric_kind === "valuation_median" ||
-      value.metric_kind === "yes_probability")
+    (value.metric_kind === "valuation_median" || value.metric_kind === "yes_probability")
   );
 }
 
@@ -260,19 +230,13 @@ export async function executeTrade(
   userId: string,
   input: TradeInput,
 ): Promise<{ result: ExecutionResult; replayed: boolean }> {
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: one serializable transaction on purpose; split validation from ledger writes before growing.
   return db.transaction().execute(async (transaction) => {
     const advisoryKey = deriveAdvisoryLockKey(input.idempotency_key);
-    await sql`select pg_advisory_xact_lock(${advisoryKey.toString()}::bigint)`.execute(
-      transaction,
-    );
+    await sql`select pg_advisory_xact_lock(${advisoryKey.toString()}::bigint)`.execute(transaction);
 
     const requestFingerprint = deriveTradeRequestFingerprint(userId, input);
-    const replay = await loadReplay(
-      transaction,
-      input.idempotency_key,
-      userId,
-      requestFingerprint,
-    );
+    const replay = await loadReplay(transaction, input.idempotency_key, userId, requestFingerprint);
     if (replay !== undefined) {
       return { result: replay, replayed: true };
     }
@@ -328,9 +292,7 @@ export async function executeTrade(
         h: new Array<number>(market.n_buckets).fill(0),
         updated_at: executionTs,
       })
-      .onConflict((conflict) =>
-        conflict.columns(["user_id", "market_id"]).doNothing(),
-      )
+      .onConflict((conflict) => conflict.columns(["user_id", "market_id"]).doNothing())
       .execute();
 
     const holding = await transaction
@@ -341,23 +303,13 @@ export async function executeTrade(
       .forUpdate()
       .executeTakeFirstOrThrow();
     assertFiniteVector(holding.h, market.n_buckets, "Holdings");
-    const holdingsBefore = holding.h.map((value) =>
-      Math.abs(value) < EPS ? 0 : value,
-    );
+    const holdingsBefore = holding.h.map((value) => (Math.abs(value) < EPS ? 0 : value));
     if (holdingsBefore.some((value) => value < 0)) {
       throw new ServiceError("INVALID_INPUT", "Holdings state is invalid.");
     }
 
-    const strikeValue = validateStrike(
-      market.metric_kind,
-      market.n_buckets,
-      input.strike_index,
-    );
-    const mask = contractMask(
-      market.n_buckets,
-      input.strike_index,
-      input.side,
-    );
+    const strikeValue = validateStrike(market.metric_kind, market.n_buckets, input.strike_index);
+    const mask = contractMask(market.n_buckets, input.strike_index, input.side);
 
     let quantity: number;
     let engineCostUsd: number;
@@ -370,12 +322,7 @@ export async function executeTrade(
         invalidTrade("Spend orders require max cost to equal submitted spend.");
       }
       try {
-        const solved = solveBuyQuantityForSpend(
-          market.q,
-          mask,
-          market.b,
-          requestedSpendCents,
-        );
+        const solved = solveBuyQuantityForSpend(market.q, mask, market.b, requestedSpendCents);
         quantity = solved.quantity;
         engineCostUsd = solved.costUsd;
         cashAmountCents = solved.cashAmountCents;
@@ -399,11 +346,7 @@ export async function executeTrade(
           : quantizeSellProceedsCents(engineCostUsd);
     }
 
-    if (
-      !Number.isFinite(quantity) ||
-      quantity < MIN_QUANTITY ||
-      cashAmountCents === 0
-    ) {
+    if (!Number.isFinite(quantity) || quantity < MIN_QUANTITY || cashAmountCents === 0) {
       invalidTrade("Trade produces no transferable quantity.");
     }
 
@@ -434,10 +377,7 @@ export async function executeTrade(
       }
     }
 
-    const userCash = parseDatabaseBigint(
-      user.cash_balance_cents,
-      "cash_balance_cents",
-    );
+    const userCash = parseDatabaseBigint(user.cash_balance_cents, "cash_balance_cents");
     if (input.action === "buy" && userCash < BigInt(cashAmountCents)) {
       throw new ServiceError("INSUFFICIENT_CASH", "Insufficient cash balance.", {
         cash_balance_cents: user.cash_balance_cents,
@@ -447,9 +387,7 @@ export async function executeTrade(
 
     const qAfter = market.q.map((value, index) => value + delta[index]!);
     assertFiniteVector(qAfter, market.n_buckets, "Updated market state");
-    const holdingsAfterDelta = holdingsBefore.map(
-      (value, index) => value + delta[index]!,
-    );
+    const holdingsAfterDelta = holdingsBefore.map((value, index) => value + delta[index]!);
     for (const value of holdingsAfterDelta) {
       if (value < -EPS) {
         throw new ServiceError(
@@ -468,18 +406,14 @@ export async function executeTrade(
     let redemptionQuantity = Math.min(...holdingsAfterDelta);
     if (redemptionQuantity <= EPS) redemptionQuantity = 0;
     const redemptionCents =
-      redemptionQuantity === 0
-        ? 0
-        : quantizeEntitlementCents(redemptionQuantity);
+      redemptionQuantity === 0 ? 0 : quantizeEntitlementCents(redemptionQuantity);
     const holdingsAfter = holdingsAfterDelta.map((value) => {
       const redeemed = value - redemptionQuantity;
       return Math.abs(redeemed) < EPS ? 0 : redeemed;
     });
 
     const signedTradeCash =
-      input.action === "buy"
-        ? -BigInt(cashAmountCents)
-        : BigInt(cashAmountCents);
+      input.action === "buy" ? -BigInt(cashAmountCents) : BigInt(cashAmountCents);
     const cashBalance = userCash + signedTradeCash + BigInt(redemptionCents);
     if (cashBalance < 0n || cashBalance > SIGNED_BIGINT_MAX) {
       throw new ServiceError("INSUFFICIENT_CASH", "Insufficient cash balance.");
@@ -492,9 +426,8 @@ export async function executeTrade(
     const metricAfter = calculateMetric(market.metric_kind, qAfter, market.b);
     const sellableAfter = sellableQuantity(holdingsAfter, mask);
     const mmCashDelta =
-      (input.action === "buy"
-        ? BigInt(cashAmountCents)
-        : -BigInt(cashAmountCents)) - BigInt(redemptionCents);
+      (input.action === "buy" ? BigInt(cashAmountCents) : -BigInt(cashAmountCents)) -
+      BigInt(redemptionCents);
     const mmCashFlow = addDatabaseBigints(
       market.mm_cash_flow_cents,
       mmCashDelta,

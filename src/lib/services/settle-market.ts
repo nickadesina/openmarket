@@ -1,4 +1,4 @@
-import { sql, type Kysely } from "kysely";
+import { type Kysely, sql } from "kysely";
 
 import { ServiceError } from "../api/errors.js";
 import { parseUsdToCents } from "../api/money.js";
@@ -18,10 +18,7 @@ export interface SettlementResult {
   readonly settled_at: string;
 }
 
-function winningBucket(
-  metricKind: MetricKind,
-  settledValueUsd: string,
-): number {
+function winningBucket(metricKind: MetricKind, settledValueUsd: string): number {
   let settledValueCents: number;
   try {
     settledValueCents = parseUsdToCents(settledValueUsd);
@@ -31,19 +28,13 @@ function winningBucket(
 
   if (metricKind === "yes_probability") {
     if (settledValueCents !== 0 && settledValueCents !== 100) {
-      throw new ServiceError(
-        "INVALID_INPUT",
-        "Binary settlement value must be 0 or 1.",
-      );
+      throw new ServiceError("INVALID_INPUT", "Binary settlement value must be 0 or 1.");
     }
     return settledValueCents === 100 ? 1 : 0;
   }
 
   if (settledValueCents <= 0) {
-    throw new ServiceError(
-      "INVALID_INPUT",
-      "Valuation settlement value must be positive.",
-    );
+    throw new ServiceError("INVALID_INPUT", "Valuation settlement value must be positive.");
   }
 
   return valuationBucketIndex(settledValueCents / 100);
@@ -87,10 +78,7 @@ export async function settleMarket(
       throw new ServiceError("MARKET_NOT_FOUND", "Market was not found.");
     }
 
-    const winningBucketIndex = winningBucket(
-      market.metric_kind,
-      input.settled_value_usd,
-    );
+    const winningBucketIndex = winningBucket(market.metric_kind, input.settled_value_usd);
     if (winningBucketIndex >= market.n_buckets) {
       throw new ServiceError(
         "INVALID_INPUT",
@@ -105,11 +93,7 @@ export async function settleMarket(
     const holdings = await transaction
       .selectFrom("holdings")
       .innerJoin("users", "users.id", "holdings.user_id")
-      .select([
-        "holdings.user_id",
-        "holdings.h",
-        "users.cash_balance_cents",
-      ])
+      .select(["holdings.user_id", "holdings.h", "users.cash_balance_cents"])
       .where("holdings.market_id", "=", market.market_id)
       .orderBy("users.id", "asc")
       .forUpdate(["holdings", "users"])
@@ -132,10 +116,7 @@ export async function settleMarket(
       try {
         payoutCents = quantizeEntitlementCents(entitlementUsd);
       } catch {
-        throw new ServiceError(
-          "INVALID_INPUT",
-          "Stored settlement entitlement is invalid.",
-        );
+        throw new ServiceError("INVALID_INPUT", "Stored settlement entitlement is invalid.");
       }
 
       totalEntitlementUsd += entitlementUsd;
@@ -144,9 +125,7 @@ export async function settleMarket(
       await transaction
         .updateTable("users")
         .set({
-          cash_balance_cents: (
-            BigInt(holding.cash_balance_cents) + BigInt(payoutCents)
-          ).toString(),
+          cash_balance_cents: (BigInt(holding.cash_balance_cents) + BigInt(payoutCents)).toString(),
         })
         .where("id", "=", holding.user_id)
         .executeTakeFirstOrThrow();
@@ -163,13 +142,9 @@ export async function settleMarket(
     try {
       aggregatePayoutCents = quantizeEntitlementCents(totalEntitlementUsd);
     } catch {
-      throw new ServiceError(
-        "INVALID_INPUT",
-        "Aggregate settlement entitlement is invalid.",
-      );
+      throw new ServiceError("INVALID_INPUT", "Aggregate settlement entitlement is invalid.");
     }
-    const rawRoundingReserveDeltaCents =
-      BigInt(aggregatePayoutCents) - totalPayoutCents;
+    const rawRoundingReserveDeltaCents = BigInt(aggregatePayoutCents) - totalPayoutCents;
     const roundingReserveDeltaCents =
       rawRoundingReserveDeltaCents < 0n ? 0n : rawRoundingReserveDeltaCents;
 
@@ -190,12 +165,9 @@ export async function settleMarket(
       .set({
         status: "settled",
         settled_at: settlementTs,
-        mm_cash_flow_cents: (
-          BigInt(market.mm_cash_flow_cents) - totalPayoutCents
-        ).toString(),
+        mm_cash_flow_cents: (BigInt(market.mm_cash_flow_cents) - totalPayoutCents).toString(),
         rounding_reserve_cents: (
-          BigInt(market.rounding_reserve_cents) +
-          roundingReserveDeltaCents
+          BigInt(market.rounding_reserve_cents) + roundingReserveDeltaCents
         ).toString(),
       })
       .where("id", "=", market.market_id)

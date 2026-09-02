@@ -1,17 +1,14 @@
 import { ServiceError } from "../api/errors.js";
 import {
-  getAdminCookieSecret,
   type AdminCookiePayload,
+  getAdminCookieSecret,
   verifyAdminCookie,
 } from "./admin-cookie.js";
 
 export const ADMIN_COOKIE_NAME = "openmarket_admin";
 
 function adminRequired(): ServiceError {
-  return new ServiceError(
-    "ADMIN_REQUIRED",
-    "A valid signed admin cookie is required.",
-  );
+  return new ServiceError("ADMIN_REQUIRED", "A valid signed admin cookie is required.");
 }
 
 function readAdminCookie(request: Request): string {

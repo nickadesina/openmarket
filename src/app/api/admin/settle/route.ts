@@ -1,7 +1,4 @@
-import {
-  parseMutationBody,
-  withMutationRoute,
-} from "../../../../lib/api/mutation-route.js";
+import { parseMutationBody, withMutationRoute } from "../../../../lib/api/mutation-route.js";
 import { jsonSuccess } from "../../../../lib/api/response.js";
 import { settlementInputSchema } from "../../../../lib/api/schemas.js";
 import { requireCurrentAdmin } from "../../../../lib/auth/current-admin.js";

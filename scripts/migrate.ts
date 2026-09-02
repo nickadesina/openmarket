@@ -1,7 +1,4 @@
-import {
-  createDirectDatabase,
-  destroyDatabase,
-} from "../src/lib/db/client.js";
+import { createDirectDatabase, destroyDatabase } from "../src/lib/db/client.js";
 import { migrateToLatest } from "../src/lib/db/migrator.js";
 
 async function main(): Promise<void> {
@@ -12,9 +9,7 @@ async function main(): Promise<void> {
 
     for (const result of results ?? []) {
       const direction = result.direction.toLowerCase();
-      console.log(
-        `${result.status}: ${direction} migration ${result.migrationName}`,
-      );
+      console.log(`${result.status}: ${direction} migration ${result.migrationName}`);
     }
 
     if (error !== undefined) {

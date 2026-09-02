@@ -1,15 +1,12 @@
 import { expect, test } from "@playwright/test";
 
-import {
-  createUser,
-  isApiResponse,
-  skipWithoutDatabase,
-  uniqueNames,
-} from "./helpers.js";
+import { createUser, isApiResponse, skipWithoutDatabase, uniqueNames } from "./helpers.js";
 
 skipWithoutDatabase();
 
-test("opening an account seeds the header identity without a reload", async ({ page }, testInfo) => {
+test("opening an account seeds the header identity without a reload", async ({
+  page,
+}, testInfo) => {
   const { username } = uniqueNames("acct-open", testInfo);
   await page.goto("/");
 
@@ -17,7 +14,9 @@ test("opening an account seeds the header identity without a reload", async ({ p
   await trigger.click();
   await expect(page.getByRole("heading", { name: "Open your paper account" })).toBeVisible();
 
-  const userResponsePromise = page.waitForResponse((response) => isApiResponse(response, "POST", "/api/user"));
+  const userResponsePromise = page.waitForResponse((response) =>
+    isApiResponse(response, "POST", "/api/user"),
+  );
   await page.getByLabel("Username").fill(username);
   await page.getByRole("button", { name: "Open account" }).click();
   expect((await userResponsePromise).status()).toBe(200);

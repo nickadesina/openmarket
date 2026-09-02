@@ -129,10 +129,7 @@ function validateBranchAssignment(
   const branchRole = required(environment, "NEON_BRANCH_ROLE");
   const branchId = required(environment, "NEON_BRANCH_ID");
   const productionBranchId = required(environment, "PRODUCTION_NEON_BRANCH_ID");
-  const productionHostname = required(
-    environment,
-    "PRODUCTION_DATABASE_HOST",
-  ).toLowerCase();
+  const productionHostname = required(environment, "PRODUCTION_DATABASE_HOST").toLowerCase();
 
   if (vercelEnvironment !== target || branchRole !== target) {
     fail("VERCEL_ENV and NEON_BRANCH_ROLE must match the requested deployment target");

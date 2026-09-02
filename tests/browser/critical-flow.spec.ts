@@ -1,17 +1,17 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
 import {
   adminPassphrase,
+  type ErrorEnvelope,
+  type ExecutionResponse,
   expectNoHorizontalOverflow,
   formatCents,
   isApiResponse,
   json,
-  skipWithoutDatabase,
-  uniqueNames,
-  type ErrorEnvelope,
-  type ExecutionResponse,
   type PortfolioResponse,
+  skipWithoutDatabase,
   type TradeRequest,
+  uniqueNames,
 } from "./helpers.js";
 
 skipWithoutDatabase();
@@ -36,10 +36,15 @@ async function startAdminSession(page: Page): Promise<void> {
   await expect(page.getByRole("heading", { name: "Market administration" })).toBeVisible();
   await page.getByLabel("Admin passphrase").fill(adminPassphrase());
   await page.getByRole("button", { name: "Start admin session" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Admin session authenticated" })).toBeVisible();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Admin session authenticated" }),
+  ).toBeVisible();
 }
 
-test("admin seed through settled portfolio with authoritative idempotent replay", async ({ page, baseURL }, testInfo) => {
+test("admin seed through settled portfolio with authoritative idempotent replay", async ({
+  page,
+  baseURL,
+}, testInfo) => {
   const mobile = testInfo.project.name.includes("mobile");
   const { slug, companyName, username } = uniqueNames("critical", testInfo);
   const origin = new URL(baseURL ?? "").origin;
@@ -53,7 +58,9 @@ test("admin seed through settled portfolio with authoritative idempotent replay"
     await page.getByLabel("Liquidity parameter (b)").fill("250");
     await page.getByLabel("Initial YES probability").fill("0.50");
 
-    const seedResponsePromise = page.waitForResponse((response) => isApiResponse(response, "POST", "/api/admin/seed"));
+    const seedResponsePromise = page.waitForResponse((response) =>
+      isApiResponse(response, "POST", "/api/admin/seed"),
+    );
     await page.getByRole("button", { name: "Seed market" }).click();
     expect((await seedResponsePromise).status()).toBe(200);
     await expect(page.getByRole("status").filter({ hasText: `${slug} is open` })).toBeVisible();
@@ -67,14 +74,19 @@ test("admin seed through settled portfolio with authoritative idempotent replay"
     await expect(page.getByRole("heading", { name: companyName })).toBeVisible();
     await expect(page.getByText("No trades yet", { exact: true })).toBeVisible();
 
-    await page.getByRole("region", { name: "Outcome contract" }).getByRole("button", { name: /YES$/ }).click();
+    await page
+      .getByRole("region", { name: "Outcome contract" })
+      .getByRole("button", { name: /YES$/ })
+      .click();
     await expect(ticket).toBeVisible();
     if (mobile) {
       await expect(page.getByRole("dialog", { name: `Trade ${companyName}` })).toBeVisible();
     }
 
     await ticket.getByLabel("Spend").fill("125.00");
-    const quotePromise = page.waitForResponse((response) => isApiResponse(response, "POST", "/api/quote"));
+    const quotePromise = page.waitForResponse((response) =>
+      isApiResponse(response, "POST", "/api/quote"),
+    );
     await ticket.getByRole("button", { name: "Preview buy" }).click();
     const quoteResponse = await quotePromise;
     expect(quoteResponse.status()).toBe(200);
@@ -85,10 +97,14 @@ test("admin seed through settled portfolio with authoritative idempotent replay"
       strike_index: 0,
       spend_usd: "125.00",
     });
-    expect((await page.context().cookies()).some((cookie) => cookie.name === "openmarket_user")).toBe(false);
+    expect(
+      (await page.context().cookies()).some((cookie) => cookie.name === "openmarket_user"),
+    ).toBe(false);
     await expect(ticket.getByText("Cost", { exact: true })).toBeVisible();
 
-    const rejectedTradePromise = page.waitForResponse((response) => isApiResponse(response, "POST", "/api/trade"));
+    const rejectedTradePromise = page.waitForResponse((response) =>
+      isApiResponse(response, "POST", "/api/trade"),
+    );
     await ticket.getByRole("button", { name: "Confirm buy" }).click();
     const rejectedTrade = await rejectedTradePromise;
     expect(rejectedTrade.status()).toBe(401);
@@ -112,14 +128,18 @@ test("admin seed through settled portfolio with authoritative idempotent replay"
       await route.abort("connectionreset");
     });
 
-    const userResponsePromise = page.waitForResponse((response) => isApiResponse(response, "POST", "/api/user"));
+    const userResponsePromise = page.waitForResponse((response) =>
+      isApiResponse(response, "POST", "/api/user"),
+    );
     await ticket.getByRole("button", { name: "Save username and trade" }).click();
     const userResponse = await userResponsePromise;
     expect(userResponse.status()).toBe(200);
     expect(await userResponse.json()).toEqual({ username, cash_balance_cents: "10000000" });
 
     await expect(ticket.getByRole("button", { name: "Retry same trade" })).toBeVisible();
-    await expect.poll(() => originalTradeRequest !== undefined && firstExecution !== undefined).toBe(true);
+    await expect
+      .poll(() => originalTradeRequest !== undefined && firstExecution !== undefined)
+      .toBe(true);
     expect(originalTradeRequest).toMatchObject({
       slug,
       action: "buy",
@@ -130,15 +150,21 @@ test("admin seed through settled portfolio with authoritative idempotent replay"
     expect(originalTradeRequest?.idempotency_key).toBe(firstExecution?.idempotency_key);
 
     await page.unroute("**/api/trade");
-    const replayPromise = page.waitForResponse((response) => isApiResponse(response, "POST", "/api/trade"));
-    const marketRefreshPromise = page.waitForResponse((response) =>
-      isApiResponse(response, "GET", `/api/markets/${slug}`) && response.status() === 200);
+    const replayPromise = page.waitForResponse((response) =>
+      isApiResponse(response, "POST", "/api/trade"),
+    );
+    const marketRefreshPromise = page.waitForResponse(
+      (response) =>
+        isApiResponse(response, "GET", `/api/markets/${slug}`) && response.status() === 200,
+    );
     const activityRefreshPromise = page.waitForResponse((response) => {
       const url = new URL(response.url());
-      return response.request().method() === "GET"
-        && url.pathname === "/api/activity"
-        && url.searchParams.get("slug") === slug
-        && response.status() === 200;
+      return (
+        response.request().method() === "GET" &&
+        url.pathname === "/api/activity" &&
+        url.searchParams.get("slug") === slug &&
+        response.status() === 200
+      );
     });
 
     await ticket.getByRole("button", { name: "Retry same trade" }).click();
@@ -160,7 +186,11 @@ test("admin seed through settled portfolio with authoritative idempotent replay"
     expect(refreshedMarket.metric.current).toBe(replayedExecution.current_metric);
     const refreshedActivity = await json<ActivityResponse>(activityRefresh);
     expect(refreshedActivity.items).toHaveLength(1);
-    expect(refreshedActivity.items[0]).toMatchObject({ marketSequence: "1", action: "buy", side: "yes" });
+    expect(refreshedActivity.items[0]).toMatchObject({
+      marketSequence: "1",
+      action: "buy",
+      side: "yes",
+    });
   });
 
   await test.step("the workspace reflects the executed trade", async () => {
@@ -168,10 +198,19 @@ test("admin seed through settled portfolio with authoritative idempotent replay"
       await ticket.getByRole("button", { name: "Close trade ticket" }).click();
       await expect(page.getByRole("dialog", { name: `Trade ${companyName}` })).toBeHidden();
     }
-    await expect(page.getByLabel("Current market metrics").getByText(/Moved up|Moved down|Unchanged/)).toBeVisible();
-    await expect(page.getByRole("region", { name: "Market activity" }).getByText(/^Bought .* YES$/)).toBeVisible();
-    await expect(page.getByRole("region", { name: "Market history" })
-      .getByText(/YES probability (?:increased|decreased|was unchanged).*current 60-minute mark/i)).toBeVisible();
+    await expect(
+      page.getByLabel("Current market metrics").getByText(/Moved up|Moved down|Unchanged/),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "Market activity" }).getByText(/^Bought .* YES$/),
+    ).toBeVisible();
+    await expect(
+      page
+        .getByRole("region", { name: "Market history" })
+        .getByText(
+          /YES probability (?:increased|decreased|was unchanged).*current 60-minute mark/i,
+        ),
+    ).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
 
@@ -180,8 +219,9 @@ test("admin seed through settled portfolio with authoritative idempotent replay"
   await test.step("part of the position sells from the portfolio", async () => {
     await page.goto("/portfolio");
     await expect(page.getByRole("heading", { name: "Portfolio" })).toBeVisible();
-    await expect(page.getByLabel("Portfolio summary").locator("div").first())
-      .toContainText(formatCents(replayedExecution.cash_balance_cents));
+    await expect(page.getByLabel("Portfolio summary").locator("div").first()).toContainText(
+      formatCents(replayedExecution.cash_balance_cents),
+    );
 
     const marketArticle = page.locator("article").filter({
       has: page.getByRole("link", { name: companyName, exact: true }),
@@ -192,12 +232,19 @@ test("admin seed through settled portfolio with authoritative idempotent replay"
     await sellFlow.getByLabel("Quantity").fill(String(partialQuantity));
     await sellFlow.getByRole("button", { name: "Review sale" }).click();
 
-    const salePromise = page.waitForResponse((response) => isApiResponse(response, "POST", "/api/trade"));
+    const salePromise = page.waitForResponse((response) =>
+      isApiResponse(response, "POST", "/api/trade"),
+    );
     await sellFlow.getByRole("button", { name: "Sell shares" }).click();
     const saleResponse = await salePromise;
     expect(saleResponse.status()).toBe(200);
     const sale = await json<ExecutionResponse>(saleResponse);
-    expect(sale).toMatchObject({ action: "sell", side: "yes", market_sequence: "2", shares: partialQuantity });
+    expect(sale).toMatchObject({
+      action: "sell",
+      side: "yes",
+      market_sequence: "2",
+      shares: partialQuantity,
+    });
     saleBalanceCents = sale.cash_balance_cents;
     await expect(page.getByRole("status").filter({ hasText: "Sale completed" })).toBeVisible();
     await expectNoHorizontalOverflow(page);
@@ -227,10 +274,16 @@ test("admin seed through settled portfolio with authoritative idempotent replay"
     const settleButton = page.getByRole("button", { name: "Settle market permanently" });
     await page.getByLabel(/Retype .* exactly to confirm/).fill(`${slug}-typo`);
     await expect(settleButton).toBeDisabled();
-    await expect(page.getByRole("alert").filter({ hasText: "The confirmation must exactly match the market slug." })).toBeVisible();
+    await expect(
+      page
+        .getByRole("alert")
+        .filter({ hasText: "The confirmation must exactly match the market slug." }),
+    ).toBeVisible();
 
     await page.getByLabel(/Retype .* exactly to confirm/).fill(slug);
-    const settlementPromise = page.waitForResponse((response) => isApiResponse(response, "POST", "/api/admin/settle"));
+    const settlementPromise = page.waitForResponse((response) =>
+      isApiResponse(response, "POST", "/api/admin/settle"),
+    );
     await settleButton.click();
     const settlementResponse = await settlementPromise;
     expect(settlementResponse.status()).toBe(200);
@@ -247,15 +300,22 @@ test("admin seed through settled portfolio with authoritative idempotent replay"
     await expect(page.getByRole("heading", { name: companyName })).toBeVisible();
     await expect(page.getByText("Settled", { exact: true })).toBeVisible();
     await expect(page.getByLabel("Settlement outcome")).toContainText("Resolved at $1");
-    await expect(page.getByLabel("Settlement outcome").getByRole("link", { name: "Browser proof confirmed outcome" }))
-      .toHaveAttribute("href", "https://example.com/openmarket-browser-proof");
-    await expect(page.getByRole("region", { name: "Outcome contract" }).getByRole("button", { name: /YES$/ })).toBeDisabled();
+    await expect(
+      page
+        .getByLabel("Settlement outcome")
+        .getByRole("link", { name: "Browser proof confirmed outcome" }),
+    ).toHaveAttribute("href", "https://example.com/openmarket-browser-proof");
+    await expect(
+      page.getByRole("region", { name: "Outcome contract" }).getByRole("button", { name: /YES$/ }),
+    ).toBeDisabled();
     await expect(page.getByText("Trading closed", { exact: true })).toBeVisible();
     await expect(page.getByLabel("Trade rail")).toHaveCount(0);
     await expect(page.getByRole("region", { name: "Trade ticket" })).toHaveCount(0);
     await expectNoHorizontalOverflow(page);
 
-    const settledMarket = await json<MarketResponse>(await page.request.get(`/api/markets/${slug}`));
+    const settledMarket = await json<MarketResponse>(
+      await page.request.get(`/api/markets/${slug}`),
+    );
     expect(settledMarket.status).toBe("settled");
     expect(settledMarket.sequence).toBe("2");
     expect(settledMarket.settlement?.settledValueUsd).toBe("1.00");
@@ -266,11 +326,14 @@ test("admin seed through settled portfolio with authoritative idempotent replay"
     await expect(page.getByRole("heading", { name: "Portfolio" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "No open exposure" })).toBeVisible();
 
-    const settledPortfolio = await json<PortfolioResponse>(await page.request.get("/api/portfolio?offset=0&limit=20"));
+    const settledPortfolio = await json<PortfolioResponse>(
+      await page.request.get("/api/portfolio?offset=0&limit=20"),
+    );
     expect(settledPortfolio.tradeHistory.items).toHaveLength(2);
     expect(Number(settledPortfolio.cashBalanceCents)).toBeGreaterThan(Number(saleBalanceCents));
-    await expect(page.getByLabel("Portfolio summary").locator("div").first())
-      .toContainText(formatCents(settledPortfolio.cashBalanceCents));
+    await expect(page.getByLabel("Portfolio summary").locator("div").first()).toContainText(
+      formatCents(settledPortfolio.cashBalanceCents),
+    );
     await expectNoHorizontalOverflow(page);
   });
 });

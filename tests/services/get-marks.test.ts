@@ -1,5 +1,5 @@
 import type { Kysely } from "kysely";
-import { describe, expect, it, vi, type Mock } from "vitest";
+import { describe, expect, it, type Mock, vi } from "vitest";
 
 import type { Database } from "../../src/lib/db/schema.js";
 import { getMarks } from "../../src/lib/services/get-marks.js";
@@ -20,9 +20,8 @@ function readDatabase(selectFrom: Mock): {
   readonly setAccessMode: Mock;
 } {
   const transactionDb = { selectFrom };
-  const execute = vi.fn(
-    async (callback: (transaction: typeof transactionDb) => Promise<unknown>) =>
-      callback(transactionDb),
+  const execute = vi.fn(async (callback: (transaction: typeof transactionDb) => Promise<unknown>) =>
+    callback(transactionDb),
   );
   const setAccessMode = vi.fn(() => ({ execute }));
   const setIsolationLevel = vi.fn(() => ({ setAccessMode }));
@@ -81,11 +80,7 @@ describe("getMarks", () => {
 
     const history = await getMarks(db, "acme", "1h", { now });
 
-    expect(history.points.map((point) => point.marketSequence)).toEqual([
-      "1",
-      "2",
-      "3",
-    ]);
+    expect(history.points.map((point) => point.marketSequence)).toEqual(["1", "2", "3"]);
     expect(history.mark60Minutes).toBeCloseTo(27.5);
     expect(history.openValue).toBe(10);
     expect(history.windowStart).toBe("2026-01-01T11:00:00.000Z");
@@ -122,9 +117,9 @@ describe("getMarks", () => {
     const transaction = vi.fn();
     const db = { transaction } as unknown as Kysely<Database>;
 
-    await expect(
-      getMarks(db, "acme", "month" as never),
-    ).rejects.toMatchObject({ code: "INVALID_INPUT" });
+    await expect(getMarks(db, "acme", "month" as never)).rejects.toMatchObject({
+      code: "INVALID_INPUT",
+    });
     expect(transaction).not.toHaveBeenCalled();
   });
 });

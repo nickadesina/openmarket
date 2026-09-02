@@ -36,9 +36,7 @@ function formatCompactUsd(value: number): string {
 }
 
 function formatMetric(market: MarketListItem, value = market.metric.current): string {
-  return market.metric.format === "usd"
-    ? formatPrice(value)
-    : `${(value * 100).toFixed(1)}%`;
+  return market.metric.format === "usd" ? formatPrice(value) : `${(value * 100).toFixed(1)}%`;
 }
 
 function formatChange(market: MarketListItem): {
@@ -55,9 +53,7 @@ function formatChange(market: MarketListItem): {
   return {
     direction,
     label:
-      direction === "flat"
-        ? `Flat ${amount}`
-        : `${direction === "up" ? "Up" : "Down"} ${amount}`,
+      direction === "flat" ? `Flat ${amount}` : `${direction === "up" ? "Up" : "Down"} ${amount}`,
   };
 }
 
@@ -141,16 +137,12 @@ function InlineLadder({ market }: { readonly market: MarketListItem }) {
   // expansion shows the contested region rather than a pinned tail.
   const pivot = allContracts.reduce(
     (best, contract, index) =>
-      Math.abs(contract.yesProbability - 0.5)
-        < Math.abs(allContracts[best]!.yesProbability - 0.5)
+      Math.abs(contract.yesProbability - 0.5) < Math.abs(allContracts[best]!.yesProbability - 0.5)
         ? index
         : best,
     0,
   );
-  const windowStart = Math.max(
-    0,
-    Math.min(pivot - 6, allContracts.length - 12),
-  );
+  const windowStart = Math.max(0, Math.min(pivot - 6, allContracts.length - 12));
   const contracts = allContracts.slice(windowStart, windowStart + 12);
   const omitted = allContracts.length - contracts.length;
   const pivotStrike = allContracts[pivot]?.strikeIndex;
@@ -163,6 +155,7 @@ function InlineLadder({ market }: { readonly market: MarketListItem }) {
     <div className={styles.ladderWrap}>
       <div className={styles.ladderColumns}>
         {columns.map((column, columnIndex) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: columns are positional halves of one ladder.
           <table className={styles.ladderTable} key={columnIndex}>
             <caption className={styles.visuallyHidden}>
               {market.company.name} probabilities by valuation strike
@@ -171,8 +164,12 @@ function InlineLadder({ market }: { readonly market: MarketListItem }) {
             <thead>
               <tr>
                 <th scope="col">{isBinary ? "Contract" : "Valuation above"}</th>
-                <th scope="col" className={styles.ladderPct}>YES</th>
-                <th scope="col" className={styles.ladderPct}>NO</th>
+                <th scope="col" className={styles.ladderPct}>
+                  YES
+                </th>
+                <th scope="col" className={styles.ladderPct}>
+                  NO
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -180,9 +177,7 @@ function InlineLadder({ market }: { readonly market: MarketListItem }) {
                 <tr
                   key={contract.strikeIndex}
                   className={
-                    contract.strikeIndex === pivotStrike
-                      ? styles.ladderPivotRow
-                      : undefined
+                    contract.strikeIndex === pivotStrike ? styles.ladderPivotRow : undefined
                   }
                 >
                   <th scope="row">
@@ -193,9 +188,7 @@ function InlineLadder({ market }: { readonly market: MarketListItem }) {
                   <td className={`${styles.ladderPct} ${styles.ladderYes}`}>
                     {formatProbability(contract.yesProbability)}
                   </td>
-                  <td className={styles.ladderPct}>
-                    {formatProbability(contract.noProbability)}
-                  </td>
+                  <td className={styles.ladderPct}>{formatProbability(contract.noProbability)}</td>
                 </tr>
               ))}
             </tbody>
@@ -235,7 +228,14 @@ function MarketRow({
           onClick={onToggle}
         >
           <svg viewBox="0 0 12 12" aria-hidden="true" className={styles.expandGlyph}>
-            <path d="M4 2.5 L8 6 L4 9.5" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+            <path
+              d="M4 2.5 L8 6 L4 9.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.75"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </button>
       </td>
@@ -267,9 +267,7 @@ function MarketRow({
         ) : (
           <span className={styles.anchor} title={market.anchor.description}>
             <strong>{anchorValue}</strong>
-            <time dateTime={market.anchor.date}>
-              {formatDate(market.anchor.date)}
-            </time>
+            <time dateTime={market.anchor.date}>{formatDate(market.anchor.date)}</time>
             <span className={styles.visuallyHidden}>{market.anchor.description}</span>
           </span>
         )}
@@ -324,12 +322,7 @@ function MarketRowGroup({
 
 function MarketBoardSkeleton() {
   return (
-    <div
-      className={styles.skeleton}
-      role="status"
-      aria-busy="true"
-      aria-label="Loading markets"
-    >
+    <div className={styles.skeleton} role="status" aria-busy="true" aria-label="Loading markets">
       <div className={styles.skeletonHeader} />
       {[0, 1].map((row) => (
         <div className={styles.skeletonRow} key={row}>
@@ -374,11 +367,7 @@ export function MarketBoard({
           <strong>Market data is unavailable.</strong>
           <p>OpenMarket could not refresh the board. Existing prices have not been replaced.</p>
         </div>
-        <button
-          className={styles.retry}
-          type="button"
-          onClick={() => void marketsQuery.refetch()}
-        >
+        <button className={styles.retry} type="button" onClick={() => void marketsQuery.refetch()}>
           Retry market data
         </button>
       </div>
@@ -400,8 +389,7 @@ export function MarketBoard({
     <div className={styles.tableViewport}>
       <table className={styles.table}>
         <caption className={styles.visuallyHidden}>
-          Public markets with current metric, 24-hour movement, history, anchor, claims,
-          and status
+          Public markets with current metric, 24-hour movement, history, anchor, claims, and status
         </caption>
         <thead>
           <tr>
@@ -425,9 +413,7 @@ export function MarketBoard({
                 key={market.marketId}
                 market={market}
                 expanded={expanded}
-                onToggle={() =>
-                  setExpandedSlug(expanded ? null : market.company.slug)
-                }
+                onToggle={() => setExpandedSlug(expanded ? null : market.company.slug)}
               />
             );
           })}

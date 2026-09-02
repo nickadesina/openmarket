@@ -14,10 +14,7 @@ import { fileURLToPath } from "node:url";
 
 import { sql } from "kysely";
 
-import {
-  createDirectDatabase,
-  destroyDatabase,
-} from "../src/lib/db/client.js";
+import { createDirectDatabase, destroyDatabase } from "../src/lib/db/client.js";
 
 const seedPath = join(dirname(fileURLToPath(import.meta.url)), "dev-seed.sql");
 const statements = readFileSync(seedPath, "utf8")

@@ -1,8 +1,5 @@
 import { isServiceError } from "../../../lib/api/errors.js";
-import {
-  parseMutationBody,
-  withMutationRoute,
-} from "../../../lib/api/mutation-route.js";
+import { parseMutationBody, withMutationRoute } from "../../../lib/api/mutation-route.js";
 import { jsonSuccess } from "../../../lib/api/response.js";
 import { quoteInputSchema } from "../../../lib/api/schemas.js";
 import { requireCurrentUserId } from "../../../lib/auth/current-user.js";
@@ -19,9 +16,7 @@ export function POST(request: Request): Promise<Response> {
       userId = await requireCurrentUserId(request, () => context.db);
     } catch (error: unknown) {
       const anonymousBuy =
-        input.action === "buy" &&
-        isServiceError(error) &&
-        error.code === "USER_REQUIRED";
+        input.action === "buy" && isServiceError(error) && error.code === "USER_REQUIRED";
       if (!anonymousBuy) {
         throw error;
       }

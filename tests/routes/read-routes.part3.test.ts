@@ -42,8 +42,8 @@ vi.mock("../../src/lib/services/portfolio.js", () => ({
 }));
 
 import { GET as getActivityRoute } from "../../src/app/api/activity/route.js";
-import { GET as getMarketRoute } from "../../src/app/api/markets/[slug]/route.js";
 import { GET as getMarksRoute } from "../../src/app/api/markets/[slug]/marks/route.js";
+import { GET as getMarketRoute } from "../../src/app/api/markets/[slug]/route.js";
 import { GET as getMarketsRoute } from "../../src/app/api/markets/route.js";
 import { GET as getPortfolioRoute } from "../../src/app/api/portfolio/route.js";
 
@@ -82,14 +82,10 @@ describe("Part 3 public read routes", () => {
     const result = { markets: [], asOf: "2026-01-01T00:00:00.000Z" };
     mocks.listMarkets.mockResolvedValue(result);
 
-    const response = await getMarketsRoute(
-      new Request("http://localhost/api/markets"),
-    );
+    const response = await getMarketsRoute(new Request("http://localhost/api/markets"));
 
     expect(response.status).toBe(200);
-    expect(response.headers.get("content-type")).toBe(
-      "application/json; charset=utf-8",
-    );
+    expect(response.headers.get("content-type")).toBe("application/json; charset=utf-8");
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(response.headers.get("x-request-id")).toBeTruthy();
     await expect(response.json()).resolves.toEqual(result);
@@ -97,14 +93,11 @@ describe("Part 3 public read routes", () => {
   });
 
   it("maps a missing market without exposing implementation details", async () => {
-    mocks.getMarket.mockRejectedValue(
-      new ServiceError("MARKET_NOT_FOUND", "Market not found."),
-    );
+    mocks.getMarket.mockRejectedValue(new ServiceError("MARKET_NOT_FOUND", "Market not found."));
 
-    const response = await getMarketRoute(
-      new Request("http://localhost/api/markets/missing"),
-      { params: Promise.resolve({ slug: "missing" }) },
-    );
+    const response = await getMarketRoute(new Request("http://localhost/api/markets/missing"), {
+      params: Promise.resolve({ slug: "missing" }),
+    });
 
     expect(response.status).toBe(404);
     await expect(response.json()).resolves.toEqual({
@@ -152,9 +145,7 @@ describe("Part 3 public read routes", () => {
         durationMs: expect.any(Number),
       }),
     );
-    expect(JSON.stringify(mocks.logReadRequest.mock.calls[0])).not.toContain(
-      "slug=acme",
-    );
+    expect(JSON.stringify(mocks.logReadRequest.mock.calls[0])).not.toContain("slug=acme");
   });
 
   it("returns INVALID_INPUT for a malformed activity cursor", async () => {
@@ -177,9 +168,7 @@ describe("Part 3 public read routes", () => {
       new Error("DATABASE_URL=postgres://secret@example.invalid/openmarket"),
     );
 
-    const response = await getActivityRoute(
-      new Request("http://localhost/api/activity"),
-    );
+    const response = await getActivityRoute(new Request("http://localhost/api/activity"));
 
     expect(response.status).toBe(500);
     const body = await response.text();
@@ -197,10 +186,9 @@ describe("Part 3 public read routes", () => {
 describe("Part 3 portfolio route identity", () => {
   it("requires the signed portfolio cookie and ignores client identity channels", async () => {
     const response = await getPortfolioRoute(
-      new Request(
-        "http://localhost/api/portfolio?user_id=attacker&offset=0&limit=25",
-        { headers: { "x-user-id": "attacker" } },
-      ),
+      new Request("http://localhost/api/portfolio?user_id=attacker&offset=0&limit=25", {
+        headers: { "x-user-id": "attacker" },
+      }),
     );
 
     expect(response.status).toBe(400);
@@ -225,9 +213,9 @@ describe("Part 3 portfolio route identity", () => {
   });
 
   it("derives portfolio identity only from the verified cookie", async () => {
-    const secret = Buffer.from(
-      Array.from({ length: 32 }, (_unused, index) => index + 33),
-    ).toString("base64url");
+    const secret = Buffer.from(Array.from({ length: 32 }, (_unused, index) => index + 33)).toString(
+      "base64url",
+    );
     process.env.USER_COOKIE_SECRET = secret;
     const cookie = signUserCookie("Alice_1", secret, Date.now());
     const select = vi.fn();
@@ -256,11 +244,7 @@ describe("Part 3 portfolio route identity", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(where).toHaveBeenCalledWith(
-      "username_normalized",
-      "=",
-      "alice_1",
-    );
+    expect(where).toHaveBeenCalledWith("username_normalized", "=", "alice_1");
     expect(mocks.getPortfolio).toHaveBeenCalledWith(database, "user-1", {
       offset: 5,
       limit: 10,

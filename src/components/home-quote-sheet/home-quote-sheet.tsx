@@ -27,7 +27,11 @@ interface WindowFigures {
 // opening level and the current metric, not only marks printed inside.
 function figures(history: MarkHistory | undefined): WindowFigures {
   if (history === undefined) return { change: null, high: null, low: null };
-  const values = [history.openValue, ...history.points.map((point) => point.value), history.currentMetric];
+  const values = [
+    history.openValue,
+    ...history.points.map((point) => point.value),
+    history.currentMetric,
+  ];
   return {
     change: history.currentMetric - history.openValue,
     high: Math.max(...values),
@@ -35,12 +39,19 @@ function figures(history: MarkHistory | undefined): WindowFigures {
   };
 }
 
-function Change({ market, value }: { readonly market: MarketListItem; readonly value: number | null }) {
+function Change({
+  market,
+  value,
+}: {
+  readonly market: MarketListItem;
+  readonly value: number | null;
+}) {
   if (value === null) return <span className={styles.none}>—</span>;
   const direction = value > 0 ? "up" : value < 0 ? "down" : "flat";
-  const amount = market.metric.kind === "valuation_median"
-    ? formatMetricPrice(Math.abs(value), market.metric.kind)
-    : `${(Math.abs(value) * 100).toFixed(1)} pts`;
+  const amount =
+    market.metric.kind === "valuation_median"
+      ? formatMetricPrice(Math.abs(value), market.metric.kind)
+      : `${(Math.abs(value) * 100).toFixed(1)} pts`;
   return (
     <span className={styles[direction]}>
       <MovementArrow direction={direction} size={10} /> {direction === "flat" ? "Flat" : amount}
@@ -49,19 +60,28 @@ function Change({ market, value }: { readonly market: MarketListItem; readonly v
 }
 
 /** A newspaper quote table: last, and per window the change, high, and low. */
-export function HomeQuoteSheet({ initialData }: { readonly initialData?: MarketListResult | undefined }) {
+export function HomeQuoteSheet({
+  initialData,
+}: {
+  readonly initialData?: MarketListResult | undefined;
+}) {
   const marketsQuery = useQuery({
     queryKey: queryKeys.markets,
     queryFn: () => apiRequest<MarketListResult>("/api/markets"),
     refetchInterval: POLL_INTERVAL_MS,
-    ...(initialData === undefined ? {} : { initialData, initialDataUpdatedAt: Date.parse(initialData.asOf) }),
+    ...(initialData === undefined
+      ? {}
+      : { initialData, initialDataUpdatedAt: Date.parse(initialData.asOf) }),
   });
   const markets = marketsQuery.data?.markets ?? [];
   const histories = useQueries({
     queries: markets.flatMap((market) =>
       RANGES.map((range) => ({
         queryKey: queryKeys.marks(market.company.slug, range),
-        queryFn: () => apiRequest<MarkHistory>(`/api/markets/${encodeURIComponent(market.company.slug)}/marks?range=${range}`),
+        queryFn: () =>
+          apiRequest<MarkHistory>(
+            `/api/markets/${encodeURIComponent(market.company.slug)}/marks?range=${range}`,
+          ),
         refetchInterval: SHEET_POLL_MS,
       })),
     ),
@@ -77,12 +97,24 @@ export function HomeQuoteSheet({ initialData }: { readonly initialData?: MarketL
         </caption>
         <thead>
           <tr className={styles.groupRow}>
-            <th scope="col" rowSpan={2} className={styles.marketHead}>Market</th>
-            <th scope="col" rowSpan={2} className={styles.lastHead}>Last</th>
-            <th scope="colgroup" colSpan={1}>{RANGE_LABEL["1h"]}</th>
-            <th scope="colgroup" colSpan={3}>{RANGE_LABEL["1d"]}</th>
-            <th scope="colgroup" colSpan={3}>{RANGE_LABEL["1w"]}</th>
-            <th scope="colgroup" colSpan={2}>{RANGE_LABEL.all}</th>
+            <th scope="col" rowSpan={2} className={styles.marketHead}>
+              Market
+            </th>
+            <th scope="col" rowSpan={2} className={styles.lastHead}>
+              Last
+            </th>
+            <th scope="colgroup" colSpan={1}>
+              {RANGE_LABEL["1h"]}
+            </th>
+            <th scope="colgroup" colSpan={3}>
+              {RANGE_LABEL["1d"]}
+            </th>
+            <th scope="colgroup" colSpan={3}>
+              {RANGE_LABEL["1w"]}
+            </th>
+            <th scope="colgroup" colSpan={2}>
+              {RANGE_LABEL.all}
+            </th>
           </tr>
           <tr>
             <th scope="col">Chg</th>
@@ -99,22 +131,41 @@ export function HomeQuoteSheet({ initialData }: { readonly initialData?: MarketL
         <tbody>
           {markets.map((market, marketIndex) => {
             const byRange = Object.fromEntries(
-              RANGES.map((range, rangeIndex) => [range, figures(histories[marketIndex * RANGES.length + rangeIndex]?.data)]),
+              RANGES.map((range, rangeIndex) => [
+                range,
+                figures(histories[marketIndex * RANGES.length + rangeIndex]?.data),
+              ]),
             ) as Record<MarkRange, WindowFigures>;
             const cell = (value: number | null) =>
-              value === null ? <span className={styles.none}>—</span> : formatMetricPrice(value, market.metric.kind);
+              value === null ? (
+                <span className={styles.none}>—</span>
+              ) : (
+                formatMetricPrice(value, market.metric.kind)
+              );
             return (
               <tr key={market.marketId}>
                 <th scope="row" className={styles.marketCell}>
-                  <CompanyLogo name={market.company.name} logoPath={market.company.logoPath} size="sm" />
+                  <CompanyLogo
+                    name={market.company.name}
+                    logoPath={market.company.logoPath}
+                    size="sm"
+                  />
                   <span>{market.company.name}</span>
                 </th>
-                <td className={styles.last}>{formatMetricPrice(market.metric.current, market.metric.kind)}</td>
-                <td><Change market={market} value={byRange["1h"].change} /></td>
-                <td><Change market={market} value={byRange["1d"].change} /></td>
+                <td className={styles.last}>
+                  {formatMetricPrice(market.metric.current, market.metric.kind)}
+                </td>
+                <td>
+                  <Change market={market} value={byRange["1h"].change} />
+                </td>
+                <td>
+                  <Change market={market} value={byRange["1d"].change} />
+                </td>
                 <td>{cell(byRange["1d"].high)}</td>
                 <td>{cell(byRange["1d"].low)}</td>
-                <td><Change market={market} value={byRange["1w"].change} /></td>
+                <td>
+                  <Change market={market} value={byRange["1w"].change} />
+                </td>
                 <td>{cell(byRange["1w"].high)}</td>
                 <td>{cell(byRange["1w"].low)}</td>
                 <td>{cell(byRange.all.high)}</td>

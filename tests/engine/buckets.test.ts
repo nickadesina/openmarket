@@ -37,8 +37,7 @@ describe("valuation grid v1", () => {
 
     expect(
       valuationBucketIndex(
-        VALUATION_BOUNDARIES_USD[VALUATION_BOUNDARIES_USD.length - 1]! *
-          Math.SQRT2,
+        VALUATION_BOUNDARIES_USD[VALUATION_BOUNDARIES_USD.length - 1]! * Math.SQRT2,
       ),
     ).toBe(40);
   });
@@ -56,9 +55,7 @@ describe("valuation grid v1", () => {
     });
 
     for (let index = 0; index < VALUATION_BUCKET_COUNT - 1; index += 1) {
-      expect(valuationBucketEdges(index).upper).toBe(
-        valuationBucketEdges(index + 1).lower,
-      );
+      expect(valuationBucketEdges(index).upper).toBe(valuationBucketEdges(index + 1).lower);
     }
   });
 

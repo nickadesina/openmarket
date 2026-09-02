@@ -42,10 +42,7 @@ function jsonBody(value: unknown): string {
   return serialized ?? "null";
 }
 
-function responseHeaders(
-  suppliedHeaders: HeadersInit | undefined,
-  requestId: string,
-): Headers {
+function responseHeaders(suppliedHeaders: HeadersInit | undefined, requestId: string): Headers {
   const headers = new Headers(suppliedHeaders);
   headers.set("Content-Type", "application/json; charset=utf-8");
   headers.set("Cache-Control", "no-store");
@@ -54,11 +51,7 @@ function responseHeaders(
 }
 
 export function jsonSuccess<T>(data: T, init: JsonResponseInit = {}): Response {
-  const {
-    requestId = randomUUID(),
-    headers: suppliedHeaders,
-    ...responseInit
-  } = init;
+  const { requestId = randomUUID(), headers: suppliedHeaders, ...responseInit } = init;
 
   return new Response(jsonBody(data), {
     ...responseInit,

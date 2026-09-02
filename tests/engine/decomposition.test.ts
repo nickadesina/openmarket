@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { decomposeHoldings } from "../../src/lib/engine/decomposition.js";
-import {
-  EPS,
-  type DecomposedPosition,
-} from "../../src/lib/engine/types.js";
+import { type DecomposedPosition, EPS } from "../../src/lib/engine/types.js";
 
 describe("decomposeHoldings", () => {
   it("extracts an exact YES suffix", () => {
@@ -57,9 +54,7 @@ describe("decomposeHoldings", () => {
     const reconstructed = reconstruct(holdings.length, decomposition);
 
     for (let bucket = 0; bucket < holdings.length; bucket += 1) {
-      expect(Math.abs(reconstructed[bucket]! - holdings[bucket]!)).toBeLessThanOrEqual(
-        EPS,
-      );
+      expect(Math.abs(reconstructed[bucket]! - holdings[bucket]!)).toBeLessThanOrEqual(EPS);
     }
     expect(decomposition.positions.length).toBeLessThanOrEqual(
       holdings.filter((holding) => holding > EPS).length,
@@ -80,12 +75,8 @@ describe("decomposeHoldings", () => {
     expect(() => decomposeHoldings([])).toThrow(RangeError);
     expect(() => decomposeHoldings([1])).toThrow(RangeError);
     expect(() => decomposeHoldings([0, Number.NaN])).toThrow(RangeError);
-    expect(() => decomposeHoldings([0, Number.POSITIVE_INFINITY])).toThrow(
-      RangeError,
-    );
-    expect(() => decomposeHoldings([0, Number.NEGATIVE_INFINITY])).toThrow(
-      RangeError,
-    );
+    expect(() => decomposeHoldings([0, Number.POSITIVE_INFINITY])).toThrow(RangeError);
+    expect(() => decomposeHoldings([0, Number.NEGATIVE_INFINITY])).toThrow(RangeError);
     expect(() => decomposeHoldings([0, -2 * EPS])).toThrow(RangeError);
   });
 
@@ -112,8 +103,7 @@ function reconstruct(
 
   for (const position of decomposition.positions) {
     const firstBucket = position.side === "yes" ? position.strikeIndex + 1 : 0;
-    const finalBucket =
-      position.side === "yes" ? bucketCount - 1 : position.strikeIndex;
+    const finalBucket = position.side === "yes" ? bucketCount - 1 : position.strikeIndex;
     for (let bucket = firstBucket; bucket <= finalBucket; bucket += 1) {
       reconstructed[bucket] = reconstructed[bucket]! + position.quantity;
     }

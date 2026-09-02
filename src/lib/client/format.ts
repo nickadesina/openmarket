@@ -103,7 +103,9 @@ export function movementGlyph(direction: "up" | "down" | "flat"): string {
 export function contractLabel(side: "yes" | "no", strikeLabel: string | null): string {
   const sideLabel = side.toUpperCase();
   if (strikeLabel === null) return sideLabel;
-  return side === "yes" ? `${sideLabel} above ${strikeLabel}` : `${sideLabel} at or below ${strikeLabel}`;
+  return side === "yes"
+    ? `${sideLabel} above ${strikeLabel}`
+    : `${sideLabel} at or below ${strikeLabel}`;
 }
 
 export function strikeLabel(market: MarketDetail, strikeIndex: number): string {

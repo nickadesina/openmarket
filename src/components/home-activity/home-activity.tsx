@@ -36,14 +36,15 @@ function ActivityRow({ item }: { readonly item: ActivityItem }) {
         <p>
           <span className={item.action === "buy" ? styles.buy : styles.sell}>{action}</span>{" "}
           <strong>{formatQuantityShort(item.quantity)}</strong>{" "}
-          <span className={styles.muted}>shares of</span>{" "}
-          <strong>{itemLabel(item)}</strong>
+          <span className={styles.muted}>shares of</span> <strong>{itemLabel(item)}</strong>
         </p>
         <p className={styles.meta}>
           <Link href={`/m/${item.company.slug}`}>{item.company.name}</Link>
           <span aria-hidden="true">·</span>
           {/* ICU versions differ between the Node SSR and the browser (", " vs " at "); the client value wins. */}
-          <time dateTime={item.createdAt} suppressHydrationWarning>{formatDateTime(item.createdAt)}</time>
+          <time dateTime={item.createdAt} suppressHydrationWarning>
+            {formatDateTime(item.createdAt)}
+          </time>
         </p>
       </div>
       <span className={styles.amount}>{cash}</span>
@@ -69,11 +70,7 @@ function ActivitySkeleton() {
   );
 }
 
-export function HomeActivity({
-  initialData,
-}: {
-  readonly initialData?: ActivityPage | undefined;
-}) {
+export function HomeActivity({ initialData }: { readonly initialData?: ActivityPage | undefined }) {
   const initialQueryData =
     initialData === undefined
       ? {}
@@ -116,10 +113,7 @@ export function HomeActivity({
   return (
     <ol className={styles.list} aria-label="Recent public trades">
       {activityQuery.data.items.map((item) => (
-        <ActivityRow
-          key={`${item.company.slug}-${item.marketSequence}`}
-          item={item}
-        />
+        <ActivityRow key={`${item.company.slug}-${item.marketSequence}`} item={item} />
       ))}
     </ol>
   );

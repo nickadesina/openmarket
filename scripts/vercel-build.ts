@@ -1,9 +1,6 @@
 import { spawnSync } from "node:child_process";
 
-import {
-  validateDeploymentConfig,
-  type DeploymentTarget,
-} from "./verify-production-config.js";
+import { type DeploymentTarget, validateDeploymentConfig } from "./verify-production-config.js";
 
 function run(command: string, args: readonly string[]): void {
   const result = spawnSync(command, args, {
@@ -17,14 +14,10 @@ function run(command: string, args: readonly string[]): void {
 }
 
 const vercelEnvironment = process.env.VERCEL_ENV;
-const isDeployTarget =
-  vercelEnvironment === "production" || vercelEnvironment === "preview";
+const isDeployTarget = vercelEnvironment === "production" || vercelEnvironment === "preview";
 
 if (isDeployTarget) {
-  validateDeploymentConfig(
-    process.env,
-    vercelEnvironment as DeploymentTarget,
-  );
+  validateDeploymentConfig(process.env, vercelEnvironment as DeploymentTarget);
 } else {
   console.log("Skipping deployment migration outside Vercel production/preview.");
 }

@@ -7,8 +7,8 @@ import { ApiClientError, apiRequest } from "../../lib/client/api.js";
 import { errorMessage, formatCents } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
 import type { MarketListResult } from "../../lib/services/list-markets.js";
-import type { SettlementResult } from "../../lib/services/settle-market.js";
 import type { SeedMarketOutcome } from "../../lib/services/seed-market.js";
+import type { SettlementResult } from "../../lib/services/settle-market.js";
 import styles from "./admin-page.module.css";
 
 type AdminState = "unknown" | "authenticated" | "required";
@@ -51,6 +51,7 @@ function Field({
   readonly support?: string;
 }) {
   return (
+    // biome-ignore lint/a11y/noLabelWithoutControl: the control is passed as children and rendered inside the label.
     <label className={styles.field}>
       <span>{label}</span>
       {children}
@@ -62,10 +63,11 @@ function Field({
 function AdminLogin({ onAuthenticated }: { readonly onAuthenticated: () => void }) {
   const [passphrase, setPassphrase] = useState("");
   const loginMutation = useMutation({
-    mutationFn: () => apiRequest<unknown>("/api/admin/login", {
-      method: "POST",
-      body: JSON.stringify({ passphrase }),
-    }),
+    mutationFn: () =>
+      apiRequest<unknown>("/api/admin/login", {
+        method: "POST",
+        body: JSON.stringify({ passphrase }),
+      }),
     onSuccess: () => {
       setPassphrase("");
       onAuthenticated();
@@ -95,11 +97,19 @@ function AdminLogin({ onAuthenticated }: { readonly onAuthenticated: () => void 
             required
           />
         </Field>
-        <button type="submit" className={styles.primaryButton} disabled={passphrase.length === 0 || loginMutation.isPending}>
+        <button
+          type="submit"
+          className={styles.primaryButton}
+          disabled={passphrase.length === 0 || loginMutation.isPending}
+        >
           {loginMutation.isPending ? "Verifying…" : "Start admin session"}
         </button>
       </form>
-      {loginMutation.isError ? <p className={styles.inlineError} role="alert">{errorMessage(loginMutation.error, FALLBACK_ERROR)}</p> : null}
+      {loginMutation.isError ? (
+        <p className={styles.inlineError} role="alert">
+          {errorMessage(loginMutation.error, FALLBACK_ERROR)}
+        </p>
+      ) : null}
     </section>
   );
 }
@@ -110,10 +120,11 @@ function SeedForm({ onAdminRequired }: { readonly onAdminRequired: () => void })
   const [result, setResult] = useState<SeedResponse | null>(null);
 
   const seedMutation = useMutation({
-    mutationFn: (body: Record<string, unknown>) => apiRequest<SeedResponse>("/api/admin/seed", {
-      method: "POST",
-      body: JSON.stringify(body),
-    }),
+    mutationFn: (body: Record<string, unknown>) =>
+      apiRequest<SeedResponse>("/api/admin/seed", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
     onSuccess: async (nextResult) => {
       setResult(nextResult);
       await queryClient.invalidateQueries({ queryKey: queryKeys.markets });
@@ -134,18 +145,19 @@ function SeedForm({ onAdminRequired }: { readonly onAdminRequired: () => void })
       b: Number(data.get("b")),
       metric_kind: metricKind,
     };
-    const body = metricKind === "valuation_median"
-      ? {
-          ...shared,
-          anchor_valuation_usd: String(data.get("anchor_valuation_usd")),
-          anchor_date: String(data.get("anchor_date")),
-          anchor_description: String(data.get("anchor_description")),
-          sigma: Number(data.get("sigma")),
-        }
-      : {
-          ...shared,
-          yes_probability: Number(data.get("yes_probability")),
-        };
+    const body =
+      metricKind === "valuation_median"
+        ? {
+            ...shared,
+            anchor_valuation_usd: String(data.get("anchor_valuation_usd")),
+            anchor_date: String(data.get("anchor_date")),
+            anchor_description: String(data.get("anchor_description")),
+            sigma: Number(data.get("sigma")),
+          }
+        : {
+            ...shared,
+            yes_probability: Number(data.get("yes_probability")),
+          };
     seedMutation.mutate(body);
   }
 
@@ -161,7 +173,10 @@ function SeedForm({ onAdminRequired }: { readonly onAdminRequired: () => void })
 
       <div className={styles.cautionNote}>
         <strong>Source verification is external.</strong>
-        <span>Enter only an independently verified public anchor. This form does not verify a draft anchor or source claim.</span>
+        <span>
+          Enter only an independently verified public anchor. This form does not verify a draft
+          anchor or source claim.
+        </span>
       </div>
 
       <form onSubmit={submit} className={styles.form}>
@@ -169,39 +184,91 @@ function SeedForm({ onAdminRequired }: { readonly onAdminRequired: () => void })
           <legend>Market metric</legend>
           <div>
             <label>
-              <input type="radio" name="metric_kind" value="valuation_median" checked={metricKind === "valuation_median"} onChange={() => setMetricKind("valuation_median")} />
+              <input
+                type="radio"
+                name="metric_kind"
+                value="valuation_median"
+                checked={metricKind === "valuation_median"}
+                onChange={() => setMetricKind("valuation_median")}
+              />
               <span>Valuation median</span>
             </label>
             <label>
-              <input type="radio" name="metric_kind" value="yes_probability" checked={metricKind === "yes_probability"} onChange={() => setMetricKind("yes_probability")} />
+              <input
+                type="radio"
+                name="metric_kind"
+                value="yes_probability"
+                checked={metricKind === "yes_probability"}
+                onChange={() => setMetricKind("yes_probability")}
+              />
               <span>Binary probability</span>
             </label>
           </div>
         </fieldset>
 
         <div className={styles.twoColumns}>
-          <Field label="Company name"><input name="name" required maxLength={200} /></Field>
-          <Field label="Company slug" support="Lowercase letters, numbers, and hyphens."><input name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" /></Field>
+          <Field label="Company name">
+            <input name="name" required maxLength={200} />
+          </Field>
+          <Field label="Company slug" support="Lowercase letters, numbers, and hyphens.">
+            <input name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" />
+          </Field>
         </div>
         <div className={styles.twoColumns}>
-          <Field label="Logo path"><input name="logo_path" required placeholder="/logos/company.svg" /></Field>
-          <Field label="Liquidity parameter (b)"><input name="b" type="number" required min="0.000001" step="any" inputMode="decimal" /></Field>
+          <Field label="Logo path">
+            <input name="logo_path" required placeholder="/logos/company.svg" />
+          </Field>
+          <Field label="Liquidity parameter (b)">
+            <input name="b" type="number" required min="0.000001" step="any" inputMode="decimal" />
+          </Field>
         </div>
 
         {metricKind === "valuation_median" ? (
           <>
             <div className={styles.twoColumns}>
-              <Field label="Verified anchor value (USD)"><input name="anchor_valuation_usd" required inputMode="decimal" placeholder="0.00" /></Field>
-              <Field label="Anchor date"><input name="anchor_date" type="date" required /></Field>
+              <Field label="Verified anchor value (USD)">
+                <input
+                  name="anchor_valuation_usd"
+                  required
+                  inputMode="decimal"
+                  placeholder="0.00"
+                />
+              </Field>
+              <Field label="Anchor date">
+                <input name="anchor_date" type="date" required />
+              </Field>
             </div>
-            <Field label="Anchor description" support="Name the public event or report behind the anchor.">
+            <Field
+              label="Anchor description"
+              support="Name the public event or report behind the anchor."
+            >
               <textarea name="anchor_description" required maxLength={1000} rows={3} />
             </Field>
-            <Field label="Distribution sigma"><input name="sigma" type="number" required min="0.000001" step="any" inputMode="decimal" /></Field>
+            <Field label="Distribution sigma">
+              <input
+                name="sigma"
+                type="number"
+                required
+                min="0.000001"
+                step="any"
+                inputMode="decimal"
+              />
+            </Field>
           </>
         ) : (
-          <Field label="Initial YES probability" support="Enter a value greater than 0 and less than 1.">
-            <input name="yes_probability" type="number" required min="0.000001" max="0.999999" step="any" inputMode="decimal" />
+          <Field
+            label="Initial YES probability"
+            support="Enter a value greater than 0 and less than 1."
+          >
+            <input
+              name="yes_probability"
+              type="number"
+              required
+              min="0.000001"
+              max="0.999999"
+              step="any"
+              inputMode="decimal"
+            />
           </Field>
         )}
 
@@ -212,11 +279,17 @@ function SeedForm({ onAdminRequired }: { readonly onAdminRequired: () => void })
         </div>
       </form>
 
-      {seedMutation.isError ? <p className={styles.inlineError} role="alert">{errorMessage(seedMutation.error, FALLBACK_ERROR)}</p> : null}
+      {seedMutation.isError ? (
+        <p className={styles.inlineError} role="alert">
+          {errorMessage(seedMutation.error, FALLBACK_ERROR)}
+        </p>
+      ) : null}
       {result !== null ? (
         <div className={styles.successNotice} role="status">
           <strong>Market {result.outcome}</strong>
-          <span>{result.slug} is {result.status}. Market ID: {result.market_id}</span>
+          <span>
+            {result.slug} is {result.status}. Market ID: {result.market_id}
+          </span>
         </div>
       ) : null}
     </section>
@@ -233,15 +306,17 @@ function SettlementForm({ onAdminRequired }: { readonly onAdminRequired: () => v
     queryKey: queryKeys.markets,
     queryFn: () => apiRequest<MarketListResult>("/api/markets"),
   });
-  const openSlugs = marketsQuery.data?.markets
-    .filter((market) => market.status === "open")
-    .map((market) => market.company.slug) ?? [];
+  const openSlugs =
+    marketsQuery.data?.markets
+      .filter((market) => market.status === "open")
+      .map((market) => market.company.slug) ?? [];
 
   const settlementMutation = useMutation({
-    mutationFn: (body: SettlementRequest) => apiRequest<SettlementResult>("/api/admin/settle", {
-      method: "POST",
-      body: JSON.stringify(body),
-    }),
+    mutationFn: (body: SettlementRequest) =>
+      apiRequest<SettlementResult>("/api/admin/settle", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
     onSuccess: async (nextResult) => {
       setResult(nextResult);
       setReview(null);
@@ -274,7 +349,9 @@ function SettlementForm({ onAdminRequired }: { readonly onAdminRequired: () => v
         <div>
           <p className={styles.sectionLabel}>Resolution</p>
           <h2 id="settlement-heading">Settle a market</h2>
-          <p>Settlement pays the winning bucket, clears holdings, and permanently closes the market.</p>
+          <p>
+            Settlement pays the winning bucket, clears holdings, and permanently closes the market.
+          </p>
         </div>
         <span className={styles.irreversibleBadge}>Irreversible</span>
       </header>
@@ -282,34 +359,75 @@ function SettlementForm({ onAdminRequired }: { readonly onAdminRequired: () => v
       {review === null ? (
         <form onSubmit={beginReview} className={styles.form}>
           <div className={styles.twoColumns}>
-            <Field label="Market slug" {...(openSlugs.length > 0 ? { support: `Open markets: ${openSlugs.join(", ")}` } : {})}>
-              <input name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" list="open-market-slugs" />
+            <Field
+              label="Market slug"
+              {...(openSlugs.length > 0
+                ? { support: `Open markets: ${openSlugs.join(", ")}` }
+                : {})}
+            >
+              <input
+                name="slug"
+                required
+                pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+                list="open-market-slugs"
+              />
               <datalist id="open-market-slugs">
-                {openSlugs.map((slug) => <option key={slug} value={slug} />)}
+                {openSlugs.map((slug) => (
+                  <option key={slug} value={slug} />
+                ))}
               </datalist>
             </Field>
-            <Field label="Settlement value (USD)"><input name="settled_value_usd" required inputMode="decimal" placeholder="0.00" /></Field>
+            <Field label="Settlement value (USD)">
+              <input name="settled_value_usd" required inputMode="decimal" placeholder="0.00" />
+            </Field>
           </div>
-          <Field label="Public source URL" support="HTTP or HTTPS source documenting the resolution value.">
+          <Field
+            label="Public source URL"
+            support="HTTP or HTTPS source documenting the resolution value."
+          >
             <input name="source_url" type="url" required placeholder="https://" />
           </Field>
-          <Field label="Source description" support="Identify the report, announcement, or filing that establishes the outcome.">
+          <Field
+            label="Source description"
+            support="Identify the report, announcement, or filing that establishes the outcome."
+          >
             <textarea name="source_description" required maxLength={1000} rows={3} />
           </Field>
           <div className={styles.formActions}>
-            <button type="submit" className={styles.secondaryButton}>Review settlement</button>
+            <button type="submit" className={styles.secondaryButton}>
+              Review settlement
+            </button>
           </div>
         </form>
       ) : (
         <div className={styles.reviewPanel}>
           <h3>Review the permanent outcome</h3>
           <dl>
-            <div><dt>Market</dt><dd>{review.slug}</dd></div>
-            <div><dt>Settlement value</dt><dd>${review.settled_value_usd}</dd></div>
-            <div><dt>Source</dt><dd><a href={review.source_url} target="_blank" rel="noreferrer">Open public source</a></dd></div>
-            <div><dt>Description</dt><dd>{review.source_description}</dd></div>
+            <div>
+              <dt>Market</dt>
+              <dd>{review.slug}</dd>
+            </div>
+            <div>
+              <dt>Settlement value</dt>
+              <dd>${review.settled_value_usd}</dd>
+            </div>
+            <div>
+              <dt>Source</dt>
+              <dd>
+                <a href={review.source_url} target="_blank" rel="noreferrer">
+                  Open public source
+                </a>
+              </dd>
+            </div>
+            <div>
+              <dt>Description</dt>
+              <dd>{review.source_description}</dd>
+            </div>
           </dl>
-          <p className={styles.irreversibleCopy}>Submitting will credit every eligible account and close this market. It cannot be reopened or edited.</p>
+          <p className={styles.irreversibleCopy}>
+            Submitting will credit every eligible account and close this market. It cannot be
+            reopened or edited.
+          </p>
           <Field label={`Retype “${review.slug}” exactly to confirm`}>
             <input
               value={confirmSlug}
@@ -320,9 +438,20 @@ function SettlementForm({ onAdminRequired }: { readonly onAdminRequired: () => v
               disabled={settlementMutation.isPending}
             />
           </Field>
-          {confirmSlug.length > 0 && !exactMatch ? <p className={styles.inlineError} role="alert">The confirmation must exactly match the market slug.</p> : null}
+          {confirmSlug.length > 0 && !exactMatch ? (
+            <p className={styles.inlineError} role="alert">
+              The confirmation must exactly match the market slug.
+            </p>
+          ) : null}
           <div className={styles.formActions}>
-            <button type="button" className={styles.secondaryButton} onClick={() => setReview(null)} disabled={settlementMutation.isPending}>Edit details</button>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={() => setReview(null)}
+              disabled={settlementMutation.isPending}
+            >
+              Edit details
+            </button>
             <button
               type="button"
               className={styles.dangerButton}
@@ -335,11 +464,18 @@ function SettlementForm({ onAdminRequired }: { readonly onAdminRequired: () => v
         </div>
       )}
 
-      {settlementMutation.isError ? <p className={styles.inlineError} role="alert">{errorMessage(settlementMutation.error, FALLBACK_ERROR)}</p> : null}
+      {settlementMutation.isError ? (
+        <p className={styles.inlineError} role="alert">
+          {errorMessage(settlementMutation.error, FALLBACK_ERROR)}
+        </p>
+      ) : null}
       {result !== null ? (
         <div className={styles.successNotice} role="status">
           <strong>{result.slug} settled</strong>
-          <span>{result.credited_users} accounts credited, total payout {formatCents(result.total_payout_cents)}.</span>
+          <span>
+            {result.credited_users} accounts credited, total payout{" "}
+            {formatCents(result.total_payout_cents)}.
+          </span>
         </div>
       ) : null}
     </section>
@@ -354,7 +490,10 @@ export function AdminPage() {
       <header className={styles.pageHeader}>
         <p className={styles.sectionLabel}>Restricted operations</p>
         <h1>Market administration</h1>
-        <p>Seed verified market inputs and record final outcomes. Every mutation is validated by the server.</p>
+        <p>
+          Seed verified market inputs and record final outcomes. Every mutation is validated by the
+          server.
+        </p>
       </header>
 
       {adminState === "authenticated" ? (
@@ -372,9 +511,13 @@ export function AdminPage() {
         <>
           <AdminLogin onAuthenticated={() => setAdminState("authenticated")} />
           {adminState === "required" ? (
-            <p className={styles.authRequired} role="alert">Your admin session is missing or expired. Verify the passphrase to restore access.</p>
+            <p className={styles.authRequired} role="alert">
+              Your admin session is missing or expired. Verify the passphrase to restore access.
+            </p>
           ) : null}
-          <p className={styles.gatedExplanation}>Seed and settlement controls are hidden until this browser session is authenticated.</p>
+          <p className={styles.gatedExplanation}>
+            Seed and settlement controls are hidden until this browser session is authenticated.
+          </p>
         </>
       )}
     </div>

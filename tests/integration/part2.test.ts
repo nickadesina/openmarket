@@ -1,22 +1,15 @@
 import { randomUUID } from "node:crypto";
 
 import { sql } from "kysely";
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { ServiceError } from "../../src/lib/api/errors.js";
 import { formatCentsAsUsd } from "../../src/lib/api/money.js";
 import type { TradeInput } from "../../src/lib/api/schemas.js";
 import {
   deriveAdvisoryLockKey,
-  executeTrade,
   type ExecutionResult,
+  executeTrade,
 } from "../../src/lib/services/execute-trade.js";
 import { quoteMarket } from "../../src/lib/services/quote.js";
 import { seedMarket } from "../../src/lib/services/seed-market.js";
@@ -184,27 +177,14 @@ postgresDescribe(suiteName, () => {
       executeTrade(postgres.db, secondUser.id, buyInput(seeded.company.slug, 3)),
     ]);
     const orderedExecutions = [...executions].sort((left, right) =>
-      Number(
-        BigInt(left.result.market_sequence) -
-          BigInt(right.result.market_sequence),
-      ),
+      Number(BigInt(left.result.market_sequence) - BigInt(right.result.market_sequence)),
     );
 
-    expect(orderedExecutions.map(({ result }) => result.market_sequence)).toEqual([
-      "1",
-      "2",
-    ]);
+    expect(orderedExecutions.map(({ result }) => result.market_sequence)).toEqual(["1", "2"]);
 
     const trades = await postgres.db
       .selectFrom("trades")
-      .select([
-        "id",
-        "market_sequence",
-        "q_before",
-        "q_after",
-        "metric_after",
-        "created_at",
-      ])
+      .select(["id", "market_sequence", "q_before", "q_after", "metric_after", "created_at"])
       .where("market_id", "=", seeded.market.id)
       .orderBy("market_sequence", "asc")
       .execute();
@@ -238,9 +218,7 @@ postgresDescribe(suiteName, () => {
       });
     }
     for (let index = 1; index < marks.length; index += 1) {
-      expect(marks[index]!.ts.getTime()).toBeGreaterThanOrEqual(
-        marks[index - 1]!.ts.getTime(),
-      );
+      expect(marks[index]!.ts.getTime()).toBeGreaterThanOrEqual(marks[index - 1]!.ts.getTime());
     }
   });
 
@@ -254,11 +232,7 @@ postgresDescribe(suiteName, () => {
       deriveAdvisoryLockKey(olderInput.idempotency_key),
     );
 
-    const olderExecutionPromise = executeTrade(
-      postgres.db,
-      olderUser.id,
-      olderInput,
-    );
+    const olderExecutionPromise = executeTrade(postgres.db, olderUser.id, olderInput);
     let newerExecution: TradeExecution | undefined;
     let newerError: unknown;
     try {
@@ -338,12 +312,7 @@ postgresDescribe(suiteName, () => {
 
     const trades = await postgres.db
       .selectFrom("trades")
-      .select([
-        "execution_result",
-        "idempotency_key",
-        "user_id",
-        "request_fingerprint",
-      ])
+      .select(["execution_result", "idempotency_key", "user_id", "request_fingerprint"])
       .where("idempotency_key", "=", input.idempotency_key)
       .execute();
     expect(trades).toHaveLength(1);
@@ -385,11 +354,9 @@ postgresDescribe(suiteName, () => {
     const before = await ledgerSnapshot(seeded.market.id, user.id);
     const changedInput: TradeInput = { ...input, max_cost_usd: "999.00" };
 
-    const conflict = await executeTrade(
-      postgres.db,
-      user.id,
-      changedInput,
-    ).catch((error: unknown) => error);
+    const conflict = await executeTrade(postgres.db, user.id, changedInput).catch(
+      (error: unknown) => error,
+    );
 
     expect(conflict).toBeInstanceOf(ServiceError);
     if (!(conflict instanceof ServiceError)) throw conflict;
@@ -409,22 +376,14 @@ postgresDescribe(suiteName, () => {
       strike_index: 0,
       quantity: 10,
     });
-    await executeTrade(
-      postgres.db,
-      mover.id,
-      buyInput(seeded.company.slug, 200, "1000.00"),
-    );
+    await executeTrade(postgres.db, mover.id, buyInput(seeded.company.slug, 200, "1000.00"));
     const before = await ledgerSnapshot(seeded.market.id, user.id);
 
     await expect(
       executeTrade(
         postgres.db,
         user.id,
-        buyInput(
-          seeded.company.slug,
-          10,
-          formatCentsAsUsd(Number(staleQuote.cash_amount_cents)),
-        ),
+        buyInput(seeded.company.slug, 10, formatCentsAsUsd(Number(staleQuote.cash_amount_cents))),
       ),
     ).rejects.toMatchObject({ code: "PRICE_MOVED" });
 
@@ -437,11 +396,7 @@ postgresDescribe(suiteName, () => {
     const before = await ledgerSnapshot(seeded.market.id, user.id);
 
     await expect(
-      executeTrade(
-        postgres.db,
-        user.id,
-        buyInput(seeded.company.slug, 200_000, "999999.00"),
-      ),
+      executeTrade(postgres.db, user.id, buyInput(seeded.company.slug, 200_000, "999999.00")),
     ).rejects.toMatchObject({ code: "INSUFFICIENT_CASH" });
 
     expect(await ledgerSnapshot(seeded.market.id, user.id)).toEqual(before);
@@ -463,16 +418,8 @@ postgresDescribe(suiteName, () => {
     const seeded = await seedBinary("settlement");
     const epsLowUser = await createOrResumeUser(postgres.db, "EpsLowUser");
     const otherUser = await createOrResumeUser(postgres.db, "OtherHolder");
-    await executeTrade(
-      postgres.db,
-      epsLowUser.id,
-      buyInput(seeded.company.slug, 1 - 5e-10),
-    );
-    await executeTrade(
-      postgres.db,
-      otherUser.id,
-      buyInput(seeded.company.slug, 2),
-    );
+    await executeTrade(postgres.db, epsLowUser.id, buyInput(seeded.company.slug, 1 - 5e-10));
+    await executeTrade(postgres.db, otherUser.id, buyInput(seeded.company.slug, 2));
 
     const balancesBefore = await postgres.db
       .selectFrom("users")
@@ -505,12 +452,8 @@ postgresDescribe(suiteName, () => {
     const balanceAfter = new Map(
       balancesAfter.map((user) => [user.id, BigInt(user.cash_balance_cents)]),
     );
-    expect(balanceAfter.get(epsLowUser.id)! - balanceBefore.get(epsLowUser.id)!).toBe(
-      100n,
-    );
-    expect(balanceAfter.get(otherUser.id)! - balanceBefore.get(otherUser.id)!).toBe(
-      200n,
-    );
+    expect(balanceAfter.get(epsLowUser.id)! - balanceBefore.get(epsLowUser.id)!).toBe(100n);
+    expect(balanceAfter.get(otherUser.id)! - balanceBefore.get(otherUser.id)!).toBe(200n);
 
     const holdings = await postgres.db
       .selectFrom("holdings")
@@ -518,19 +461,13 @@ postgresDescribe(suiteName, () => {
       .where("market_id", "=", seeded.market.id)
       .execute();
     expect(holdings).toHaveLength(2);
-    expect(holdings.every(({ h }) => h.every((quantity) => quantity === 0))).toBe(
-      true,
-    );
+    expect(holdings.every(({ h }) => h.every((quantity) => quantity === 0))).toBe(true);
 
     await expect(settleMarket(postgres.db, settlementInput)).rejects.toMatchObject({
       code: "MARKET_SETTLED",
     });
     await expect(
-      executeTrade(
-        postgres.db,
-        epsLowUser.id,
-        buyInput(seeded.company.slug, 1),
-      ),
+      executeTrade(postgres.db, epsLowUser.id, buyInput(seeded.company.slug, 1)),
     ).rejects.toMatchObject({ code: "MARKET_SETTLED" });
 
     const frozen = await postgres.db
@@ -550,9 +487,7 @@ postgresDescribe(suiteName, () => {
       .execute();
     expect(frozen).toEqual({ status: "settled", last_market_sequence: "2" });
     expect(settlements).toHaveLength(1);
-    expect(
-      new Map(finalBalances.map((user) => [user.id, user.cash_balance_cents])),
-    ).toEqual(
+    expect(new Map(finalBalances.map((user) => [user.id, user.cash_balance_cents]))).toEqual(
       new Map(balancesAfter.map((user) => [user.id, user.cash_balance_cents])),
     );
   });
@@ -561,21 +496,9 @@ postgresDescribe(suiteName, () => {
     const seeded = await seedBinary("replay");
     const firstUser = await createOrResumeUser(postgres.db, "ReplayOne");
     const secondUser = await createOrResumeUser(postgres.db, "ReplayTwo");
-    await executeTrade(
-      postgres.db,
-      firstUser.id,
-      buyInput(seeded.company.slug, 2),
-    );
-    await executeTrade(
-      postgres.db,
-      secondUser.id,
-      buyInput(seeded.company.slug, 3),
-    );
-    await executeTrade(
-      postgres.db,
-      firstUser.id,
-      sellInput(seeded.company.slug, 0.5),
-    );
+    await executeTrade(postgres.db, firstUser.id, buyInput(seeded.company.slug, 2));
+    await executeTrade(postgres.db, secondUser.id, buyInput(seeded.company.slug, 3));
+    await executeTrade(postgres.db, firstUser.id, sellInput(seeded.company.slug, 0.5));
 
     const diagnostics = await verifyReplay(postgres.db);
     expect(diagnostics.passed).toBe(true);

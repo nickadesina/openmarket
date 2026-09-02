@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  ERROR_CODES,
-  ServiceError,
-  isServiceError,
-} from "../../src/lib/api/errors.js";
+import { ERROR_CODES, isServiceError, ServiceError } from "../../src/lib/api/errors.js";
 
 describe("typed service errors", () => {
   it("exports every stable design error code", () => {

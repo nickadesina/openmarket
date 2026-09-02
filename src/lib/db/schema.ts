@@ -1,10 +1,4 @@
-import type {
-  ColumnType,
-  Generated,
-  Insertable,
-  Selectable,
-  Updateable,
-} from "kysely";
+import type { ColumnType, Generated, Insertable, Selectable, Updateable } from "kysely";
 
 export type MarketStatus = "open" | "settled";
 export type MetricKind = "valuation_median" | "yes_probability";

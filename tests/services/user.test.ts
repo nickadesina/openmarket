@@ -1,6 +1,6 @@
 import type { Kysely, Selectable } from "kysely";
-import { describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   ADMIN_COOKIE_MAX_AGE_MS,
@@ -23,26 +23,19 @@ import {
   normalizeUsername,
 } from "../../src/lib/services/user.js";
 
-const COOKIE_SECRET = Buffer.from(
-  "0123456789abcdef0123456789abcdef",
-  "utf8",
-).toString("base64url");
-const OTHER_COOKIE_SECRET = Buffer.from(
-  "fedcba9876543210fedcba9876543210",
-  "utf8",
-).toString("base64url");
-const PLACEHOLDER_SECRET = Buffer.from(
-  "replace-me-with-a-random-cookie-secret",
-  "utf8",
-).toString("base64url");
+const COOKIE_SECRET = Buffer.from("0123456789abcdef0123456789abcdef", "utf8").toString("base64url");
+const OTHER_COOKIE_SECRET = Buffer.from("fedcba9876543210fedcba9876543210", "utf8").toString(
+  "base64url",
+);
+const PLACEHOLDER_SECRET = Buffer.from("replace-me-with-a-random-cookie-secret", "utf8").toString(
+  "base64url",
+);
 const WEAK_COOKIE_SECRETS = [
   "",
   " ",
   "short",
   "test-secret-with-enough-entropy-to-model-production",
-  Buffer.from("0123456789abcdef0123456789abcde", "utf8").toString(
-    "base64url",
-  ),
+  Buffer.from("0123456789abcdef0123456789abcde", "utf8").toString("base64url"),
   PLACEHOLDER_SECRET,
   Buffer.alloc(32).toString("base64url"),
   `${COOKIE_SECRET}\n`,
@@ -126,9 +119,7 @@ describe("createOrResumeUser", () => {
     const db = { insertInto } as unknown as Kysely<Database>;
 
     for (const terminator of LINE_TERMINATORS) {
-      await expect(
-        createOrResumeUser(db, `Alice${terminator}`),
-      ).rejects.toMatchObject({
+      await expect(createOrResumeUser(db, `Alice${terminator}`)).rejects.toMatchObject({
         code: "INVALID_INPUT",
       });
     }
@@ -154,18 +145,16 @@ describe("user cookies", () => {
 
   it("rejects visually hidden username suffixes in signed identities", () => {
     for (const terminator of LINE_TERMINATORS) {
-      expect(() =>
-        signUserCookie(`Alice${terminator}`, COOKIE_SECRET, ISSUED_AT),
-      ).toThrow(InvalidUsernameError);
+      expect(() => signUserCookie(`Alice${terminator}`, COOKIE_SECRET, ISSUED_AT)).toThrow(
+        InvalidUsernameError,
+      );
 
       const noncanonicalCookie = signCookiePayload(
         { username: `alice${terminator}`, issuedAt: ISSUED_AT },
         COOKIE_SECRET,
         "openmarket.user.v1",
       );
-      expect(
-        verifyUserCookie(noncanonicalCookie, COOKIE_SECRET, ISSUED_AT + 1),
-      ).toBeNull();
+      expect(verifyUserCookie(noncanonicalCookie, COOKIE_SECRET, ISSUED_AT + 1)).toBeNull();
     }
   });
 
@@ -176,70 +165,42 @@ describe("user cookies", () => {
     const tamperedSignature = `${signature.slice(0, -1)}${signature.endsWith("A") ? "B" : "A"}`;
 
     expect(
-      verifyUserCookie(
-        `${tamperedPayload}.${signature}`,
-        COOKIE_SECRET,
-        ISSUED_AT + 1,
-      ),
+      verifyUserCookie(`${tamperedPayload}.${signature}`, COOKIE_SECRET, ISSUED_AT + 1),
     ).toBeNull();
     expect(
-      verifyUserCookie(
-        `${payload}.${tamperedSignature}`,
-        COOKIE_SECRET,
-        ISSUED_AT + 1,
-      ),
+      verifyUserCookie(`${payload}.${tamperedSignature}`, COOKIE_SECRET, ISSUED_AT + 1),
     ).toBeNull();
-    expect(
-      verifyUserCookie(cookie, OTHER_COOKIE_SECRET, ISSUED_AT + 1),
-    ).toBeNull();
+    expect(verifyUserCookie(cookie, OTHER_COOKIE_SECRET, ISSUED_AT + 1)).toBeNull();
     expect(verifyUserCookie(cookie, COOKIE_SECRET, ISSUED_AT - 1)).toBeNull();
-    expect(
-      verifyUserCookie(
-        cookie,
-        COOKIE_SECRET,
-        ISSUED_AT + USER_COOKIE_MAX_AGE_MS - 1,
-      ),
-    ).toEqual({ username: "alice_123", issuedAt: ISSUED_AT });
-    expect(
-      verifyUserCookie(
-        cookie,
-        COOKIE_SECRET,
-        ISSUED_AT + USER_COOKIE_MAX_AGE_MS,
-      ),
-    ).toBeNull();
+    expect(verifyUserCookie(cookie, COOKIE_SECRET, ISSUED_AT + USER_COOKIE_MAX_AGE_MS - 1)).toEqual(
+      { username: "alice_123", issuedAt: ISSUED_AT },
+    );
+    expect(verifyUserCookie(cookie, COOKIE_SECRET, ISSUED_AT + USER_COOKIE_MAX_AGE_MS)).toBeNull();
   });
 
   it("requires canonical strong secrets at every signing boundary", () => {
-    expect(getUserCookieSecret({ USER_COOKIE_SECRET: COOKIE_SECRET })).toBe(
-      COOKIE_SECRET,
-    );
+    expect(getUserCookieSecret({ USER_COOKIE_SECRET: COOKIE_SECRET })).toBe(COOKIE_SECRET);
 
     const userCookie = signUserCookie("Alice_123", COOKIE_SECRET, ISSUED_AT);
-    const genericCookie = signCookiePayload(
-      { value: true },
-      COOKIE_SECRET,
-      "test.domain",
-    );
-    expect(
-      verifyCookiePayload(genericCookie, COOKIE_SECRET, "test.domain"),
-    ).toEqual({ value: true });
+    const genericCookie = signCookiePayload({ value: true }, COOKIE_SECRET, "test.domain");
+    expect(verifyCookiePayload(genericCookie, COOKIE_SECRET, "test.domain")).toEqual({
+      value: true,
+    });
 
     for (const weakSecret of WEAK_COOKIE_SECRETS) {
-      expect(() =>
-        getUserCookieSecret({ USER_COOKIE_SECRET: weakSecret }),
-      ).toThrow(/USER_COOKIE_SECRET/);
-      expect(() =>
-        signUserCookie("Alice_123", weakSecret, ISSUED_AT),
-      ).toThrow(/Cookie secret/);
-      expect(() =>
-        verifyUserCookie(userCookie, weakSecret, ISSUED_AT + 1),
-      ).toThrow(/Cookie secret/);
-      expect(() =>
-        signCookiePayload({ value: true }, weakSecret, "test.domain"),
-      ).toThrow(/Cookie secret/);
-      expect(() =>
-        verifyCookiePayload(genericCookie, weakSecret, "test.domain"),
-      ).toThrow(/Cookie secret/);
+      expect(() => getUserCookieSecret({ USER_COOKIE_SECRET: weakSecret })).toThrow(
+        /USER_COOKIE_SECRET/,
+      );
+      expect(() => signUserCookie("Alice_123", weakSecret, ISSUED_AT)).toThrow(/Cookie secret/);
+      expect(() => verifyUserCookie(userCookie, weakSecret, ISSUED_AT + 1)).toThrow(
+        /Cookie secret/,
+      );
+      expect(() => signCookiePayload({ value: true }, weakSecret, "test.domain")).toThrow(
+        /Cookie secret/,
+      );
+      expect(() => verifyCookiePayload(genericCookie, weakSecret, "test.domain")).toThrow(
+        /Cookie secret/,
+      );
     }
   });
 });
@@ -255,15 +216,9 @@ describe("admin cookies", () => {
       issuedAt: ISSUED_AT,
     });
     expect(
-      verifyAdminCookie(
-        `${payload}.${tamperedSignature}`,
-        COOKIE_SECRET,
-        ISSUED_AT + 1,
-      ),
+      verifyAdminCookie(`${payload}.${tamperedSignature}`, COOKIE_SECRET, ISSUED_AT + 1),
     ).toBeNull();
-    expect(
-      verifyAdminCookie(userCookie, COOKIE_SECRET, ISSUED_AT + 1),
-    ).toBeNull();
+    expect(verifyAdminCookie(userCookie, COOKIE_SECRET, ISSUED_AT + 1)).toBeNull();
   });
 
   it("expires admin bearer cookies after 15 minutes", () => {
@@ -272,38 +227,24 @@ describe("admin cookies", () => {
     expect(ADMIN_COOKIE_MAX_AGE_MS).toBe(15 * 60 * 1000);
     expect(verifyAdminCookie(cookie, COOKIE_SECRET, ISSUED_AT - 1)).toBeNull();
     expect(
-      verifyAdminCookie(
-        cookie,
-        COOKIE_SECRET,
-        ISSUED_AT + ADMIN_COOKIE_MAX_AGE_MS - 1,
-      ),
+      verifyAdminCookie(cookie, COOKIE_SECRET, ISSUED_AT + ADMIN_COOKIE_MAX_AGE_MS - 1),
     ).toEqual({ issuedAt: ISSUED_AT });
     expect(
-      verifyAdminCookie(
-        cookie,
-        COOKIE_SECRET,
-        ISSUED_AT + ADMIN_COOKIE_MAX_AGE_MS,
-      ),
+      verifyAdminCookie(cookie, COOKIE_SECRET, ISSUED_AT + ADMIN_COOKIE_MAX_AGE_MS),
     ).toBeNull();
   });
 
   it("requires canonical strong admin secrets at every entry point", () => {
-    expect(getAdminCookieSecret({ ADMIN_COOKIE_SECRET: COOKIE_SECRET })).toBe(
-      COOKIE_SECRET,
-    );
+    expect(getAdminCookieSecret({ ADMIN_COOKIE_SECRET: COOKIE_SECRET })).toBe(COOKIE_SECRET);
     expect(() => getAdminCookieSecret({})).toThrow(/ADMIN_COOKIE_SECRET/);
 
     const cookie = signAdminCookie(COOKIE_SECRET, ISSUED_AT);
     for (const weakSecret of WEAK_COOKIE_SECRETS) {
-      expect(() =>
-        getAdminCookieSecret({ ADMIN_COOKIE_SECRET: weakSecret }),
-      ).toThrow(/ADMIN_COOKIE_SECRET/);
-      expect(() => signAdminCookie(weakSecret, ISSUED_AT)).toThrow(
-        /Cookie secret/,
+      expect(() => getAdminCookieSecret({ ADMIN_COOKIE_SECRET: weakSecret })).toThrow(
+        /ADMIN_COOKIE_SECRET/,
       );
-      expect(() =>
-        verifyAdminCookie(cookie, weakSecret, ISSUED_AT + 1),
-      ).toThrow(/Cookie secret/);
+      expect(() => signAdminCookie(weakSecret, ISSUED_AT)).toThrow(/Cookie secret/);
+      expect(() => verifyAdminCookie(cookie, weakSecret, ISSUED_AT + 1)).toThrow(/Cookie secret/);
     }
   });
 });

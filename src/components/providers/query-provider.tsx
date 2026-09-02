@@ -1,11 +1,7 @@
 "use client";
 
-import {
-  QueryClient,
-  QueryClientProvider,
-  type QueryClientConfig,
-} from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
+import { QueryClient, type QueryClientConfig, QueryClientProvider } from "@tanstack/react-query";
+import { type ReactNode, useState } from "react";
 
 import { ApiClientError } from "../../lib/client/api.js";
 

@@ -1,6 +1,6 @@
 import type { Kysely } from "kysely";
-import { describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { SettlementInput } from "../../src/lib/api/schemas.js";
 import type { Database, MetricKind } from "../../src/lib/db/schema.js";
@@ -60,10 +60,9 @@ function queryBuilder(methods: Partial<Record<string, Mock>> = {}): Record<strin
   return builder;
 }
 
-function createSettlementDb(options: {
-  market?: Partial<MockMarket> | null;
-  holdings?: MockHolding[];
-} = {}): {
+function createSettlementDb(
+  options: { market?: Partial<MockMarket> | null; holdings?: MockHolding[] } = {},
+): {
   db: Kysely<Database>;
   market: MockMarket | null;
   holdings: MockHolding[];
@@ -176,9 +175,7 @@ function createSettlementDb(options: {
         }
       } else if (table === "holdings") {
         records.holdingUpdates.push(call);
-        const holding = holdings.find(
-          (candidate) => candidate.user_id === userId,
-        );
+        const holding = holdings.find((candidate) => candidate.user_id === userId);
         if (holding !== undefined) {
           holding.h = [...(values.h as number[])];
           holding.updated_at = values.updated_at as Date;
@@ -213,9 +210,8 @@ function createSettlementDb(options: {
 
   const db = {
     transaction: vi.fn(() => ({
-      execute: async <T>(
-        callback: (trx: Record<string, Mock>) => Promise<T>,
-      ): Promise<T> => callback(transaction),
+      execute: async <T>(callback: (trx: Record<string, Mock>) => Promise<T>): Promise<T> =>
+        callback(transaction),
     })),
   } as unknown as Kysely<Database>;
 
@@ -267,11 +263,7 @@ describe("settleMarket", () => {
       rounding_reserve_delta_cents: "1",
       settled_at: SETTLEMENT_TS.toISOString(),
     });
-    expect(holdings.map((holding) => holding.cash_balance_cents)).toEqual([
-      "10100",
-      "200",
-      "300",
-    ]);
+    expect(holdings.map((holding) => holding.cash_balance_cents)).toEqual(["10100", "200", "300"]);
     expect(holdings.map((holding) => holding.h)).toEqual([
       [0, 0],
       [0, 0],

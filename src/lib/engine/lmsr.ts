@@ -96,11 +96,7 @@ function validateMask(mask: readonly boolean[], expectedLength: number): void {
   }
 }
 
-function maskedBuyCost(
-  state: NormalizedState,
-  mask: readonly boolean[],
-  quantity: number,
-): number {
+function maskedBuyCost(state: NormalizedState, mask: readonly boolean[], quantity: number): number {
   let maxShifted = -Infinity;
   for (let index = 0; index < state.values.length; index += 1) {
     const shifted = state.values[index]! + (mask[index] ? quantity : 0);
@@ -130,10 +126,7 @@ function assertSafeCents(cents: number, name: string): number {
 
 export function lmsrCost(q: readonly number[], b: number): number {
   const state = normalizeState(q, b);
-  return assertFiniteResult(
-    state.maxQ + state.b * state.logSumExp,
-    "LMSR cost",
-  );
+  return assertFiniteResult(state.maxQ + state.b * state.logSumExp, "LMSR cost");
 }
 
 export function probabilities(q: readonly number[], b: number): number[] {
@@ -145,11 +138,7 @@ export function probabilities(q: readonly number[], b: number): number[] {
   return result;
 }
 
-export function tradeCost(
-  q: readonly number[],
-  delta: readonly number[],
-  b: number,
-): number {
+export function tradeCost(q: readonly number[], delta: readonly number[], b: number): number {
   return shiftedCost(normalizeState(q, b), delta);
 }
 
@@ -174,10 +163,7 @@ export function quantizeEntitlementCents(entitlementUsd: number): number {
   if (entitlementUsd < 0) {
     throw new RangeError("entitlement must not be negative");
   }
-  return assertSafeCents(
-    Math.floor(entitlementUsd * 100 + 1e-6),
-    "entitlement",
-  );
+  return assertSafeCents(Math.floor(entitlementUsd * 100 + 1e-6), "entitlement");
 }
 
 export function solveBuyQuantityForSpend(
@@ -216,10 +202,7 @@ export function solveBuyQuantityForSpend(
   let costUsd = maskedBuyCost(state, mask, quantity);
   let cashAmountCents = quantizeBuyCostCents(costUsd);
 
-  while (
-    quantityUnits > 0 &&
-    (costUsd > spendUsd || cashAmountCents > spendCents)
-  ) {
+  while (quantityUnits > 0 && (costUsd > spendUsd || cashAmountCents > spendCents)) {
     quantityUnits -= 1;
     quantity = quantityUnits / 1_000_000;
     costUsd = maskedBuyCost(state, mask, quantity);

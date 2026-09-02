@@ -1,5 +1,5 @@
 import type { Kysely } from "kysely";
-import { describe, expect, it, vi, type Mock } from "vitest";
+import { describe, expect, it, type Mock, vi } from "vitest";
 
 import type { Database } from "../../src/lib/db/schema.js";
 import { VALUATION_BUCKET_COUNT } from "../../src/lib/engine/buckets.js";
@@ -7,13 +7,7 @@ import { getMarket } from "../../src/lib/services/get-market.js";
 
 function queryReturning(rows: readonly unknown[]): Record<string, Mock> {
   const query: Record<string, Mock> = {};
-  for (const method of [
-    "innerJoin",
-    "select",
-    "where",
-    "orderBy",
-    "limit",
-  ]) {
+  for (const method of ["innerJoin", "select", "where", "orderBy", "limit"]) {
     query[method] = vi.fn(() => query);
   }
   query.execute = vi.fn(async () => rows);
@@ -82,9 +76,8 @@ function readDatabase(rows: ReadRows): {
     selectFrom,
     selectNoFrom: vi.fn(() => claimsQuery),
   };
-  const execute = vi.fn(
-    async (callback: (transaction: typeof transactionDb) => Promise<unknown>) =>
-      callback(transactionDb),
+  const execute = vi.fn(async (callback: (transaction: typeof transactionDb) => Promise<unknown>) =>
+    callback(transactionDb),
   );
   const setAccessMode = vi.fn(() => ({ execute }));
   const setIsolationLevel = vi.fn(() => ({ setAccessMode }));

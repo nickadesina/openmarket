@@ -14,24 +14,15 @@ interface AdminPassphraseHash {
   readonly derivedKey: Buffer;
 }
 
-type PassphraseEnvironment = Readonly<
-  Record<string, string | undefined>
->;
+type PassphraseEnvironment = Readonly<Record<string, string | undefined>>;
 
-function decodeCanonicalBase64Url(
-  value: string,
-  expectedBytes: number,
-  field: string,
-): Buffer {
+function decodeCanonicalBase64Url(value: string, expectedBytes: number, field: string): Buffer {
   if (!BASE64URL_PATTERN.test(value)) {
     throw new Error(`ADMIN_PASSPHRASE_HASH ${field} must be base64url`);
   }
 
   const decoded = Buffer.from(value, "base64url");
-  if (
-    decoded.length !== expectedBytes ||
-    decoded.toString("base64url") !== value
-  ) {
+  if (decoded.length !== expectedBytes || decoded.toString("base64url") !== value) {
     throw new Error(
       `ADMIN_PASSPHRASE_HASH ${field} must be canonical base64url encoding ${expectedBytes} bytes`,
     );
@@ -54,9 +45,7 @@ function parseAdminPassphraseHash(encodedHash: string): AdminPassphraseHash {
     fields[2] !== String(ADMIN_SCRYPT_R) ||
     fields[3] !== String(ADMIN_SCRYPT_P)
   ) {
-    throw new Error(
-      "ADMIN_PASSPHRASE_HASH must use scrypt$16384$8$1$salt$key format",
-    );
+    throw new Error("ADMIN_PASSPHRASE_HASH must use scrypt$16384$8$1$salt$key format");
   }
 
   const saltField = fields[4];
@@ -66,16 +55,8 @@ function parseAdminPassphraseHash(encodedHash: string): AdminPassphraseHash {
   }
 
   return {
-    salt: decodeCanonicalBase64Url(
-      saltField,
-      ADMIN_SCRYPT_SALT_BYTES,
-      "salt",
-    ),
-    derivedKey: decodeCanonicalBase64Url(
-      keyField,
-      ADMIN_SCRYPT_KEY_BYTES,
-      "derived key",
-    ),
+    salt: decodeCanonicalBase64Url(saltField, ADMIN_SCRYPT_SALT_BYTES, "salt"),
+    derivedKey: decodeCanonicalBase64Url(keyField, ADMIN_SCRYPT_KEY_BYTES, "derived key"),
   };
 }
 
@@ -83,9 +64,7 @@ export function assertAdminPassphraseHash(encodedHash: string): void {
   parseAdminPassphraseHash(encodedHash);
 }
 
-export function getAdminPassphraseHash(
-  environment: PassphraseEnvironment = process.env,
-): string {
+export function getAdminPassphraseHash(environment: PassphraseEnvironment = process.env): string {
   const encodedHash = environment.ADMIN_PASSPHRASE_HASH;
   if (encodedHash === undefined || encodedHash.length === 0) {
     throw new Error("ADMIN_PASSPHRASE_HASH is required");

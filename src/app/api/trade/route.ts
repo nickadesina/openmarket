@@ -1,7 +1,4 @@
-import {
-  parseMutationBody,
-  withMutationRoute,
-} from "../../../lib/api/mutation-route.js";
+import { parseMutationBody, withMutationRoute } from "../../../lib/api/mutation-route.js";
 import { jsonSuccess } from "../../../lib/api/response.js";
 import { tradeInputSchema } from "../../../lib/api/schemas.js";
 import { requireCurrentUserId } from "../../../lib/auth/current-user.js";
@@ -17,9 +14,7 @@ export function POST(request: Request): Promise<Response> {
 
     return jsonSuccess(execution.result, {
       requestId: context.requestId,
-      ...(execution.replayed
-        ? { headers: { "Idempotent-Replayed": "true" } }
-        : {}),
+      ...(execution.replayed ? { headers: { "Idempotent-Replayed": "true" } } : {}),
     });
   });
 }

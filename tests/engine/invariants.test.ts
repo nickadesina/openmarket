@@ -7,19 +7,12 @@ import {
   valuationBucketEdges,
   valuationBucketIndex,
 } from "../../src/lib/engine/buckets.js";
-import {
-  contractDelta,
-  contractMask,
-} from "../../src/lib/engine/contracts.js";
+import { contractDelta, contractMask } from "../../src/lib/engine/contracts.js";
 import { decomposeHoldings } from "../../src/lib/engine/decomposition.js";
-import {
-  probabilities,
-  solveBuyQuantityForSpend,
-  tradeCost,
-} from "../../src/lib/engine/lmsr.js";
+import { probabilities, solveBuyQuantityForSpend, tradeCost } from "../../src/lib/engine/lmsr.js";
 import { impliedValuationMedian } from "../../src/lib/engine/median.js";
 import { seedValuationMarket } from "../../src/lib/engine/seed.js";
-import { EPS, MIN_QUANTITY, type ContractSide } from "../../src/lib/engine/types.js";
+import { type ContractSide, EPS, MIN_QUANTITY } from "../../src/lib/engine/types.js";
 
 const PROPERTY_OPTIONS = { numRuns: 48, seed: 0x51eed } as const;
 
@@ -102,27 +95,26 @@ describe("cross-module mathematical invariants", () => {
 
   it("prices equal-quantity YES and NO buys as one full set", () => {
     fc.assert(
-      fc.property(marketStateArb, strikeArb, quantityArb, ([q, liquidity], strikeIndex, quantity) => {
-        const yesDelta = contractDelta(
-          VALUATION_BUCKET_COUNT,
-          strikeIndex,
-          "yes",
-          "buy",
-          quantity,
-        );
-        const noDelta = contractDelta(
-          VALUATION_BUCKET_COUNT,
-          strikeIndex,
-          "no",
-          "buy",
-          quantity,
-        );
-        const yesCost = tradeCost(q, yesDelta, liquidity);
-        const qAfterYes = addVectors(q, yesDelta);
-        const noCost = tradeCost(qAfterYes, noDelta, liquidity);
+      fc.property(
+        marketStateArb,
+        strikeArb,
+        quantityArb,
+        ([q, liquidity], strikeIndex, quantity) => {
+          const yesDelta = contractDelta(
+            VALUATION_BUCKET_COUNT,
+            strikeIndex,
+            "yes",
+            "buy",
+            quantity,
+          );
+          const noDelta = contractDelta(VALUATION_BUCKET_COUNT, strikeIndex, "no", "buy", quantity);
+          const yesCost = tradeCost(q, yesDelta, liquidity);
+          const qAfterYes = addVectors(q, yesDelta);
+          const noCost = tradeCost(qAfterYes, noDelta, liquidity);
 
-        expectClose(yesCost + noCost, quantity, quantity);
-      }),
+          expectClose(yesCost + noCost, quantity, quantity);
+        },
+      ),
       PROPERTY_OPTIONS,
     );
   });
@@ -178,12 +170,7 @@ describe("cross-module mathematical invariants", () => {
 
     fc.assert(
       fc.property(anchorArb, sigmaArb, seedLiquidityArb, (anchor, sigma, liquidity) => {
-        const seed = seedValuationMarket(
-          anchor,
-          sigma,
-          liquidity,
-          VALUATION_BOUNDARIES_USD,
-        );
+        const seed = seedValuationMarket(anchor, sigma, liquidity, VALUATION_BOUNDARIES_USD);
         const reproduced = probabilities(seed.q, liquidity);
 
         expect(reproduced).toHaveLength(seed.probabilities.length);
@@ -231,7 +218,9 @@ describe("cross-module mathematical invariants", () => {
         ([q, liquidity], strikeIndex, side, spendCents) => {
           const mask = contractMask(VALUATION_BUCKET_COUNT, strikeIndex, side);
 
-          expect(() => solveBuyQuantityForSpend(q, mask, liquidity, spendCents)).toThrow(RangeError);
+          expect(() => solveBuyQuantityForSpend(q, mask, liquidity, spendCents)).toThrow(
+            RangeError,
+          );
         },
       ),
       PROPERTY_OPTIONS,

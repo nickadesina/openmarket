@@ -1,9 +1,6 @@
-import { usernameInputSchema } from "../../../lib/api/schemas.js";
-import {
-  parseMutationBody,
-  withMutationRoute,
-} from "../../../lib/api/mutation-route.js";
+import { parseMutationBody, withMutationRoute } from "../../../lib/api/mutation-route.js";
 import { jsonSuccess } from "../../../lib/api/response.js";
+import { usernameInputSchema } from "../../../lib/api/schemas.js";
 import { USER_COOKIE_NAME } from "../../../lib/auth/current-user.js";
 import {
   getUserCookieSecret,
@@ -32,10 +29,7 @@ export function POST(request: Request): Promise<Response> {
   return withMutationRoute(request, async (context) => {
     const input = await parseMutationBody(request, usernameInputSchema);
     const user = await createOrResumeUser(context.db, input.username);
-    const cookieValue = signUserCookie(
-      user.username_normalized,
-      getUserCookieSecret(),
-    );
+    const cookieValue = signUserCookie(user.username_normalized, getUserCookieSecret());
 
     return jsonSuccess(
       {

@@ -1,19 +1,13 @@
-import { sql, type Kysely } from "kysely";
+import { type Kysely, sql } from "kysely";
 
 import { ServiceError } from "../api/errors.js";
-import type {
-  ContractSide,
-  Database,
-  MetricKind,
-  TradeAction,
-} from "../db/schema.js";
+import type { ContractSide, Database, MetricKind, TradeAction } from "../db/schema.js";
 
 export const ACTIVITY_DEFAULT_LIMIT = 25;
 export const ACTIVITY_MAX_LIMIT = 100;
 const MAX_CURSOR_LENGTH = 512;
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*(?![\s\S])/;
-const CURSOR_ID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\s\S])/;
+const CURSOR_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\s\S])/;
 const MAX_BIGINT = 9_223_372_036_854_775_807n;
 
 export interface ActivityOptions {
@@ -83,18 +77,11 @@ function normalizeOptions(options: ActivityOptions): {
   readonly cursor: ActivityCursor | null;
 } {
   const slug = options.slug;
-  if (
-    slug !== undefined &&
-    (slug.length > 100 || !SLUG_PATTERN.test(slug))
-  ) {
+  if (slug !== undefined && (slug.length > 100 || !SLUG_PATTERN.test(slug))) {
     throw new ServiceError("INVALID_INPUT", "Company slug is invalid.");
   }
   const limit = options.limit ?? ACTIVITY_DEFAULT_LIMIT;
-  if (
-    !Number.isSafeInteger(limit) ||
-    limit < 1 ||
-    limit > ACTIVITY_MAX_LIMIT
-  ) {
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > ACTIVITY_MAX_LIMIT) {
     throw new ServiceError(
       "INVALID_INPUT",
       `Activity limit must be an integer from 1 through ${ACTIVITY_MAX_LIMIT}.`,
@@ -113,9 +100,7 @@ function normalizeOptions(options: ActivityOptions): {
   }
 
   try {
-    const decoded: unknown = JSON.parse(
-      Buffer.from(options.cursor, "base64url").toString("utf8"),
-    );
+    const decoded: unknown = JSON.parse(Buffer.from(options.cursor, "base64url").toString("utf8"));
     if (typeof decoded !== "object" || decoded === null || Array.isArray(decoded)) {
       throw invalidCursor();
     }
@@ -137,10 +122,7 @@ function normalizeOptions(options: ActivityOptions): {
       throw invalidCursor();
     }
     const createdAt = new Date(record.t);
-    if (
-      !Number.isFinite(createdAt.getTime()) ||
-      createdAt.toISOString() !== record.t
-    ) {
+    if (!Number.isFinite(createdAt.getTime()) || createdAt.toISOString() !== record.t) {
       throw invalidCursor();
     }
     return {

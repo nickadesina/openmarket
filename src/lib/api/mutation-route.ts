@@ -1,16 +1,11 @@
 import { randomUUID } from "node:crypto";
 import type { Kysely } from "kysely";
 import type { ZodType } from "zod";
-
-import type { Database } from "../db/schema.js";
 import { getRuntimeDatabase } from "../db/runtime.js";
+import type { Database } from "../db/schema.js";
 import { assertAllowedOrigin } from "../security/origin.js";
-import { ServiceError, isServiceError } from "./errors.js";
-import {
-  jsonError,
-  jsonUnexpectedError,
-  REQUEST_ID_HEADER,
-} from "./response.js";
+import { isServiceError, ServiceError } from "./errors.js";
+import { jsonError, jsonUnexpectedError, REQUEST_ID_HEADER } from "./response.js";
 
 export const MUTATION_CONTENT_TYPE = "application/json";
 
@@ -19,9 +14,7 @@ export interface MutationRouteContext {
   readonly db: Kysely<Database>;
 }
 
-export type MutationRouteHandler = (
-  context: MutationRouteContext,
-) => Response | Promise<Response>;
+export type MutationRouteHandler = (context: MutationRouteContext) => Response | Promise<Response>;
 
 function assertMutationRequest(request: Request): void {
   if (request.headers.get("content-type") !== MUTATION_CONTENT_TYPE) {
@@ -34,10 +27,7 @@ function assertMutationRequest(request: Request): void {
   assertAllowedOrigin(request.headers.get("origin"), process.env);
 }
 
-export async function parseMutationBody<T>(
-  request: Request,
-  schema: ZodType<T>,
-): Promise<T> {
+export async function parseMutationBody<T>(request: Request, schema: ZodType<T>): Promise<T> {
   let body: unknown;
   try {
     body = await request.json();
@@ -72,9 +62,7 @@ export async function withMutationRoute(
     response.headers.set("Cache-Control", "no-store");
     response.headers.set(REQUEST_ID_HEADER, requestId);
   } catch (error: unknown) {
-    response = isServiceError(error)
-      ? jsonError(error, requestId)
-      : jsonUnexpectedError(requestId);
+    response = isServiceError(error) ? jsonError(error, requestId) : jsonUnexpectedError(requestId);
   }
 
   return response;

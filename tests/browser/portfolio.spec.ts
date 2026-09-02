@@ -1,19 +1,19 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 
 import {
   buyViaApi,
   createUser,
+  type ExecutionResponse,
   expectNoHorizontalOverflow,
   failTradesWith,
   formatCents,
   isApiResponse,
   json,
+  type PortfolioResponse,
   seedBinaryMarket,
   skipWithoutDatabase,
-  uniqueNames,
-  type ExecutionResponse,
-  type PortfolioResponse,
   type TradeRequest,
+  uniqueNames,
 } from "./helpers.js";
 
 skipWithoutDatabase();
@@ -40,7 +40,9 @@ async function openSellFlow(
 
 async function reviewSale(page: Page, sellFlow: Locator, quantity: number): Promise<void> {
   await sellFlow.getByLabel("Quantity").fill(String(quantity));
-  const quotePromise = page.waitForResponse((response) => isApiResponse(response, "POST", "/api/quote"));
+  const quotePromise = page.waitForResponse((response) =>
+    isApiResponse(response, "POST", "/api/quote"),
+  );
   await sellFlow.getByRole("button", { name: "Review sale" }).click();
   expect((await quotePromise).status()).toBe(200);
   await expect(sellFlow.getByRole("button", { name: "Sell shares" })).toBeVisible();
@@ -51,27 +53,41 @@ test("without an account the portfolio gates on the shared username editor", asy
   const main = page.getByRole("main");
   await expect(main.getByRole("heading", { name: "Open your paper account" })).toBeVisible();
   await main.getByRole("button", { name: "Enter username" }).click();
-  await expect(page.getByRole("banner").getByRole("heading", { name: "Open your paper account" })).toBeVisible();
+  await expect(
+    page.getByRole("banner").getByRole("heading", { name: "Open your paper account" }),
+  ).toBeVisible();
   await expect(page.getByLabel("Username")).toBeFocused();
 });
 
-test("the summary and position row reflect the authoritative portfolio", async ({ page, baseURL }, testInfo) => {
+test("the summary and position row reflect the authoritative portfolio", async ({
+  page,
+  baseURL,
+}, testInfo) => {
   const names = uniqueNames("pf-summary", testInfo);
   const { purchase } = await openSellFlow(page, baseURL, names);
 
-  const portfolio = await json<PortfolioResponse>(await page.request.get("/api/portfolio?offset=0&limit=20"));
+  const portfolio = await json<PortfolioResponse>(
+    await page.request.get("/api/portfolio?offset=0&limit=20"),
+  );
   expect(portfolio.username).toBe(names.username);
   expect(portfolio.cashBalanceCents).toBe(purchase.cash_balance_cents);
-  await expect(page.getByLabel("Portfolio summary")).toContainText(formatCents(purchase.cash_balance_cents));
+  await expect(page.getByLabel("Portfolio summary")).toContainText(
+    formatCents(purchase.cash_balance_cents),
+  );
   await expect(page.getByText(`Account · @${names.username}`)).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
 
-test("the sale quantity is bounded by the sellable position", async ({ page, baseURL }, testInfo) => {
+test("the sale quantity is bounded by the sellable position", async ({
+  page,
+  baseURL,
+}, testInfo) => {
   const names = uniqueNames("pf-bounds", testInfo);
   const { sellFlow, purchase } = await openSellFlow(page, baseURL, names);
 
-  await expect(sellFlow.getByText(`Sellable: ${purchase.sellable_quantity}`, { exact: false })).toBeVisible();
+  await expect(
+    sellFlow.getByText(`Sellable: ${purchase.sellable_quantity}`, { exact: false }),
+  ).toBeVisible();
   await sellFlow.getByLabel("Quantity").fill(String(purchase.sellable_quantity * 2));
   await expect(sellFlow.getByRole("button", { name: "Review sale" })).toBeDisabled();
   await sellFlow.getByLabel("Quantity").fill("0");
@@ -91,7 +107,10 @@ test("editing the quantity discards a reviewed quote", async ({ page, baseURL },
   await expect(sellFlow.getByRole("button", { name: "Sell shares" })).toHaveCount(0);
 });
 
-test("an unknown-outcome sale failure retries with the same idempotency key", async ({ page, baseURL }, testInfo) => {
+test("an unknown-outcome sale failure retries with the same idempotency key", async ({
+  page,
+  baseURL,
+}, testInfo) => {
   const names = uniqueNames("pf-retry", testInfo);
   const { sellFlow, purchase } = await openSellFlow(page, baseURL, names);
   const quantity = Number((purchase.shares / 2).toFixed(6));
@@ -103,13 +122,17 @@ test("an unknown-outcome sale failure retries with the same idempotency key", as
   });
 
   await sellFlow.getByRole("button", { name: "Sell shares" }).click();
-  await expect(sellFlow.getByRole("alert")).toContainText("Execution status is unknown. Retry the sale to safely reuse the same request key.");
+  await expect(sellFlow.getByRole("alert")).toContainText(
+    "Execution status is unknown. Retry the sale to safely reuse the same request key.",
+  );
   const retryButton = sellFlow.getByRole("button", { name: "Retry sale" });
   await expect(retryButton).toBeVisible();
   expect(attempts).toHaveLength(1);
 
   await page.unroute("**/api/trade");
-  const executionPromise = page.waitForResponse((response) => isApiResponse(response, "POST", "/api/trade"));
+  const executionPromise = page.waitForResponse((response) =>
+    isApiResponse(response, "POST", "/api/trade"),
+  );
   await retryButton.click();
   const executionResponse = await executionPromise;
   expect(executionResponse.status()).toBe(200);
@@ -119,7 +142,10 @@ test("an unknown-outcome sale failure retries with the same idempotency key", as
   await expect(page.getByRole("status").filter({ hasText: "Sale completed" })).toBeVisible();
 });
 
-test("a deterministic sale rejection shows the server message and drops the key", async ({ page, baseURL }, testInfo) => {
+test("a deterministic sale rejection shows the server message and drops the key", async ({
+  page,
+  baseURL,
+}, testInfo) => {
   const names = uniqueNames("pf-reject", testInfo);
   const { sellFlow, purchase } = await openSellFlow(page, baseURL, names);
   await reviewSale(page, sellFlow, Number((purchase.shares / 2).toFixed(6)));
@@ -140,7 +166,10 @@ test("a deterministic sale rejection shows the server message and drops the key"
   expect(attempts[1]?.idempotency_key).not.toBe(attempts[0]?.idempotency_key);
 });
 
-test("a moved sale price returns to a fresh quote with the authoritative proceeds", async ({ page, baseURL }, testInfo) => {
+test("a moved sale price returns to a fresh quote with the authoritative proceeds", async ({
+  page,
+  baseURL,
+}, testInfo) => {
   const names = uniqueNames("pf-moved", testInfo);
   const { sellFlow, purchase } = await openSellFlow(page, baseURL, names);
   await reviewSale(page, sellFlow, Number((purchase.shares / 2).toFixed(6)));
@@ -153,19 +182,26 @@ test("a moved sale price returns to a fresh quote with the authoritative proceed
 
   await sellFlow.getByRole("button", { name: "Sell shares" }).click();
   const alert = sellFlow.getByRole("alert");
-  await expect(alert).toContainText("The market moved. New authoritative proceeds: $43.21. Review a fresh quote before confirming.");
+  await expect(alert).toContainText(
+    "The market moved. New authoritative proceeds: $43.21. Review a fresh quote before confirming.",
+  );
   await expect(sellFlow.getByRole("button", { name: "Review sale" })).toBeVisible();
   await expect(sellFlow.getByRole("button", { name: "Sell shares" })).toHaveCount(0);
   await page.unroute("**/api/trade");
 });
 
-test("a partial sale executes and updates the remaining position", async ({ page, baseURL }, testInfo) => {
+test("a partial sale executes and updates the remaining position", async ({
+  page,
+  baseURL,
+}, testInfo) => {
   const names = uniqueNames("pf-sale", testInfo);
   const { sellFlow, purchase } = await openSellFlow(page, baseURL, names);
   const quantity = Number((purchase.shares / 2).toFixed(6));
   await reviewSale(page, sellFlow, quantity);
 
-  const executionPromise = page.waitForResponse((response) => isApiResponse(response, "POST", "/api/trade"));
+  const executionPromise = page.waitForResponse((response) =>
+    isApiResponse(response, "POST", "/api/trade"),
+  );
   await sellFlow.getByRole("button", { name: "Sell shares" }).click();
   const executionResponse = await executionPromise;
   expect(executionResponse.status()).toBe(200);
@@ -173,7 +209,9 @@ test("a partial sale executes and updates the remaining position", async ({ page
   expect(sale).toMatchObject({ action: "sell", side: "yes", shares: quantity });
   await expect(page.getByRole("status").filter({ hasText: "Sale completed" })).toBeVisible();
 
-  const portfolio = await json<PortfolioResponse>(await page.request.get("/api/portfolio?offset=0&limit=20"));
+  const portfolio = await json<PortfolioResponse>(
+    await page.request.get("/api/portfolio?offset=0&limit=20"),
+  );
   expect(portfolio.cashBalanceCents).toBe(sale.cash_balance_cents);
   expect(portfolio.tradeHistory.items).toHaveLength(2);
   const position = portfolio.markets

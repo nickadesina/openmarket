@@ -1,6 +1,6 @@
 import type { Kysely } from "kysely";
-import { describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { QuoteInput } from "../../src/lib/api/schemas.js";
 import type { Database, MetricKind } from "../../src/lib/db/schema.js";
@@ -10,10 +10,7 @@ import {
   VALUATION_GRID_VERSION,
 } from "../../src/lib/engine/buckets.js";
 import { contractMask } from "../../src/lib/engine/contracts.js";
-import {
-  probabilities,
-  solveBuyQuantityForSpend,
-} from "../../src/lib/engine/lmsr.js";
+import { probabilities, solveBuyQuantityForSpend } from "../../src/lib/engine/lmsr.js";
 import { impliedValuationMedian } from "../../src/lib/engine/median.js";
 import { quoteMarket } from "../../src/lib/services/quote.js";
 
@@ -64,9 +61,7 @@ function mockDatabase(options: MockDatabaseOptions): {
       );
     }
     if (table === "holdings") {
-      return queryReturning(
-        options.holdings === undefined ? undefined : { h: options.holdings },
-      );
+      return queryReturning(options.holdings === undefined ? undefined : { h: options.holdings });
     }
     throw new Error(`Unexpected table ${table}`);
   });
@@ -77,9 +72,8 @@ function mockDatabase(options: MockDatabaseOptions): {
   const setIsolationLevel = vi.fn(() => transactionBuilder);
   const setAccessMode = vi.fn(() => transactionBuilder);
   const execute = vi.fn(
-    async (
-      callback: (transaction: Kysely<Database>) => Promise<unknown>,
-    ): Promise<unknown> => callback(transactionDatabase),
+    async (callback: (transaction: Kysely<Database>) => Promise<unknown>): Promise<unknown> =>
+      callback(transactionDatabase),
   );
   transactionBuilder.setIsolationLevel = setIsolationLevel;
   transactionBuilder.setAccessMode = setAccessMode;
@@ -118,16 +112,11 @@ const VALUATION_MARKET: MarketFixture = {
 
 describe("quoteMarket", () => {
   it("quotes an anonymous valuation buy from zero holdings", async () => {
-    const {
-      db,
-      selectFrom,
-      transaction,
-      setIsolationLevel,
-      setAccessMode,
-      execute,
-    } = mockDatabase({
-      market: VALUATION_MARKET,
-    });
+    const { db, selectFrom, transaction, setIsolationLevel, setAccessMode, execute } = mockDatabase(
+      {
+        market: VALUATION_MARKET,
+      },
+    );
     const input: QuoteInput = {
       slug: "acme",
       action: "buy",
@@ -138,9 +127,7 @@ describe("quoteMarket", () => {
 
     const result = await quoteMarket(db, input);
     const mask = contractMask(VALUATION_BUCKET_COUNT, 10, "yes");
-    const qAfter = VALUATION_MARKET.q.map((value, index) =>
-      mask[index] ? value + 2 : value,
-    );
+    const qAfter = VALUATION_MARKET.q.map((value, index) => (mask[index] ? value + 2 : value));
     const distributionAfter = probabilities(qAfter, VALUATION_MARKET.b);
 
     expect(result).toMatchObject({
@@ -151,10 +138,7 @@ describe("quoteMarket", () => {
       strike_value: VALUATION_BOUNDARIES_USD[10]!.toFixed(2),
       metric_kind: "valuation_median",
       quantity: 2,
-      current_metric_after: impliedValuationMedian(
-        distributionAfter,
-        VALUATION_BOUNDARIES_USD,
-      ),
+      current_metric_after: impliedValuationMedian(distributionAfter, VALUATION_BOUNDARIES_USD),
       expected_redemption_quantity: 0,
       expected_redemption_cents: "0",
       sellable_quantity: 2,
@@ -186,12 +170,7 @@ describe("quoteMarket", () => {
       strike_index: 0,
       spend_usd: "1.00",
     };
-    const expected = solveBuyQuantityForSpend(
-      BINARY_MARKET.q,
-      [false, true],
-      BINARY_MARKET.b,
-      100,
-    );
+    const expected = solveBuyQuantityForSpend(BINARY_MARKET.q, [false, true], BINARY_MARKET.b, 100);
 
     const result = await quoteMarket(db, input, "user-1");
 
@@ -263,9 +242,7 @@ describe("quoteMarket", () => {
       market: BINARY_MARKET,
       holdings: [0, 0.5],
     });
-    await expect(
-      quoteMarket(authenticated.db, input, "user-1"),
-    ).rejects.toMatchObject({
+    await expect(quoteMarket(authenticated.db, input, "user-1")).rejects.toMatchObject({
       code: "INSUFFICIENT_HOLDINGS",
       details: { requested_quantity: 1, sellable_quantity: 0.5 },
     });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { type FormEvent, type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
 
 import { ApiClientError, apiRequest } from "../../lib/client/api.js";
 import { formatCents } from "../../lib/client/format.js";
@@ -74,18 +74,13 @@ export function AccountControl() {
   }
 
   if (portfolioQuery.isPending) {
-    return (
-      <div
-        className={styles.skeleton}
-        role="status"
-        aria-label="Checking account"
-      />
-    );
+    return <div className={styles.skeleton} role="status" aria-label="Checking account" />;
   }
 
-  const submitLabels = identity === null
-    ? { idle: "Open account", pending: "Opening account…" }
-    : { idle: "Use account", pending: "Switching account…" };
+  const submitLabels =
+    identity === null
+      ? { idle: "Open account", pending: "Opening account…" }
+      : { idle: "Use account", pending: "Switching account…" };
   const mutationError = userMutation.error;
   const errorMessage =
     mutationError instanceof ApiClientError
@@ -113,9 +108,7 @@ export function AccountControl() {
         ) : (
           <span className={styles.accountText}>
             <span className={styles.username}>{identity.username}</span>
-            <span className={styles.balance}>
-              {formatCents(identity.cashBalanceCents)} cash
-            </span>
+            <span className={styles.balance}>{formatCents(identity.cashBalanceCents)} cash</span>
           </span>
         )}
       </button>
@@ -162,11 +155,7 @@ export function AccountControl() {
             <button className={styles.cancel} type="button" onClick={closeEditor}>
               Cancel
             </button>
-            <button
-              className={styles.submit}
-              type="submit"
-              disabled={userMutation.isPending}
-            >
+            <button className={styles.submit} type="submit" disabled={userMutation.isPending}>
               {submitLabels[userMutation.isPending ? "pending" : "idle"]}
             </button>
           </div>

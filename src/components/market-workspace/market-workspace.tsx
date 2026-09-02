@@ -14,7 +14,13 @@ import { MarketHeader } from "../market-header/market-header.js";
 import { StrikeLadder } from "../strike-ladder/strike-ladder.js";
 import { TradeTicket } from "../trade-ticket/trade-ticket.js";
 import styles from "./market-workspace.module.css";
-import type { ActivityPage, MarketDetail, MarkHistory, MarkRange, TradeSelection } from "./types.js";
+import type {
+  ActivityPage,
+  MarketDetail,
+  MarkHistory,
+  MarkRange,
+  TradeSelection,
+} from "./types.js";
 
 interface MarketWorkspaceProps {
   readonly slug: string;
@@ -28,8 +34,8 @@ const MOBILE_QUERY = "(max-width: 52rem)";
 function defaultSelection(market: MarketDetail): TradeSelection | null {
   const money = market.contracts.reduce<MarketDetail["contracts"][number] | undefined>(
     (best, contract) =>
-      best === undefined
-      || Math.abs(contract.yesProbability - 0.5) < Math.abs(best.yesProbability - 0.5)
+      best === undefined ||
+      Math.abs(contract.yesProbability - 0.5) < Math.abs(best.yesProbability - 0.5)
         ? contract
         : best,
     undefined,
@@ -57,13 +63,15 @@ export function MarketWorkspace({ slug, initialMarket, initialMarks }: MarketWor
   });
   const marksQuery = useQuery({
     queryKey: queryKeys.marks(slug, range),
-    queryFn: () => apiRequest<MarkHistory>(`/api/markets/${encodeURIComponent(slug)}/marks?range=${range}`),
+    queryFn: () =>
+      apiRequest<MarkHistory>(`/api/markets/${encodeURIComponent(slug)}/marks?range=${range}`),
     initialData: initialMarks?.range === range ? initialMarks : undefined,
     refetchInterval: POLL_INTERVAL_MS,
   });
   const activityQuery = useQuery({
     queryKey: queryKeys.activity(slug),
-    queryFn: () => apiRequest<ActivityPage>(`/api/activity?slug=${encodeURIComponent(slug)}&limit=25`),
+    queryFn: () =>
+      apiRequest<ActivityPage>(`/api/activity?slug=${encodeURIComponent(slug)}&limit=25`),
     refetchInterval: POLL_INTERVAL_MS,
   });
 
@@ -102,23 +110,34 @@ export function MarketWorkspace({ slug, initialMarket, initialMarks }: MarketWor
   }, [queryClient, range, slug]);
 
   if (marketQuery.data === undefined) {
-    const marketNotFound = marketQuery.error instanceof ApiClientError
-      && marketQuery.error.code === "MARKET_NOT_FOUND";
+    const marketNotFound =
+      marketQuery.error instanceof ApiClientError && marketQuery.error.code === "MARKET_NOT_FOUND";
     return (
       <div className={styles.page}>
         {marketQuery.isError ? (
           <div className={styles.pageState} role="alert">
-            <strong>{marketNotFound ? "Market not found" : "Market temporarily unavailable"}</strong>
+            <strong>
+              {marketNotFound ? "Market not found" : "Market temporarily unavailable"}
+            </strong>
             <p>
               {marketNotFound
                 ? "No market matches this address."
                 : "Market data is temporarily unavailable. Try again in a moment."}
             </p>
-            <button type="button" onClick={() => void marketQuery.refetch()}>Retry market</button>
+            <button type="button" onClick={() => void marketQuery.refetch()}>
+              Retry market
+            </button>
           </div>
         ) : (
-          <div className={styles.loadingState} role="status" aria-busy="true" aria-label="Loading market workspace">
-            <span /><span /><span />
+          <div
+            className={styles.loadingState}
+            role="status"
+            aria-busy="true"
+            aria-label="Loading market workspace"
+          >
+            <span />
+            <span />
+            <span />
           </div>
         )}
       </div>
@@ -133,17 +152,15 @@ export function MarketWorkspace({ slug, initialMarket, initialMarks }: MarketWor
   };
 
   const ticket = (variant: "desktop" | "mobile") =>
-    activeSelection !== null && market.status === "open"
-      ? (
-          <TradeTicket
-            market={market}
-            selection={activeSelection}
-            onSelectionChange={setSelection}
-            onAuthoritativeRefresh={refreshAuthoritativeData}
-            {...(variant === "mobile" ? { onClose: () => setSheetOpen(false) } : {})}
-          />
-        )
-      : null;
+    activeSelection !== null && market.status === "open" ? (
+      <TradeTicket
+        market={market}
+        selection={activeSelection}
+        onSelectionChange={setSelection}
+        onAuthoritativeRefresh={refreshAuthoritativeData}
+        {...(variant === "mobile" ? { onClose: () => setSheetOpen(false) } : {})}
+      />
+    ) : null;
 
   return (
     <div className={styles.page}>
@@ -151,7 +168,9 @@ export function MarketWorkspace({ slug, initialMarket, initialMarks }: MarketWor
       {marketQuery.isError ? (
         <div className={styles.staleNotice} role="status">
           Live refresh paused. Displaying the latest confirmed market state.
-          <button type="button" onClick={() => void marketQuery.refetch()}>Retry</button>
+          <button type="button" onClick={() => void marketQuery.refetch()}>
+            Retry
+          </button>
         </div>
       ) : null}
 
@@ -196,15 +215,25 @@ export function MarketWorkspace({ slug, initialMarket, initialMarks }: MarketWor
       {market.status === "open" && activeSelection !== null ? (
         <div className={styles.mobileTradeBar}>
           <span className={styles.mobileTradeSummary}>
-            <span>{activeSelection.side.toUpperCase()} · {strikeLabel(market, activeSelection.strikeIndex)}</span>
+            <span>
+              {activeSelection.side.toUpperCase()} ·{" "}
+              {strikeLabel(market, activeSelection.strikeIndex)}
+            </span>
             <strong>
               {formatProbability(
-                (market.contracts.find((item) => item.strikeIndex === activeSelection.strikeIndex)
-                  ?? market.contracts[0])?.[activeSelection.side === "yes" ? "yesProbability" : "noProbability"] ?? 0,
+                (market.contracts.find(
+                  (item) => item.strikeIndex === activeSelection.strikeIndex,
+                ) ?? market.contracts[0])?.[
+                  activeSelection.side === "yes" ? "yesProbability" : "noProbability"
+                ] ?? 0,
               )}
             </strong>
           </span>
-          <button type="button" className={styles.mobileTradeButton} onClick={() => setSheetOpen(true)}>
+          <button
+            type="button"
+            className={styles.mobileTradeButton}
+            onClick={() => setSheetOpen(true)}
+          >
             Trade
           </button>
         </div>
@@ -214,8 +243,13 @@ export function MarketWorkspace({ slug, initialMarket, initialMarks }: MarketWor
         <Dialog.Root open={sheetOpen} onOpenChange={setSheetOpen}>
           <Dialog.Portal>
             <Dialog.Overlay className={styles.sheetOverlay} />
-            <Dialog.Content className={styles.sheetContent} aria-describedby="trade-sheet-description">
-              <Dialog.Title className={styles.visuallyHidden}>Trade {market.company.name}</Dialog.Title>
+            <Dialog.Content
+              className={styles.sheetContent}
+              aria-describedby="trade-sheet-description"
+            >
+              <Dialog.Title className={styles.visuallyHidden}>
+                Trade {market.company.name}
+              </Dialog.Title>
               <Dialog.Description id="trade-sheet-description" className={styles.visuallyHidden}>
                 Review a quote and confirm a paper-money trade.
               </Dialog.Description>

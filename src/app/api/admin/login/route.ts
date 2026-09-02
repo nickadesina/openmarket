@@ -1,20 +1,17 @@
 import { z } from "zod";
 
 import { ServiceError } from "../../../../lib/api/errors.js";
-import {
-  parseMutationBody,
-  withMutationRoute,
-} from "../../../../lib/api/mutation-route.js";
+import { parseMutationBody, withMutationRoute } from "../../../../lib/api/mutation-route.js";
 import { jsonSuccess } from "../../../../lib/api/response.js";
-import {
-  getAdminPassphraseHash,
-  verifyAdminPassphrase,
-} from "../../../../lib/auth/admin-passphrase.js";
 import {
   ADMIN_COOKIE_MAX_AGE_MS,
   getAdminCookieSecret,
   signAdminCookie,
 } from "../../../../lib/auth/admin-cookie.js";
+import {
+  getAdminPassphraseHash,
+  verifyAdminPassphrase,
+} from "../../../../lib/auth/admin-passphrase.js";
 import { ADMIN_COOKIE_NAME } from "../../../../lib/auth/current-admin.js";
 
 export const runtime = "nodejs";
@@ -42,10 +39,7 @@ function adminCookie(value: string): string {
 export function POST(request: Request): Promise<Response> {
   return withMutationRoute(request, async (context) => {
     const input = await parseMutationBody(request, adminLoginSchema);
-    const authenticated = await verifyAdminPassphrase(
-      input.passphrase,
-      getAdminPassphraseHash(),
-    );
+    const authenticated = await verifyAdminPassphrase(input.passphrase, getAdminPassphraseHash());
     if (!authenticated) {
       throw new ServiceError("ADMIN_REQUIRED", "Admin authentication failed.");
     }

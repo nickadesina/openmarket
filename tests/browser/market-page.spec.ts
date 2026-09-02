@@ -11,13 +11,18 @@ import {
 
 skipWithoutDatabase();
 
-test("a valuation market renders the ladder, anchor, and distribution", async ({ page, baseURL }, testInfo) => {
+test("a valuation market renders the ladder, anchor, and distribution", async ({
+  page,
+  baseURL,
+}, testInfo) => {
   const names = uniqueNames("val-render", testInfo);
   await seedValuationMarket(page, baseURL, names);
 
   await page.goto(`/m/${names.slug}`);
   await expect(page.getByRole("heading", { name: names.companyName })).toBeVisible();
-  await expect(page.getByText("Next reported private-market valuation", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Next reported private-market valuation", { exact: true }),
+  ).toBeVisible();
 
   const metrics = page.getByLabel("Current market metrics");
   await expect(metrics.getByText("Reference anchor")).toBeVisible();
@@ -44,7 +49,10 @@ test("a valuation market renders the ladder, anchor, and distribution", async ({
   await expectNoHorizontalOverflow(page);
 });
 
-test("selecting a strike opens a ticket labeled with that contract", async ({ page, baseURL }, testInfo) => {
+test("selecting a strike opens a ticket labeled with that contract", async ({
+  page,
+  baseURL,
+}, testInfo) => {
   const names = uniqueNames("val-select", testInfo);
   await seedValuationMarket(page, baseURL, names);
   await createUser(page, baseURL, names.username);
@@ -64,15 +72,31 @@ test("selecting a strike opens a ticket labeled with that contract", async ({ pa
   if (testInfo.project.name.includes("mobile")) {
     await page.keyboard.press("Escape");
   }
-  await expect(firstRow.getByRole("button", { name: /NO$/ })).toHaveAttribute("aria-pressed", "true");
+  await expect(firstRow.getByRole("button", { name: /NO$/ })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
 });
 
-test("trades on strike contracts appear in activity with directional labels", async ({ page, baseURL }, testInfo) => {
+test("trades on strike contracts appear in activity with directional labels", async ({
+  page,
+  baseURL,
+}, testInfo) => {
   const names = uniqueNames("val-activity", testInfo);
   await seedValuationMarket(page, baseURL, names);
   await createUser(page, baseURL, names.username);
-  await buyViaApi(page, baseURL, { slug: names.slug, spendUsd: "50.00", strikeIndex: 0, side: "yes" });
-  await buyViaApi(page, baseURL, { slug: names.slug, spendUsd: "25.00", strikeIndex: 0, side: "no" });
+  await buyViaApi(page, baseURL, {
+    slug: names.slug,
+    spendUsd: "50.00",
+    strikeIndex: 0,
+    side: "yes",
+  });
+  await buyViaApi(page, baseURL, {
+    slug: names.slug,
+    spendUsd: "25.00",
+    strikeIndex: 0,
+    side: "no",
+  });
 
   await page.goto(`/m/${names.slug}`);
   const activity = page.getByRole("region", { name: "Market activity" });

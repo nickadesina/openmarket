@@ -1,14 +1,8 @@
 import { z } from "zod";
 
 import { isServiceError } from "../src/lib/api/errors.js";
-import {
-  seedInputSchema,
-  type SeedInput,
-} from "../src/lib/api/schemas.js";
-import {
-  createDirectDatabase,
-  destroyDatabase,
-} from "../src/lib/db/client.js";
+import { type SeedInput, seedInputSchema } from "../src/lib/api/schemas.js";
+import { createDirectDatabase, destroyDatabase } from "../src/lib/db/client.js";
 import { seedMarket } from "../src/lib/services/seed-market.js";
 import { validateDeploymentConfig } from "./verify-production-config.js";
 
@@ -33,9 +27,7 @@ const productionSeedRecordSchema = z
   })
   .strict();
 
-const productionSeedRecordsSchema = z
-  .array(productionSeedRecordSchema)
-  .length(2);
+const productionSeedRecordsSchema = z.array(productionSeedRecordSchema).length(2);
 
 type ProductionSeedRecord = z.infer<typeof productionSeedRecordSchema>;
 
@@ -43,9 +35,7 @@ function seedConfigurationError(message: string): never {
   throw new Error(`PRODUCTION_SEED_MARKETS_JSON ${message}`);
 }
 
-function parseSeedRecords(
-  environment: NodeJS.ProcessEnv,
-): readonly ProductionSeedRecord[] {
+function parseSeedRecords(environment: NodeJS.ProcessEnv): readonly ProductionSeedRecord[] {
   const raw = environment.PRODUCTION_SEED_MARKETS_JSON?.trim();
   if (raw === undefined || raw.length === 0) {
     seedConfigurationError("is required");
@@ -78,14 +68,8 @@ function validatedSeedInputs(
 
   for (const record of records) {
     const input = record.seed;
-    const expectedName = expectedCompanies.get(
-      input.slug as "stripe" | "anthropic",
-    );
-    if (
-      expectedName === undefined ||
-      input.name !== expectedName ||
-      seen.has(input.slug)
-    ) {
+    const expectedName = expectedCompanies.get(input.slug as "stripe" | "anthropic");
+    if (expectedName === undefined || input.name !== expectedName || seen.has(input.slug)) {
       seedConfigurationError("must contain Stripe and Anthropic exactly once");
     }
     seen.add(input.slug);
@@ -100,9 +84,7 @@ function validatedSeedInputs(
       REFUSED_TEXT_PATTERN.test(source.title) ||
       REFUSED_TEXT_PATTERN.test(source.url)
     ) {
-      seedConfigurationError(
-        "contains draft, unverified, or placeholder metadata",
-      );
+      seedConfigurationError("contains draft, unverified, or placeholder metadata");
     }
 
     let sourceUrl: URL;
@@ -131,9 +113,7 @@ function validatedSeedInputs(
       verifiedAt > now ||
       now - verifiedAt > SOURCE_VERIFICATION_MAX_AGE_MS
     ) {
-      seedConfigurationError(
-        "requires source verification within the last 30 days",
-      );
+      seedConfigurationError("requires source verification within the last 30 days");
     }
     if (publishedAt > now || anchorAt > now) {
       seedConfigurationError("must not contain future source or anchor dates");
@@ -148,9 +128,7 @@ function validatedSeedInputs(
       anchor_description: anchorDescription,
     });
     if (!validatedInput.success) {
-      seedConfigurationError(
-        "contains source metadata too long to persist safely",
-      );
+      seedConfigurationError("contains source metadata too long to persist safely");
     }
     inputs.push(validatedInput.data);
   }

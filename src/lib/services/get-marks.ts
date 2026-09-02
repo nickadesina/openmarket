@@ -4,10 +4,7 @@ import { ServiceError } from "../api/errors.js";
 import type { Database, MetricKind } from "../db/schema.js";
 import { calculateTimeWeightedAverage } from "../engine/twap.js";
 import type { OrderedMark } from "../engine/types.js";
-import {
-  downsampleMarks,
-  type DownsampleMarkPoint,
-} from "./downsample-marks.js";
+import { type DownsampleMarkPoint, downsampleMarks } from "./downsample-marks.js";
 
 export type MarkRange = "1h" | "1d" | "1w" | "all";
 
@@ -51,10 +48,7 @@ const TWAP_WINDOW_MS = 60 * 60 * 1_000;
 
 function normalizeRange(range: MarkRange): MarkRange {
   if (range !== "1h" && range !== "1d" && range !== "1w" && range !== "all") {
-    throw new ServiceError(
-      "INVALID_INPUT",
-      "Mark range must be one of 1h, 1d, 1w, or all.",
-    );
+    throw new ServiceError("INVALID_INPUT", "Mark range must be one of 1h, 1d, 1w, or all.");
   }
   return range;
 }
@@ -68,11 +62,7 @@ function normalizeOptions(options: GetMarksOptions): {
     throw new ServiceError("INVALID_INPUT", "Read clock must be a valid date.");
   }
   const maxPoints = options.maxPoints ?? DEFAULT_MAX_POINTS;
-  if (
-    !Number.isSafeInteger(maxPoints) ||
-    maxPoints < 2 ||
-    maxPoints > MAX_MAX_POINTS
-  ) {
+  if (!Number.isSafeInteger(maxPoints) || maxPoints < 2 || maxPoints > MAX_MAX_POINTS) {
     throw new ServiceError(
       "INVALID_INPUT",
       `maxPoints must be an integer from 2 through ${MAX_MAX_POINTS}.`,
@@ -108,10 +98,7 @@ function laterMark(left: MarkRow | null, right: MarkRow): MarkRow {
   if (timestampDifference > 0) {
     return right;
   }
-  if (
-    timestampDifference === 0 &&
-    BigInt(right.market_sequence) > BigInt(left.market_sequence)
-  ) {
+  if (timestampDifference === 0 && BigInt(right.market_sequence) > BigInt(left.market_sequence)) {
     return right;
   }
   return left;
@@ -178,9 +165,7 @@ export async function getMarks(
 
       const twapStart = now.getTime() - TWAP_WINDOW_MS;
       let twapPrior: MarkRow | null =
-        priorRow !== undefined && priorRow.ts.getTime() <= twapStart
-          ? priorRow
-          : null;
+        priorRow !== undefined && priorRow.ts.getTime() <= twapStart ? priorRow : null;
       const twapRows: MarkRow[] = [];
       for (const row of rows) {
         const timestamp = row.ts.getTime();
@@ -203,9 +188,7 @@ export async function getMarks(
         value: row.value,
       }));
       const points =
-        range === "1w" || range === "all"
-          ? downsampleMarks(rawPoints, maxPoints)
-          : rawPoints;
+        range === "1w" || range === "all" ? downsampleMarks(rawPoints, maxPoints) : rawPoints;
 
       return {
         marketId: market.market_id,

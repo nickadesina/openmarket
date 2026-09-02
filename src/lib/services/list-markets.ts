@@ -1,4 +1,4 @@
-import { sql, type Kysely } from "kysely";
+import { type Kysely, sql } from "kysely";
 
 import { ServiceError } from "../api/errors.js";
 import type { Database, MarketStatus, MetricKind } from "../db/schema.js";
@@ -66,11 +66,7 @@ function normalizeOptions(options: MarketListOptions): {
     throw new ServiceError("INVALID_INPUT", "Read clock must be a valid date.");
   }
   const historyLimit = options.historyLimit ?? DEFAULT_HISTORY_LIMIT;
-  if (
-    !Number.isSafeInteger(historyLimit) ||
-    historyLimit < 2 ||
-    historyLimit > MAX_HISTORY_LIMIT
-  ) {
+  if (!Number.isSafeInteger(historyLimit) || historyLimit < 2 || historyLimit > MAX_HISTORY_LIMIT) {
     throw new ServiceError(
       "INVALID_INPUT",
       `historyLimit must be an integer from 2 through ${MAX_HISTORY_LIMIT}.`,
@@ -190,10 +186,7 @@ export async function listMarkets(
           status: row.status,
           metric: {
             kind: row.metric_kind,
-            label:
-              row.metric_kind === "valuation_median"
-                ? "Implied valuation"
-                : "YES probability",
+            label: row.metric_kind === "valuation_median" ? "Implied valuation" : "YES probability",
             format: row.metric_kind === "valuation_median" ? "usd" : "probability",
             current: row.current_metric,
             change24Hours: row.current_metric - row.change_baseline,

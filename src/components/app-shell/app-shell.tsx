@@ -2,8 +2,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { AccountControl } from "./account-control.js";
-import { NavLinks } from "./nav-links.js";
 import styles from "./app-shell.module.css";
+import { NavLinks } from "./nav-links.js";
 
 export function AppShell({ children }: { readonly children: ReactNode }) {
   return (
@@ -26,9 +26,7 @@ export function AppShell({ children }: { readonly children: ReactNode }) {
         {children}
       </main>
       <footer className={styles.footer}>
-        <span className={styles.footerCopyright}>
-          © {new Date().getFullYear()} OpenMarket
-        </span>
+        <span className={styles.footerCopyright}>© {new Date().getFullYear()} OpenMarket</span>
         <span className={styles.footerDisclosure}>
           Paper trading only. Not real money. No purchases or withdrawals.
         </span>

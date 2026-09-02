@@ -1,27 +1,17 @@
 import type { Kysely } from "kysely";
-import { describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { SeedInput } from "../../src/lib/api/schemas.js";
 import { DEVELOPMENT_DRAFT_SEED_MARKETS } from "../../src/lib/config/seed-markets.js";
-import type {
-  CompanyRow,
-  Database,
-  MarketRow,
-} from "../../src/lib/db/schema.js";
+import type { CompanyRow, Database, MarketRow } from "../../src/lib/db/schema.js";
 import {
   VALUATION_BOUNDARIES_USD,
   VALUATION_BUCKET_COUNT,
   VALUATION_GRID_VERSION,
 } from "../../src/lib/engine/buckets.js";
-import {
-  seedBinaryMarket,
-  seedValuationMarket,
-} from "../../src/lib/engine/seed.js";
-import {
-  BINARY_GRID_VERSION,
-  seedMarket,
-} from "../../src/lib/services/seed-market.js";
+import { seedBinaryMarket, seedValuationMarket } from "../../src/lib/engine/seed.js";
+import { BINARY_GRID_VERSION, seedMarket } from "../../src/lib/services/seed-market.js";
 
 const CREATED_AT = new Date("2025-01-01T00:00:00.000Z");
 
@@ -92,13 +82,11 @@ function createFakeDatabase(): { db: Kysely<Database>; state: FakeState } {
       values = nextValues;
       return query;
     });
-    query.onConflict = vi.fn(
-      (callback: (builder: { column: Mock }) => unknown) => {
-        const doUpdateSet = vi.fn(() => query);
-        callback({ column: vi.fn(() => ({ doUpdateSet })) });
-        return query;
-      },
-    );
+    query.onConflict = vi.fn((callback: (builder: { column: Mock }) => unknown) => {
+      const doUpdateSet = vi.fn(() => query);
+      callback({ column: vi.fn(() => ({ doUpdateSet })) });
+      return query;
+    });
     query.returningAll = vi.fn(() => query);
     query.executeTakeFirstOrThrow = vi.fn(async () => {
       if (table === "companies") {
@@ -197,9 +185,7 @@ function createFakeDatabase(): { db: Kysely<Database>; state: FakeState } {
       }
       if (table === "holdings") {
         state.events.push("read-holdings");
-        return state.holdings[0] === undefined
-          ? undefined
-          : { user_id: state.holdings[0] };
+        return state.holdings[0] === undefined ? undefined : { user_id: state.holdings[0] };
       }
       if (table === "settlements") {
         state.events.push("read-settlement");
@@ -232,9 +218,8 @@ function createFakeDatabase(): { db: Kysely<Database>; state: FakeState } {
   });
 
   const transaction = vi.fn(() => ({
-    execute: vi.fn(
-      async (callback: (transactionDb: unknown) => Promise<unknown>) =>
-        callback({ insertInto, selectFrom, deleteFrom }),
+    execute: vi.fn(async (callback: (transactionDb: unknown) => Promise<unknown>) =>
+      callback({ insertInto, selectFrom, deleteFrom }),
     ),
   }));
 
@@ -284,9 +269,7 @@ describe("seedMarket", () => {
         value: expected.currentMetric,
       }),
     ]);
-    expect(state.events.indexOf("lock-market")).toBeLessThan(
-      state.events.indexOf("insert-market"),
-    );
+    expect(state.events.indexOf("lock-market")).toBeLessThan(state.events.indexOf("insert-market"));
   });
 
   it("creates binary state in canonical NO, YES order", async () => {
@@ -357,9 +340,7 @@ describe("seedMarket", () => {
     expect(result.market.id).not.toBe(originalMarketId);
     expect(state.marks).toHaveLength(1);
     expect(state.marks[0]?.market_id).toBe(result.market.id);
-    expect(state.events.indexOf("delete-mark")).toBeLessThan(
-      state.events.indexOf("delete-market"),
-    );
+    expect(state.events.indexOf("delete-mark")).toBeLessThan(state.events.indexOf("delete-market"));
     expect(state.events.indexOf("delete-market")).toBeLessThan(
       state.events.indexOf("insert-market"),
     );
@@ -371,9 +352,9 @@ describe("seedMarket", () => {
     state.trades.push("00000000-0000-4000-8000-000000000099");
     state.events = [];
 
-    await expect(
-      seedMarket(db, valuationInput({ b: 20_000 })),
-    ).rejects.toMatchObject({ code: "INVALID_INPUT" });
+    await expect(seedMarket(db, valuationInput({ b: 20_000 }))).rejects.toMatchObject({
+      code: "INVALID_INPUT",
+    });
     expect(state.events).not.toContain("delete-mark");
     expect(state.events).not.toContain("delete-market");
     expect(state.events).not.toContain("insert-market");
@@ -391,9 +372,9 @@ describe("seedMarket", () => {
       }
       state.events = [];
 
-      await expect(
-        seedMarket(db, valuationInput({ b: 20_000 })),
-      ).rejects.toMatchObject({ code: "INVALID_INPUT" });
+      await expect(seedMarket(db, valuationInput({ b: 20_000 }))).rejects.toMatchObject({
+        code: "INVALID_INPUT",
+      });
       expect(state.events).not.toContain("delete-market");
     },
   );

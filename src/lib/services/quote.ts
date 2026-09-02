@@ -9,11 +9,7 @@ import {
   VALUATION_BUCKET_COUNT,
   VALUATION_GRID_VERSION,
 } from "../engine/buckets.js";
-import {
-  contractDelta,
-  contractMask,
-  sellableQuantity,
-} from "../engine/contracts.js";
+import { contractDelta, contractMask, sellableQuantity } from "../engine/contracts.js";
 import {
   probabilities,
   quantizeBuyCostCents,
@@ -53,10 +49,7 @@ function invalidInput(message: string): ServiceError {
   return new ServiceError("INVALID_INPUT", message);
 }
 
-function selectedProbability(
-  distribution: readonly number[],
-  mask: readonly boolean[],
-): number {
+function selectedProbability(distribution: readonly number[], mask: readonly boolean[]): number {
   let total = 0;
   for (let index = 0; index < distribution.length; index += 1) {
     if (mask[index]) {
@@ -66,10 +59,7 @@ function selectedProbability(
   return total;
 }
 
-function currentMetricAfter(
-  metricKind: MetricKind,
-  distribution: readonly number[],
-): number {
+function currentMetricAfter(metricKind: MetricKind, distribution: readonly number[]): number {
   if (metricKind === "valuation_median") {
     return impliedValuationMedian(distribution, VALUATION_BOUNDARIES_USD);
   }
@@ -109,8 +99,8 @@ function requestedAmount(input: QuoteInput): {
   quantity: number | undefined;
   spendCents: number | undefined;
 } {
-  const hasQuantity = Object.prototype.hasOwnProperty.call(input, "quantity");
-  const hasSpend = Object.prototype.hasOwnProperty.call(input, "spend_usd");
+  const hasQuantity = Object.hasOwn(input, "quantity");
+  const hasSpend = Object.hasOwn(input, "spend_usd");
 
   if (input.action === "buy") {
     if (hasQuantity === hasSpend) {
@@ -122,11 +112,7 @@ function requestedAmount(input: QuoteInput): {
 
   if (hasQuantity) {
     const quantity = "quantity" in input ? input.quantity : undefined;
-    if (
-      typeof quantity !== "number" ||
-      !Number.isFinite(quantity) ||
-      quantity < MIN_QUANTITY
-    ) {
+    if (typeof quantity !== "number" || !Number.isFinite(quantity) || quantity < MIN_QUANTITY) {
       throw invalidInput(`Quantity must be at least ${MIN_QUANTITY}.`);
     }
     return { quantity, spendCents: undefined };
@@ -211,11 +197,7 @@ async function quoteMarketFromSnapshot(
   }
 
   try {
-    const mask = contractMask(
-      market.n_buckets,
-      input.strike_index,
-      input.side,
-    );
+    const mask = contractMask(market.n_buckets, input.strike_index, input.side);
     if (holdings.length !== market.n_buckets) {
       throw new RangeError("holding vector length does not match the market");
     }
@@ -225,12 +207,7 @@ async function quoteMarketFromSnapshot(
     let spendCashAmountCents: number | undefined;
 
     if (amount.spendCents !== undefined) {
-      const solved = solveBuyQuantityForSpend(
-        market.q,
-        mask,
-        market.b,
-        amount.spendCents,
-      );
+      const solved = solveBuyQuantityForSpend(market.q, mask, market.b, amount.spendCents);
       quantity = solved.quantity;
       spendCostUsd = solved.costUsd;
       spendCashAmountCents = solved.cashAmountCents;
@@ -259,8 +236,7 @@ async function quoteMarketFromSnapshot(
       input.action,
       quantity,
     );
-    const engineCostUsd =
-      spendCostUsd ?? tradeCost(market.q, delta, market.b);
+    const engineCostUsd = spendCostUsd ?? tradeCost(market.q, delta, market.b);
     const cashAmountCents =
       spendCashAmountCents ??
       (input.action === "buy"
@@ -288,8 +264,7 @@ async function quoteMarketFromSnapshot(
     }
 
     const minimumHolding = Math.min(...holdingsAfter);
-    const expectedRedemptionQuantity =
-      minimumHolding > EPS ? minimumHolding : 0;
+    const expectedRedemptionQuantity = minimumHolding > EPS ? minimumHolding : 0;
     const holdingsAfterRedemption =
       expectedRedemptionQuantity === 0
         ? holdingsAfter
@@ -311,14 +286,9 @@ async function quoteMarketFromSnapshot(
       price_before: selectedProbability(distributionBefore, mask),
       average_price: Math.abs(engineCostUsd) / quantity,
       price_after: selectedProbability(distributionAfter, mask),
-      current_metric_after: currentMetricAfter(
-        market.metric_kind,
-        distributionAfter,
-      ),
+      current_metric_after: currentMetricAfter(market.metric_kind, distributionAfter),
       expected_redemption_quantity: expectedRedemptionQuantity,
-      expected_redemption_cents: String(
-        quantizeEntitlementCents(expectedRedemptionQuantity),
-      ),
+      expected_redemption_cents: String(quantizeEntitlementCents(expectedRedemptionQuantity)),
       sellable_quantity: sellableQuantity(holdingsAfterRedemption, mask),
       market_state_fingerprint: `${market.market_id}:${market.last_market_sequence}`,
       quoted_at: new Date().toISOString(),
@@ -343,7 +313,5 @@ export async function quoteMarket(
     .transaction()
     .setIsolationLevel("repeatable read")
     .setAccessMode("read only")
-    .execute((transaction) =>
-      quoteMarketFromSnapshot(transaction, input, userId),
-    );
+    .execute((transaction) => quoteMarketFromSnapshot(transaction, input, userId));
 }

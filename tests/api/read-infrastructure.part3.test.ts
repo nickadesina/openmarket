@@ -7,11 +7,7 @@ import {
   parseOptionalString,
   parseRequiredEnum,
 } from "../../src/lib/api/pagination.js";
-import {
-  jsonError,
-  jsonSuccess,
-  REQUEST_ID_HEADER,
-} from "../../src/lib/api/response.js";
+import { jsonError, jsonSuccess, REQUEST_ID_HEADER } from "../../src/lib/api/response.js";
 import { requireCurrentUserId } from "../../src/lib/auth/current-user.js";
 import { signUserCookie } from "../../src/lib/auth/user-cookie.js";
 import type { Database } from "../../src/lib/db/schema.js";
@@ -37,9 +33,7 @@ describe("Part 3 JSON responses", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(response.headers.get("content-type")).toBe(
-      "application/json; charset=utf-8",
-    );
+    expect(response.headers.get("content-type")).toBe("application/json; charset=utf-8");
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(response.headers.get(REQUEST_ID_HEADER)).toBe("request-1");
     await expect(response.json()).resolves.toEqual({
@@ -81,22 +75,20 @@ describe("Part 3 exact query parsing", () => {
 
     for (const value of ["", "025", "+2", "2.0", "1e2", " 2", "101"]) {
       expect(() =>
-        parseBoundedInteger(
-          new URLSearchParams([["limit", value]]),
-          "limit",
-          { defaultValue: 10, minimum: 1, maximum: 100 },
-        ),
+        parseBoundedInteger(new URLSearchParams([["limit", value]]), "limit", {
+          defaultValue: 10,
+          minimum: 1,
+          maximum: 100,
+        }),
       ).toThrowError(ServiceError);
     }
   });
 
   it("rejects duplicate, empty, oversized, and non-enum values", () => {
     expect(() =>
-      parseOptionalString(
-        new URLSearchParams("cursor=a&cursor=b"),
-        "cursor",
-        { maximumLength: 10 },
-      ),
+      parseOptionalString(new URLSearchParams("cursor=a&cursor=b"), "cursor", {
+        maximumLength: 10,
+      }),
     ).toThrowError(ServiceError);
     expect(() =>
       parseOptionalString(new URLSearchParams("cursor="), "cursor", {
@@ -104,11 +96,7 @@ describe("Part 3 exact query parsing", () => {
       }),
     ).toThrowError(ServiceError);
     expect(() =>
-      parseRequiredEnum(
-        new URLSearchParams("range=month"),
-        "range",
-        ["1h", "1d"],
-      ),
+      parseRequiredEnum(new URLSearchParams("range=month"), "range", ["1h", "1d"]),
     ).toThrowError(ServiceError);
   });
 });
@@ -119,18 +107,15 @@ describe("Part 3 current user", () => {
     const getDatabase = vi.fn(() => database);
 
     await expect(
-      requireCurrentUserId(
-        new Request("http://localhost/api/portfolio"),
-        getDatabase,
-      ),
+      requireCurrentUserId(new Request("http://localhost/api/portfolio"), getDatabase),
     ).rejects.toMatchObject({ code: "USER_REQUIRED" });
     expect(getDatabase).not.toHaveBeenCalled();
   });
 
   it("verifies only the signed cookie and resolves its normalized username", async () => {
-    const secret = Buffer.from(
-      Array.from({ length: 32 }, (_unused, index) => index + 1),
-    ).toString("base64url");
+    const secret = Buffer.from(Array.from({ length: 32 }, (_unused, index) => index + 1)).toString(
+      "base64url",
+    );
     process.env.USER_COOKIE_SECRET = secret;
     const cookie = signUserCookie("Alice_1", secret, Date.now());
     const executeTakeFirst = vi.fn(async () => ({ id: "user-1" }));
@@ -153,10 +138,6 @@ describe("Part 3 current user", () => {
     );
 
     expect(userId).toBe("user-1");
-    expect(query.where).toHaveBeenCalledWith(
-      "username_normalized",
-      "=",
-      "alice_1",
-    );
+    expect(query.where).toHaveBeenCalledWith("username_normalized", "=", "alice_1");
   });
 });

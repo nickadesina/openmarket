@@ -1,9 +1,5 @@
+import { Kysely, PostgresDialect, type PostgresPool } from "kysely";
 import { Client, Pool } from "pg";
-import {
-  Kysely,
-  PostgresDialect,
-  type PostgresPool,
-} from "kysely";
 
 import type { Database } from "./schema.js";
 
@@ -81,9 +77,7 @@ function requireDatabaseUrl(
   return value;
 }
 
-export function createPooledDatabase(
-  connectionString?: string,
-): Kysely<Database> {
+export function createPooledDatabase(connectionString?: string): Kysely<Database> {
   const url = requireDatabaseUrl(connectionString, "DATABASE_URL");
 
   return new Kysely<Database>({
@@ -93,9 +87,7 @@ export function createPooledDatabase(
   });
 }
 
-export function createDirectDatabase(
-  connectionString?: string,
-): Kysely<Database> {
+export function createDirectDatabase(connectionString?: string): Kysely<Database> {
   const url = requireDatabaseUrl(connectionString, "DATABASE_URL_UNPOOLED");
 
   return new Kysely<Database>({

@@ -264,15 +264,16 @@ function analyzeSequences(
     .sort((left, right) => (left < right ? -1 : left > right ? 1 : 0));
   const observed = observedValues.map(String);
   const duplicates = observedValues
-    .map((sequence) => ({ sequence: sequence.toString(), count: counts.get(sequence.toString()) ?? 0 }))
+    .map((sequence) => ({
+      sequence: sequence.toString(),
+      count: counts.get(sequence.toString()) ?? 0,
+    }))
     .filter(({ count }) => count > 1);
 
   const unexpected =
     expectedEnd === null
       ? observed
-      : observedValues
-          .filter((value) => value < expectedStart || value > expectedEnd)
-          .map(String);
+      : observedValues.filter((value) => value < expectedStart || value > expectedEnd).map(String);
 
   const missingRanges: SequenceRange[] = [];
   if (expectedEnd !== null && expectedEnd >= expectedStart) {
@@ -289,7 +290,8 @@ function analyzeSequences(
     }
   }
 
-  const invalid = expectedEnd === null ? ["invalid expected end", ...parsed.invalid] : parsed.invalid;
+  const invalid =
+    expectedEnd === null ? ["invalid expected end", ...parsed.invalid] : parsed.invalid;
   const passed =
     invalid.length === 0 &&
     duplicates.length === 0 &&
@@ -309,6 +311,7 @@ function analyzeSequences(
   };
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: every ledger invariant checked in one pass; split per invariant family before growing.
 function analyzeMarket(
   market: ReplayMarketInput,
   trades: readonly ReplayTradeInput[],
@@ -353,7 +356,12 @@ function analyzeMarket(
     for (let index = 0; index < replayedQ.length; index += 1) {
       const current = replayedQ[index];
       const delta = trade.delta[index];
-      if (current === undefined || delta === undefined || !Number.isFinite(current) || !Number.isFinite(delta)) {
+      if (
+        current === undefined ||
+        delta === undefined ||
+        !Number.isFinite(current) ||
+        !Number.isFinite(delta)
+      ) {
         stateFindings.push({
           code: "NONFINITE_VECTOR_VALUE",
           detail: `trade ${trade.id} cannot replay bucket ${index}`,
@@ -521,8 +529,7 @@ function analyzeMarket(
     const sequenceCandidates =
       markSequence === null ? [] : (tradesBySequence.get(markSequence.toString()) ?? []);
     const idCandidates = mark.tradeId === null ? [] : (tradesById.get(mark.tradeId) ?? []);
-    const sequenceTrade =
-      sequenceCandidates.length === 1 ? sequenceCandidates[0] : undefined;
+    const sequenceTrade = sequenceCandidates.length === 1 ? sequenceCandidates[0] : undefined;
     const linkedTrade = idCandidates.length === 1 ? idCandidates[0] : undefined;
     const trade = sequenceTrade ?? linkedTrade;
     if (trade === undefined) {
@@ -554,11 +561,7 @@ function analyzeMarket(
     ) {
       fields.push("market_sequence");
     }
-    if (
-      markTimestamp === null ||
-      tradeTimestamp === null ||
-      markTimestamp !== tradeTimestamp
-    ) {
+    if (markTimestamp === null || tradeTimestamp === null || markTimestamp !== tradeTimestamp) {
       fields.push("timestamp");
     }
     if (!numbersAgree(mark.value, trade.metricAfter)) fields.push("metric");
@@ -631,9 +634,10 @@ function analyzeMarket(
   };
 }
 
-function sumIntegerStrings(
-  values: readonly { readonly label: string; readonly value: string }[],
-): { total: bigint | null; invalid: string[] } {
+function sumIntegerStrings(values: readonly { readonly label: string; readonly value: string }[]): {
+  total: bigint | null;
+  invalid: string[];
+} {
   let total = 0n;
   const invalid: string[] = [];
   for (const { label, value } of values) {
@@ -665,11 +669,7 @@ function analyzeCash(snapshot: ReplaySnapshot): CashReconciliationDiagnostics {
       value: market.roundingReserveCents,
     })),
   );
-  const invalidValues = [
-    ...userCash.invalid,
-    ...mmCashFlow.invalid,
-    ...roundingReserve.invalid,
-  ];
+  const invalidValues = [...userCash.invalid, ...mmCashFlow.invalid, ...roundingReserve.invalid];
   const difference =
     userCash.total === null || mmCashFlow.total === null
       ? null
@@ -684,7 +684,8 @@ function analyzeCash(snapshot: ReplaySnapshot): CashReconciliationDiagnostics {
     roundingReserveCents: roundingReserve.total?.toString() ?? null,
     differenceCents: difference?.toString() ?? null,
     formula: "current_user_cash_cents + market_maker_cash_flow_cents - seeded_balance_cents",
-    roundingReserveAccounting: "Rounding reserve is reported separately and excluded from the difference because user cash and MM flow both record the same quantized transfers.",
+    roundingReserveAccounting:
+      "Rounding reserve is reported separately and excluded from the difference because user cash and MM flow both record the same quantized transfers.",
     invalidValues,
     passed: invalidValues.length === 0 && difference === 0n,
   };

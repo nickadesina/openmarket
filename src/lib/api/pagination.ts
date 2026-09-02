@@ -19,10 +19,7 @@ function invalidQuery(name: string): ServiceError {
   });
 }
 
-function singleValue(
-  searchParams: URLSearchParams,
-  name: string,
-): string | undefined {
+function singleValue(searchParams: URLSearchParams, name: string): string | undefined {
   const values = searchParams.getAll(name);
   if (values.length > 1) {
     throw invalidQuery(name);
@@ -55,11 +52,7 @@ export function parseBoundedInteger(
   }
 
   const parsed = Number(value);
-  if (
-    !Number.isSafeInteger(parsed) ||
-    parsed < options.minimum ||
-    parsed > options.maximum
-  ) {
+  if (!Number.isSafeInteger(parsed) || parsed < options.minimum || parsed > options.maximum) {
     throw invalidQuery(name);
   }
   return parsed;
@@ -71,11 +64,7 @@ export function parseOptionalString(
   options: OptionalStringOptions,
 ): string | undefined {
   const value = singleValue(searchParams, name);
-  if (
-    value === undefined ||
-    value.length === 0 ||
-    value.length > options.maximumLength
-  ) {
+  if (value === undefined || value.length === 0 || value.length > options.maximumLength) {
     if (value === undefined) {
       return undefined;
     }

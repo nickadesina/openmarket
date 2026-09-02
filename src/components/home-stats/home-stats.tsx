@@ -30,7 +30,8 @@ export function HomeStats({
   });
   const identityQuery = useQuery({
     queryKey: queryKeys.portfolio,
-    queryFn: () => apiRequest<{ readonly cashBalanceCents: string }>("/api/portfolio?offset=0&limit=1"),
+    queryFn: () =>
+      apiRequest<{ readonly cashBalanceCents: string }>("/api/portfolio?offset=0&limit=1"),
   });
 
   const markets = marketsQuery.data?.markets ?? [];

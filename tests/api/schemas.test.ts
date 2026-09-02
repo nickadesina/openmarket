@@ -23,9 +23,7 @@ describe("service input schemas", () => {
     expect(usernameInputSchema.parse({ username: "Ab_" })).toEqual({
       username: "Ab_",
     });
-    expect(
-      usernameInputSchema.safeParse({ username: "a".repeat(20) }).success,
-    ).toBe(true);
+    expect(usernameInputSchema.safeParse({ username: "a".repeat(20) }).success).toBe(true);
 
     for (const input of [
       { username: "ab" },
@@ -39,10 +37,7 @@ describe("service input schemas", () => {
 
   it("rejects trailing line terminators and overlong USD fields", () => {
     for (const terminator of lineTerminators) {
-      expect(
-        usernameInputSchema.safeParse({ username: `Alice${terminator}` })
-          .success,
-      ).toBe(false);
+      expect(usernameInputSchema.safeParse({ username: `Alice${terminator}` }).success).toBe(false);
       expect(
         quoteInputSchema.safeParse({
           ...quoteBase,
@@ -211,16 +206,12 @@ describe("service input schemas", () => {
         settled_value_usd: "0.00",
       }).success,
     ).toBe(true);
-    expect(
-      settlementInputSchema.safeParse({ ...valid, confirm_slug: "stripe" })
-        .success,
-    ).toBe(false);
-    expect(
-      settlementInputSchema.safeParse({ ...valid, source_url: "file:///tmp/x" })
-        .success,
-    ).toBe(false);
-    expect(
-      settlementInputSchema.safeParse({ ...valid, admin: true }).success,
-    ).toBe(false);
+    expect(settlementInputSchema.safeParse({ ...valid, confirm_slug: "stripe" }).success).toBe(
+      false,
+    );
+    expect(settlementInputSchema.safeParse({ ...valid, source_url: "file:///tmp/x" }).success).toBe(
+      false,
+    );
+    expect(settlementInputSchema.safeParse({ ...valid, admin: true }).success).toBe(false);
   });
 });

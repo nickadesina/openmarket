@@ -36,7 +36,7 @@
    P10 and P90 figures under the box ends; the round's marker and label last,
    in their own row so no label can collide with another. */
 .band {
-  --band-axis: 1.625rem;
+  --band-axis: 1.5rem;
   position: relative;
   height: 4.25rem;
   margin-inline: 2.75rem;
@@ -53,17 +53,17 @@
 
 .box {
   position: absolute;
-  top: calc(var(--band-axis) - 0.375rem);
-  height: 0.75rem;
+  top: calc(var(--band-axis) - 0.5rem);
+  height: 1rem;
   border: 1px solid var(--color-ink);
   background: var(--color-primary-subtle);
 }
 
 .medianLine {
   position: absolute;
-  top: calc(var(--band-axis) - 0.375rem);
+  top: calc(var(--band-axis) - 0.5rem);
   width: 0;
-  height: 0.75rem;
+  height: 1rem;
   border-left: 2px solid var(--color-primary);
 }
 
@@ -99,7 +99,7 @@
 }
 
 .edgeLabel {
-  top: calc(var(--band-axis) + 0.625rem);
+  top: calc(var(--band-axis) + 0.75rem);
   color: var(--color-ink-muted);
 }
 
@@ -110,7 +110,7 @@
 /* The round: a small ink triangle on the underside of the axis. */
 .anchorMarker {
   position: absolute;
-  top: calc(var(--band-axis) + 0.125rem);
+  top: calc(var(--band-axis) + 0.25rem);
   width: 0;
   height: 0;
   border-right: 0.3125rem solid transparent;
@@ -120,7 +120,7 @@
 }
 
 .anchorLabel {
-  top: calc(var(--band-axis) + 1.5rem);
+  top: calc(var(--band-axis) + 1.75rem);
   transform: translateX(-50%);
   color: var(--color-ink);
 }

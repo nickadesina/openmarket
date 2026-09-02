@@ -1,21 +1,18 @@
 import { describe, expect, it } from "vitest";
 
 import { ServiceError } from "../../src/lib/api/errors.js";
-import {
-  allowedOrigins,
-  assertAllowedOrigin,
-} from "../../src/lib/security/origin.js";
+import { allowedOrigins, assertAllowedOrigin } from "../../src/lib/security/origin.js";
 
 describe("request origin protection", () => {
   it("normalizes configured and Vercel origins", () => {
-    expect(
-      [...allowedOrigins({
+    expect([
+      ...allowedOrigins({
         NODE_ENV: "production",
         APP_ORIGIN: "https://OpenMarket.example:443/",
         VERCEL_URL: "openmarket-git-main.vercel.app",
         VERCEL_BRANCH_URL: "https://openmarket-feature.vercel.app/",
-      })],
-    ).toEqual([
+      }),
+    ]).toEqual([
       "https://openmarket.example",
       "https://openmarket-git-main.vercel.app",
       "https://openmarket-feature.vercel.app",
@@ -29,12 +26,8 @@ describe("request origin protection", () => {
       VERCEL_URL: "openmarket.vercel.app",
     };
 
-    expect(() =>
-      assertAllowedOrigin("https://openmarket.example", env),
-    ).not.toThrow();
-    expect(() =>
-      assertAllowedOrigin("https://openmarket.vercel.app", env),
-    ).not.toThrow();
+    expect(() => assertAllowedOrigin("https://openmarket.example", env)).not.toThrow();
+    expect(() => assertAllowedOrigin("https://openmarket.vercel.app", env)).not.toThrow();
 
     for (const origin of [
       "http://openmarket.example",
@@ -53,11 +46,7 @@ describe("request origin protection", () => {
       NODE_ENV: "development",
       PORT: "4321",
     };
-    for (const origin of [
-      "http://localhost:4321",
-      "http://127.0.0.1:4321",
-      "http://[::1]:4321",
-    ]) {
+    for (const origin of ["http://localhost:4321", "http://127.0.0.1:4321", "http://[::1]:4321"]) {
       expect(() => assertAllowedOrigin(origin, development)).not.toThrow();
     }
 
@@ -66,9 +55,7 @@ describe("request origin protection", () => {
       "https://localhost:4321",
       "http://sub.localhost:4321",
     ]) {
-      expect(() => assertAllowedOrigin(origin, development)).toThrow(
-        ServiceError,
-      );
+      expect(() => assertAllowedOrigin(origin, development)).toThrow(ServiceError);
     }
 
     expect(
@@ -83,11 +70,7 @@ describe("request origin protection", () => {
     expect(() => assertAllowedOrigin(undefined, {})).toThrowError(
       expect.objectContaining({ code: "INVALID_INPUT" }),
     );
-    expect(() =>
-      allowedOrigins({ APP_ORIGIN: "https://example.com/path" }),
-    ).toThrow();
-    expect(() =>
-      allowedOrigins({ VERCEL_URL: "http://example.vercel.app" }),
-    ).toThrow();
+    expect(() => allowedOrigins({ APP_ORIGIN: "https://example.com/path" })).toThrow();
+    expect(() => allowedOrigins({ VERCEL_URL: "http://example.vercel.app" })).toThrow();
   });
 });

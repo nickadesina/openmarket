@@ -31,11 +31,7 @@ function parseOrigin(value: string, label: string): URL {
 }
 
 function isLoopbackHostname(hostname: string): boolean {
-  return (
-    hostname === "localhost" ||
-    hostname === "127.0.0.1" ||
-    hostname === "[::1]"
-  );
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
 }
 
 function addConfiguredOrigin(
@@ -66,10 +62,7 @@ function addVercelOrigin(
   }
 
   const trimmed = value.trim();
-  const url = parseOrigin(
-    trimmed.includes("://") ? trimmed : `https://${trimmed}`,
-    label,
-  );
+  const url = parseOrigin(trimmed.includes("://") ? trimmed : `https://${trimmed}`, label);
   if (url.protocol !== "https:") {
     throw new Error(`${label} must resolve to an HTTPS origin`);
   }
@@ -83,24 +76,9 @@ export function allowedOrigins(env: OriginEnvironment): ReadonlySet<string> {
   const origins = new Set<string>();
   const development = env.NODE_ENV === "development";
 
-  addConfiguredOrigin(
-    origins,
-    env.APP_ORIGIN,
-    "APP_ORIGIN",
-    development,
-  );
-  addVercelOrigin(
-    origins,
-    env.VERCEL_URL,
-    "VERCEL_URL",
-    development,
-  );
-  addVercelOrigin(
-    origins,
-    env.VERCEL_BRANCH_URL,
-    "VERCEL_BRANCH_URL",
-    development,
-  );
+  addConfiguredOrigin(origins, env.APP_ORIGIN, "APP_ORIGIN", development);
+  addVercelOrigin(origins, env.VERCEL_URL, "VERCEL_URL", development);
+  addVercelOrigin(origins, env.VERCEL_BRANCH_URL, "VERCEL_BRANCH_URL", development);
 
   if (development) {
     const port = env.PORT ?? "3000";

@@ -1,25 +1,17 @@
 import { randomUUID } from "node:crypto";
 import type { Kysely } from "kysely";
-
-import type { Database } from "../db/schema.js";
 import { getRuntimeDatabase } from "../db/runtime.js";
+import type { Database } from "../db/schema.js";
 import { logReadRequest } from "../logging/server-log.js";
-import { isServiceError, type ErrorCode } from "./errors.js";
-import {
-  errorCode,
-  jsonError,
-  jsonUnexpectedError,
-  REQUEST_ID_HEADER,
-} from "./response.js";
+import { type ErrorCode, isServiceError } from "./errors.js";
+import { errorCode, jsonError, jsonUnexpectedError, REQUEST_ID_HEADER } from "./response.js";
 
 export interface ReadRouteContext {
   readonly requestId: string;
   readonly db: Kysely<Database>;
 }
 
-export type ReadRouteHandler = (
-  context: ReadRouteContext,
-) => Response | Promise<Response>;
+export type ReadRouteHandler = (context: ReadRouteContext) => Response | Promise<Response>;
 
 export async function withReadRoute(
   request: Request,
@@ -44,9 +36,7 @@ export async function withReadRoute(
     response.headers.set(REQUEST_ID_HEADER, requestId);
   } catch (error: unknown) {
     failureCode = errorCode(error);
-    response = isServiceError(error)
-      ? jsonError(error, requestId)
-      : jsonUnexpectedError(requestId);
+    response = isServiceError(error) ? jsonError(error, requestId) : jsonUnexpectedError(requestId);
   }
 
   logReadRequest({

@@ -1,13 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import type { TradeInput } from "../../src/lib/api/schemas.js";
 import { executeTrade } from "../../src/lib/services/execute-trade.js";
@@ -120,9 +113,7 @@ postgresDescribe(suiteName, () => {
     });
 
     expect(second.items).toHaveLength(1);
-    expect(second.items[0]?.marketSequence).not.toBe(
-      first.items[0]?.marketSequence,
-    );
+    expect(second.items[0]?.marketSequence).not.toBe(first.items[0]?.marketSequence);
     for (const item of [...first.items, ...second.items]) {
       expect(item).not.toHaveProperty("userId");
       expect(item).not.toHaveProperty("username");

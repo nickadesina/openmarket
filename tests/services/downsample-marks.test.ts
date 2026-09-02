@@ -46,15 +46,7 @@ describe("downsampleMarks", () => {
   });
 
   it("rejects unordered tied observations and impossible bounds", () => {
-    expect(() =>
-      downsampleMarks(
-        [
-          point(0, 2),
-          point(0, 1),
-        ],
-        2,
-      ),
-    ).toThrow(/ordered/);
+    expect(() => downsampleMarks([point(0, 2), point(0, 1)], 2)).toThrow(/ordered/);
     expect(() => downsampleMarks([], 1)).toThrow(/at least 2/);
   });
 });

@@ -7,14 +7,8 @@ function assertBucketCount(bucketCount: number): void {
 }
 
 function assertStrikeIndex(bucketCount: number, strikeIndex: number): void {
-  if (
-    !Number.isInteger(strikeIndex) ||
-    strikeIndex < 0 ||
-    strikeIndex >= bucketCount - 1
-  ) {
-    throw new RangeError(
-      `strikeIndex must be an integer from 0 to ${bucketCount - 2}`,
-    );
+  if (!Number.isInteger(strikeIndex) || strikeIndex < 0 || strikeIndex >= bucketCount - 1) {
+    throw new RangeError(`strikeIndex must be an integer from 0 to ${bucketCount - 2}`);
   }
 }
 
@@ -41,9 +35,7 @@ export function contractMask(
   assertSide(side);
 
   return Array.from({ length: bucketCount }, (_, bucketIndex) =>
-    side === "yes"
-      ? bucketIndex > strikeIndex
-      : bucketIndex <= strikeIndex,
+    side === "yes" ? bucketIndex > strikeIndex : bucketIndex <= strikeIndex,
   );
 }
 
@@ -66,10 +58,7 @@ export function contractDelta(
 }
 
 /** Returns the greatest quantity removable from every outcome in a mask. */
-export function sellableQuantity(
-  holdings: readonly number[],
-  mask: readonly boolean[],
-): number {
+export function sellableQuantity(holdings: readonly number[], mask: readonly boolean[]): number {
   if (!Array.isArray(holdings) || !Array.isArray(mask)) {
     throw new RangeError("holdings and mask must be arrays");
   }

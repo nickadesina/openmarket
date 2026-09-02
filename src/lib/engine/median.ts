@@ -19,6 +19,7 @@ export function impliedValuationMedian(
  * the containing bucket. The open-ended end buckets use virtual edges half an
  * octave beyond the grid, matching the median convention.
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: input validation dominates; the interpolation itself is short.
 export function impliedValuationQuantile(
   probabilities: readonly number[],
   boundaries: readonly number[],
@@ -79,8 +80,7 @@ export function impliedValuationQuantile(
 
     const cumulativeAfter = cumulativeBefore + bucketProbability;
     if (bucketProbability > 0 && cumulativeAfter >= quantile) {
-      const lowerEdge =
-        bucketIndex === 0 ? virtualLowerEdge : boundaries[bucketIndex - 1];
+      const lowerEdge = bucketIndex === 0 ? virtualLowerEdge : boundaries[bucketIndex - 1];
       const upperEdge =
         bucketIndex === boundaries.length ? virtualUpperEdge : boundaries[bucketIndex];
       if (lowerEdge === undefined || upperEdge === undefined) {

@@ -1,10 +1,11 @@
-import { EPS, type DecomposedPosition } from "./types.js";
+import { type DecomposedPosition, EPS } from "./types.js";
 
 interface Candidate extends DecomposedPosition {
   readonly width: number;
   readonly score: number;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: exhaustive validation of the holdings vector; keep validation and decomposition together.
 export function decomposeHoldings(holdings: readonly number[]): {
   positions: DecomposedPosition[];
   residual: number[];
@@ -32,19 +33,13 @@ export function decomposeHoldings(holdings: readonly number[]): {
   while (true) {
     prefixMinimum[0] = residual[0]!;
     for (let bucket = 1; bucket < residual.length; bucket += 1) {
-      prefixMinimum[bucket] = Math.min(
-        prefixMinimum[bucket - 1]!,
-        residual[bucket]!,
-      );
+      prefixMinimum[bucket] = Math.min(prefixMinimum[bucket - 1]!, residual[bucket]!);
     }
 
     const lastBucket = residual.length - 1;
     suffixMinimum[lastBucket] = residual[lastBucket]!;
     for (let bucket = lastBucket - 1; bucket >= 0; bucket -= 1) {
-      suffixMinimum[bucket] = Math.min(
-        suffixMinimum[bucket + 1]!,
-        residual[bucket]!,
-      );
+      suffixMinimum[bucket] = Math.min(suffixMinimum[bucket + 1]!, residual[bucket]!);
     }
 
     let best: Candidate | undefined;
@@ -91,8 +86,7 @@ export function decomposeHoldings(holdings: readonly number[]): {
     });
 
     const firstBucket = best.side === "yes" ? best.strikeIndex + 1 : 0;
-    const finalBucket =
-      best.side === "yes" ? lastBucket : best.strikeIndex;
+    const finalBucket = best.side === "yes" ? lastBucket : best.strikeIndex;
     for (let bucket = firstBucket; bucket <= finalBucket; bucket += 1) {
       const updated = residual[bucket]! - best.quantity;
       residual[bucket] = updated > EPS ? updated : 0;
@@ -102,10 +96,7 @@ export function decomposeHoldings(holdings: readonly number[]): {
   return { positions, residual };
 }
 
-function isBetterCandidate(
-  candidate: Candidate,
-  current: Candidate | undefined,
-): boolean {
+function isBetterCandidate(candidate: Candidate, current: Candidate | undefined): boolean {
   if (current === undefined) {
     return true;
   }

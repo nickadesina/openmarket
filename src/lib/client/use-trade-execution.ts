@@ -13,7 +13,11 @@ export interface MovedPrice {
 export type TradeOutcome =
   | { readonly status: "executed"; readonly result: ExecutionResult }
   /** The server deterministically rejected the trade; it did not execute and inputs may be changed. */
-  | { readonly status: "rejected"; readonly error: ApiClientError; readonly movedPrice: MovedPrice | null }
+  | {
+      readonly status: "rejected";
+      readonly error: ApiClientError;
+      readonly movedPrice: MovedPrice | null;
+    }
   /** Execution state is unknown (network failure, 5xx, or unreadable response); the idempotency key is kept so a retry cannot duplicate the trade. */
   | { readonly status: "unknown" };
 
@@ -22,10 +26,12 @@ export type TradeOutcome =
  * Anything else leaves the execution state unknown and must be retried with the same key.
  */
 function isOutcomeUnknown(error: unknown): boolean {
-  return !(error instanceof ApiClientError)
-    || error.status === 0
-    || error.status >= 500
-    || error.code === "INVALID_RESPONSE";
+  return (
+    !(error instanceof ApiClientError) ||
+    error.status === 0 ||
+    error.status >= 500 ||
+    error.code === "INVALID_RESPONSE"
+  );
 }
 
 function movedPriceDetails(error: ApiClientError): MovedPrice | null {

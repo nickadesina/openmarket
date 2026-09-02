@@ -41,6 +41,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Lint, style audit, layer audit
+        run: npm run lint && npm run audit:styles && npm run audit:deps
+
       - name: Run unit and property tests
         run: npm run test:unit
 

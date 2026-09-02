@@ -22,10 +22,7 @@ describe("impliedValuationMedian", () => {
     expect(median).toBeGreaterThanOrEqual(lowerEdge);
     expect(median).toBeLessThanOrEqual(boundary);
     expect(median).toBeCloseTo(
-      Math.exp(
-        Math.log(lowerEdge) +
-          (0.5 / 0.75) * (Math.log(boundary) - Math.log(lowerEdge)),
-      ),
+      Math.exp(Math.log(lowerEdge) + (0.5 / 0.75) * (Math.log(boundary) - Math.log(lowerEdge))),
       12,
     );
   });
@@ -57,9 +54,7 @@ describe("impliedValuationMedian", () => {
     expect(() => impliedValuationMedian([0.4, 0.4], [100])).toThrow(RangeError);
     expect(() => impliedValuationMedian([0.5, Number.NaN], [100])).toThrow(RangeError);
     expect(() => impliedValuationMedian([-0.1, 1.1], [100])).toThrow(RangeError);
-    expect(() => impliedValuationMedian([0.2, 0.3, 0.5], [100, 100])).toThrow(
-      RangeError,
-    );
+    expect(() => impliedValuationMedian([0.2, 0.3, 0.5], [100, 100])).toThrow(RangeError);
     expect(() => impliedValuationMedian([0.5, 0.5], [Number.POSITIVE_INFINITY])).toThrow(
       RangeError,
     );
@@ -83,7 +78,9 @@ describe("impliedValuationQuantile", () => {
 
   it("interpolates logarithmically into the open upper bucket", () => {
     const upperEdge = 200 * Math.sqrt(2);
-    const expected = Math.exp(Math.log(200) + ((0.9 - 0.75) / 0.25) * (Math.log(upperEdge) - Math.log(200)));
+    const expected = Math.exp(
+      Math.log(200) + ((0.9 - 0.75) / 0.25) * (Math.log(upperEdge) - Math.log(200)),
+    );
     expect(impliedValuationQuantile(probabilities, boundaries, 0.9)).toBeCloseTo(expected, 12);
   });
 

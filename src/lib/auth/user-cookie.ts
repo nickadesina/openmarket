@@ -26,9 +26,7 @@ export function requireCookieSecret(secret: string, name: string): Buffer {
     !BASE64URL_PATTERN.test(secret) ||
     SECRET_PLACEHOLDER_PATTERN.test(secret)
   ) {
-    throw new Error(
-      `${name} must be canonical base64url encoding at least 32 random bytes.`,
-    );
+    throw new Error(`${name} must be canonical base64url encoding at least 32 random bytes.`);
   }
 
   const secretBytes = Buffer.from(secret, "base64url");
@@ -38,9 +36,7 @@ export function requireCookieSecret(secret: string, name: string): Buffer {
     secretBytes.every((byte) => byte === secretBytes[0]) ||
     SECRET_PLACEHOLDER_PATTERN.test(secretBytes.toString("utf8"))
   ) {
-    throw new Error(
-      `${name} must be canonical base64url encoding at least 32 random bytes.`,
-    );
+    throw new Error(`${name} must be canonical base64url encoding at least 32 random bytes.`);
   }
 
   return secretBytes;
@@ -52,23 +48,15 @@ function requireTimestamp(timestamp: number): void {
   }
 }
 
-export function getUserCookieSecret(
-  environment: SecretEnvironment = process.env,
-): string {
+export function getUserCookieSecret(environment: SecretEnvironment = process.env): string {
   const secret = environment.USER_COOKIE_SECRET;
   requireCookieSecret(secret ?? "", "USER_COOKIE_SECRET");
   return secret as string;
 }
 
-export function signCookiePayload(
-  payload: object,
-  secret: string,
-  domain: string,
-): string {
+export function signCookiePayload(payload: object, secret: string, domain: string): string {
   const secretBytes = requireCookieSecret(secret, "Cookie secret");
-  const encodedPayload = Buffer.from(JSON.stringify(payload), "utf8").toString(
-    "base64url",
-  );
+  const encodedPayload = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
   const signature = createHmac("sha256", secretBytes)
     .update(domain)
     .update(".")
@@ -160,18 +148,10 @@ function normalizeUsernameSafely(username: string): string | null {
   }
 }
 
-export function signUserCookie(
-  username: string,
-  secret: string,
-  issuedAt = Date.now(),
-): string {
+export function signUserCookie(username: string, secret: string, issuedAt = Date.now()): string {
   const normalizedUsername = normalizeUsername(username);
   requireTimestamp(issuedAt);
-  return signCookiePayload(
-    { username: normalizedUsername, issuedAt },
-    secret,
-    USER_COOKIE_DOMAIN,
-  );
+  return signCookiePayload({ username: normalizedUsername, issuedAt }, secret, USER_COOKIE_DOMAIN);
 }
 
 export function verifyUserCookie(

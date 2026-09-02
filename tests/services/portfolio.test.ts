@@ -1,12 +1,9 @@
 import type { Kysely } from "kysely";
-import { describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { Database } from "../../src/lib/db/schema.js";
-import {
-  VALUATION_BOUNDARIES_USD,
-  VALUATION_BUCKET_COUNT,
-} from "../../src/lib/engine/buckets.js";
+import { VALUATION_BOUNDARIES_USD, VALUATION_BUCKET_COUNT } from "../../src/lib/engine/buckets.js";
 import {
   calculatePortfolioExposure,
   getPortfolio,
@@ -15,14 +12,7 @@ import {
 
 function queryReturning(rows: readonly unknown[]): Record<string, Mock> {
   const query: Record<string, Mock> = {};
-  for (const method of [
-    "select",
-    "where",
-    "innerJoin",
-    "orderBy",
-    "offset",
-    "limit",
-  ]) {
+  for (const method of ["select", "where", "innerJoin", "orderBy", "offset", "limit"]) {
     query[method] = vi.fn(() => query);
   }
   query.execute = vi.fn(async () => rows);
@@ -39,9 +29,8 @@ function databaseWithReadTransaction(selectFrom: Mock): {
 } {
   const transactionDb = { selectFrom };
   const execute = vi.fn(
-    async (
-      callback: (transaction: typeof transactionDb) => Promise<unknown>,
-    ): Promise<unknown> => callback(transactionDb),
+    async (callback: (transaction: typeof transactionDb) => Promise<unknown>): Promise<unknown> =>
+      callback(transactionDb),
   );
   const setAccessMode = vi.fn(() => ({ execute }));
   const setIsolationLevel = vi.fn(() => ({ setAccessMode }));
@@ -171,9 +160,7 @@ describe("getPortfolio", () => {
       { id: "user-1", username: "Alice", cash_balance_cents: "12345" },
     ]);
     const q = Array.from({ length: VALUATION_BUCKET_COUNT }, () => 0);
-    const h = Array.from({ length: VALUATION_BUCKET_COUNT }, (_, bucket) =>
-      bucket > 20 ? 2 : 0,
-    );
+    const h = Array.from({ length: VALUATION_BUCKET_COUNT }, (_, bucket) => (bucket > 20 ? 2 : 0));
     const holdingsQuery = queryReturning([
       {
         market_id: "market-1",
@@ -262,13 +249,8 @@ describe("getPortfolio", () => {
     expect(portfolio.markets[0]?.residualExposure.buckets).toEqual(
       Array.from({ length: VALUATION_BUCKET_COUNT }, () => 0),
     );
-    expect(portfolio.tradeHistory.items.map(({ id }) => id)).toEqual([
-      "trade-3",
-      "trade-2",
-    ]);
-    expect(portfolio.tradeHistory.items[0]?.createdAt).toBe(
-      "2025-01-03T00:00:00.000Z",
-    );
+    expect(portfolio.tradeHistory.items.map(({ id }) => id)).toEqual(["trade-3", "trade-2"]);
+    expect(portfolio.tradeHistory.items[0]?.createdAt).toBe("2025-01-03T00:00:00.000Z");
     expect(portfolio.tradeHistory.nextOffset).toBe(6);
     expect(historyQuery.offset).toHaveBeenCalledWith(4);
     expect(historyQuery.limit).toHaveBeenCalledWith(3);

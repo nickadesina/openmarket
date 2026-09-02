@@ -7,22 +7,15 @@ const GRID_ANCHOR_USD = 1_000_000_000_000;
 export const VALUATION_BOUNDARIES_USD: readonly number[] = Object.freeze(
   Array.from(
     { length: LAST_BOUNDARY_EXPONENT - FIRST_BOUNDARY_EXPONENT + 1 },
-    (_, index) =>
-      GRID_ANCHOR_USD * 2 ** ((FIRST_BOUNDARY_EXPONENT + index) / 2),
+    (_, index) => GRID_ANCHOR_USD * 2 ** ((FIRST_BOUNDARY_EXPONENT + index) / 2),
   ),
 );
 
 export const VALUATION_BUCKET_COUNT = VALUATION_BOUNDARIES_USD.length + 1;
 
 function assertBucketIndex(bucketIndex: number): void {
-  if (
-    !Number.isInteger(bucketIndex) ||
-    bucketIndex < 0 ||
-    bucketIndex >= VALUATION_BUCKET_COUNT
-  ) {
-    throw new RangeError(
-      `bucketIndex must be an integer from 0 to ${VALUATION_BUCKET_COUNT - 1}`,
-    );
+  if (!Number.isInteger(bucketIndex) || bucketIndex < 0 || bucketIndex >= VALUATION_BUCKET_COUNT) {
+    throw new RangeError(`bucketIndex must be an integer from 0 to ${VALUATION_BUCKET_COUNT - 1}`);
   }
 }
 

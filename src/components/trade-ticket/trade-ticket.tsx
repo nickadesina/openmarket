@@ -12,7 +12,6 @@ import {
   strikeLabel,
 } from "../../lib/client/format.js";
 import { useTradeExecution } from "../../lib/client/use-trade-execution.js";
-import styles from "./trade-ticket.module.css";
 import type {
   BuyInputMode,
   ExecutionResult,
@@ -21,6 +20,7 @@ import type {
   TradeAction,
   TradeSelection,
 } from "../market-workspace/types.js";
+import styles from "./trade-ticket.module.css";
 
 interface TradeTicketProps {
   readonly market: MarketDetail;
@@ -39,7 +39,8 @@ type TicketPhase = "idle" | "quoting" | "executing";
 
 const RETRYABLE_ERROR: TicketError = {
   code: "RETRYABLE",
-  message: "Execution status is unknown. Retry with the same request key to avoid a duplicate trade.",
+  message:
+    "Execution status is unknown. Retry with the same request key to avoid a duplicate trade.",
 };
 
 const ERROR_TITLES: Readonly<Record<string, string>> = {
@@ -54,7 +55,14 @@ function centsToUsd(cents: string): string {
   return Number.isFinite(value) ? (value / 100).toFixed(2) : "0.00";
 }
 
-export function TradeTicket({ market, selection, onSelectionChange, onAuthoritativeRefresh, onClose }: TradeTicketProps) {
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: the ticket state machine lives in one component; extract a useTradeTicket hook before growing.
+export function TradeTicket({
+  market,
+  selection,
+  onSelectionChange,
+  onAuthoritativeRefresh,
+  onClose,
+}: TradeTicketProps) {
   const [action, setAction] = useState<TradeAction>("buy");
   const [buyMode, setBuyMode] = useState<BuyInputMode>("spend");
   const [amount, setAmount] = useState("100.00");
@@ -64,12 +72,17 @@ export function TradeTicket({ market, selection, onSelectionChange, onAuthoritat
   const [result, setResult] = useState<ExecutionResult | null>(null);
   const [needsUsername, setNeedsUsername] = useState(false);
   const [username, setUsername] = useState("");
-  const [movedPrice, setMovedPrice] = useState<{ readonly cashAmountCents: string; readonly shares: number } | null>(null);
+  const [movedPrice, setMovedPrice] = useState<{
+    readonly cashAmountCents: string;
+    readonly shares: number;
+  } | null>(null);
   const trade = useTradeExecution();
 
   const contract = market.contracts.find((item) => item.strikeIndex === selection.strikeIndex)!;
   const isBinary = market.metric.kind === "yes_probability";
-  const strikePosition = market.contracts.findIndex((item) => item.strikeIndex === selection.strikeIndex);
+  const strikePosition = market.contracts.findIndex(
+    (item) => item.strikeIndex === selection.strikeIndex,
+  );
   const previousStrike = market.contracts[strikePosition - 1];
   const nextStrike = market.contracts[strikePosition + 1];
   const amountLabel = action === "buy" && buyMode === "spend" ? "Spend" : "Quantity";
@@ -84,9 +97,10 @@ export function TradeTicket({ market, selection, onSelectionChange, onAuthoritat
     side: selection.side,
     strike_index: selection.strikeIndex,
   } as const;
-  const requestFields = action === "buy" && buyMode === "spend"
-    ? { ...requestBase, spend_usd: amount }
-    : { ...requestBase, quantity: parsedAmount };
+  const requestFields =
+    action === "buy" && buyMode === "spend"
+      ? { ...requestBase, spend_usd: amount }
+      : { ...requestBase, quantity: parsedAmount };
 
   // Any change to the request invalidates the quote and everything derived from it.
   function resetTradeState() {
@@ -102,6 +116,7 @@ export function TradeTicket({ market, selection, onSelectionChange, onAuthoritat
   // quote is only valid for the contract it priced.
   const selectedSide = selection.side;
   const selectedStrikeIndex = selection.strikeIndex;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset only when the priced contract changes; trade.reset is stable.
   useEffect(() => {
     setQuote(null);
     setResult(null);
@@ -109,7 +124,6 @@ export function TradeTicket({ market, selection, onSelectionChange, onAuthoritat
     setMovedPrice(null);
     trade.reset();
     // trade.reset is stable for the hook's lifetime.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSide, selectedStrikeIndex]);
 
   function changeSide(side: TradeSelection["side"]) {
@@ -117,7 +131,8 @@ export function TradeTicket({ market, selection, onSelectionChange, onAuthoritat
   }
 
   function changeStrike(strikeIndex: number) {
-    if (strikeIndex !== selection.strikeIndex) onSelectionChange({ strikeIndex, side: selection.side });
+    if (strikeIndex !== selection.strikeIndex)
+      onSelectionChange({ strikeIndex, side: selection.side });
   }
 
   function changeAction(next: TradeAction) {
@@ -165,25 +180,29 @@ export function TradeTicket({ market, selection, onSelectionChange, onAuthoritat
     }
   }
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: guard construction and outcome branching; split when the sell guard changes.
   async function executeTrade(confirmedCashAmountCents?: string) {
     if (quote === null) return;
     setPhase("executing");
     setError(null);
     setResult(null);
 
-    const guard = action === "buy"
-      ? {
-          max_cost_usd: confirmedCashAmountCents !== undefined
-            ? centsToUsd(confirmedCashAmountCents)
-            : buyMode === "spend"
-              ? amount
-              : (Math.ceil(quote.engine_cost_usd * 1.01 * 100) / 100).toFixed(2),
-        }
-      : {
-          min_proceeds_usd: confirmedCashAmountCents !== undefined
-            ? centsToUsd(confirmedCashAmountCents)
-            : (Math.floor(Number(quote.cash_amount_cents) * 0.99) / 100).toFixed(2),
-        };
+    const guard =
+      action === "buy"
+        ? {
+            max_cost_usd:
+              confirmedCashAmountCents !== undefined
+                ? centsToUsd(confirmedCashAmountCents)
+                : buyMode === "spend"
+                  ? amount
+                  : (Math.ceil(quote.engine_cost_usd * 1.01 * 100) / 100).toFixed(2),
+          }
+        : {
+            min_proceeds_usd:
+              confirmedCashAmountCents !== undefined
+                ? centsToUsd(confirmedCashAmountCents)
+                : (Math.floor(Number(quote.cash_amount_cents) * 0.99) / 100).toFixed(2),
+          };
 
     const outcome = await trade.execute({ ...requestFields, ...guard });
     if (outcome.status === "executed") {
@@ -193,7 +212,11 @@ export function TradeTicket({ market, selection, onSelectionChange, onAuthoritat
       try {
         await onAuthoritativeRefresh();
       } catch {
-        setError({ code: "REFRESH_FAILED", message: "Trade completed, but live data could not refresh. Automatic polling will try again." });
+        setError({
+          code: "REFRESH_FAILED",
+          message:
+            "Trade completed, but live data could not refresh. Automatic polling will try again.",
+        });
       }
     } else if (outcome.status === "unknown") {
       setError(RETRYABLE_ERROR);
@@ -227,9 +250,11 @@ export function TradeTicket({ market, selection, onSelectionChange, onAuthoritat
       if (quote === null) await requestQuote();
       else await executeTrade();
     } catch (caught) {
-      setError(caught instanceof ApiClientError
-        ? { code: caught.code, message: caught.message }
-        : { code: "INTERNAL_ERROR", message: "The username could not be saved. Try again." });
+      setError(
+        caught instanceof ApiClientError
+          ? { code: caught.code, message: caught.message }
+          : { code: "INTERNAL_ERROR", message: "The username could not be saved. Try again." },
+      );
       setPhase("idle");
     }
   }
@@ -240,23 +265,42 @@ export function TradeTicket({ market, selection, onSelectionChange, onAuthoritat
     <section className={styles.ticket} aria-labelledby="trade-ticket-title">
       <header className={styles.header}>
         <div>
-          <h2 id="trade-ticket-title" className={styles.tab}>Trade ticket</h2>
-          <p>{selection.side.toUpperCase()} · {strikeLabel(market, selection.strikeIndex)}</p>
+          <h2 id="trade-ticket-title" className={styles.tab}>
+            Trade ticket
+          </h2>
+          <p>
+            {selection.side.toUpperCase()} · {strikeLabel(market, selection.strikeIndex)}
+          </p>
         </div>
-        {onClose !== undefined ? <button type="button" className={styles.close} onClick={onClose} aria-label="Close trade ticket">Close</button> : null}
+        {onClose !== undefined ? (
+          <button
+            type="button"
+            className={styles.close}
+            onClick={onClose}
+            aria-label="Close trade ticket"
+          >
+            Close
+          </button>
+        ) : null}
       </header>
 
       <div className={styles.body}>
         {/* 稟議 strip: one box per stage, each sealed as the order clears it. */}
         <ol className={styles.approvals} aria-label="Order progress">
-          {([
-            ["Quoted", quote !== null || result !== null || phase === "executing"],
-            ["Confirmed", phase === "executing" || result !== null],
-            ["Filled", result !== null],
-          ] as const).map(([stage, done]) => (
+          {(
+            [
+              ["Quoted", quote !== null || result !== null || phase === "executing"],
+              ["Confirmed", phase === "executing" || result !== null],
+              ["Filled", result !== null],
+            ] as const
+          ).map(([stage, done]) => (
             <li key={stage} className={styles.approval} aria-current={done ? "step" : undefined}>
               <span className={styles.approvalBox}>
-                {done ? <span className={styles.approvalSeal}>{stage === "Filled" ? "Filled" : "OK"}</span> : null}
+                {done ? (
+                  <span className={styles.approvalSeal}>
+                    {stage === "Filled" ? "Filled" : "OK"}
+                  </span>
+                ) : null}
               </span>
               <span className={styles.approvalLabel}>{stage}</span>
             </li>
@@ -284,12 +328,16 @@ export function TradeTicket({ market, selection, onSelectionChange, onAuthoritat
 
         {!isBinary ? (
           <div className={styles.strikeField}>
-            <span className={styles.strikeLabel} id="ticket-strike-label">Valuation above</span>
+            <span className={styles.strikeLabel} id="ticket-strike-label">
+              Valuation above
+            </span>
             <div className={styles.strikeControl}>
               <button
                 type="button"
                 className={styles.strikeStep}
-                onClick={() => previousStrike !== undefined && changeStrike(previousStrike.strikeIndex)}
+                onClick={() =>
+                  previousStrike !== undefined && changeStrike(previousStrike.strikeIndex)
+                }
                 disabled={busy || previousStrike === undefined}
                 aria-label="Lower strike"
               >
@@ -304,7 +352,8 @@ export function TradeTicket({ market, selection, onSelectionChange, onAuthoritat
               >
                 {market.contracts.map((item) => (
                   <option key={item.strikeIndex} value={item.strikeIndex}>
-                    {strikeLabel(market, item.strikeIndex)} · YES {formatProbability(item.yesProbability)}
+                    {strikeLabel(market, item.strikeIndex)} · YES{" "}
+                    {formatProbability(item.yesProbability)}
                   </option>
                 ))}
               </select>
@@ -321,9 +370,15 @@ export function TradeTicket({ market, selection, onSelectionChange, onAuthoritat
           </div>
         ) : null}
 
-        <div className={styles.segmented} aria-label="Trade action">
+        <div className={styles.segmented} role="group" aria-label="Trade action">
           {(["buy", "sell"] as const).map((item) => (
-            <button key={item} type="button" aria-pressed={action === item} onClick={() => changeAction(item)} disabled={busy}>
+            <button
+              key={item}
+              type="button"
+              aria-pressed={action === item}
+              onClick={() => changeAction(item)}
+              disabled={busy}
+            >
               {item === "buy" ? "Buy" : "Sell"}
             </button>
           ))}
@@ -332,7 +387,13 @@ export function TradeTicket({ market, selection, onSelectionChange, onAuthoritat
         {action === "buy" ? (
           <div className={styles.mode}>
             {(["spend", "quantity"] as const).map((mode) => (
-              <button key={mode} type="button" aria-pressed={buyMode === mode} onClick={() => changeBuyMode(mode)} disabled={busy}>
+              <button
+                key={mode}
+                type="button"
+                aria-pressed={buyMode === mode}
+                onClick={() => changeBuyMode(mode)}
+                disabled={busy}
+              >
                 {mode === "spend" ? "By spend" : "By quantity"}
               </button>
             ))}
@@ -354,9 +415,16 @@ export function TradeTicket({ market, selection, onSelectionChange, onAuthoritat
             />
           </span>
         </label>
-        <div className={styles.quickAmounts} role="group" aria-label={`Quick ${amountLabel.toLowerCase()}`}>
+        <div
+          className={styles.quickAmounts}
+          role="group"
+          aria-label={`Quick ${amountLabel.toLowerCase()}`}
+        >
           {quickAmounts.map((value) => {
-            const display = action === "buy" && buyMode === "spend" ? `$${Number(value).toLocaleString("en-US")}` : Number(value).toLocaleString("en-US");
+            const display =
+              action === "buy" && buyMode === "spend"
+                ? `$${Number(value).toLocaleString("en-US")}`
+                : Number(value).toLocaleString("en-US");
             const normalized = action === "buy" && buyMode === "spend" ? `${value}.00` : value;
             return (
               <button
@@ -375,16 +443,39 @@ export function TradeTicket({ market, selection, onSelectionChange, onAuthoritat
         {quote !== null ? (
           <div className={styles.quote} aria-live="polite">
             <dl className={styles.quoteTable}>
-              <div><dt>Quantity</dt><dd>{formatQuantity(quote.quantity)}</dd></div>
-              <div><dt>{action === "buy" ? "Cost" : "Proceeds"}</dt><dd>{formatCents(quote.cash_amount_cents)}</dd></div>
-              <div><dt>Average price</dt><dd>{formatProbability(quote.average_price)}</dd></div>
-              <div><dt>Price after</dt><dd>{formatProbability(quote.price_after)}</dd></div>
-              <div><dt>Metric after</dt><dd>{formatMetric(quote.current_metric_after, market.metric.kind)}</dd></div>
-              {action === "sell" ? <div><dt>Sellable</dt><dd>{formatQuantity(quote.sellable_quantity)}</dd></div> : null}
+              <div>
+                <dt>Quantity</dt>
+                <dd>{formatQuantity(quote.quantity)}</dd>
+              </div>
+              <div>
+                <dt>{action === "buy" ? "Cost" : "Proceeds"}</dt>
+                <dd>{formatCents(quote.cash_amount_cents)}</dd>
+              </div>
+              <div>
+                <dt>Average price</dt>
+                <dd>{formatProbability(quote.average_price)}</dd>
+              </div>
+              <div>
+                <dt>Price after</dt>
+                <dd>{formatProbability(quote.price_after)}</dd>
+              </div>
+              <div>
+                <dt>Metric after</dt>
+                <dd>{formatMetric(quote.current_metric_after, market.metric.kind)}</dd>
+              </div>
+              {action === "sell" ? (
+                <div>
+                  <dt>Sellable</dt>
+                  <dd>{formatQuantity(quote.sellable_quantity)}</dd>
+                </div>
+              ) : null}
               {quote.expected_redemption_quantity > 0 ? (
                 <div>
                   <dt>Immediate redemption</dt>
-                  <dd>{formatQuantity(quote.expected_redemption_quantity)} shares · {formatCents(quote.expected_redemption_cents)}</dd>
+                  <dd>
+                    {formatQuantity(quote.expected_redemption_quantity)} shares ·{" "}
+                    {formatCents(quote.expected_redemption_cents)}
+                  </dd>
                 </div>
               ) : null}
             </dl>
@@ -402,11 +493,19 @@ export function TradeTicket({ market, selection, onSelectionChange, onAuthoritat
             <p>{error.message}</p>
             {error.code === "PRICE_MOVED" && movedPrice !== null ? (
               <>
-                <p>Updated quantity: {formatQuantity(movedPrice.shares)}. Updated {action === "buy" ? "cost" : "proceeds"}: {formatCents(movedPrice.cashAmountCents)}.</p>
-                <button type="button" onClick={() => void executeTrade(movedPrice.cashAmountCents)}>Confirm new price</button>
+                <p>
+                  Updated quantity: {formatQuantity(movedPrice.shares)}. Updated{" "}
+                  {action === "buy" ? "cost" : "proceeds"}:{" "}
+                  {formatCents(movedPrice.cashAmountCents)}.
+                </p>
+                <button type="button" onClick={() => void executeTrade(movedPrice.cashAmountCents)}>
+                  Confirm new price
+                </button>
               </>
             ) : error.code === "PRICE_MOVED" ? (
-              <button type="button" onClick={() => void requestQuote()}>Refresh quote</button>
+              <button type="button" onClick={() => void requestQuote()}>
+                Refresh quote
+              </button>
             ) : null}
           </div>
         ) : null}
@@ -416,35 +515,78 @@ export function TradeTicket({ market, selection, onSelectionChange, onAuthoritat
             <label className={styles.field}>
               <span>Username</span>
               <span className={styles.inputFrame}>
-                <input autoFocus autoComplete="username" value={username} onChange={(event) => setUsername(event.target.value)} placeholder="market_reader" />
+                <input
+                  autoFocus
+                  autoComplete="username"
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                  placeholder="market_reader"
+                />
               </span>
             </label>
-            <p>{quote === null ? "A username is required to quote a sale." : "Execution requires a username."} This resumes the same paper-money account on this browser.</p>
-            <button type="button" className={styles.primary} onClick={() => void createUsername()} disabled={phase === "executing"}>{quote === null ? "Save username and preview" : "Save username and trade"}</button>
+            <p>
+              {quote === null
+                ? "A username is required to quote a sale."
+                : "Execution requires a username."}{" "}
+              This resumes the same paper-money account on this browser.
+            </p>
+            <button
+              type="button"
+              className={styles.primary}
+              onClick={() => void createUsername()}
+              disabled={phase === "executing"}
+            >
+              {quote === null ? "Save username and preview" : "Save username and trade"}
+            </button>
           </div>
         ) : null}
 
         {result !== null ? (
           <div className={styles.success} role="status">
             <strong>Trade completed</strong>
-            <p>{formatQuantity(result.shares)} shares at {formatProbability(result.average_price)} average. Market data has been refreshed.</p>
+            <p>
+              {formatQuantity(result.shares)} shares at {formatProbability(result.average_price)}{" "}
+              average. Market data has been refreshed.
+            </p>
           </div>
         ) : null}
 
         {!needsUsername ? (
           quote === null ? (
-            <button type="button" className={styles.primary} onClick={() => void requestQuote()} disabled={!validAmount || busy}>
-              {phase === "quoting" ? "Preparing quote…" : action === "buy" ? "Preview buy" : "Preview sell"}
+            <button
+              type="button"
+              className={styles.primary}
+              onClick={() => void requestQuote()}
+              disabled={!validAmount || busy}
+            >
+              {phase === "quoting"
+                ? "Preparing quote…"
+                : action === "buy"
+                  ? "Preview buy"
+                  : "Preview sell"}
             </button>
           ) : (
-            <button type="button" className={styles.primary} onClick={() => void executeTrade()} disabled={phase === "executing" || movedPrice !== null}>
-              {phase === "executing" ? "Executing…" : movedPrice !== null ? "Confirm the moved price above" : action === "buy" ? "Confirm buy" : "Confirm sell"}
+            <button
+              type="button"
+              className={styles.primary}
+              onClick={() => void executeTrade()}
+              disabled={phase === "executing" || movedPrice !== null}
+            >
+              {phase === "executing"
+                ? "Executing…"
+                : movedPrice !== null
+                  ? "Confirm the moved price above"
+                  : action === "buy"
+                    ? "Confirm buy"
+                    : "Confirm sell"}
             </button>
           )
         ) : null}
 
         {trade.canRetry && phase !== "executing" && error?.code === "RETRYABLE" ? (
-          <button type="button" className={styles.secondary} onClick={() => void executeTrade()}>Retry same trade</button>
+          <button type="button" className={styles.secondary} onClick={() => void executeTrade()}>
+            Retry same trade
+          </button>
         ) : null}
       </div>
     </section>

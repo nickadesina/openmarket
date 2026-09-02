@@ -154,17 +154,12 @@ export function calculatePortfolioExposure(
     }
     const normalizedQuantity = quantity > EPS ? quantity : 0;
     normalizedHoldings[bucket] = normalizedQuantity;
-    holdingsMarkedValueUsd +=
-      normalizedQuantity * currentProbabilities[bucket]!;
+    holdingsMarkedValueUsd += normalizedQuantity * currentProbabilities[bucket]!;
   }
 
   const decomposition = decomposeHoldings(normalizedHoldings);
   const positions = decomposition.positions.map((position) => {
-    const mask = contractMask(
-      holdings.length,
-      position.strikeIndex,
-      position.side,
-    );
+    const mask = contractMask(holdings.length, position.strikeIndex, position.side);
     let markPriceUsd = 0;
     for (let bucket = 0; bucket < mask.length; bucket += 1) {
       if (mask[bucket]) {
@@ -182,8 +177,7 @@ export function calculatePortfolioExposure(
 
   let residualMarkedValueUsd = 0;
   for (let bucket = 0; bucket < decomposition.residual.length; bucket += 1) {
-    residualMarkedValueUsd +=
-      decomposition.residual[bucket]! * currentProbabilities[bucket]!;
+    residualMarkedValueUsd += decomposition.residual[bucket]! * currentProbabilities[bucket]!;
   }
 
   return {
@@ -289,13 +283,7 @@ export async function getPortfolio(
       const groupedCostBasis = groupCostBasis(costBasisTrades);
       let holdingsMarkedValueUsd = 0;
       const markets = holdingRows.map((row): PortfolioMarket => {
-        assertMarketShape(
-          row.metric_kind,
-          row.bucket_grid_version,
-          row.n_buckets,
-          row.h,
-          row.q,
-        );
+        assertMarketShape(row.metric_kind, row.bucket_grid_version, row.n_buckets, row.h, row.q);
         const exposure = calculatePortfolioExposure(row.h, row.q, row.b);
         const marketCostBasis = (groupedCostBasis.get(row.market_id) ?? []).map(
           (basis): PortfolioCostBasis => ({
@@ -304,10 +292,7 @@ export async function getPortfolio(
           }),
         );
         const costBasisByContract = new Map(
-          marketCostBasis.map((basis) => [
-            contractKey(basis.side, basis.strikeIndex),
-            basis,
-          ]),
+          marketCostBasis.map((basis) => [contractKey(basis.side, basis.strikeIndex), basis]),
         );
         holdingsMarkedValueUsd += exposure.holdingsMarkedValueUsd;
 
@@ -326,8 +311,7 @@ export async function getPortfolio(
             ...position,
             strikeValueUsd: strikeValue(row.metric_kind, position.strikeIndex),
             approximateCostBasis:
-              costBasisByContract.get(contractKey(position.side, position.strikeIndex)) ??
-              null,
+              costBasisByContract.get(contractKey(position.side, position.strikeIndex)) ?? null,
           })),
           residualExposure: exposure.residualExposure,
           costBasis: marketCostBasis,
@@ -336,25 +320,27 @@ export async function getPortfolio(
 
       const hasMore = historyRows.length > limit;
       const pageRows = hasMore ? historyRows.slice(0, limit) : historyRows;
-      const items = pageRows.map((row): PortfolioTrade => ({
-        id: row.id,
-        marketId: row.market_id,
-        company: { name: row.company_name, slug: row.company_slug },
-        marketSequence: row.market_sequence,
-        action: row.action,
-        side: row.contract_side,
-        strikeIndex: row.strike_index,
-        strikeValueUsd: row.strike_value,
-        quantity: row.quantity,
-        requestedSpendCents: row.requested_spend_cents,
-        engineCostUsd: row.engine_cost_usd,
-        cashAmountCents: row.cash_amount_cents,
-        redemptionQuantity: row.redemption_quantity,
-        redemptionCents: row.redemption_cents,
-        metricBefore: row.metric_before,
-        metricAfter: row.metric_after,
-        createdAt: row.created_at.toISOString(),
-      }));
+      const items = pageRows.map(
+        (row): PortfolioTrade => ({
+          id: row.id,
+          marketId: row.market_id,
+          company: { name: row.company_name, slug: row.company_slug },
+          marketSequence: row.market_sequence,
+          action: row.action,
+          side: row.contract_side,
+          strikeIndex: row.strike_index,
+          strikeValueUsd: row.strike_value,
+          quantity: row.quantity,
+          requestedSpendCents: row.requested_spend_cents,
+          engineCostUsd: row.engine_cost_usd,
+          cashAmountCents: row.cash_amount_cents,
+          redemptionQuantity: row.redemption_quantity,
+          redemptionCents: row.redemption_cents,
+          metricBefore: row.metric_before,
+          metricAfter: row.metric_after,
+          createdAt: row.created_at.toISOString(),
+        }),
+      );
 
       return {
         userId: user.id,
@@ -385,11 +371,7 @@ function normalizeOptions(options: PortfolioOptions): {
       "Portfolio trade offset must be a non-negative integer.",
     );
   }
-  if (
-    !Number.isSafeInteger(limit) ||
-    limit < 1 ||
-    limit > PORTFOLIO_MAX_TRADE_LIMIT
-  ) {
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > PORTFOLIO_MAX_TRADE_LIMIT) {
     throw new ServiceError(
       "INVALID_INPUT",
       `Portfolio trade limit must be from 1 to ${PORTFOLIO_MAX_TRADE_LIMIT}.`,
@@ -405,8 +387,7 @@ function assertMarketShape(
   holdings: readonly number[],
   marketQ: readonly number[],
 ): void {
-  const expectedBucketCount =
-    metricKind === "valuation_median" ? VALUATION_BUCKET_COUNT : 2;
+  const expectedBucketCount = metricKind === "valuation_median" ? VALUATION_BUCKET_COUNT : 2;
   if (
     bucketCount !== expectedBucketCount ||
     holdings.length !== bucketCount ||
@@ -414,17 +395,12 @@ function assertMarketShape(
   ) {
     throw new RangeError("portfolio market vectors do not match the market shape");
   }
-  if (
-    metricKind === "valuation_median" &&
-    bucketGridVersion !== "valuation-v1"
-  ) {
+  if (metricKind === "valuation_median" && bucketGridVersion !== "valuation-v1") {
     throw new RangeError("portfolio market uses an unsupported valuation grid");
   }
 }
 
-function groupCostBasis(
-  trades: readonly CostBasisTrade[],
-): Map<string, PortfolioCostBasis[]> {
+function groupCostBasis(trades: readonly CostBasisTrade[]): Map<string, PortfolioCostBasis[]> {
   const groups = new Map<string, MutableCostBasis>();
   for (const trade of trades) {
     const key = `${trade.market_id}:${contractKey(trade.contract_side, trade.strike_index)}`;

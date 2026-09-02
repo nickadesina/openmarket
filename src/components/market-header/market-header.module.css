@@ -188,8 +188,12 @@
 }
 
 @keyframes metric-flash {
-  from { background: var(--color-primary-subtle); }
-  to { background: transparent; }
+  from {
+    background: var(--color-primary-subtle);
+  }
+  to {
+    background: transparent;
+  }
 }
 
 @media (max-width: 52rem) {

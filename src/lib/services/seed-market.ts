@@ -1,23 +1,15 @@
-import { sql, type Kysely } from "kysely";
+import { type Kysely, sql } from "kysely";
 
 import { ServiceError } from "../api/errors.js";
 import { formatCentsAsUsd, parseUsdToCents } from "../api/money.js";
 import type { SeedInput } from "../api/schemas.js";
-import type {
-  CompanyRow,
-  Database,
-  MarketInsert,
-  MarketRow,
-} from "../db/schema.js";
+import type { CompanyRow, Database, MarketInsert, MarketRow } from "../db/schema.js";
 import {
   VALUATION_BOUNDARIES_USD,
   VALUATION_BUCKET_COUNT,
   VALUATION_GRID_VERSION,
 } from "../engine/buckets.js";
-import {
-  seedBinaryMarket,
-  seedValuationMarket,
-} from "../engine/seed.js";
+import { seedBinaryMarket, seedValuationMarket } from "../engine/seed.js";
 
 export const BINARY_GRID_VERSION = "binary-v1" as const;
 
@@ -111,16 +103,10 @@ function buildSeedValues(input: SeedInput): SeedMarketValues {
 }
 
 function arraysEqual(left: readonly number[], right: readonly number[]): boolean {
-  return (
-    left.length === right.length &&
-    left.every((value, index) => value === right[index])
-  );
+  return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
-function hasCanonicalSeedMark(
-  marks: readonly SeedMark[],
-  currentMetric: number,
-): boolean {
+function hasCanonicalSeedMark(marks: readonly SeedMark[], currentMetric: number): boolean {
   const [mark] = marks;
   return (
     marks.length === 1 &&
@@ -283,10 +269,7 @@ export async function seedMarket(
       .where("market_id", "=", existingMarket.id)
       .where("market_sequence", "=", "0")
       .execute();
-    await transaction
-      .deleteFrom("markets")
-      .where("id", "=", existingMarket.id)
-      .execute();
+    await transaction.deleteFrom("markets").where("id", "=", existingMarket.id).execute();
 
     return insertSeed("reseeded");
   });

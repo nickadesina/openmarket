@@ -29,8 +29,7 @@ export const metadata: Metadata = {
     default: "OpenMarket",
     template: "%s | OpenMarket",
   },
-  description:
-    "Paper-money markets for evaluating private-company valuation expectations.",
+  description: "Paper-money markets for evaluating private-company valuation expectations.",
 };
 
 export const viewport: Viewport = {

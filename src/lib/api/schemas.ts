@@ -35,10 +35,13 @@ const nonnegativeUsdSchema = z
   .string()
   .max(USD_MAX_LENGTH)
   .refine((value) => isUsd(value, true), "Must be a non-negative USD amount");
-const httpUrlSchema = z.string().url().refine((value) => {
-  const protocol = new URL(value).protocol;
-  return protocol === "http:" || protocol === "https:";
-}, "Must be an HTTP(S) URL");
+const httpUrlSchema = z
+  .string()
+  .url()
+  .refine((value) => {
+    const protocol = new URL(value).protocol;
+    return protocol === "http:" || protocol === "https:";
+  }, "Must be an HTTP(S) URL");
 
 export const usernameInputSchema = z
   .object({

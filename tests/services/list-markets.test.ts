@@ -1,18 +1,12 @@
 import type { Kysely } from "kysely";
-import { describe, expect, it, vi, type Mock } from "vitest";
+import { describe, expect, it, type Mock, vi } from "vitest";
 
 import type { Database } from "../../src/lib/db/schema.js";
 import { listMarkets } from "../../src/lib/services/list-markets.js";
 
 function queryReturning(rows: readonly unknown[]): Record<string, Mock> {
   const query: Record<string, Mock> = {};
-  for (const method of [
-    "innerJoin",
-    "select",
-    "where",
-    "orderBy",
-    "limit",
-  ]) {
+  for (const method of ["innerJoin", "select", "where", "orderBy", "limit"]) {
     query[method] = vi.fn(() => query);
   }
   query.execute = vi.fn(async () => rows);
@@ -59,9 +53,8 @@ function readDatabase(
     return historyQuery;
   });
   const transactionDb = { selectFrom };
-  const execute = vi.fn(
-    async (callback: (transaction: typeof transactionDb) => Promise<unknown>) =>
-      callback(transactionDb),
+  const execute = vi.fn(async (callback: (transaction: typeof transactionDb) => Promise<unknown>) =>
+    callback(transactionDb),
   );
   const setAccessMode = vi.fn(() => ({ execute }));
   const setIsolationLevel = vi.fn(() => ({ setAccessMode }));
@@ -130,10 +123,7 @@ describe("listMarkets", () => {
         value: 140,
       },
     ];
-    const { db, setIsolationLevel, setAccessMode } = readDatabase(
-      marketRows,
-      historyRows,
-    );
+    const { db, setIsolationLevel, setAccessMode } = readDatabase(marketRows, historyRows);
 
     const result = await listMarkets(db, {
       now: new Date("2026-01-01T12:00:00.000Z"),
@@ -148,9 +138,11 @@ describe("listMarkets", () => {
     expect(result.markets[0]?.metric.change24Hours).toBe(40);
     expect(result.markets[1]?.metric.change24Hours).toBe(0);
     expect(result.markets[1]?.anchor).toBeNull();
-    expect(
-      result.markets[0]?.history.map((point) => point.marketSequence),
-    ).toEqual(["0", "1", "2"]);
+    expect(result.markets[0]?.history.map((point) => point.marketSequence)).toEqual([
+      "0",
+      "1",
+      "2",
+    ]);
     expect(setIsolationLevel).toHaveBeenCalledWith("repeatable read");
     expect(setAccessMode).toHaveBeenCalledWith("read only");
   });

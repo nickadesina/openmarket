@@ -25,9 +25,7 @@ function assertPositive(value: number, name: string): void {
 
 function validateBoundaries(boundaries: readonly number[]): void {
   if (!Array.isArray(boundaries) || boundaries.length !== VALUATION_BOUNDARY_COUNT) {
-    throw new RangeError(
-      `boundaries must contain exactly ${VALUATION_BOUNDARY_COUNT} values`,
-    );
+    throw new RangeError(`boundaries must contain exactly ${VALUATION_BOUNDARY_COUNT} values`);
   }
 
   let previous = 0;
@@ -41,10 +39,7 @@ function validateBoundaries(boundaries: readonly number[]): void {
 
   const firstBoundary = boundaries[0]!;
   const lastBoundary = boundaries[boundaries.length - 1]!;
-  if (
-    firstBoundary / SQRT_TWO <= 0 ||
-    !Number.isFinite(lastBoundary * SQRT_TWO)
-  ) {
+  if (firstBoundary / SQRT_TWO <= 0 || !Number.isFinite(lastBoundary * SQRT_TWO)) {
     throw new RangeError("boundaries must have finite, positive virtual edges");
   }
 }
@@ -73,23 +68,12 @@ function standardNormalCdf(value: number): number {
   return value < 0 ? tail : 1 - tail;
 }
 
-function quantitiesFromProbabilities(
-  probabilities: readonly number[],
-  b: number,
-): number[] {
-  const logProbabilities = probabilities.map((probability) =>
-    Math.log(probability),
-  );
+function quantitiesFromProbabilities(probabilities: readonly number[], b: number): number[] {
+  const logProbabilities = probabilities.map((probability) => Math.log(probability));
   const meanLogProbability =
-    logProbabilities.reduce((sum, probability) => sum + probability, 0) /
-    logProbabilities.length;
-  const quantities = logProbabilities.map(
-    (probability) => b * (probability - meanLogProbability),
-  );
-  const centeringResidual = quantities.reduce(
-    (sum, quantity) => sum + quantity,
-    0,
-  );
+    logProbabilities.reduce((sum, probability) => sum + probability, 0) / logProbabilities.length;
+  const quantities = logProbabilities.map((probability) => b * (probability - meanLogProbability));
+  const centeringResidual = quantities.reduce((sum, quantity) => sum + quantity, 0);
   const lastIndex = quantities.length - 1;
   quantities[lastIndex] = quantities[lastIndex]! - centeringResidual;
   if (quantities.some((quantity) => !Number.isFinite(quantity))) {
@@ -116,16 +100,11 @@ export function seedValuationMarket(
   const masses = new Array<number>(boundaries.length + 1);
   masses[0] = cumulative[0] ?? 0;
   for (let index = 1; index < cumulative.length; index += 1) {
-    masses[index] = Math.max(
-      0,
-      cumulative[index]! - cumulative[index - 1]!,
-    );
+    masses[index] = Math.max(0, cumulative[index]! - cumulative[index - 1]!);
   }
   masses[masses.length - 1] = Math.max(0, 1 - (cumulative.at(-1) ?? 1));
 
-  const floored = masses.map((mass) =>
-    Math.max(mass, MIN_VALUATION_PROBABILITY),
-  );
+  const floored = masses.map((mass) => Math.max(mass, MIN_VALUATION_PROBABILITY));
   const total = floored.reduce((sum, probability) => sum + probability, 0);
   const probabilities = floored.map((probability) => probability / total);
   const q = quantitiesFromProbabilities(probabilities, b);
@@ -137,20 +116,14 @@ export function seedValuationMarket(
   };
 }
 
-export function seedBinaryMarket(
-  yesProbability: number,
-  b: number,
-): SeededMarket {
+export function seedBinaryMarket(yesProbability: number, b: number): SeededMarket {
   assertFinite(yesProbability, "yesProbability");
   assertPositive(b, "b");
   if (yesProbability <= 0 || yesProbability >= 1) {
     throw new RangeError("yesProbability must be strictly between zero and one");
   }
 
-  const probabilities = [
-    Number((1 - yesProbability).toPrecision(15)),
-    yesProbability,
-  ];
+  const probabilities = [Number((1 - yesProbability).toPrecision(15)), yesProbability];
   return {
     probabilities,
     q: quantitiesFromProbabilities(probabilities, b),

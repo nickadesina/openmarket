@@ -5,9 +5,7 @@ const USD_PATTERN = /^(-?)(0|[1-9]\d*)(?:\.(\d{1,2}))?(?![\s\S])/;
 /** Converts a canonical decimal-dollar string to an exact, safe integer cent value. */
 export function parseUsdToCents(usd: string): number {
   if (typeof usd !== "string" || usd.length > USD_MAX_LENGTH) {
-    throw new RangeError(
-      `USD must be a string of at most ${USD_MAX_LENGTH} characters`,
-    );
+    throw new RangeError(`USD must be a string of at most ${USD_MAX_LENGTH} characters`);
   }
 
   const match = USD_PATTERN.exec(usd);
@@ -23,10 +21,7 @@ export function parseUsdToCents(usd: string): number {
   const cents = BigInt(fractional.padEnd(2, "0"));
   const value = sign * (dollars * 100n + cents);
 
-  if (
-    value > BigInt(Number.MAX_SAFE_INTEGER) ||
-    value < BigInt(Number.MIN_SAFE_INTEGER)
-  ) {
+  if (value > BigInt(Number.MAX_SAFE_INTEGER) || value < BigInt(Number.MIN_SAFE_INTEGER)) {
     throw new RangeError("USD cent value exceeds JavaScript's safe integer range");
   }
 

@@ -14,9 +14,7 @@ import {
 describe("stable LMSR math", () => {
   it("computes the cost and softmax at the symmetric state", () => {
     expect(lmsrCost([0, 0, 0, 0], 10)).toBeCloseTo(10 * Math.log(4), 12);
-    expect(probabilities([0, 0, 0, 0], 10)).toEqual([
-      0.25, 0.25, 0.25, 0.25,
-    ]);
+    expect(probabilities([0, 0, 0, 0], 10)).toEqual([0.25, 0.25, 0.25, 0.25]);
   });
 
   it("is stable under a large translation of every bucket", () => {
@@ -29,21 +27,12 @@ describe("stable LMSR math", () => {
     translatedProbabilities.forEach((probability, index) => {
       expect(probability).toBeCloseTo(baseProbabilities[index]!, 12);
     });
-    expect(lmsrCost(translated, 2) - 1_000_000_000_000).toBeCloseTo(
-      lmsrCost(q, 2),
-      3,
-    );
-    expect(tradeCost(translated, delta, 2)).toBeCloseTo(
-      tradeCost(q, delta, 2),
-      12,
-    );
+    expect(lmsrCost(translated, 2) - 1_000_000_000_000).toBeCloseTo(lmsrCost(q, 2), 3);
+    expect(tradeCost(translated, delta, 2)).toBeCloseTo(tradeCost(q, delta, 2), 12);
   });
 
   it("prices a full-set delta at exactly its quantity", () => {
-    expect(tradeCost([-20, 3, 9, 100], [7.25, 7.25, 7.25, 7.25], 4)).toBeCloseTo(
-      7.25,
-      12,
-    );
+    expect(tradeCost([-20, 3, 9, 100], [7.25, 7.25, 7.25, 7.25], 4)).toBeCloseTo(7.25, 12);
   });
 
   it("does not mutate input vectors", () => {
@@ -153,18 +142,10 @@ describe("domain validation", () => {
   });
 
   it("rejects invalid spend orders", () => {
-    expect(() => solveBuyQuantityForSpend([0, 0], [true], 1, 100)).toThrow(
-      RangeError,
-    );
-    expect(() =>
-      solveBuyQuantityForSpend([0, 0], [false, false], 1, 100),
-    ).toThrow(RangeError);
-    expect(() => solveBuyQuantityForSpend([0, 0], [true, false], 1, 0)).toThrow(
-      RangeError,
-    );
-    expect(() =>
-      solveBuyQuantityForSpend([0, 0], [true, false], 1, 0.5),
-    ).toThrow(RangeError);
+    expect(() => solveBuyQuantityForSpend([0, 0], [true], 1, 100)).toThrow(RangeError);
+    expect(() => solveBuyQuantityForSpend([0, 0], [false, false], 1, 100)).toThrow(RangeError);
+    expect(() => solveBuyQuantityForSpend([0, 0], [true, false], 1, 0)).toThrow(RangeError);
+    expect(() => solveBuyQuantityForSpend([0, 0], [true, false], 1, 0.5)).toThrow(RangeError);
   });
 
   it("rejects non-finite values and quantizer sign mismatches", () => {

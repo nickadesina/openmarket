@@ -2,10 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { probabilities } from "../../src/lib/engine/lmsr.js";
 import { EPS } from "../../src/lib/engine/types.js";
-import {
-  analyzeReplay,
-  type ReplaySnapshot,
-} from "../../src/lib/services/verify-replay.js";
+import { analyzeReplay, type ReplaySnapshot } from "../../src/lib/services/verify-replay.js";
 
 const MARKET_ID = "market-1";
 const TRADE_TIME = new Date("2026-01-01T00:01:00.000Z");
@@ -235,12 +232,8 @@ describe("analyzeReplay", () => {
     const market = report.markets[0]!;
 
     expect(report.passed).toBe(false);
-    expect(market.tradeSequences.missingRanges).toEqual([
-      { from: "2", to: "1000000000000" },
-    ]);
-    expect(market.markSequences.missingRanges).toEqual([
-      { from: "2", to: "1000000000000" },
-    ]);
+    expect(market.tradeSequences.missingRanges).toEqual([{ from: "2", to: "1000000000000" }]);
+    expect(market.markSequences.missingRanges).toEqual([{ from: "2", to: "1000000000000" }]);
     expect(market.pmfNormalizationError).toBeNull();
     expect(market.stateFindings.map((finding) => finding.code)).toEqual(
       expect.arrayContaining(["INVALID_VECTOR_LENGTH", "NONFINITE_VECTOR_VALUE", "INVALID_PMF"]),

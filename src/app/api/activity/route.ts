@@ -9,8 +9,8 @@ import { jsonSuccess } from "../../../lib/api/response.js";
 import {
   ACTIVITY_DEFAULT_LIMIT,
   ACTIVITY_MAX_LIMIT,
-  getActivity,
   type ActivityOptions,
+  getActivity,
 } from "../../../lib/services/get-activity.js";
 
 export const runtime = "nodejs";

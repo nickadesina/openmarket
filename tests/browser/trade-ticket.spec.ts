@@ -1,17 +1,17 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 
 import {
   createUser,
+  type ExecutionResponse,
   expectNoHorizontalOverflow,
   failTradesWith,
   isApiResponse,
   json,
+  type QuoteResponse,
   seedBinaryMarket,
   skipWithoutDatabase,
-  uniqueNames,
-  type ExecutionResponse,
-  type QuoteResponse,
   type TradeRequest,
+  uniqueNames,
 } from "./helpers.js";
 
 skipWithoutDatabase();
@@ -25,7 +25,10 @@ async function openTicket(
   await createUser(page, baseURL, names.username);
   await page.goto(`/m/${names.slug}`);
   await expect(page.getByRole("heading", { name: names.companyName })).toBeVisible();
-  await page.getByRole("region", { name: "Outcome contract" }).getByRole("button", { name: /YES$/ }).click();
+  await page
+    .getByRole("region", { name: "Outcome contract" })
+    .getByRole("button", { name: /YES$/ })
+    .click();
   const ticket = page.getByRole("region", { name: "Trade ticket" });
   await expect(ticket).toBeVisible();
   return ticket;
@@ -33,7 +36,9 @@ async function openTicket(
 
 async function previewBuy(page: Page, ticket: Locator, spendUsd: string): Promise<QuoteResponse> {
   await ticket.getByLabel("Spend").fill(spendUsd);
-  const quotePromise = page.waitForResponse((response) => isApiResponse(response, "POST", "/api/quote"));
+  const quotePromise = page.waitForResponse((response) =>
+    isApiResponse(response, "POST", "/api/quote"),
+  );
   await ticket.getByRole("button", { name: "Preview buy" }).click();
   const quoteResponse = await quotePromise;
   expect(quoteResponse.status()).toBe(200);
@@ -41,7 +46,10 @@ async function previewBuy(page: Page, ticket: Locator, spendUsd: string): Promis
   return await json<QuoteResponse>(quoteResponse);
 }
 
-test("a quote is invalidated by any input change and gated on a valid amount", async ({ page, baseURL }, testInfo) => {
+test("a quote is invalidated by any input change and gated on a valid amount", async ({
+  page,
+  baseURL,
+}, testInfo) => {
   const ticket = await openTicket(page, baseURL, uniqueNames("ticket-quote", testInfo));
 
   await expect(ticket.getByRole("button", { name: "Preview buy" })).toBeEnabled();
@@ -70,12 +78,17 @@ test("a quote is invalidated by any input change and gated on a valid amount", a
   await expectNoHorizontalOverflow(page);
 });
 
-test("a by-quantity buy quotes with quantity and executes with a 1% cost cap", async ({ page, baseURL }, testInfo) => {
+test("a by-quantity buy quotes with quantity and executes with a 1% cost cap", async ({
+  page,
+  baseURL,
+}, testInfo) => {
   const ticket = await openTicket(page, baseURL, uniqueNames("ticket-qty", testInfo));
 
   await ticket.getByRole("button", { name: "By quantity" }).click();
   await ticket.getByLabel("Quantity").fill("10");
-  const quotePromise = page.waitForResponse((response) => isApiResponse(response, "POST", "/api/quote"));
+  const quotePromise = page.waitForResponse((response) =>
+    isApiResponse(response, "POST", "/api/quote"),
+  );
   await ticket.getByRole("button", { name: "Preview buy" }).click();
   const quoteResponse = await quotePromise;
   expect(quoteResponse.status()).toBe(200);
@@ -84,19 +97,26 @@ test("a by-quantity buy quotes with quantity and executes with a 1% cost cap", a
   expect(quoteRequest).not.toHaveProperty("spend_usd");
   const quote = await json<QuoteResponse>(quoteResponse);
 
-  const executionPromise = page.waitForResponse((response) => isApiResponse(response, "POST", "/api/trade"));
+  const executionPromise = page.waitForResponse((response) =>
+    isApiResponse(response, "POST", "/api/trade"),
+  );
   await ticket.getByRole("button", { name: "Confirm buy" }).click();
   const executionResponse = await executionPromise;
   expect(executionResponse.status()).toBe(200);
   const tradeRequest = executionResponse.request().postDataJSON() as TradeRequest;
   expect(tradeRequest.quantity).toBe(10);
-  expect(tradeRequest.max_cost_usd).toBe((Math.ceil(quote.engine_cost_usd * 1.01 * 100) / 100).toFixed(2));
+  expect(tradeRequest.max_cost_usd).toBe(
+    (Math.ceil(quote.engine_cost_usd * 1.01 * 100) / 100).toFixed(2),
+  );
   const execution = await json<ExecutionResponse>(executionResponse);
   expect(execution.shares).toBeCloseTo(10, 6);
   await expect(ticket.getByText("Trade completed", { exact: true })).toBeVisible();
 });
 
-test("an unknown-outcome failure keeps the idempotency key across retries", async ({ page, baseURL }, testInfo) => {
+test("an unknown-outcome failure keeps the idempotency key across retries", async ({
+  page,
+  baseURL,
+}, testInfo) => {
   const ticket = await openTicket(page, baseURL, uniqueNames("ticket-retry", testInfo));
   await previewBuy(page, ticket, "40.00");
 
@@ -119,17 +139,23 @@ test("an unknown-outcome failure keeps the idempotency key across retries", asyn
   expect(attempts[1]).toEqual(attempts[0]);
 
   await page.unroute("**/api/trade");
-  const executionPromise = page.waitForResponse((response) => isApiResponse(response, "POST", "/api/trade"));
+  const executionPromise = page.waitForResponse((response) =>
+    isApiResponse(response, "POST", "/api/trade"),
+  );
   await retryButton.click();
   const executionResponse = await executionPromise;
   expect(executionResponse.status()).toBe(200);
-  expect((executionResponse.request().postDataJSON() as TradeRequest).idempotency_key)
-    .toBe(attempts[0]?.idempotency_key);
+  expect((executionResponse.request().postDataJSON() as TradeRequest).idempotency_key).toBe(
+    attempts[0]?.idempotency_key,
+  );
   await expect(ticket.getByText("Trade completed", { exact: true })).toBeVisible();
   await expect(retryButton).toHaveCount(0);
 });
 
-test("a deterministic rejection drops the idempotency key and shows the server message", async ({ page, baseURL }, testInfo) => {
+test("a deterministic rejection drops the idempotency key and shows the server message", async ({
+  page,
+  baseURL,
+}, testInfo) => {
   const ticket = await openTicket(page, baseURL, uniqueNames("ticket-reject", testInfo));
   await previewBuy(page, ticket, "40.00");
 
@@ -151,11 +177,16 @@ test("a deterministic rejection drops the idempotency key and shows the server m
 
 // PRICE_MOVED is only reachable for by-quantity buys: the server requires a spend
 // order's max cost to equal its spend, so a spend order can never move.
-test("a moved price must be explicitly confirmed and re-executes with the authoritative cost", async ({ page, baseURL }, testInfo) => {
+test("a moved price must be explicitly confirmed and re-executes with the authoritative cost", async ({
+  page,
+  baseURL,
+}, testInfo) => {
   const ticket = await openTicket(page, baseURL, uniqueNames("ticket-moved", testInfo));
   await ticket.getByRole("button", { name: "By quantity" }).click();
   await ticket.getByLabel("Quantity").fill("10");
-  const quotePromise = page.waitForResponse((response) => isApiResponse(response, "POST", "/api/quote"));
+  const quotePromise = page.waitForResponse((response) =>
+    isApiResponse(response, "POST", "/api/quote"),
+  );
   await ticket.getByRole("button", { name: "Preview buy" }).click();
   expect((await quotePromise).status()).toBe(200);
   await expect(ticket.getByText("Cost", { exact: true })).toBeVisible();
@@ -174,7 +205,9 @@ test("a moved price must be explicitly confirmed and re-executes with the author
   await expect(blockedPrimary).toBeDisabled();
 
   await page.unroute("**/api/trade");
-  const executionPromise = page.waitForResponse((response) => isApiResponse(response, "POST", "/api/trade"));
+  const executionPromise = page.waitForResponse((response) =>
+    isApiResponse(response, "POST", "/api/trade"),
+  );
   await ticket.getByRole("button", { name: "Confirm new price" }).click();
   const executionResponse = await executionPromise;
   expect(executionResponse.status()).toBe(200);
@@ -185,7 +218,10 @@ test("a moved price must be explicitly confirmed and re-executes with the author
   await expect(ticket.getByText("Trade completed", { exact: true })).toBeVisible();
 });
 
-test("a moved price without authoritative details offers a fresh quote instead", async ({ page, baseURL }, testInfo) => {
+test("a moved price without authoritative details offers a fresh quote instead", async ({
+  page,
+  baseURL,
+}, testInfo) => {
   const ticket = await openTicket(page, baseURL, uniqueNames("ticket-moved-bare", testInfo));
   await previewBuy(page, ticket, "50.00");
 
@@ -199,13 +235,18 @@ test("a moved price without authoritative details offers a fresh quote instead",
   await expect(ticket.getByRole("button", { name: "Confirm new price" })).toHaveCount(0);
 
   await page.unroute("**/api/trade");
-  const quotePromise = page.waitForResponse((response) => isApiResponse(response, "POST", "/api/quote"));
+  const quotePromise = page.waitForResponse((response) =>
+    isApiResponse(response, "POST", "/api/quote"),
+  );
   await ticket.getByRole("button", { name: "Refresh quote" }).click();
   expect((await quotePromise).status()).toBe(200);
   await expect(ticket.getByText("Cost", { exact: true })).toBeVisible();
 });
 
-test("changing the amount clears a failed execution and its pending retry", async ({ page, baseURL }, testInfo) => {
+test("changing the amount clears a failed execution and its pending retry", async ({
+  page,
+  baseURL,
+}, testInfo) => {
   const ticket = await openTicket(page, baseURL, uniqueNames("ticket-reset", testInfo));
   await previewBuy(page, ticket, "40.00");
 

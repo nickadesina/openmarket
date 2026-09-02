@@ -1,0 +1,66 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "files": {
+    "includes": [
+      "src/**",
+      "scripts/**",
+      "tests/**",
+      "*.ts",
+      "*.mjs",
+      "!!.impeccable",
+      "!next-env.d.ts"
+    ]
+  },
+  "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },
+  "javascript": {
+    "formatter": { "quoteStyle": "double", "trailingCommas": "all", "semicolons": "always" }
+  },
+  "css": { "formatter": { "enabled": true }, "linter": { "enabled": true } },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "complexity": {
+        // Ratchet: the threshold sits just above where new code should stop.
+        // Existing functions above it carry a biome-ignore naming the debt;
+        // lower this number as they are split.
+        "noExcessiveCognitiveComplexity": {
+          "level": "error",
+          "options": { "maxAllowedComplexity": 25 }
+        },
+        // Module CSS uses !important only to outrank cascade order inside one file; each use is commented.
+        "noImportantStyles": "off"
+      },
+      "style": {
+        // Module stylesheets group a control's states next to its base rule; the cascade order is intentional and local.
+        "noDescendingSpecificity": "off",
+        // `!` after an index read is deliberate here: tsconfig sets noUncheckedIndexedAccess,
+        // and the engine asserts array shape at its boundaries.
+        "noNonNullAssertion": "off"
+      },
+      "a11y": {
+        // Inputs revealed by a user action (username editor, price-moved confirm) take focus on purpose.
+        "noAutofocus": "off",
+        // Segmented controls are divs with role=group; fieldset would fight the plate layout.
+        "useSemanticElements": "off"
+      }
+    }
+  },
+  "overrides": [
+    {
+      // Tests read top-to-bottom as scenarios; a higher ceiling keeps them in one place.
+      "includes": ["tests/**"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noExcessiveCognitiveComplexity": {
+              "level": "error",
+              "options": { "maxAllowedComplexity": 40 }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

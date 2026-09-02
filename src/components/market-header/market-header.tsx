@@ -1,6 +1,11 @@
-import { formatDateTime, formatMetricPrice, formatPrice, formatValuation } from "../../lib/client/format.js";
-import { MovementArrow } from "../icons/icons.js";
+import {
+  formatDateTime,
+  formatMetricPrice,
+  formatPrice,
+  formatValuation,
+} from "../../lib/client/format.js";
 import { CompanyLogo } from "../company-logo/company-logo.js";
+import { MovementArrow } from "../icons/icons.js";
 import type { MarketDetail } from "../market-workspace/types.js";
 import styles from "./market-header.module.css";
 
@@ -14,12 +19,14 @@ interface MarketHeaderProps {
 export function MarketHeader({ market, movement }: MarketHeaderProps) {
   const change = market.metric.change24Hours;
   const changeDirection = change > 0 ? "up" : change < 0 ? "down" : "flat";
-  const changeAmount = market.metric.kind === "valuation_median"
-    ? formatPrice(Math.abs(change))
-    : `${(Math.abs(change) * 100).toFixed(1)} pts`;
-  const changeLabel = changeDirection === "flat"
-    ? "Unchanged (24h)"
-    : `Moved ${changeDirection} ${changeAmount} (24h)`;
+  const changeAmount =
+    market.metric.kind === "valuation_median"
+      ? formatPrice(Math.abs(change))
+      : `${(Math.abs(change) * 100).toFixed(1)} pts`;
+  const changeLabel =
+    changeDirection === "flat"
+      ? "Unchanged (24h)"
+      : `Moved ${changeDirection} ${changeAmount} (24h)`;
 
   return (
     <header className={styles.header}>
@@ -41,13 +48,29 @@ export function MarketHeader({ market, movement }: MarketHeaderProps) {
         </div>
       </div>
 
-      <div className={styles.metrics} aria-label="Current market metrics">
+      <section className={styles.metrics} aria-label="Current market metrics">
         <div className={styles.primaryMetric}>
           <span>{market.metric.label}</span>
-          <strong className={movement === "up" ? styles.flashUp : movement === "down" ? styles.flashDown : undefined}>
+          <strong
+            className={
+              movement === "up"
+                ? styles.flashUp
+                : movement === "down"
+                  ? styles.flashDown
+                  : undefined
+            }
+          >
             {formatMetricPrice(market.metric.current, market.metric.kind)}
           </strong>
-          <small className={changeDirection === "down" ? styles.negative : changeDirection === "up" ? styles.positive : styles.muted}>
+          <small
+            className={
+              changeDirection === "down"
+                ? styles.negative
+                : changeDirection === "up"
+                  ? styles.positive
+                  : styles.muted
+            }
+          >
             <MovementArrow direction={changeDirection} /> {changeLabel}
           </small>
         </div>
@@ -72,7 +95,7 @@ export function MarketHeader({ market, movement }: MarketHeaderProps) {
             <dd>No. {market.sequence}</dd>
           </div>
         </dl>
-      </div>
+      </section>
 
       {market.settlement !== null ? (
         <section className={styles.outcome} aria-label="Settlement outcome">

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 
 import {
   createUser,
@@ -26,7 +26,10 @@ async function tabTo(page: Page, target: Locator): Promise<void> {
   throw new Error("The target was not reachable in the first 40 keyboard tab stops.");
 }
 
-test("keyboard, chart, movement, focus, and responsive overflow contracts", async ({ page, baseURL }, testInfo) => {
+test("keyboard, chart, movement, focus, and responsive overflow contracts", async ({
+  page,
+  baseURL,
+}, testInfo) => {
   const mobile = testInfo.project.name.includes("mobile");
   const names = uniqueNames("a11y", testInfo);
   await seedBinaryMarket(page, baseURL, names);
@@ -44,8 +47,10 @@ test("keyboard, chart, movement, focus, and responsive overflow contracts", asyn
     await page.goto(`/m/${names.slug}`);
     await expect(page.getByRole("heading", { name: names.companyName })).toBeVisible();
 
-    const chartSummary = page.getByRole("region", { name: "Market history" })
-      .locator("p").filter({ hasText: "current 60-minute mark" });
+    const chartSummary = page
+      .getByRole("region", { name: "Market history" })
+      .locator("p")
+      .filter({ hasText: "current 60-minute mark" });
     await expect(chartSummary).toBeVisible();
     await expect(chartSummary).toContainText("YES probability was unchanged");
     await expect(chartSummary).toContainText("from 50.0% to 50.0%");
@@ -58,13 +63,19 @@ test("keyboard, chart, movement, focus, and responsive overflow contracts", asyn
     await expect(movementCue).toContainText("Unchanged");
     await expect(movementCue.locator('[aria-hidden="true"]')).toHaveText("→");
 
-    const movementProof = expect.poll(async () => movementCue.evaluate((element) => ({
-      hasLabel: element.textContent?.includes("Moved up") ?? false,
-      glyph: element.querySelector('[aria-hidden="true"]')?.textContent ?? "",
-    })), {
-      timeout: 10_000,
-      intervals: [50],
-    }).toEqual({ hasLabel: true, glyph: "↑" });
+    const movementProof = expect
+      .poll(
+        async () =>
+          movementCue.evaluate((element) => ({
+            hasLabel: element.textContent?.includes("Moved up") ?? false,
+            glyph: element.querySelector('[aria-hidden="true"]')?.textContent ?? "",
+          })),
+        {
+          timeout: 10_000,
+          intervals: [50],
+        },
+      )
+      .toEqual({ hasLabel: true, glyph: "↑" });
 
     const tradeResponse = await page.request.post("/api/trade", {
       headers: { Origin: origin },
@@ -79,7 +90,8 @@ test("keyboard, chart, movement, focus, and responsive overflow contracts", asyn
       },
     });
     expect(tradeResponse.status()).toBe(200);
-    a11yBalanceCents = ((await tradeResponse.json()) as { cash_balance_cents: string }).cash_balance_cents;
+    a11yBalanceCents = ((await tradeResponse.json()) as { cash_balance_cents: string })
+      .cash_balance_cents;
     await movementProof;
   });
 
@@ -99,8 +111,9 @@ test("keyboard, chart, movement, focus, and responsive overflow contracts", asyn
       };
     });
     expect(
-      focusIndicator.boxShadow !== "none"
-        || (focusIndicator.outlineStyle !== "none" && Number.parseFloat(focusIndicator.outlineWidth) > 0),
+      focusIndicator.boxShadow !== "none" ||
+        (focusIndicator.outlineStyle !== "none" &&
+          Number.parseFloat(focusIndicator.outlineWidth) > 0),
     ).toBe(true);
   });
 
@@ -114,14 +127,20 @@ test("keyboard, chart, movement, focus, and responsive overflow contracts", asyn
       const dialog = page.getByRole("dialog", { name: `Trade ${names.companyName}` });
       await expect(dialog).toBeVisible();
       await expect(dialog).toHaveAttribute("aria-describedby", "trade-sheet-description");
-      expect(await dialog.evaluate((element) => element.contains(document.activeElement))).toBe(true);
+      expect(await dialog.evaluate((element) => element.contains(document.activeElement))).toBe(
+        true,
+      );
 
       for (let index = 0; index < 10; index += 1) {
         await page.keyboard.press("Tab");
-        expect(await dialog.evaluate((element) => element.contains(document.activeElement))).toBe(true);
+        expect(await dialog.evaluate((element) => element.contains(document.activeElement))).toBe(
+          true,
+        );
       }
       await page.keyboard.press("Shift+Tab");
-      expect(await dialog.evaluate((element) => element.contains(document.activeElement))).toBe(true);
+      expect(await dialog.evaluate((element) => element.contains(document.activeElement))).toBe(
+        true,
+      );
       await expectNoHorizontalOverflow(page);
 
       await page.keyboard.press("Escape");

@@ -80,7 +80,11 @@ function mulberry32(seed: number): () => number {
 function nearestStrike(valuationUsd: number): number {
   let best = 0;
   VALUATION_BOUNDARIES_USD.forEach((boundary, index) => {
-    if (Math.abs(Math.log(boundary / valuationUsd)) < Math.abs(Math.log(VALUATION_BOUNDARIES_USD[best]! / valuationUsd))) best = index;
+    if (
+      Math.abs(Math.log(boundary / valuationUsd)) <
+      Math.abs(Math.log(VALUATION_BOUNDARIES_USD[best]! / valuationUsd))
+    )
+      best = index;
   });
   return best;
 }
@@ -93,6 +97,7 @@ interface Position {
   shares: number;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: one linear narrative script; split into seed/trade/backdate phases before it grows.
 async function main(): Promise<void> {
   const db = createDirectDatabase();
   const random = mulberry32(20260901);
@@ -100,7 +105,15 @@ async function main(): Promise<void> {
     // Row deletes rather than TRUNCATE: a running dev server polls these
     // tables, and TRUNCATE's exclusive locks deadlock against its readers.
     await db.transaction().execute(async (transaction) => {
-      for (const table of ["marks", "trades", "holdings", "settlements", "markets", "companies", "users"] as const) {
+      for (const table of [
+        "marks",
+        "trades",
+        "holdings",
+        "settlements",
+        "markets",
+        "companies",
+        "users",
+      ] as const) {
         await transaction.deleteFrom(table).execute();
       }
     });
@@ -122,7 +135,10 @@ async function main(): Promise<void> {
         .where("companies.slug", "=", market.slug)
         .executeTakeFirstOrThrow();
       const money = nearestStrike(Number(state.current_metric));
-      const held = positions.filter((position) => position.userId === user.id && position.slug === market.slug && position.shares > 1);
+      const held = positions.filter(
+        (position) =>
+          position.userId === user.id && position.slug === market.slug && position.shares > 1,
+      );
       const wantsSell = held.length > 0 && random() < 0.18;
 
       if (wantsSell) {
@@ -142,15 +158,18 @@ async function main(): Promise<void> {
           .where("market_id", "=", marketRow.id)
           .executeTakeFirst();
         const buckets = holding?.h ?? [];
-        const covered = position.side === "yes"
-          ? buckets.slice(position.strikeIndex + 1)
-          : buckets.slice(0, position.strikeIndex + 1);
+        const covered =
+          position.side === "yes"
+            ? buckets.slice(position.strikeIndex + 1)
+            : buckets.slice(0, position.strikeIndex + 1);
         const sellable = covered.length === 0 ? 0 : Math.min(...covered);
         if (sellable < 1) {
           position.shares = 0;
           continue;
         }
-        const quantity = Number((Math.min(sellable, position.shares) * (0.3 + random() * 0.6)).toFixed(6));
+        const quantity = Number(
+          (Math.min(sellable, position.shares) * (0.3 + random() * 0.6)).toFixed(6),
+        );
         const { result } = await executeTrade(db, user.id, {
           slug: market.slug,
           action: "sell",
@@ -170,7 +189,10 @@ async function main(): Promise<void> {
       // Bulls buy YES at the money or one strike above; bears buy NO at the
       // money or one strike below. Wider offsets pile mass into the tails.
       const offset = Math.floor(random() * 2) * (bullish ? 1 : -1);
-      const strikeIndex = Math.min(VALUATION_BOUNDARIES_USD.length - 1, Math.max(0, money + offset));
+      const strikeIndex = Math.min(
+        VALUATION_BOUNDARIES_USD.length - 1,
+        Math.max(0, money + offset),
+      );
       const spend = Math.exp(Math.log(40) + random() * (Math.log(3_500) - Math.log(40)));
       const spendUsd = (Math.round(spend * 100) / 100).toFixed(2);
       const side = bullish ? "yes" : "no";
@@ -183,27 +205,56 @@ async function main(): Promise<void> {
         max_cost_usd: spendUsd,
         idempotency_key: randomUUID(),
       });
-      const existing = positions.find((position) => position.userId === user.id && position.slug === market.slug && position.side === side && position.strikeIndex === strikeIndex);
-      if (existing === undefined) positions.push({ userId: user.id, slug: market.slug, side, strikeIndex, shares: result.shares });
+      const existing = positions.find(
+        (position) =>
+          position.userId === user.id &&
+          position.slug === market.slug &&
+          position.side === side &&
+          position.strikeIndex === strikeIndex,
+      );
+      if (existing === undefined)
+        positions.push({
+          userId: user.id,
+          slug: market.slug,
+          side,
+          strikeIndex,
+          shares: result.shares,
+        });
       else existing.shares += result.shares;
     }
 
     // Backdate in execution order: most of the period is quiet trading days,
     // the last dozen trades land inside 24 hours, and the final three inside
     // the past hour so every quote-sheet window has observations.
-    const trades = await db.selectFrom("trades").select(["id", "created_at"]).orderBy("created_at", "asc").execute();
+    const trades = await db
+      .selectFrom("trades")
+      .select(["id", "created_at"])
+      .orderBy("created_at", "asc")
+      .execute();
     const now = Date.now();
     const start = now - DAYS * 86_400_000;
-    const timestamps = trades.map((_trade, index) => {
-      const remaining = trades.length - index;
-      if (remaining <= 3) return now - remaining * 14 * 60_000 - Math.floor(random() * 5 * 60_000);
-      if (remaining <= 14) return now - 60 * 60_000 - (remaining - 3) * 95 * 60_000 - Math.floor(random() * 20 * 60_000);
-      const span = now - 24 * 60 * 60_000 - start;
-      const t = (index + random() * 0.8) / (trades.length - 14);
-      const day = Math.floor(t * (DAYS - 1));
-      const hour = 9 + random() * 10; // business-hours clustering
-      return start + day * 86_400_000 + Math.floor(hour * 3_600_000) + Math.floor(random() * 3_600_000) + Math.floor(span * 0);
-    }).sort((a, b) => a - b);
+    const timestamps = trades
+      .map((_trade, index) => {
+        const remaining = trades.length - index;
+        if (remaining <= 3)
+          return now - remaining * 14 * 60_000 - Math.floor(random() * 5 * 60_000);
+        if (remaining <= 14)
+          return (
+            now - 60 * 60_000 - (remaining - 3) * 95 * 60_000 - Math.floor(random() * 20 * 60_000)
+          );
+        const span = now - 24 * 60 * 60_000 - start;
+        const t = (index + random() * 0.8) / (trades.length - 14);
+        const day = Math.floor(t * (DAYS - 1));
+        const hour = 9 + random() * 10; // business-hours clustering
+        return (
+          start +
+          day * 86_400_000 +
+          Math.floor(hour * 3_600_000) +
+          Math.floor(random() * 3_600_000) +
+          Math.floor(span * 0)
+        );
+      })
+      .sort((a, b) => a - b);
     for (const [index, trade] of trades.entries()) {
       const ts = new Date(timestamps[index]!);
       await db.updateTable("trades").set({ created_at: ts }).where("id", "=", trade.id).execute();
@@ -215,7 +266,11 @@ async function main(): Promise<void> {
     await db.updateTable("marks").set({ ts: opened }).where("trade_id", "is", null).execute();
     await db.updateTable("companies").set({ created_at: opened }).execute();
     for (const [index, user] of users.entries()) {
-      await db.updateTable("users").set({ created_at: new Date(start + index * 3_600_000) }).where("id", "=", user.id).execute();
+      await db
+        .updateTable("users")
+        .set({ created_at: new Date(start + index * 3_600_000) })
+        .where("id", "=", user.id)
+        .execute();
     }
 
     const summary = await db
@@ -223,7 +278,9 @@ async function main(): Promise<void> {
       .innerJoin("companies", "companies.id", "markets.company_id")
       .select(["companies.name", "markets.current_metric", "markets.last_market_sequence"])
       .execute();
-    console.log(JSON.stringify({ trades: trades.length, users: users.length, markets: summary }, null, 2));
+    console.log(
+      JSON.stringify({ trades: trades.length, users: users.length, markets: summary }, null, 2),
+    );
   } finally {
     await destroyDatabase(db);
   }

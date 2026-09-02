@@ -21,9 +21,7 @@ vi.mock("../../src/lib/db/runtime.js", () => ({
   getRuntimeDatabase: mocks.getRuntimeDatabase,
 }));
 vi.mock("../../src/lib/services/user.js", async (importOriginal) => {
-  const original = await importOriginal<
-    typeof import("../../src/lib/services/user.js")
-  >();
+  const original = await importOriginal<typeof import("../../src/lib/services/user.js")>();
   return { ...original, createOrResumeUser: mocks.createOrResumeUser };
 });
 vi.mock("../../src/lib/services/quote.js", () => ({
@@ -51,9 +49,9 @@ import { POST as tradeRoute } from "../../src/app/api/trade/route.js";
 import { POST as userRoute } from "../../src/app/api/user/route.js";
 
 const APP_ORIGIN = "https://app.openmarket.test";
-const USER_SECRET = Buffer.from(
-  Array.from({ length: 32 }, (_unused, index) => index + 1),
-).toString("base64url");
+const USER_SECRET = Buffer.from(Array.from({ length: 32 }, (_unused, index) => index + 1)).toString(
+  "base64url",
+);
 const ADMIN_SECRET = Buffer.from(
   Array.from({ length: 32 }, (_unused, index) => index + 65),
 ).toString("base64url");
@@ -72,11 +70,7 @@ const fakeDatabase = {
 
 type PostRoute = (request: Request) => Promise<Response>;
 
-function mutationRequest(
-  path: string,
-  body: unknown,
-  headers: HeadersInit = {},
-): Request {
+function mutationRequest(path: string, body: unknown, headers: HeadersInit = {}): Request {
   return new Request(`${APP_ORIGIN}${path}`, {
     method: "POST",
     headers: {
@@ -228,15 +222,10 @@ describe("Part 4 user and quote routes", () => {
       created_at: new Date("2026-08-31T00:00:00.000Z"),
     });
 
-    const response = await userRoute(
-      mutationRequest("/api/user", { username: "Alice_1" }),
-    );
+    const response = await userRoute(mutationRequest("/api/user", { username: "Alice_1" }));
 
     expect(response.status).toBe(200);
-    expect(mocks.createOrResumeUser).toHaveBeenCalledWith(
-      fakeDatabase,
-      "Alice_1",
-    );
+    expect(mocks.createOrResumeUser).toHaveBeenCalledWith(fakeDatabase, "Alice_1");
     await expect(response.json()).resolves.toEqual({
       username: "Alice_1",
       cash_balance_cents: "10000000",
@@ -270,11 +259,7 @@ describe("Part 4 user and quote routes", () => {
     const response = await quoteRoute(mutationRequest("/api/quote", input));
 
     expect(response.status).toBe(200);
-    expect(mocks.quoteMarket).toHaveBeenCalledWith(
-      fakeDatabase,
-      input,
-      undefined,
-    );
+    expect(mocks.quoteMarket).toHaveBeenCalledWith(fakeDatabase, input, undefined);
     await expect(response.json()).resolves.toEqual(quote);
   });
 
@@ -288,9 +273,7 @@ describe("Part 4 user and quote routes", () => {
     } as const;
     mocks.quoteMarket.mockResolvedValue({ action: "sell", quantity: 1 });
 
-    const missingResponse = await quoteRoute(
-      mutationRequest("/api/quote", input),
-    );
+    const missingResponse = await quoteRoute(mutationRequest("/api/quote", input));
     const authenticatedResponse = await quoteRoute(
       mutationRequest("/api/quote", input, {
         cookie: userCookieHeader("Alice_1"),
@@ -300,17 +283,9 @@ describe("Part 4 user and quote routes", () => {
 
     expect(missingResponse.status).toBe(401);
     expect(authenticatedResponse.status).toBe(200);
-    expect(userLookup.where).toHaveBeenCalledWith(
-      "username_normalized",
-      "=",
-      "alice_1",
-    );
+    expect(userLookup.where).toHaveBeenCalledWith("username_normalized", "=", "alice_1");
     expect(mocks.quoteMarket).toHaveBeenCalledTimes(1);
-    expect(mocks.quoteMarket).toHaveBeenCalledWith(
-      fakeDatabase,
-      input,
-      "user-1",
-    );
+    expect(mocks.quoteMarket).toHaveBeenCalledWith(fakeDatabase, input, "user-1");
     await expect(missingResponse.json()).resolves.toMatchObject({
       error: { code: "USER_REQUIRED" },
     });
@@ -339,9 +314,7 @@ describe("Part 4 trade route", () => {
       replayed: true,
     });
 
-    const missingResponse = await tradeRoute(
-      mutationRequest("/api/trade", tradeInput),
-    );
+    const missingResponse = await tradeRoute(mutationRequest("/api/trade", tradeInput));
     const replayResponse = await tradeRoute(
       mutationRequest("/api/trade", tradeInput, {
         cookie: userCookieHeader(),
@@ -353,11 +326,7 @@ describe("Part 4 trade route", () => {
     expect(replayResponse.status).toBe(200);
     expect(replayResponse.headers.get("idempotent-replayed")).toBe("true");
     expect(mocks.executeTrade).toHaveBeenCalledTimes(1);
-    expect(mocks.executeTrade).toHaveBeenCalledWith(
-      fakeDatabase,
-      "user-1",
-      tradeInput,
-    );
+    expect(mocks.executeTrade).toHaveBeenCalledWith(fakeDatabase, "user-1", tradeInput);
     await expect(replayResponse.json()).resolves.toEqual(storedResult);
   });
 
@@ -398,10 +367,7 @@ describe("Part 4 admin mutation routes", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(mocks.verifyAdminPassphrase).toHaveBeenCalledWith(
-      "correct horse",
-      "configured-hash",
-    );
+    expect(mocks.verifyAdminPassphrase).toHaveBeenCalledWith("correct horse", "configured-hash");
     await expect(response.json()).resolves.toEqual({ authenticated: true });
     const setCookie = response.headers.get("set-cookie");
     expect(setCookie).toContain("openmarket_admin=");
@@ -456,9 +422,7 @@ describe("Part 4 admin mutation routes", () => {
       },
     });
 
-    const missingResponse = await adminSeedRoute(
-      mutationRequest("/api/admin/seed", input),
-    );
+    const missingResponse = await adminSeedRoute(mutationRequest("/api/admin/seed", input));
     const authenticatedResponse = await adminSeedRoute(
       mutationRequest("/api/admin/seed", input, {
         cookie: adminCookieHeader(),

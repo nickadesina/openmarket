@@ -1,10 +1,7 @@
-import { requireCurrentUserId } from "../../../lib/auth/current-user.js";
-import {
-  assertOnlyQueryParameters,
-  parseBoundedInteger,
-} from "../../../lib/api/pagination.js";
+import { assertOnlyQueryParameters, parseBoundedInteger } from "../../../lib/api/pagination.js";
 import { withReadRoute } from "../../../lib/api/request-context.js";
 import { jsonSuccess } from "../../../lib/api/response.js";
+import { requireCurrentUserId } from "../../../lib/auth/current-user.js";
 import {
   getPortfolio,
   PORTFOLIO_DEFAULT_TRADE_LIMIT,

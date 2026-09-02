@@ -9,19 +9,22 @@ if (isCi && !hasTestDatabase) {
   throw new Error("DATABASE_URL_TEST is required for Playwright in CI.");
 }
 if (!isCi && !hasTestDatabase) {
-  console.warn("Playwright browser tests are skipped locally because DATABASE_URL_TEST is not set.");
+  console.warn(
+    "Playwright browser tests are skipped locally because DATABASE_URL_TEST is not set.",
+  );
 }
 
-const appOrigin = process.env.PLAYWRIGHT_APP_ORIGIN
-  ?? (isCi ? (process.env.APP_ORIGIN ?? "http://127.0.0.1:3000") : "http://127.0.0.1:3100");
+const appOrigin =
+  process.env.PLAYWRIGHT_APP_ORIGIN ??
+  (isCi ? (process.env.APP_ORIGIN ?? "http://127.0.0.1:3000") : "http://127.0.0.1:3100");
 const origin = new URL(appOrigin);
 if (
-  origin.protocol !== "http:"
-  || origin.username !== ""
-  || origin.password !== ""
-  || origin.pathname !== "/"
-  || origin.search !== ""
-  || origin.hash !== ""
+  origin.protocol !== "http:" ||
+  origin.username !== "" ||
+  origin.password !== "" ||
+  origin.pathname !== "/" ||
+  origin.search !== "" ||
+  origin.hash !== ""
 ) {
   throw new Error("PLAYWRIGHT_APP_ORIGIN must be an HTTP origin without a path.");
 }
@@ -29,8 +32,8 @@ if (origin.port === "") {
   throw new Error("PLAYWRIGHT_APP_ORIGIN must include the local Next.js port.");
 }
 
-const adminPassphrase = process.env.PLAYWRIGHT_ADMIN_PASSPHRASE
-  ?? "openmarket-browser-test-admin-passphrase-v1";
+const adminPassphrase =
+  process.env.PLAYWRIGHT_ADMIN_PASSPHRASE ?? "openmarket-browser-test-admin-passphrase-v1";
 process.env.PLAYWRIGHT_ADMIN_PASSPHRASE = adminPassphrase;
 
 const adminSalt = randomBytes(16);

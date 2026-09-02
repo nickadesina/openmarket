@@ -1,13 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 
-import { sql, type Kysely } from "kysely";
+import { type Kysely, sql } from "kysely";
 import { Client } from "pg";
 
-import {
-  createPooledDatabase,
-  destroyDatabase,
-} from "../../src/lib/db/client.js";
+import { createPooledDatabase, destroyDatabase } from "../../src/lib/db/client.js";
 import { migrateToLatest } from "../../src/lib/db/migrator.js";
 import type { Database } from "../../src/lib/db/schema.js";
 
@@ -50,10 +47,7 @@ function scopedConnectionString(
   return url.toString();
 }
 
-async function executeAdminStatement(
-  connectionString: string,
-  statement: string,
-): Promise<void> {
+async function executeAdminStatement(connectionString: string, statement: string): Promise<void> {
   const client = new Client({ connectionString });
   await client.connect();
   try {
@@ -63,14 +57,8 @@ async function executeAdminStatement(
   }
 }
 
-async function dropSchema(
-  connectionString: string,
-  schema: string,
-): Promise<void> {
-  await executeAdminStatement(
-    connectionString,
-    `drop schema if exists "${schema}" cascade`,
-  );
+async function dropSchema(connectionString: string, schema: string): Promise<void> {
+  await executeAdminStatement(connectionString, `drop schema if exists "${schema}" cascade`);
 }
 
 export async function createPostgresTestDatabase(
@@ -80,11 +68,7 @@ export async function createPostgresTestDatabase(
   const applicationName = schema;
   await executeAdminStatement(connectionString, `create schema "${schema}"`);
 
-  const scopedUrl = scopedConnectionString(
-    connectionString,
-    schema,
-    applicationName,
-  );
+  const scopedUrl = scopedConnectionString(connectionString, schema, applicationName);
   const db = createPooledDatabase(scopedUrl);
 
   try {
@@ -92,10 +76,7 @@ export async function createPostgresTestDatabase(
     if (migration.error !== undefined) throw migration.error;
 
     const results = migration.results ?? [];
-    if (
-      results.length === 0 ||
-      results.some((result) => result.status !== "Success")
-    ) {
+    if (results.length === 0 || results.some((result) => result.status !== "Success")) {
       throw new Error("The initial migration did not complete successfully");
     }
   } catch (error) {
@@ -122,9 +103,7 @@ export async function createPostgresTestDatabase(
   };
 }
 
-export async function resetPostgresTestDatabase(
-  db: Kysely<Database>,
-): Promise<void> {
+export async function resetPostgresTestDatabase(db: Kysely<Database>): Promise<void> {
   await sql`
     truncate table
       settlements,
@@ -147,9 +126,7 @@ export async function holdAdvisoryLock(
   await blocker.query("begin");
 
   try {
-    await blocker.query("select pg_advisory_xact_lock($1::bigint)", [
-      key.toString(),
-    ]);
+    await blocker.query("select pg_advisory_xact_lock($1::bigint)", [key.toString()]);
   } catch (error) {
     await blocker.query("rollback").catch(() => undefined);
     await blocker.end().catch(() => undefined);

@@ -1,16 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  seedBinaryMarket,
-  seedValuationMarket,
-} from "../../src/lib/engine/seed.js";
+import { seedBinaryMarket, seedValuationMarket } from "../../src/lib/engine/seed.js";
 
 const ANCHOR = 100;
 const B = 15_000;
-const BOUNDARIES = Array.from(
-  { length: 40 },
-  (_, index) => ANCHOR * 2 ** ((index - 19.5) / 2),
-);
+const BOUNDARIES = Array.from({ length: 40 }, (_, index) => ANCHOR * 2 ** ((index - 19.5) / 2));
 
 function softmax(q: readonly number[], b: number): number[] {
   const scaled = q.map((quantity) => quantity / b);
@@ -21,10 +15,7 @@ function softmax(q: readonly number[], b: number): number[] {
 }
 
 function expectNormalized(probabilities: readonly number[]): void {
-  expect(probabilities.reduce((sum, probability) => sum + probability, 0)).toBeCloseTo(
-    1,
-    14,
-  );
+  expect(probabilities.reduce((sum, probability) => sum + probability, 0)).toBeCloseTo(1, 14);
   for (const probability of probabilities) {
     expect(Number.isFinite(probability)).toBe(true);
     expect(probability).toBeGreaterThan(0);

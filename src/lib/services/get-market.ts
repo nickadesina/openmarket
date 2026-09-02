@@ -1,4 +1,4 @@
-import { sql, type Kysely } from "kysely";
+import { type Kysely, sql } from "kysely";
 
 import { ServiceError } from "../api/errors.js";
 import type {
@@ -147,10 +147,7 @@ function buildContracts(
       },
     ];
   }
-  if (
-    bucketGridVersion !== VALUATION_GRID_VERSION ||
-    bucketCount !== VALUATION_BUCKET_COUNT
-  ) {
+  if (bucketGridVersion !== VALUATION_GRID_VERSION || bucketCount !== VALUATION_BUCKET_COUNT) {
     throw new ServiceError("INVALID_INPUT", "Stored valuation market shape is invalid.");
   }
 
@@ -275,13 +272,7 @@ export async function getMarket(
             .execute(),
           transaction
             .selectFrom("settlements")
-            .select([
-              "settled_value",
-              "winning_bucket",
-              "source_url",
-              "source_description",
-              "ts",
-            ])
+            .select(["settled_value", "winning_bucket", "source_url", "source_description", "ts"])
             .where("market_id", "=", market.market_id)
             .executeTakeFirst(),
         ]);
@@ -319,9 +310,7 @@ export async function getMarket(
         metric: {
           kind: market.metric_kind,
           label:
-            market.metric_kind === "valuation_median"
-              ? "Implied valuation"
-              : "YES probability",
+            market.metric_kind === "valuation_median" ? "Implied valuation" : "YES probability",
           format: market.metric_kind === "valuation_median" ? "usd" : "probability",
           current: market.current_metric,
           change24Hours: Number.isFinite(changeRow.change_baseline)

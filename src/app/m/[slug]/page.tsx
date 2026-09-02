@@ -32,5 +32,7 @@ export default async function MarketPage({ params }: MarketPageProps) {
   const { slug } = await params;
   const initial = await loadInitialMarket(slug);
 
-  return <MarketWorkspace slug={slug} initialMarket={initial.market} initialMarks={initial.marks} />;
+  return (
+    <MarketWorkspace slug={slug} initialMarket={initial.market} initialMarks={initial.marks} />
+  );
 }

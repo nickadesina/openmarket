@@ -13,9 +13,7 @@ function orderedTimestamp(point: DownsampleMarkPoint, index: number): number {
     throw new RangeError(`points[${index}].value must be finite and non-negative`);
   }
   if (!/^\d+$/.test(point.marketSequence)) {
-    throw new RangeError(
-      `points[${index}].marketSequence must be a non-negative integer string`,
-    );
+    throw new RangeError(`points[${index}].marketSequence must be a non-negative integer string`);
   }
   return timestamp;
 }
@@ -47,9 +45,7 @@ export function downsampleMarks<T extends DownsampleMarkPoint>(
       timestamp < previousTimestamp ||
       (timestamp === previousTimestamp && sequence < previousSequence)
     ) {
-      throw new RangeError(
-        "points must be ordered by timestamp and then market sequence",
-      );
+      throw new RangeError("points must be ordered by timestamp and then market sequence");
     }
     timestamps[index] = timestamp;
     previousTimestamp = timestamp;

@@ -3,17 +3,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { POST as adminLoginRoute } from "../../src/app/api/admin/login/route.js";
 import {
+  ADMIN_COOKIE_MAX_AGE_MS,
+  signAdminCookie,
+  verifyAdminCookie,
+} from "../../src/lib/auth/admin-cookie.js";
+import {
   ADMIN_SCRYPT_KEY_BYTES,
   ADMIN_SCRYPT_N,
   ADMIN_SCRYPT_P,
   ADMIN_SCRYPT_R,
   verifyAdminPassphrase,
 } from "../../src/lib/auth/admin-passphrase.js";
-import {
-  ADMIN_COOKIE_MAX_AGE_MS,
-  signAdminCookie,
-  verifyAdminCookie,
-} from "../../src/lib/auth/admin-cookie.js";
 import { requireCurrentAdmin } from "../../src/lib/auth/current-admin.js";
 
 const APP_ORIGIN = "https://app.openmarket.test";
@@ -51,34 +51,23 @@ afterEach(() => {
 
 describe("Part 4 admin passphrase hash", () => {
   it("verifies the documented fixed-work-factor scrypt format", async () => {
-    await expect(
-      verifyAdminPassphrase(PASSPHRASE, ENCODED_HASH),
-    ).resolves.toBe(true);
-    await expect(
-      verifyAdminPassphrase("incorrect passphrase", ENCODED_HASH),
-    ).resolves.toBe(false);
+    await expect(verifyAdminPassphrase(PASSPHRASE, ENCODED_HASH)).resolves.toBe(true);
+    await expect(verifyAdminPassphrase("incorrect passphrase", ENCODED_HASH)).resolves.toBe(false);
   });
 
   it("rejects alternate work factors and noncanonical encodings", async () => {
-    const alternateWorkFactor = ENCODED_HASH.replace(
-      "scrypt$16384$8$1$",
-      "scrypt$32768$8$1$",
-    );
+    const alternateWorkFactor = ENCODED_HASH.replace("scrypt$16384$8$1$", "scrypt$32768$8$1$");
     const paddedKey = `${ENCODED_HASH}=`;
     const shortSalt = ENCODED_HASH.replace(
       SALT.toString("base64url"),
       SALT.subarray(0, 15).toString("base64url"),
     );
 
-    await expect(
-      verifyAdminPassphrase(PASSPHRASE, alternateWorkFactor),
-    ).rejects.toThrow("scrypt$16384$8$1$salt$key");
-    await expect(
-      verifyAdminPassphrase(PASSPHRASE, paddedKey),
-    ).rejects.toThrow("base64url");
-    await expect(
-      verifyAdminPassphrase(PASSPHRASE, shortSalt),
-    ).rejects.toThrow("16 bytes");
+    await expect(verifyAdminPassphrase(PASSPHRASE, alternateWorkFactor)).rejects.toThrow(
+      "scrypt$16384$8$1$salt$key",
+    );
+    await expect(verifyAdminPassphrase(PASSPHRASE, paddedKey)).rejects.toThrow("base64url");
+    await expect(verifyAdminPassphrase(PASSPHRASE, shortSalt)).rejects.toThrow("16 bytes");
   });
 });
 
@@ -103,10 +92,7 @@ describe("Part 4 current admin identity", () => {
     vi.useFakeTimers();
     vi.setSystemTime(now);
     const current = signAdminCookie(ADMIN_SECRET, now - 1_000);
-    const expired = signAdminCookie(
-      ADMIN_SECRET,
-      now - ADMIN_COOKIE_MAX_AGE_MS,
-    );
+    const expired = signAdminCookie(ADMIN_SECRET, now - ADMIN_COOKIE_MAX_AGE_MS);
 
     const requests = [
       new Request(`${APP_ORIGIN}/api/admin/seed`),
@@ -154,9 +140,7 @@ describe("Part 4 admin login handler", () => {
     expect(setCookie).toContain("Secure");
     const signedValue = setCookie.match(/openmarket_admin=([^;]+)/)?.[1];
     expect(signedValue).toBeTruthy();
-    expect(
-      verifyAdminCookie(signedValue ?? "", ADMIN_SECRET),
-    ).not.toBeNull();
+    expect(verifyAdminCookie(signedValue ?? "", ADMIN_SECRET)).not.toBeNull();
   });
 
   it("does not set a cookie when passphrase verification fails", async () => {

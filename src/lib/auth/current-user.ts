@@ -9,10 +9,7 @@ export const USER_COOKIE_NAME = "openmarket_user";
 type DatabaseProvider = () => Kysely<Database>;
 
 function userRequired(): ServiceError {
-  return new ServiceError(
-    "USER_REQUIRED",
-    "A valid signed user cookie is required.",
-  );
+  return new ServiceError("USER_REQUIRED", "A valid signed user cookie is required.");
 }
 
 function readCookie(request: Request): string {
