@@ -87,6 +87,7 @@ describe("getMarks", () => {
       "3",
     ]);
     expect(history.mark60Minutes).toBeCloseTo(27.5);
+    expect(history.openValue).toBe(10);
     expect(history.windowStart).toBe("2026-01-01T11:00:00.000Z");
     expect(setIsolationLevel).toHaveBeenCalledWith("repeatable read");
     expect(setAccessMode).toHaveBeenCalledWith("read only");

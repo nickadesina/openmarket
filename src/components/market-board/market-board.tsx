@@ -7,6 +7,7 @@ import { useState } from "react";
 import { apiRequest, POLL_INTERVAL_MS } from "../../lib/client/api.js";
 import {
   formatDate,
+  formatPrice,
   formatProbability,
   formatValuation,
 } from "../../lib/client/format.js";
@@ -36,7 +37,7 @@ function formatCompactUsd(value: number): string {
 
 function formatMetric(market: MarketListItem, value = market.metric.current): string {
   return market.metric.format === "usd"
-    ? formatCompactUsd(value)
+    ? formatPrice(value)
     : `${(value * 100).toFixed(1)}%`;
 }
 
@@ -48,7 +49,7 @@ function formatChange(market: MarketListItem): {
   const direction = change > 0 ? "up" : change < 0 ? "down" : "flat";
   const amount =
     market.metric.format === "usd"
-      ? formatCompactUsd(Math.abs(change))
+      ? formatPrice(Math.abs(change))
       : `${(Math.abs(change) * 100).toFixed(1)} pts`;
 
   return {

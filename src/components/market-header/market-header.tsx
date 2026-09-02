@@ -1,4 +1,4 @@
-import { formatDateTime, formatMetric, formatValuation } from "../../lib/client/format.js";
+import { formatDateTime, formatMetricPrice, formatPrice, formatValuation } from "../../lib/client/format.js";
 import { MovementArrow } from "../icons/icons.js";
 import { CompanyLogo } from "../company-logo/company-logo.js";
 import type { MarketDetail } from "../market-workspace/types.js";
@@ -15,7 +15,7 @@ export function MarketHeader({ market, movement }: MarketHeaderProps) {
   const change = market.metric.change24Hours;
   const changeDirection = change > 0 ? "up" : change < 0 ? "down" : "flat";
   const changeAmount = market.metric.kind === "valuation_median"
-    ? formatValuation(Math.abs(change))
+    ? formatPrice(Math.abs(change))
     : `${(Math.abs(change) * 100).toFixed(1)} pts`;
   const changeLabel = changeDirection === "flat"
     ? "Unchanged (24h)"
@@ -45,7 +45,7 @@ export function MarketHeader({ market, movement }: MarketHeaderProps) {
         <div className={styles.primaryMetric}>
           <span>{market.metric.label}</span>
           <strong className={movement === "up" ? styles.flashUp : movement === "down" ? styles.flashDown : undefined}>
-            {formatMetric(market.metric.current, market.metric.kind)}
+            {formatMetricPrice(market.metric.current, market.metric.kind)}
           </strong>
           <small className={changeDirection === "down" ? styles.negative : changeDirection === "up" ? styles.positive : styles.muted}>
             <MovementArrow direction={changeDirection} /> {changeLabel}
@@ -55,7 +55,7 @@ export function MarketHeader({ market, movement }: MarketHeaderProps) {
         <dl className={styles.specTable}>
           <div>
             <dt>60m mark</dt>
-            <dd>{formatMetric(market.metric.mark60Minutes, market.metric.kind)}</dd>
+            <dd>{formatMetricPrice(market.metric.mark60Minutes, market.metric.kind)}</dd>
           </div>
           <div>
             <dt>Claims</dt>

@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  contractLabel,
-  formatDate,
-  formatDateTime,
-  formatMetric,
-  formatQuantityShort,
-  formatCents,
-  formatValuation,
-} from "../../lib/client/format.js";
+import { contractLabel, formatCents, formatDate, formatDateTime, formatMetricPrice, formatQuantityShort, formatValuation } from "../../lib/client/format.js";
 import { MovementArrow } from "../icons/icons.js";
 import type { ActivityPage, MarketDetail } from "../market-workspace/types.js";
 import styles from "./market-activity.module.css";
@@ -71,7 +63,7 @@ export function MarketActivity({ market, activity, loading, error, onRetry }: Ma
                       <span className={styles.visuallyHidden}>
                         {direction === "up" ? "moved up to" : direction === "down" ? "moved down to" : "unchanged at"}
                       </span>
-                      {formatMetric(item.metricAfter, item.metricKind)}
+                      {formatMetricPrice(item.metricAfter, item.metricKind)}
                     </span>
                   </div>
                 </li>

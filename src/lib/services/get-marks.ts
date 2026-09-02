@@ -24,6 +24,10 @@ export interface MarkHistory {
   readonly range: MarkRange;
   readonly metricKind: MetricKind;
   readonly currentMetric: number;
+  /** Metric level in force at windowStart: the latest mark at or before it,
+   *  else the first mark, else the current metric. The same baseline rule
+   *  list-markets uses for the 24-hour change. */
+  readonly openValue: number;
   readonly mark60Minutes: number;
   readonly windowStart: string;
   readonly windowEnd: string;
@@ -209,6 +213,7 @@ export async function getMarks(
         range,
         metricKind: market.metric_kind,
         currentMetric: market.current_metric,
+        openValue: priorRow?.value ?? rows[0]?.value ?? market.current_metric,
         mark60Minutes,
         windowStart: windowStart.toISOString(),
         windowEnd: now.toISOString(),

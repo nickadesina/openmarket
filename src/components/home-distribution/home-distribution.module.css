@@ -31,70 +31,98 @@
   font-size: var(--font-size-sm);
 }
 
-/* One log-scaled axis: gray track, the 10–90 band as a ruled box, a red
-   median tick above, the last round's tick below. */
+/* One log-scaled axis in four rows: the median label above; the box (10th
+   to 90th percentile) on the axis with the median drawn only inside it; the
+   P10 and P90 figures under the box ends; the round's marker and label last,
+   in their own row so no label can collide with another. */
 .band {
+  --band-axis: 1.625rem;
   position: relative;
-  height: 3rem;
-  margin-inline: 3rem;
+  height: 4.25rem;
+  margin-inline: 2.75rem;
 }
 
 .track {
   position: absolute;
-  top: 50%;
+  top: var(--band-axis);
   right: 0;
   left: 0;
   height: 1px;
   background: var(--color-border);
 }
 
-.range {
+.box {
   position: absolute;
-  top: calc(50% - 0.375rem);
+  top: calc(var(--band-axis) - 0.375rem);
   height: 0.75rem;
   border: 1px solid var(--color-ink);
   background: var(--color-primary-subtle);
 }
 
-.medianTick,
-.anchorTick {
+.medianLine {
   position: absolute;
+  top: calc(var(--band-axis) - 0.375rem);
   width: 0;
-}
-
-.medianTick {
-  top: 0;
-  height: calc(50% + 0.5rem);
+  height: 0.75rem;
   border-left: 2px solid var(--color-primary);
 }
 
-.anchorTick {
-  top: calc(50% - 0.5rem);
-  height: calc(50% + 0.5rem);
-  border-left: 1px dashed var(--color-ink);
-}
-
-.medianTick em,
-.anchorTick em {
+.medianLabel,
+.edgeLabel,
+.anchorLabel {
   position: absolute;
-  left: 0;
-  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25rem;
   font-family: var(--font-num);
   font-size: var(--font-size-xs);
-  font-style: normal;
   font-weight: 700;
+  line-height: 1;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
-.medianTick em {
-  top: -0.25rem;
+.medianLabel small,
+.edgeLabel small,
+.anchorLabel small {
+  font-family: var(--font-caps);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.medianLabel {
+  top: 0;
+  transform: translateX(-50%);
   color: var(--color-primary);
 }
 
-.anchorTick em {
-  bottom: -0.25rem;
+.edgeLabel {
+  top: calc(var(--band-axis) + 0.625rem);
   color: var(--color-ink-muted);
+}
+
+.edgeLabelEnd {
+  transform: translateX(-100%);
+}
+
+/* The round: a small ink triangle on the underside of the axis. */
+.anchorMarker {
+  position: absolute;
+  top: calc(var(--band-axis) + 0.125rem);
+  width: 0;
+  height: 0;
+  border-right: 0.3125rem solid transparent;
+  border-bottom: 0.4375rem solid var(--color-ink);
+  border-left: 0.3125rem solid transparent;
+  transform: translateX(-50%);
+}
+
+.anchorLabel {
+  top: calc(var(--band-axis) + 1.5rem);
+  transform: translateX(-50%);
+  color: var(--color-ink);
 }
 
 .facts {

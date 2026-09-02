@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { impliedValuationMedian } from "../../src/lib/engine/median.js";
+import { impliedValuationMedian, impliedValuationQuantile } from "../../src/lib/engine/median.js";
 
 describe("impliedValuationMedian", () => {
   it("interpolates logarithmically inside the median bucket", () => {
@@ -63,5 +63,39 @@ describe("impliedValuationMedian", () => {
     expect(() => impliedValuationMedian([0.5, 0.5], [Number.POSITIVE_INFINITY])).toThrow(
       RangeError,
     );
+  });
+});
+
+describe("impliedValuationQuantile", () => {
+  const probabilities = [0.25, 0.5, 0.25];
+  const boundaries = [100, 200];
+
+  it("agrees with the median at the 50th percentile", () => {
+    expect(impliedValuationQuantile(probabilities, boundaries, 0.5)).toBe(
+      impliedValuationMedian(probabilities, boundaries),
+    );
+  });
+
+  it("lands exactly on a boundary when the cumulative mass reaches it there", () => {
+    expect(impliedValuationQuantile(probabilities, boundaries, 0.25)).toBeCloseTo(100, 12);
+    expect(impliedValuationQuantile(probabilities, boundaries, 0.75)).toBeCloseTo(200, 12);
+  });
+
+  it("interpolates logarithmically into the open upper bucket", () => {
+    const upperEdge = 200 * Math.sqrt(2);
+    const expected = Math.exp(Math.log(200) + ((0.9 - 0.75) / 0.25) * (Math.log(upperEdge) - Math.log(200)));
+    expect(impliedValuationQuantile(probabilities, boundaries, 0.9)).toBeCloseTo(expected, 12);
+  });
+
+  it("is monotonic in the quantile", () => {
+    const values = [0.05, 0.1, 0.5, 0.9, 0.95].map((quantile) =>
+      impliedValuationQuantile(probabilities, boundaries, quantile),
+    );
+    expect([...values].sort((a, b) => a - b)).toEqual(values);
+  });
+
+  it("rejects quantiles outside the open unit interval", () => {
+    expect(() => impliedValuationQuantile(probabilities, boundaries, 0)).toThrow(RangeError);
+    expect(() => impliedValuationQuantile(probabilities, boundaries, 1)).toThrow(RangeError);
   });
 });

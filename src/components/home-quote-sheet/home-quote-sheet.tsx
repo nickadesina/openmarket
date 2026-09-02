@@ -3,7 +3,7 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
 
 import { apiRequest, POLL_INTERVAL_MS } from "../../lib/client/api.js";
-import { formatMetric } from "../../lib/client/format.js";
+import { formatMetricPrice } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
 import type { MarkHistory, MarkRange } from "../../lib/services/get-marks.js";
 import type { MarketListItem, MarketListResult } from "../../lib/services/list-markets.js";
@@ -22,11 +22,14 @@ interface WindowFigures {
   readonly low: number | null;
 }
 
+// Change is measured from the level in force at the window's start (the
+// same baseline the board's 24h figure uses), and the range includes that
+// opening level and the current metric, not only marks printed inside.
 function figures(history: MarkHistory | undefined): WindowFigures {
-  if (history === undefined || history.points.length === 0) return { change: null, high: null, low: null };
-  const values = history.points.map((point) => point.value);
+  if (history === undefined) return { change: null, high: null, low: null };
+  const values = [history.openValue, ...history.points.map((point) => point.value), history.currentMetric];
   return {
-    change: history.currentMetric - history.points[0]!.value,
+    change: history.currentMetric - history.openValue,
     high: Math.max(...values),
     low: Math.min(...values),
   };
@@ -36,7 +39,7 @@ function Change({ market, value }: { readonly market: MarketListItem; readonly v
   if (value === null) return <span className={styles.none}>—</span>;
   const direction = value > 0 ? "up" : value < 0 ? "down" : "flat";
   const amount = market.metric.kind === "valuation_median"
-    ? formatMetric(Math.abs(value), market.metric.kind)
+    ? formatMetricPrice(Math.abs(value), market.metric.kind)
     : `${(Math.abs(value) * 100).toFixed(1)} pts`;
   return (
     <span className={styles[direction]}>
@@ -99,14 +102,14 @@ export function HomeQuoteSheet({ initialData }: { readonly initialData?: MarketL
               RANGES.map((range, rangeIndex) => [range, figures(histories[marketIndex * RANGES.length + rangeIndex]?.data)]),
             ) as Record<MarkRange, WindowFigures>;
             const cell = (value: number | null) =>
-              value === null ? <span className={styles.none}>—</span> : formatMetric(value, market.metric.kind);
+              value === null ? <span className={styles.none}>—</span> : formatMetricPrice(value, market.metric.kind);
             return (
               <tr key={market.marketId}>
                 <th scope="row" className={styles.marketCell}>
                   <CompanyLogo name={market.company.name} logoPath={market.company.logoPath} size="sm" />
                   <span>{market.company.name}</span>
                 </th>
-                <td className={styles.last}>{formatMetric(market.metric.current, market.metric.kind)}</td>
+                <td className={styles.last}>{formatMetricPrice(market.metric.current, market.metric.kind)}</td>
                 <td><Change market={market} value={byRange["1h"].change} /></td>
                 <td><Change market={market} value={byRange["1d"].change} /></td>
                 <td>{cell(byRange["1d"].high)}</td>

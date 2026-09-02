@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useRef, useState } from "react";
 
-import { formatMetric, formatProbability, formatValuation } from "../../lib/client/format.js";
+import { formatMetricPrice, formatProbability, formatValuation } from "../../lib/client/format.js";
 import type { MarketDetail, TradeSelection } from "../market-workspace/types.js";
 import styles from "./strike-ladder.module.css";
 
@@ -84,7 +84,7 @@ export function StrikeLadder({ market, selection, onSelect }: StrikeLadderProps)
     <tr className={styles.currentRow} ref={currentRowNode} key="current">
       <td colSpan={3}>
         <span className={styles.currentLabel}>{market.metric.label}</span>
-        <strong className={styles.currentValue}>{formatMetric(current, market.metric.kind)}</strong>
+        <strong className={styles.currentValue}>{formatMetricPrice(current, market.metric.kind)}</strong>
       </td>
     </tr>
   );
@@ -98,8 +98,8 @@ export function StrikeLadder({ market, selection, onSelect }: StrikeLadderProps)
     if (tail.length === 0) return null;
     const edge = kind === "over" ? tail[tail.length - 1]! : tail[0]!;
     const summary = kind === "over"
-      ? `${tail.length} strikes above ${formatValuation(edge.strikeValueUsd ?? "0")} · YES ≤ ${formatProbability(edge.yesProbability)}`
-      : `${tail.length} strikes below ${formatValuation(edge.strikeValueUsd ?? "0")} · YES ≥ ${formatProbability(edge.yesProbability)}`;
+      ? `${tail.length} ${tail.length === 1 ? "strike" : "strikes"} from ${formatValuation(edge.strikeValueUsd ?? "0")} up · YES ≤ ${formatProbability(edge.yesProbability)}`
+      : `${tail.length} ${tail.length === 1 ? "strike" : "strikes"} from ${formatValuation(edge.strikeValueUsd ?? "0")} down · YES ≥ ${formatProbability(edge.yesProbability)}`;
     return (
       <button
         type="button"

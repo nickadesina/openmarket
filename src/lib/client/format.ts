@@ -23,6 +23,15 @@ const compactValuationFormatter = new Intl.NumberFormat("en-US", {
   notation: "compact",
   maximumFractionDigits: 1,
 });
+// Market prices carry four significant digits so adjacent levels stay
+// distinguishable ($1.117T vs $1.152T); reported anchors and grid strikes
+// keep the coarser compact form because those are the figures as published.
+const priceValuationFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  notation: "compact",
+  maximumSignificantDigits: 4,
+});
 const dateTimeFormatter = new Intl.DateTimeFormat("en-US", {
   dateStyle: "medium",
   timeStyle: "short",
@@ -64,6 +73,18 @@ export function formatValuation(value: number | string): string {
 
 export function formatMetric(value: number, kind: MarketDetail["metric"]["kind"]): string {
   return kind === "yes_probability" ? formatProbability(value) : formatValuation(value);
+}
+
+/** A traded valuation level: four significant digits. */
+export function formatPrice(value: number | string): string {
+  const numericValue = typeof value === "string" ? Number(value) : value;
+  if (!Number.isFinite(numericValue)) return "Unavailable";
+  return priceValuationFormatter.format(numericValue);
+}
+
+/** A traded metric level: probabilities as usual, valuations at price precision. */
+export function formatMetricPrice(value: number, kind: MarketDetail["metric"]["kind"]): string {
+  return kind === "yes_probability" ? formatProbability(value) : formatPrice(value);
 }
 
 export function formatDateTime(value: string): string {

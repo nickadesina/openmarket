@@ -10,6 +10,23 @@ export function impliedValuationMedian(
   probabilities: readonly number[],
   boundaries: readonly number[],
 ): number {
+  return impliedValuationQuantile(probabilities, boundaries, 0.5);
+}
+
+/**
+ * Returns the valuation at which the cumulative probability first reaches
+ * `quantile` (0 < quantile < 1), interpolating uniformly in log space within
+ * the containing bucket. The open-ended end buckets use virtual edges half an
+ * octave beyond the grid, matching the median convention.
+ */
+export function impliedValuationQuantile(
+  probabilities: readonly number[],
+  boundaries: readonly number[],
+  quantile: number,
+): number {
+  if (!Number.isFinite(quantile) || quantile <= 0 || quantile >= 1) {
+    throw new RangeError("quantile must be strictly between zero and one");
+  }
   if (probabilities.length === 0 || boundaries.length !== probabilities.length - 1) {
     throw new RangeError("probabilities must contain exactly one more value than boundaries");
   }
@@ -61,7 +78,7 @@ export function impliedValuationMedian(
     }
 
     const cumulativeAfter = cumulativeBefore + bucketProbability;
-    if (bucketProbability > 0 && cumulativeAfter >= 0.5) {
+    if (bucketProbability > 0 && cumulativeAfter >= quantile) {
       const lowerEdge =
         bucketIndex === 0 ? virtualLowerEdge : boundaries[bucketIndex - 1];
       const upperEdge =
@@ -70,7 +87,7 @@ export function impliedValuationMedian(
         throw new RangeError("boundary vector is incomplete");
       }
 
-      const fraction = (0.5 - cumulativeBefore) / bucketProbability;
+      const fraction = (quantile - cumulativeBefore) / bucketProbability;
       const interpolated = Math.exp(
         Math.log(lowerEdge) + fraction * (Math.log(upperEdge) - Math.log(lowerEdge)),
       );
@@ -79,5 +96,5 @@ export function impliedValuationMedian(
     cumulativeBefore = cumulativeAfter;
   }
 
-  throw new RangeError("probabilities do not contain the median percentile");
+  throw new RangeError("probabilities do not contain the requested percentile");
 }
