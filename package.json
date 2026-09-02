@@ -21,7 +21,8 @@
     "deploy:check": "tsx scripts/verify-production-config.ts --target=production",
     "deploy:check:preview": "tsx scripts/verify-production-config.ts --target=preview",
     "seed:production": "tsx scripts/production-seed.ts",
-    "seed:dev": "tsx scripts/seed-dev.ts"
+    "seed:dev": "tsx scripts/seed-dev.ts",
+    "reseed:dev": "tsx scripts/reseed-dev.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",

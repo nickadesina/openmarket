@@ -4,8 +4,9 @@
  * database at DATABASE_URL_UNPOOLED. The target must be migrated and empty;
  * this refuses to touch a database that already has companies.
  *
- * Regenerate the snapshot from a database whose ledger passes verify:replay:
- *   pg_dump --data-only --column-inserts --exclude-table='kysely*' "$DATABASE_URL_UNPOOLED" > scripts/dev-seed.sql
+ * Rebuild the data with `npm run reseed:dev` (real anchors, scripted
+ * two-week trading narrative), confirm `npm run verify:replay` passes, then
+ * regenerate the snapshot with scripts/dump-dev-seed.sh.
  */
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
