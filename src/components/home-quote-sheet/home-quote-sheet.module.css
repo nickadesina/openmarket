@@ -1,0 +1,96 @@
+.viewport {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.table {
+  width: 100%;
+  min-width: 52rem;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.table th,
+.table td {
+  height: var(--row-table);
+  padding: 0 var(--space-2);
+  border-right: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-border-subtle);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.table th:last-child,
+.table td:last-child {
+  border-right: 0;
+}
+
+.table thead th {
+  height: var(--row-compact);
+  background: var(--color-surface-hover);
+  color: var(--color-ink);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.groupRow th {
+  text-align: center;
+}
+
+.groupRow th[colspan] {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.table thead tr:last-child th {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.marketHead,
+.marketCell {
+  text-align: left !important;
+}
+
+.marketHead {
+  padding-left: var(--space-4) !important;
+}
+
+.marketCell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-left: var(--space-4) !important;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.table tbody td {
+  font-family: var(--font-num);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.last {
+  color: var(--color-primary);
+  font-size: var(--font-size-md) !important;
+}
+
+.up {
+  color: var(--color-positive);
+}
+
+.down {
+  color: var(--color-negative);
+}
+
+.flat,
+.none {
+  color: var(--color-ink-muted);
+}
+
+.visuallyHidden {
+  composes: visuallyHidden from "../../styles/shared.module.css";
+}

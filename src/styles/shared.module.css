@@ -45,6 +45,28 @@
   background: var(--color-primary-action-hover);
 }
 
+/* Hanko seal: a double-ringed circle in one color, pressed a few degrees
+   off-square the way a hand stamp lands. Status, never decoration. */
+.seal {
+  --seal-color: var(--color-primary);
+  display: inline-grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 auto;
+  border: 2px solid var(--seal-color);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px #ffffff, inset 0 0 0 3px var(--seal-color);
+  color: var(--seal-color);
+  font-family: var(--font-caps);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  place-items: center;
+  text-transform: uppercase;
+  transform: rotate(-8deg);
+}
+
 .visuallyHidden {
   position: absolute;
   overflow: hidden;

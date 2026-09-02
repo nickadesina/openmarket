@@ -15,6 +15,15 @@
   min-width: 0;
 }
 
+.section {
+  display: grid;
+  align-content: start;
+}
+
+.section > .sectionHeader:not(:first-child) {
+  margin-top: var(--space-5);
+}
+
 .sectionHeader {
   display: flex;
   align-items: flex-end;

@@ -9,7 +9,6 @@
 .identity,
 .titleRow,
 .metrics,
-.secondaryMetrics,
 .outcome,
 .outcome > div {
   display: flex;
@@ -21,16 +20,9 @@
   min-width: 0;
 }
 
-.logo {
-  flex: 0 0 auto;
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-elevated);
-  object-fit: contain;
-}
-
 .titleRow {
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .titleRow h1 {
@@ -45,7 +37,6 @@
 .prompt,
 .primaryMetric span,
 .primaryMetric small,
-.secondaryMetrics dt,
 .outcome span {
   color: var(--color-ink-muted);
 }
@@ -55,39 +46,34 @@
   font-size: var(--font-size-sm);
 }
 
-.open,
-.settled {
-  padding: 0.1875rem var(--space-3);
-  font-family: var(--font-caps);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+/* Hanko: a ringed round seal, pressed slightly off-square. */
+.sealOpen,
+.sealSettled {
+  composes: seal from "../../styles/shared.module.css";
 }
 
-.open {
-  border: 1.5px solid var(--color-primary);
-  color: var(--color-primary);
+.sealOpen {
+  --seal-color: var(--color-primary);
 }
 
-.settled {
-  border: 1.5px solid var(--color-ink);
-  color: var(--color-ink);
+.sealSettled {
+  --seal-color: var(--color-ink);
 }
 
 .metrics {
   justify-content: flex-end;
-  gap: var(--space-6);
+  align-items: stretch;
+  gap: var(--space-5);
 }
 
 .primaryMetric {
   display: grid;
+  align-content: center;
   gap: var(--space-1);
   text-align: right;
 }
 
-.primaryMetric span,
-.secondaryMetrics dt {
+.primaryMetric span {
   font-family: var(--font-caps);
   font-size: var(--font-size-xs);
   font-weight: 700;
@@ -121,21 +107,49 @@
   color: var(--color-ink-muted);
 }
 
-.secondaryMetrics {
-  gap: var(--space-5);
-  margin: 0;
-}
-
-.secondaryMetrics div {
+/* Spec table: gray label cell on the left, white value on the right,
+   every row ruled. The 商品情報 convention. */
+.specTable {
   display: grid;
-  gap: var(--space-1);
+  margin: 0;
+  border: 1px solid var(--color-border);
+  min-width: 15rem;
 }
 
-.secondaryMetrics dd {
+.specTable > div {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1fr);
+}
+
+.specTable > div + div {
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.specTable dt,
+.specTable dd {
+  display: flex;
+  min-height: var(--row-compact);
   margin: 0;
+  padding: 0 var(--space-3);
+  align-items: center;
+}
+
+.specTable dt {
+  border-right: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-hover);
+  color: var(--color-ink);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.specTable dd {
+  justify-content: flex-end;
   color: var(--color-ink);
   font-family: var(--font-num);
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-sm);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -146,7 +160,6 @@
   gap: var(--space-4);
   padding: var(--space-4);
   border: 1px solid var(--color-warning);
-  border-radius: var(--radius-md);
   background: var(--color-warning-subtle);
   color: var(--color-ink);
 }
@@ -194,20 +207,14 @@
 }
 
 @media (max-width: 36rem) {
-  .metrics,
-  .secondaryMetrics {
-    align-items: flex-start;
-  }
-
   .metrics {
     flex-direction: column;
+    align-items: stretch;
     gap: var(--space-4);
   }
 
-  .secondaryMetrics {
-    width: 100%;
-    justify-content: space-between;
-    gap: var(--space-3);
+  .specTable {
+    min-width: 0;
   }
 
   .outcome {

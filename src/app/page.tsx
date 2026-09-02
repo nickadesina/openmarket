@@ -1,4 +1,6 @@
 import { HomeActivity } from "../components/home-activity/home-activity.js";
+import { HomeDistribution } from "../components/home-distribution/home-distribution.js";
+import { HomeQuoteSheet } from "../components/home-quote-sheet/home-quote-sheet.js";
 import { HomeStats } from "../components/home-stats/home-stats.js";
 import { MarketBoard } from "../components/market-board/market-board.js";
 import { getRuntimeDatabase } from "../lib/db/runtime.js";
@@ -47,6 +49,18 @@ export default async function HomePage() {
             <p>Open markets first, ordered by outstanding claims</p>
           </div>
           <MarketBoard initialData={data.markets} />
+
+          <div className={styles.sectionHeader}>
+            <h2 id="distribution-title">Where the market lands</h2>
+            <p>80% probability band, median, and the last public round on one log axis</p>
+          </div>
+          <HomeDistribution initialData={data.markets} />
+
+          <div className={styles.sectionHeader}>
+            <h2 id="quote-sheet-title">Quote sheet</h2>
+            <p>Change, high, and low over the past hour, day, week, and all time</p>
+          </div>
+          <HomeQuoteSheet initialData={data.markets} />
         </section>
 
         <aside className={styles.activity} aria-labelledby="global-activity-title">

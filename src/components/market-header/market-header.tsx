@@ -28,7 +28,8 @@ export function MarketHeader({ market, movement }: MarketHeaderProps) {
         <div>
           <div className={styles.titleRow}>
             <h1>{market.company.name}</h1>
-            <span className={market.status === "settled" ? styles.settled : styles.open}>
+            {/* Status is a seal pressed onto the record, not a badge. */}
+            <span className={market.status === "settled" ? styles.sealSettled : styles.sealOpen}>
               {market.status === "settled" ? "Settled" : "Open"}
             </span>
           </div>
@@ -50,7 +51,8 @@ export function MarketHeader({ market, movement }: MarketHeaderProps) {
             <MovementArrow direction={changeDirection} /> {changeLabel}
           </small>
         </div>
-        <dl className={styles.secondaryMetrics}>
+        {/* A spec table in the form convention: gray label cell, white value cell. */}
+        <dl className={styles.specTable}>
           <div>
             <dt>60m mark</dt>
             <dd>{formatMetric(market.metric.mark60Minutes, market.metric.kind)}</dd>
@@ -65,6 +67,10 @@ export function MarketHeader({ market, movement }: MarketHeaderProps) {
               <dd>{formatValuation(market.anchor.valuationUsd)}</dd>
             </div>
           ) : null}
+          <div>
+            <dt>Sequence</dt>
+            <dd>No. {market.sequence}</dd>
+          </div>
         </dl>
       </div>
 

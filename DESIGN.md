@@ -189,19 +189,23 @@ Archivo Black appears exactly once, as the OPENMARKET wordmark. Tabular numerals
 are on globally (set on `html`), so every figure aligns.
 
 ### Hierarchy
+Six roles at a ~1.2 ratio: 11 / 13 / 15 / 18 / 22 / 28px. Every figure in Roboto Condensed 700 (`--font-num`), every label in Roboto Condensed 700 caps, every sentence in Noto Sans.
 - **Brand** (400, 1.5rem, lh 1, -0.02em): the wordmark in the top bar. Nowhere else.
-- **Headline** (700, 1.4375rem `--font-size-xl`, lh 1.2): page `h1`, balanced wrap; drops to 1.0625rem on small screens.
-- **Metric** (700, 1.625rem, -0.02em, red): the big implied-valuation figures in board rows and header stat strips; 1.0625rem on mobile.
-- **Body** (400, 0.875rem `--font-size-md`, lh 1.5): default copy. Explanatory paragraphs cap at 50–80ch.
-- **Detail** (400–600, 0.78125rem `--font-size-sm`): table cell values, activity tape lines, metadata.
-- **Label** (Roboto Condensed 700, 0.6875rem `--font-size-xs`, uppercase, 0.05em tracking): table heads, metric sublabels, stamps, footer disclosure. Tabs and nav widen tracking to 0.08–0.1em.
+- **Hero price** (`--font-size-2xl` 1.75rem, red, lh 1): the market header's implied valuation. One per page.
+- **Headline / board price** (`--font-size-xl` 1.375rem): page `h1`, the market title, and the red implied-valuation figure in each board row.
+- **Row title / plate** (`--font-size-lg` 1.125rem): market names in board rows, the YES/NO price plates and strike stepper in the ticket.
+- **Body** (`--font-size-md` 0.9375rem, lh 1.5): default copy and the order-book probabilities. Explanatory paragraphs cap at 50–80ch.
+- **Detail** (`--font-size-sm` 0.8125rem): table cell values, controls, activity tape lines, ledger values.
+- **Label** (`--font-size-xs` 0.6875rem, uppercase, 0.05em tracking): table heads, metric sublabels, seals, footer disclosure. Tabs and nav widen tracking to 0.08–0.1em.
 
 ### Named Rules
 **The Caps Voice Rule.** Every structural label — table header, module tab, nav link, stamp, button, disclosure — is bold Roboto Condensed uppercase with at least 0.05em tracking. Content (names, sentences, numbers) is never uppercased.
 
 **The Tabular Rule.** `font-variant-numeric: tabular-nums` is global. Any new number-bearing surface inherits it; never opt out.
 
-**The Fixed Ramp Rule.** Type sizes are fixed steps from the token ramp (0.6875 / 0.78125 / 0.875 / 1.0625 / 1.4375 / 1.875rem); responsive changes swap steps at breakpoints, never fluid `clamp()` type. (The one sanctioned clamp is the page gutter, which is space, not type.)
+**The Fixed Ramp Rule.** Type sizes are fixed steps from the token ramp (0.6875 / 0.8125 / 0.9375 / 1.125 / 1.375 / 1.75rem); no component declares a literal `font-size`; responsive changes swap steps at breakpoints, never fluid `clamp()` type. (The one sanctioned clamp is the page gutter, which is space, not type.)
+
+**The Row Rule.** Rows sit on the 4px grid via three tokens: `--row-compact` 2rem (list entries, table heads, ledger rows), `--row-table` 2.5rem (order book and data tables), `--row-board` 4rem (market board). Controls are `--control-height` 2.25rem, small 2rem, large 2.75rem.
 
 ## Layout
 
@@ -254,25 +258,42 @@ third-party glyph sets.
 ### Module Header Tabs
 The world's signature label: a small solid Utility Red rectangle (padding 0.375rem 0.875rem) holding white Roboto Condensed 700 caps at 0.78125rem with 0.09em tracking, sitting flush on top of its ruled module ("MARKET BOARD", "LIVE ACTIVITY", "TRADE"). One tab per module; the tab is the module's name, never a control.
 
-### Status Stamps
-- **OPEN:** 1.5px Utility Red outline, red caps text, transparent fill, 1.625rem tall, 0.08em tracking.
-- **SETTLED:** identical geometry in Press Ink, paired with a muted settled date beneath.
-Stamps are outlined, never filled — fill belongs to tabs and actions.
+### Hanko Seals (status)
+Status is a seal pressed onto the record, not a badge: a 2.5rem circle, 2px ring with an inner hairline ring, caps text at 0.5625rem, rotated −8° as a hand stamp lands (`.seal` in `shared.module.css`, color via `--seal-color`).
+- **OPEN:** Utility Red seal beside the market title.
+- **SETTLED:** Press Ink seal, paired with a muted settled date beneath.
+Seals are outlined, never filled — fill belongs to tabs and actions. On the board, open markets show a red TRADE button in the status column instead of a seal, because that column is where the action lives.
+
+### Spec Tables
+The 商品情報 convention for key facts: a hairline-boxed `dl` whose label cells (`dt`) are Paper Hover gray with caps labels and a right hairline, value cells (`dd`) white with right-aligned condensed figures, every row `--row-compact` and ruled. Used for the market header's secondary metrics (60m mark, claims, reference anchor, sequence number) and the ticket's quote.
+
+### Order Book Ladder (板, signature)
+Three-column spine reading highest strike first: NO probability right-aligned in ink on the left, the strike centered in bold condensed type, YES probability in red on the right. Behind each strike a Red Wash bar shows the probability mass landing just below it (derived from adjacent YES probabilities). A ruled **current row** (red top and bottom hairlines, caps label, red figure) sits between the two strikes bracketing the implied valuation and is scrolled to center on load. Near-certain tails (YES outside 1.5–98.5%) fold into **OVER / UNDER** rows above and below the scroller stating how many strikes they hide and their edge probability; clicking unfolds them. Every price is a button: hover washes its side's color, pressed fills solid (red for YES, ink for NO) with white text, and loads the contract into the trade ticket.
 
 ### Market Board Rows (signature)
-4.5rem table rows on white: logo chip + bold market-name link (underline draws in red on hover), red Metric-size implied valuation with a muted caps sublabel, Arrow-and-Word change cell, red 1.5px sparkline over a faint baseline, anchor claim, and stamp. Row hover washes the row Red Wash. The leading cell is a 1.75rem square expand button (1px Rule Gray, chevron rotating 90°; red-filled with white glyph when `aria-expanded="true"`) that opens an **inline ladder row**: YES/NO strike tables in an `auto-fit minmax(18rem, 1fr)` column grid, pivot row highlighted in Red Wash, YES prices in red 700, capped by a caps "view market" link.
+`--row-board` 4rem table rows on white: 2.5rem logo chip + row-title market-name link (underline draws in red on hover), red board-price implied valuation with a muted caps sublabel, Arrow-and-Word change cell, red 1.5px sparkline over a faint baseline, anchor claim, and a red TRADE button. Row hover washes the row Red Wash. The leading cell is a 2rem square expand button (1px Rule Gray, chevron rotating 90°; red-filled with white glyph when `aria-expanded="true"`) that opens an **inline ladder row**: YES/NO strike tables in an `auto-fit minmax(18rem, 1fr)` column grid, pivot row highlighted in Red Wash, YES prices in red 700, capped by a caps "view market" link.
 
-### Trade Ticket
-- **Segmented controls (YES/NO, mode):** hairline-framed white track; buttons are borderless, muted-ink text; the pressed segment fills Utility Red with white text.
-- **Inputs:** 2.25rem hairline-framed white fields, ink text, tabular numerals, muted placeholders; `:focus-within` shows the halo ring instead of a border change.
-- **Quote block:** hairline-separated rows of tabular figures; errors are inline red text with a retry path.
-- Desktop: sticky right rail under a red TRADE tab; mobile: bottom sheet (see Layout) with focus trapped inside.
+### Where the Market Lands (home)
+One row per valuation market under the board. A log-scaled axis carries the market's 10th–90th percentile band as a hairline-boxed Red Wash bar, the median as a 2px red tick labeled above, and the last public round as a dashed ink tick labeled below; the axis is the band plus half a decade each side, widened to admit the round. A two-row Spec Table beside it states the band in figures and the most likely bucket with its probability mass in red. Quantiles are log-interpolated between adjacent strikes and pinned to the edge strike beyond the ladder. Binary markets show a one-line note instead of a band. Rows are `--row-board`; on narrow screens the row stacks.
+
+### Quote Sheet (home)
+A newspaper quote table under the distribution module: grouped caps headers (1H, 1D, 1W, All) over Chg / High / Low columns, `--row-compact` header rows on Paper Hover gray, `--row-table` body rows, every cell ruled and right-aligned in condensed figures. Last is red at body size; changes use Arrow-and-Word color with a small arrow; windows with no observations show a muted dash, never a zero. Mark histories poll at a fifth of the tape's rate. The table scrolls inside its own viewport on narrow screens.
+
+### Trade Ticket (order form)
+Live from first paint on the strike nearest 50%, YES side. Reads top to bottom in the order a brokerage 注文 form does:
+- **Approval strip (稟議):** three ruled boxes — QUOTED, CONFIRMED, FILLED — each receiving a small seal as the order clears that stage. Empty boxes are hairline squares; a sealed box carries the rotated ring.
+- **Side plates:** two large hairline-framed plates showing YES and NO with each side's price; the pressed plate fills solid (red for YES, ink for NO).
+- **Strike stepper:** a hairline-boxed control with − and + ends and a centered `select` listing every strike with its YES price; changes here re-highlight the ladder and vice versa.
+- **Segmented controls (Buy/Sell, mode):** hairline-framed white track; buttons are borderless, muted-ink text; the pressed segment fills Utility Red with white text.
+- **Inputs:** 2.25rem hairline-framed white fields, ink text, tabular numerals; a row of four quick-amount chips beneath (pressed chip fills ink).
+- **Quote:** a Spec Table of the quoted figures, followed by a **date stamp** — a hairline-boxed caps "QUOTED | time" mark — and the previews-not-reservations note. Errors are inline red text with a retry path.
+- Desktop: sticky right rail; mobile: a fixed bottom bar shows the working contract and price with a TRADE button that opens the bottom sheet (see Layout) with focus trapped inside.
 
 ### Navigation
 Caps links (Roboto Condensed 700, 0.9375rem, 0.08em tracking) in the top bar; hover washes Red Wash; the active route is a solid Utility Red block with white text (hover #b40707). A skip link drops in from the top-left as an ink-filled block on focus.
 
 ### Company Logo Chip
-The only rounded element: a bordered square frame (2 / 2.25 / 2.5rem sizes) with 7px radius, Paper Raised fill, containing the mark or a muted bold-caps ticker fallback.
+A white hairline-framed plate (1.75 / 2.25 / 2.5rem sizes) with 4px radius holding the real brand mark at roughly 60% of the plate (`public/logos/*.svg`, official logomarks in their brand color). A muted caps initials fallback appears only when the mark fails to load, never behind it.
 
 ### Activity Tape
 A ruled list of 4rem entries separated by faint hairlines: caps BUY (red) / SELL (ink) verbs inline in body-size sentences, with a muted tabular metadata line whose links underline in red on hover.

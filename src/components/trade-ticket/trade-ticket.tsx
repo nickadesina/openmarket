@@ -247,6 +247,22 @@ export function TradeTicket({ market, selection, onSelectionChange, onAuthoritat
       </header>
 
       <div className={styles.body}>
+        {/* 稟議 strip: one box per stage, each sealed as the order clears it. */}
+        <ol className={styles.approvals} aria-label="Order progress">
+          {([
+            ["Quoted", quote !== null || result !== null || phase === "executing"],
+            ["Confirmed", phase === "executing" || result !== null],
+            ["Filled", result !== null],
+          ] as const).map(([stage, done]) => (
+            <li key={stage} className={styles.approval} aria-current={done ? "step" : undefined}>
+              <span className={styles.approvalBox}>
+                {done ? <span className={styles.approvalSeal}>{stage === "Filled" ? "Filled" : "OK"}</span> : null}
+              </span>
+              <span className={styles.approvalLabel}>{stage}</span>
+            </li>
+          ))}
+        </ol>
+
         <div className={styles.sideToggle} role="group" aria-label="Contract side">
           {(["yes", "no"] as const).map((side) => {
             const probability = side === "yes" ? contract.yesProbability : contract.noProbability;
@@ -358,19 +374,25 @@ export function TradeTicket({ market, selection, onSelectionChange, onAuthoritat
 
         {quote !== null ? (
           <div className={styles.quote} aria-live="polite">
-            <div><span>Quantity</span><strong>{formatQuantity(quote.quantity)}</strong></div>
-            <div><span>{action === "buy" ? "Cost" : "Proceeds"}</span><strong>{formatCents(quote.cash_amount_cents)}</strong></div>
-            <div><span>Average price</span><strong>{formatProbability(quote.average_price)}</strong></div>
-            <div><span>Price after</span><strong>{formatProbability(quote.price_after)}</strong></div>
-            <div><span>Metric after</span><strong>{formatMetric(quote.current_metric_after, market.metric.kind)}</strong></div>
-            {action === "sell" ? <div><span>Sellable</span><strong>{formatQuantity(quote.sellable_quantity)}</strong></div> : null}
-            {quote.expected_redemption_quantity > 0 ? (
-              <div>
-                <span>Immediate redemption</span>
-                <strong>{formatQuantity(quote.expected_redemption_quantity)} shares · {formatCents(quote.expected_redemption_cents)}</strong>
-              </div>
-            ) : null}
-            <small>Quoted {formatDateTime(quote.quoted_at)}. Quotes are previews, not reservations.</small>
+            <dl className={styles.quoteTable}>
+              <div><dt>Quantity</dt><dd>{formatQuantity(quote.quantity)}</dd></div>
+              <div><dt>{action === "buy" ? "Cost" : "Proceeds"}</dt><dd>{formatCents(quote.cash_amount_cents)}</dd></div>
+              <div><dt>Average price</dt><dd>{formatProbability(quote.average_price)}</dd></div>
+              <div><dt>Price after</dt><dd>{formatProbability(quote.price_after)}</dd></div>
+              <div><dt>Metric after</dt><dd>{formatMetric(quote.current_metric_after, market.metric.kind)}</dd></div>
+              {action === "sell" ? <div><dt>Sellable</dt><dd>{formatQuantity(quote.sellable_quantity)}</dd></div> : null}
+              {quote.expected_redemption_quantity > 0 ? (
+                <div>
+                  <dt>Immediate redemption</dt>
+                  <dd>{formatQuantity(quote.expected_redemption_quantity)} shares · {formatCents(quote.expected_redemption_cents)}</dd>
+                </div>
+              ) : null}
+            </dl>
+            <p className={styles.dateStamp}>
+              <span>Quoted</span>
+              <time dateTime={quote.quoted_at}>{formatDateTime(quote.quoted_at)}</time>
+            </p>
+            <small>Quotes are previews, not reservations.</small>
           </div>
         ) : null}
 
