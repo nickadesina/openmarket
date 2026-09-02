@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   getActivity: vi.fn(),
   getPortfolio: vi.fn(),
   logReadRequest: vi.fn(),
+  logUnexpectedError: vi.fn(),
 }));
 
 vi.mock("../../src/lib/db/runtime.js", () => ({
@@ -20,6 +21,7 @@ vi.mock("../../src/lib/db/runtime.js", () => ({
 }));
 vi.mock("../../src/lib/logging/server-log.js", () => ({
   logReadRequest: mocks.logReadRequest,
+  logUnexpectedError: mocks.logUnexpectedError,
 }));
 vi.mock("../../src/lib/services/list-markets.js", () => ({
   listMarkets: mocks.listMarkets,
@@ -180,6 +182,10 @@ describe("Part 3 public read routes", () => {
         details: {},
       },
     });
+    expect(mocks.logUnexpectedError).toHaveBeenCalledWith(
+      response.headers.get("x-request-id"),
+      expect.any(Error),
+    );
   });
 });
 

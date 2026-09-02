@@ -23,3 +23,17 @@ export function logReadRequest(event: ReadRequestLog): void {
 
   console.info(JSON.stringify(entry));
 }
+
+/**
+ * Unexpected (non-ServiceError) failures are answered with an opaque
+ * INTERNAL_ERROR envelope; this is the only place their cause is recorded.
+ * The entry carries the request ID so a client-visible 500 can be matched to
+ * its cause without ever echoing request bodies, cookies, or secrets.
+ */
+export function logUnexpectedError(requestId: string, error: unknown): void {
+  const cause =
+    error instanceof Error
+      ? { name: error.name, message: error.message, stack: error.stack }
+      : { name: "UnknownThrown", message: String(error) };
+  console.error(JSON.stringify({ level: "error", event: "unexpected_error", requestId, ...cause }));
+}

@@ -3,6 +3,7 @@ import type { Kysely } from "kysely";
 import type { ZodType } from "zod";
 import { getRuntimeDatabase } from "../db/runtime.js";
 import type { Database } from "../db/schema.js";
+import { logUnexpectedError } from "../logging/server-log.js";
 import { assertAllowedOrigin } from "../security/origin.js";
 import { isServiceError, ServiceError } from "./errors.js";
 import { jsonError, jsonUnexpectedError, REQUEST_ID_HEADER } from "./response.js";
@@ -62,7 +63,12 @@ export async function withMutationRoute(
     response.headers.set("Cache-Control", "no-store");
     response.headers.set(REQUEST_ID_HEADER, requestId);
   } catch (error: unknown) {
-    response = isServiceError(error) ? jsonError(error, requestId) : jsonUnexpectedError(requestId);
+    if (isServiceError(error)) {
+      response = jsonError(error, requestId);
+    } else {
+      logUnexpectedError(requestId, error);
+      response = jsonUnexpectedError(requestId);
+    }
   }
 
   return response;

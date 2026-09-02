@@ -23,7 +23,7 @@ test("opening an account seeds the header identity without a reload", async ({
 
   const account = page.getByRole("button", { name: new RegExp(username) });
   await expect(account).toBeVisible();
-  await expect(account).toContainText("$100,000 cash");
+  await expect(account).toContainText("$100,000.00 cash");
   await expect(page.getByRole("heading", { name: "Open your paper account" })).toHaveCount(0);
 });
 

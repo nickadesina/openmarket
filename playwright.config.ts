@@ -65,6 +65,9 @@ export default defineConfig({
   workers: 1,
   retries: 0,
   timeout: 90_000,
+  // Fail with a report well inside the CI job's 25-minute budget instead of
+  // being killed by the runner with no output; local runs are unbounded.
+  globalTimeout: isCi ? 18 * 60_000 : 0,
   expect: {
     timeout: 10_000,
   },
@@ -96,6 +99,8 @@ export default defineConfig({
           url: appOrigin,
           reuseExistingServer: false,
           timeout: 120_000,
+          stdout: isCi ? "pipe" : "ignore",
+          stderr: "pipe",
           env: {
             DATABASE_URL: process.env.DATABASE_URL_TEST!,
             DATABASE_URL_UNPOOLED: process.env.DATABASE_URL_TEST!,

@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Kysely } from "kysely";
 import { getRuntimeDatabase } from "../db/runtime.js";
 import type { Database } from "../db/schema.js";
-import { logReadRequest } from "../logging/server-log.js";
+import { logReadRequest, logUnexpectedError } from "../logging/server-log.js";
 import { type ErrorCode, isServiceError } from "./errors.js";
 import { errorCode, jsonError, jsonUnexpectedError, REQUEST_ID_HEADER } from "./response.js";
 
@@ -36,7 +36,12 @@ export async function withReadRoute(
     response.headers.set(REQUEST_ID_HEADER, requestId);
   } catch (error: unknown) {
     failureCode = errorCode(error);
-    response = isServiceError(error) ? jsonError(error, requestId) : jsonUnexpectedError(requestId);
+    if (isServiceError(error)) {
+      response = jsonError(error, requestId);
+    } else {
+      logUnexpectedError(requestId, error);
+      response = jsonUnexpectedError(requestId);
+    }
   }
 
   logReadRequest({
