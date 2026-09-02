@@ -35,6 +35,6 @@ npm run verify:replay    # ledger invariants against DATABASE_URL_UNPOOLED
 
 - Browse `http://localhost:3000`, never `127.0.0.1`: dev resources are origin-checked and hydration fails silently.
 - Sign-in needs `USER_COOKIE_SECRET` in `.env.local`; `/admin` needs `ADMIN_PASSPHRASE_HASH`. Mutations reject requests without a browser `Origin`, so sign in through the UI, not curl.
-- Playwright specs skip unless `DATABASE_URL_TEST` is set; they boot their own server on port 3100.
+- Browser tests: `brew services start postgresql@17 && npm run db:test:local`, then `npm run test:browser:local` (Playwright boots its own server on port 3100 against that database; specs skip when `DATABASE_URL_TEST` is unset).
 - Rebuild dev data with `npm run reseed:dev` (real anchors, scripted sixteen-day narrative), then `npm run verify:replay`, then `scripts/dump-dev-seed.sh` to refresh `scripts/dev-seed.sql`. `pg_dump` aborts on the Neon 18 / client 17 mismatch; the dumper is psql only.
 - Real data only. Never invent rows, stats, or copy; every figure on a screen derives from the API.

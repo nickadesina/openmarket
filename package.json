@@ -14,6 +14,8 @@
     "test:unit": "vitest run --exclude \"tests/integration/**\"",
     "test:integration": "vitest run tests/integration",
     "test:browser": "playwright test",
+    "test:browser:local": "DATABASE_URL_TEST=postgresql://$USER@localhost:5432/openmarket_test playwright test",
+    "db:test:local": "createdb openmarket_test 2>/dev/null; DATABASE_URL_UNPOOLED=postgresql://$USER@localhost:5432/openmarket_test DATABASE_URL=postgresql://$USER@localhost:5432/openmarket_test tsx scripts/migrate.ts",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
