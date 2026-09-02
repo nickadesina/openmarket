@@ -118,7 +118,7 @@ export function StrikeLadder({ market, selection, onSelect }: StrikeLadderProps)
     <section className={styles.section} aria-labelledby="ladder-title">
       <header className={styles.header}>
         <div>
-          <h2 id="ladder-title">{isBinary ? "Outcome contract" : "Probability ladder"}</h2>
+          <h2 id="ladder-title" className={styles.tab}>{isBinary ? "Outcome contract" : "Probability ladder"}</h2>
           <p>
             {isBinary
               ? "Select YES or NO to prepare a quote."

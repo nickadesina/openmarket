@@ -53,7 +53,7 @@ export function DistributionChart({ market }: DistributionChartProps) {
     <details className={styles.section}>
       <summary>
         <span>
-          <strong>Implied distribution</strong>
+          <strong className={styles.tab}>Implied distribution</strong>
           <small>Probability mass across possible outcomes</small>
         </span>
         <span aria-hidden="true">Expand</span>

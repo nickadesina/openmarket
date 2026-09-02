@@ -262,7 +262,7 @@ third-party glyph sets.
 - **States:** `:active` nudges down 1px; disabled drops to 48% opacity with `not-allowed`; `:focus-visible` gets the pale-red halo ring.
 
 ### Module Header Tabs
-The world's signature label: a small solid Utility Red rectangle (padding 0.375rem 0.875rem) holding white Roboto Condensed 700 caps at 0.78125rem with 0.09em tracking, sitting flush on top of its ruled module ("MARKET BOARD", "LIVE ACTIVITY", "TRADE"). One tab per module; the tab is the module's name, never a control.
+The world's signature label: a small solid Utility Red plate, one compact row tall (padding 0.5rem 1rem, line-height 1), holding white Roboto Condensed 700 caps at `--font-size-sm` with 0.09em tracking, sitting flush on top of its ruled module ("MARKET BOARD", "LIVE ACTIVITY", "TRADE TICKET"). It is one shared class, `.moduleTab` in `src/styles/shared.module.css`, composed by every module; no file restates it. One tab per module; the tab is the module's name, never a control.
 
 ### Hanko Seals (status)
 Status is a seal pressed onto the record, not a badge: a 2.5rem circle, 2px ring with an inner hairline ring, caps text at 0.5625rem, rotated −8° as a hand stamp lands (`.seal` in `shared.module.css`, color via `--seal-color`).

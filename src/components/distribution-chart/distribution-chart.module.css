@@ -28,17 +28,9 @@
   gap: var(--space-1);
 }
 
-.section summary strong {
-  display: inline-flex;
+.tab {
+  composes: moduleTab from "../../styles/shared.module.css";
   align-self: start;
-  padding: 0.375rem 0.875rem;
-  background: var(--color-primary);
-  color: #ffffff;
-  font-family: var(--font-caps);
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
 }
 
 .section summary small,

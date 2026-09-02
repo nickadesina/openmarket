@@ -240,7 +240,7 @@ export function TradeTicket({ market, selection, onSelectionChange, onAuthoritat
     <section className={styles.ticket} aria-labelledby="trade-ticket-title">
       <header className={styles.header}>
         <div>
-          <h2 id="trade-ticket-title">Trade ticket</h2>
+          <h2 id="trade-ticket-title" className={styles.tab}>Trade ticket</h2>
           <p>{selection.side.toUpperCase()} · {strikeLabel(market, selection.strikeIndex)}</p>
         </div>
         {onClose !== undefined ? <button type="button" className={styles.close} onClick={onClose} aria-label="Close trade ticket">Close</button> : null}

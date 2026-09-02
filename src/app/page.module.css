@@ -32,17 +32,8 @@
   gap: var(--space-4);
 }
 
-.sectionHeader h2 {
-  display: inline-flex;
-  margin: 0;
-  padding: 0.375rem 0.875rem;
-  background: var(--color-primary);
-  color: #ffffff;
-  font-family: var(--font-caps);
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
+.tab {
+  composes: moduleTab from "../styles/shared.module.css";
 }
 
 .sectionHeader p {

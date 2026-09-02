@@ -13,17 +13,8 @@
   border-bottom: 1px solid var(--color-border);
 }
 
-.header h2 {
-  display: inline-flex;
-  margin: 0;
-  padding: 0.375rem 0.875rem;
-  background: var(--color-primary);
-  color: #ffffff;
-  font-family: var(--font-caps);
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
+.tab {
+  composes: moduleTab from "../../styles/shared.module.css";
 }
 
 .header p,
@@ -76,7 +67,7 @@
 .sideYes,
 .sideNo {
   display: grid;
-  gap: 0.125rem;
+  gap: var(--space-1);
   min-height: var(--control-height-lg);
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--color-border-strong);
@@ -377,7 +368,7 @@
   justify-self: start;
   align-items: center;
   gap: var(--space-2);
-  padding: 0.125rem var(--space-2);
+  padding: var(--space-1) var(--space-2);
   border: 1px solid var(--color-ink);
   color: var(--color-ink);
   font-family: var(--font-caps);
@@ -429,9 +420,9 @@
 
 .approvalSeal {
   composes: seal from "../../styles/shared.module.css";
-  width: 1.875rem;
-  height: 1.875rem;
-  font-size: 0.5rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: var(--font-size-micro);
 }
 
 .approvalLabel {

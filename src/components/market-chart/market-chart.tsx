@@ -165,7 +165,7 @@ export function MarketChart({ market, marks, range, loading, error, onRangeChang
     <section className={styles.section} aria-labelledby="market-chart-title">
       <header className={styles.header}>
         <div>
-          <h2 id="market-chart-title">Market history</h2>
+          <h2 id="market-chart-title" className={styles.tab}>Market history</h2>
           <p>
             Instantaneous metric and current 60-minute time-weighted mark ·
             chart by{" "}

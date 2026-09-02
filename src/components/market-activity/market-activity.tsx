@@ -19,7 +19,7 @@ export function MarketActivity({ market, activity, loading, error, onRetry }: Ma
       <section className={styles.activity} aria-labelledby="activity-title" aria-busy={loading}>
         <header>
           <div>
-            <h2 id="activity-title">Market activity</h2>
+            <h2 id="activity-title" className={styles.tab}>Market activity</h2>
             <p>Completed trades in authoritative market sequence</p>
           </div>
           {error && activity !== undefined ? (
@@ -74,7 +74,7 @@ export function MarketActivity({ market, activity, loading, error, onRetry }: Ma
       </section>
 
       <section className={styles.resolution} aria-labelledby="resolution-title">
-        <h2 id="resolution-title">Resolution</h2>
+        <h2 id="resolution-title" className={styles.tab}>Resolution</h2>
         {market.settlement !== null ? (
           <>
             <p>This market settled at <strong>{formatValuation(market.settlement.settledValueUsd)}</strong>.</p>

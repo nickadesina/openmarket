@@ -415,7 +415,7 @@
 .skeletonName {
   composes: skeletonBlock from "../../styles/shared.module.css";
   width: min(10rem, 75%);
-  height: 0.875rem;
+  height: 1rem;
 }
 
 .skeletonMetric {

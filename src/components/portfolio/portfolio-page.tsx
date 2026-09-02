@@ -401,7 +401,7 @@ export function PortfolioPage() {
       <section className={styles.section} aria-labelledby="positions-heading">
         <div className={styles.sectionHeader}>
           <div>
-            <h2 id="positions-heading">Positions</h2>
+            <h2 id="positions-heading" className={styles.tab}>Positions</h2>
             <p>Canonical holdings decomposed into recognizable contracts.</p>
           </div>
         </div>
@@ -476,7 +476,7 @@ export function PortfolioPage() {
       <section className={styles.section} aria-labelledby="history-heading">
         <div className={styles.sectionHeader}>
           <div>
-            <h2 id="history-heading">Trade history</h2>
+            <h2 id="history-heading" className={styles.tab}>Trade history</h2>
             <p>Newest trades first.</p>
           </div>
           {offset > 0 ? <span>Showing {offset + 1} onward</span> : null}
