@@ -182,9 +182,9 @@ test("a moved sale price returns to a fresh quote with the authoritative proceed
     code: "PRICE_MOVED",
     message: "The market moved before execution.",
     details: {
-      cash_amount_cents: "4321",
+      cash_amount_cents: "430",
       shares: 4.3,
-      average_price: 1.0,
+      average_price: 430 / 100 / 4.3,
       price_after: 0.4,
       current_metric_after: 0.4,
       expected_redemption_quantity: 0,
@@ -197,7 +197,7 @@ test("a moved sale price returns to a fresh quote with the authoritative proceed
   await sellFlow.getByRole("button", { name: "Sell shares" }).click();
   const alert = sellFlow.getByRole("alert");
   await expect(alert).toContainText(
-    "The market moved. New authoritative proceeds: $43.21. Review a fresh quote before confirming.",
+    "The market moved. New authoritative proceeds: $4.30. Review a fresh quote before confirming.",
   );
   await expect(sellFlow.getByRole("button", { name: "Review sale" })).toBeVisible();
   await expect(sellFlow.getByRole("button", { name: "Sell shares" })).toHaveCount(0);

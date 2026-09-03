@@ -358,6 +358,7 @@ describe("executeTrade", () => {
       sellable_quantity: 1,
     });
     expect(executed.result.engine_cost_usd).toBeCloseTo(0.5012499948, 8);
+    expect(executed.result.average_price).toBe(0.51);
     expect(executed.result.price_before).toBeCloseTo(0.5, 12);
     expect(executed.result.price_after).toBeCloseTo(0.5024999791, 8);
 
@@ -404,6 +405,21 @@ describe("executeTrade", () => {
       value: executed.result.current_metric,
     });
     expect(harness.events.filter((event) => event === "mark insert")).toHaveLength(1);
+  });
+
+  it("reports the quantized ledger average in PRICE_MOVED details", async () => {
+    const harness = createTransactionHarness();
+
+    await expect(
+      executeTrade(harness.db, USER_ID, { ...buy, max_cost_usd: "0.50" }),
+    ).rejects.toMatchObject({
+      code: "PRICE_MOVED",
+      details: {
+        cash_amount_cents: "51",
+        shares: 1,
+        average_price: 0.51,
+      },
+    });
   });
 
   it("redeems a complete set using the tolerated entitlement and actual MM cash flow", async () => {

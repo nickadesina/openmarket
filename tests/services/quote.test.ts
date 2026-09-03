@@ -150,6 +150,7 @@ describe("quoteMarket", () => {
     );
     expect(Number.isFinite(result.average_price)).toBe(true);
     expect(Number.isSafeInteger(Number(result.cash_amount_cents))).toBe(true);
+    expect(result.average_price).toBe(Number(result.cash_amount_cents) / 100 / result.quantity);
     expect(new Date(result.quoted_at).toISOString()).toBe(result.quoted_at);
     expect(selectFrom).not.toHaveBeenCalledWith("holdings");
     expect(transaction).toHaveBeenCalledTimes(1);

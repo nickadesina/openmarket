@@ -147,7 +147,7 @@ export function TradeTicket({
   const [movedPrice, setMovedPrice] = useState<MovedPrice | null>(null);
   const trade = useTradeExecution();
 
-  const contract = market.contracts.find((item) => item.strikeIndex === selection.strikeIndex)!;
+  const contract = market.contracts.find((item) => item.strikeIndex === selection.strikeIndex);
   const isBinary = market.metric.kind === "yes_probability";
   const strikePosition = market.contracts.findIndex(
     (item) => item.strikeIndex === selection.strikeIndex,
@@ -343,6 +343,8 @@ export function TradeTicket({
     ["Sent", phase === "executing" || orderPending || result !== null],
     ["Filled", result !== null],
   ] as const;
+
+  if (contract === undefined) return null;
 
   return (
     <section className={styles.ticket} aria-labelledby="trade-ticket-title">

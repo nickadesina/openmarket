@@ -198,9 +198,9 @@ test("a moved price must be explicitly confirmed and re-executes with the author
     code: "PRICE_MOVED",
     message: "The market moved before execution.",
     details: {
-      cash_amount_cents: "12345",
-      shares: 12.3,
-      average_price: 0.61,
+      cash_amount_cents: "615",
+      shares: 10,
+      average_price: 615 / 100 / 10,
       price_after: 0.66,
       current_metric_after: 0.66,
       expected_redemption_quantity: 0,
@@ -215,9 +215,9 @@ test("a moved price must be explicitly confirmed and re-executes with the author
   await expect(alert).toContainText("Price moved");
   // The requote re-renders the full consequence set, not an abbreviated box.
   const panel = ticket.locator("dl");
-  await expect(panel).toContainText("12.3");
-  await expect(panel).toContainText("$123.45");
-  await expect(panel).toContainText("61.0%");
+  await expect(panel).toContainText("10");
+  await expect(panel).toContainText("$6.15");
+  await expect(panel).toContainText("61.5%");
   await expect(panel).toContainText("66.0%");
   await expect(ticket.getByText("Requoted", { exact: true })).toBeVisible();
   await expect(ticket.getByText("Max cost", { exact: true })).toBeVisible();
@@ -231,7 +231,7 @@ test("a moved price must be explicitly confirmed and re-executes with the author
   const executionResponse = await executionPromise;
   expect(executionResponse.status()).toBe(200);
   const confirmedRequest = executionResponse.request().postDataJSON() as TradeRequest;
-  expect(confirmedRequest.max_cost_usd).toBe("123.45");
+  expect(confirmedRequest.max_cost_usd).toBe("6.15");
   expect(confirmedRequest.quantity).toBe(10);
   expect(confirmedRequest.idempotency_key).not.toBe(attempts[0]?.idempotency_key);
   await expect(ticket.getByText("Trade completed", { exact: true })).toBeVisible();

@@ -36,6 +36,7 @@ export interface ExecutionResult extends JsonObject {
   readonly shares: number;
   readonly engine_cost_usd: number;
   readonly cash_amount_cents: string;
+  /** Ledger cash magnitude per share, after cent quantization. */
   readonly average_price: number;
   readonly price_before: number;
   readonly price_after: number;
@@ -405,7 +406,7 @@ export async function executeTrade(
         {
           cash_amount_cents: cashAmountCents.toString(),
           shares: quantity,
-          average_price: Math.abs(engineCostUsd) / quantity,
+          average_price: Math.abs(cashAmountCents) / 100 / quantity,
           price_after: priceAfter,
           current_metric_after: metricAfter,
           expected_redemption_quantity: redemptionQuantity,
@@ -451,7 +452,7 @@ export async function executeTrade(
       shares: quantity,
       engine_cost_usd: engineCostUsd,
       cash_amount_cents: cashAmountCents.toString(),
-      average_price: Math.abs(engineCostUsd) / quantity,
+      average_price: Math.abs(cashAmountCents) / 100 / quantity,
       price_before: priceBefore,
       price_after: priceAfter,
       current_metric: metricAfter,

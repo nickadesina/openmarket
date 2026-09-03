@@ -34,6 +34,7 @@ export interface QuoteResult {
   /** Conservative debit or proceeds magnitude, before any full-set redemption. */
   readonly cash_amount_cents: string;
   readonly price_before: number;
+  /** Ledger cash magnitude per share, after cent quantization. */
   readonly average_price: number;
   readonly price_after: number;
   readonly current_metric_after: number;
@@ -284,7 +285,7 @@ async function quoteMarketFromSnapshot(
       engine_cost_usd: engineCostUsd,
       cash_amount_cents: String(cashAmountCents),
       price_before: selectedProbability(distributionBefore, mask),
-      average_price: Math.abs(engineCostUsd) / quantity,
+      average_price: Math.abs(cashAmountCents) / 100 / quantity,
       price_after: selectedProbability(distributionAfter, mask),
       current_metric_after: currentMetricAfter(market.metric_kind, distributionAfter),
       expected_redemption_quantity: expectedRedemptionQuantity,
