@@ -4,6 +4,8 @@ import {
   buyViaApi,
   createUser,
   expectNoHorizontalOverflow,
+  isApiResponse,
+  seedBinaryMarket,
   seedValuationMarket,
   skipWithoutDatabase,
   uniqueNames,
@@ -76,6 +78,47 @@ test("selecting a strike opens a ticket labeled with that contract", async ({
     "aria-pressed",
     "true",
   );
+});
+
+test("a refresh replaces a selected strike that no longer exists", async ({
+  page,
+  baseURL,
+}, testInfo) => {
+  const names = uniqueNames("val-stale-selection", testInfo);
+  const replacementNames = uniqueNames("binary-replacement", testInfo);
+  await seedValuationMarket(page, baseURL, names);
+  await seedBinaryMarket(page, baseURL, replacementNames);
+  await createUser(page, baseURL, names.username);
+
+  await page.goto(`/m/${names.slug}`);
+  const ladder = page.getByRole("region", { name: "Probability ladder" });
+  await ladder.getByRole("button", { name: /^YES/ }).first().click();
+  const ticket = page.getByRole("region", { name: "Trade ticket" });
+  const strikeSelect = ticket.getByRole("combobox", { name: "Valuation above" });
+  await expect(strikeSelect).not.toHaveValue("0");
+  await ticket.getByRole("spinbutton", { name: "Spend" }).fill("10.00");
+  await ticket.getByRole("button", { name: "Preview buy" }).click();
+
+  const replacementResponse = await page.request.get(
+    `/api/markets/${encodeURIComponent(replacementNames.slug)}`,
+  );
+  expect(replacementResponse.status()).toBe(200);
+  const replacementMarket = await replacementResponse.json();
+  await page.route(`**/api/markets/${names.slug}`, async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({ response, json: replacementMarket });
+  });
+
+  const refreshPromise = page.waitForResponse((response) =>
+    isApiResponse(response, "GET", `/api/markets/${names.slug}`),
+  );
+  await ticket.getByRole("button", { name: "Confirm buy" }).click();
+  expect((await refreshPromise).status()).toBe(200);
+
+  await expect(ticket).toBeVisible();
+  await expect(ticket).toContainText("YES · Outcome");
+  await expect(strikeSelect).toHaveCount(0);
+  await page.unroute(`**/api/markets/${names.slug}`);
 });
 
 test("trades on strike contracts appear in activity with directional labels", async ({

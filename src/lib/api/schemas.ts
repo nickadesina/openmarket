@@ -12,6 +12,10 @@ const slugSchema = z
   .max(100)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*(?![\s\S])/);
 const quantitySchema = z.number().finite().min(MIN_QUANTITY);
+const idempotencyKeySchema = z
+  .string()
+  .uuid()
+  .transform((value) => value.toLowerCase());
 const strikeIndexSchema = z
   .number()
   .int()
@@ -85,7 +89,7 @@ export const quoteInputSchema = z.union([
 
 const tradeFields = {
   ...quoteFields,
-  idempotency_key: z.string().uuid(),
+  idempotency_key: idempotencyKeySchema,
 } as const;
 
 const buyQuantityTradeSchema = z

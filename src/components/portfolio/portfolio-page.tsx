@@ -15,7 +15,7 @@ import {
   formatValuation,
 } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
-import { useTradeExecution } from "../../lib/client/use-trade-execution.js";
+import { type TradeOutcome, useTradeExecution } from "../../lib/client/use-trade-execution.js";
 import type { ExecutionResult } from "../../lib/services/execute-trade.js";
 import type {
   Portfolio,
@@ -39,6 +39,13 @@ interface SellSelection {
 interface SellFlowProps extends SellSelection {
   readonly onClose: () => void;
   readonly onComplete: (result: ExecutionResult) => void;
+}
+
+interface ReviewedSale {
+  readonly quote: QuoteResult;
+  readonly positionQuantity: number;
+  readonly sellableQuantity: number;
+  readonly markPriceUsd: number;
 }
 
 function positionLabel(
@@ -72,10 +79,80 @@ function PortfolioSkeleton() {
   );
 }
 
+function SaleReview({
+  quote,
+  minProceedsCents,
+  working,
+  pending,
+  blocked,
+  onDiscard,
+  onSubmit,
+}: {
+  readonly quote: QuoteResult;
+  readonly minProceedsCents: number;
+  readonly working: boolean;
+  /** An earlier send has an unknown outcome; submit retries it and discard abandons it. */
+  readonly pending: boolean;
+  readonly blocked: boolean;
+  readonly onDiscard: () => void;
+  readonly onSubmit: () => void;
+}) {
+  return (
+    <div className={styles.quoteReview}>
+      <dl>
+        <div>
+          <dt>Shares</dt>
+          <dd>{formatQuantity(quote.quantity)}</dd>
+        </div>
+        <div>
+          <dt>Average price</dt>
+          <dd>{formatUsd(quote.average_price)}</dd>
+        </div>
+        <div>
+          <dt>Estimated proceeds</dt>
+          <dd>{formatCents(quote.cash_amount_cents)}</dd>
+        </div>
+        <div>
+          <dt>Minimum proceeds</dt>
+          <dd>{formatCents(String(minProceedsCents))}</dd>
+        </div>
+        {quote.expected_redemption_quantity > 0 ? (
+          <div>
+            <dt>Full-set redemption</dt>
+            <dd>{formatCents(quote.expected_redemption_cents)}</dd>
+          </div>
+        ) : null}
+      </dl>
+      <p className={styles.quoteTime}>
+        Quoted {formatDateTime(quote.quoted_at)}. Quotes are previews, not reservations; the sale
+        fills at or above the minimum proceeds or is returned as a requote.
+      </p>
+      <div className={styles.actionRow}>
+        <button
+          type="button"
+          className={styles.secondaryButton}
+          onClick={onDiscard}
+          disabled={working}
+        >
+          {pending ? "Abandon order" : "Edit quantity"}
+        </button>
+        <button
+          type="button"
+          className={styles.primaryButton}
+          onClick={onSubmit}
+          disabled={working || (!pending && blocked)}
+        >
+          {working ? "Selling…" : pending ? "Retry sale" : "Sell shares"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
   const queryClient = useQueryClient();
   const [quantityText, setQuantityText] = useState(String(position.sellableQuantity));
-  const [quote, setQuote] = useState<QuoteResult | null>(null);
+  const [review, setReview] = useState<ReviewedSale | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [selling, setSelling] = useState(false);
   const trade = useTradeExecution();
@@ -84,6 +161,20 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
     Number.isFinite(quantity) &&
     quantity >= MIN_QUANTITY &&
     quantity <= position.sellableQuantity + Number.EPSILON;
+  // A review is valid only for the live position and contract price it quoted.
+  // An unknown-outcome order is exempt because retry must preserve its request.
+  const settled = market.status !== "open";
+  const quoteStale =
+    review !== null &&
+    (review.positionQuantity !== position.quantity ||
+      review.sellableQuantity !== position.sellableQuantity ||
+      review.markPriceUsd !== position.markPriceUsd);
+  const blocked = settled
+    ? "This market has settled. Positions are paid out at settlement, not sold."
+    : quoteStale
+      ? "Your position or market price changed since this quote. Review a fresh quote."
+      : null;
+  const quote = review === null || (blocked !== null && !trade.canRetry) ? null : review.quote;
 
   const quoteMutation = useMutation({
     mutationFn: () =>
@@ -98,26 +189,27 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
         }),
       }),
     onSuccess: (nextQuote) => {
-      setQuote(nextQuote);
+      setReview({
+        quote: nextQuote,
+        positionQuantity: position.quantity,
+        sellableQuantity: position.sellableQuantity,
+        markPriceUsd: position.markPriceUsd,
+      });
       setNotice(null);
     },
     onError: (error) => {
-      setQuote(null);
+      setReview(null);
       setNotice(errorMessage(error, FALLBACK_ERROR));
     },
   });
 
-  async function sellShares() {
-    if (quote === null) return;
+  // Min proceeds: the bound on the wire, 1% under the quoted figure, shown in the review.
+  const minProceedsCents =
+    quote === null ? null : Math.floor(Number(quote.cash_amount_cents) * 0.99);
+
+  async function settleOrder(send: () => Promise<TradeOutcome>) {
     setSelling(true);
-    const outcome = await trade.execute({
-      slug: market.company.slug,
-      action: "sell",
-      side: position.side,
-      strike_index: position.strikeIndex,
-      quantity: quote.quantity,
-      min_proceeds_usd: (Math.floor(Number(quote.cash_amount_cents) * 0.99) / 100).toFixed(2),
-    });
+    const outcome = await send();
     if (outcome.status === "executed") {
       await queryClient.invalidateQueries({ queryKey: queryKeys.all });
       onComplete(outcome.result);
@@ -131,7 +223,7 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
       return;
     }
     if (outcome.error.code === "PRICE_MOVED") {
-      setQuote(null);
+      setReview(null);
       const movedProceeds =
         outcome.movedPrice === null ? null : formatCents(outcome.movedPrice.cashAmountCents);
       setNotice(
@@ -144,7 +236,23 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
     setNotice(errorMessage(outcome.error, FALLBACK_ERROR));
   }
 
-  const busy = quoteMutation.isPending || selling;
+  function sellShares() {
+    // Submit-time guard against the same live snapshot the render used.
+    if (quote === null || minProceedsCents === null || blocked !== null) return;
+    return settleOrder(() =>
+      trade.execute({
+        slug: market.company.slug,
+        action: "sell",
+        side: position.side,
+        strike_index: position.strikeIndex,
+        quantity: quote.quantity,
+        min_proceeds_usd: (minProceedsCents / 100).toFixed(2),
+      }),
+    );
+  }
+
+  // Inputs lock while an order's outcome is unknown; only "Abandon order" releases it.
+  const busy = quoteMutation.isPending || selling || trade.canRetry;
 
   return (
     <div
@@ -157,7 +265,12 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
           <h4>Sell shares</h4>
           <p>{positionLabel(market.metricKind, position.side, position.strikeValueUsd)}</p>
         </div>
-        <button type="button" className={styles.textButton} onClick={onClose} disabled={busy}>
+        <button
+          type="button"
+          className={styles.textButton}
+          onClick={onClose}
+          disabled={quoteMutation.isPending || selling}
+        >
           Close
         </button>
       </div>
@@ -173,9 +286,8 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
           step="any"
           onChange={(event) => {
             setQuantityText(event.target.value);
-            setQuote(null);
+            setReview(null);
             setNotice(null);
-            trade.reset();
           }}
           disabled={busy}
           aria-describedby={`sellable-${market.marketId}-${position.side}-${position.strikeIndex}`}
@@ -191,8 +303,7 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
           className={styles.textButton}
           onClick={() => {
             setQuantityText(String(position.sellableQuantity));
-            setQuote(null);
-            trade.reset();
+            setReview(null);
           }}
           disabled={busy}
         >
@@ -204,63 +315,34 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
         <button
           type="button"
           className={styles.primaryButton}
-          disabled={!quantityValid || busy}
+          disabled={!quantityValid || busy || settled}
           onClick={() => quoteMutation.mutate()}
         >
           {quoteMutation.isPending ? "Getting quote…" : "Review sale"}
         </button>
       ) : (
-        <div className={styles.quoteReview}>
-          <dl>
-            <div>
-              <dt>Shares</dt>
-              <dd>{formatQuantity(quote.quantity)}</dd>
-            </div>
-            <div>
-              <dt>Average price</dt>
-              <dd>{formatUsd(quote.average_price)}</dd>
-            </div>
-            <div>
-              <dt>Estimated proceeds</dt>
-              <dd>{formatCents(quote.cash_amount_cents)}</dd>
-            </div>
-            {quote.expected_redemption_quantity > 0 ? (
-              <div>
-                <dt>Full-set redemption</dt>
-                <dd>{formatCents(quote.expected_redemption_cents)}</dd>
-              </div>
-            ) : null}
-          </dl>
-          <p className={styles.quoteTime}>
-            Quoted {formatDateTime(quote.quoted_at)}. Quotes are previews, not reservations.
-          </p>
-          <div className={styles.actionRow}>
-            <button
-              type="button"
-              className={styles.secondaryButton}
-              onClick={() => {
-                setQuote(null);
-                trade.reset();
-              }}
-              disabled={busy}
-            >
-              Edit quantity
-            </button>
-            <button
-              type="button"
-              className={styles.primaryButton}
-              onClick={() => void sellShares()}
-              disabled={busy}
-            >
-              {selling ? "Selling…" : trade.canRetry ? "Retry sale" : "Sell shares"}
-            </button>
-          </div>
-        </div>
+        <SaleReview
+          quote={quote}
+          minProceedsCents={minProceedsCents!}
+          working={quoteMutation.isPending || selling}
+          pending={trade.canRetry}
+          blocked={blocked !== null}
+          onDiscard={() => {
+            setReview(null);
+            setNotice(null);
+            trade.reset();
+          }}
+          onSubmit={() => void (trade.canRetry ? settleOrder(trade.retry) : sellShares())}
+        />
       )}
 
       {notice !== null ? (
         <p className={styles.inlineError} role="alert">
           {notice}
+        </p>
+      ) : blocked !== null && !trade.canRetry ? (
+        <p className={styles.inlineError} role="status">
+          {blocked}
         </p>
       ) : null}
     </div>

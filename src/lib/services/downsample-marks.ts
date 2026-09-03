@@ -4,6 +4,12 @@ export interface DownsampleMarkPoint {
   readonly value: number;
 }
 
+/** Epoch milliseconds bounding the range the points were read from. */
+export interface DownsampleWindow {
+  readonly start: number;
+  readonly end: number;
+}
+
 function orderedTimestamp(point: DownsampleMarkPoint, index: number): number {
   const timestamp = Date.parse(point.timestamp);
   if (!Number.isFinite(timestamp)) {
@@ -23,15 +29,23 @@ function copyPoint<T extends DownsampleMarkPoint>(point: T): T {
 }
 
 /**
- * Selects the final ordered observation in each time bucket while preserving
- * the first and last observations. The caller's array and points are untouched.
+ * Reduces a mark series to at most `maxPoints` while preserving the first and
+ * last observations and, in every occupied time bucket, the lowest and highest
+ * values in their original order. Buckets divide the window itself rather than
+ * the data extent, so a new print at the edge does not re-bucket the interior.
+ * Reverted spikes survive: a bucket's extreme is kept whichever print set it.
+ * The caller's array and points are untouched.
  */
 export function downsampleMarks<T extends DownsampleMarkPoint>(
   points: readonly T[],
   maxPoints: number,
+  window: DownsampleWindow,
 ): T[] {
   if (!Number.isSafeInteger(maxPoints) || maxPoints < 2) {
     throw new RangeError("maxPoints must be an integer of at least 2");
+  }
+  if (!Number.isFinite(window.start) || !Number.isFinite(window.end) || window.end < window.start) {
+    throw new RangeError("window must be a finite, non-decreasing epoch range");
   }
 
   const timestamps = new Array<number>(points.length);
@@ -55,32 +69,37 @@ export function downsampleMarks<T extends DownsampleMarkPoint>(
   if (points.length <= maxPoints) {
     return points.map(copyPoint);
   }
-  if (maxPoints === 2) {
-    return [copyPoint(points[0]!), copyPoint(points[points.length - 1]!)];
+  const lastIndex = points.length - 1;
+  if (maxPoints < 4) {
+    return [copyPoint(points[0]!), copyPoint(points[lastIndex]!)];
   }
 
-  const firstTimestamp = timestamps[0]!;
-  const lastTimestamp = timestamps[timestamps.length - 1]!;
-  const bucketCount = maxPoints - 2;
-  const span = lastTimestamp - firstTimestamp;
-  const finalByBucket = new Map<number, T>();
+  // Two survivors per bucket plus the two endpoints never exceed maxPoints.
+  const bucketCount = Math.floor((maxPoints - 2) / 2);
+  const span = window.end - window.start;
+  const lowByBucket = new Map<number, number>();
+  const highByBucket = new Map<number, number>();
 
-  for (let index = 1; index < points.length - 1; index += 1) {
+  for (let index = 1; index < lastIndex; index += 1) {
     const bucket =
       span === 0
         ? 0
         : Math.min(
             bucketCount - 1,
-            Math.floor(((timestamps[index]! - firstTimestamp) * bucketCount) / span),
+            Math.max(0, Math.floor(((timestamps[index]! - window.start) * bucketCount) / span)),
           );
-    finalByBucket.set(bucket, points[index]!);
+    const value = points[index]!.value;
+    const low = lowByBucket.get(bucket);
+    if (low === undefined || value < points[low]!.value) lowByBucket.set(bucket, index);
+    const high = highByBucket.get(bucket);
+    // `<=` keeps the later print on ties so a flat bucket still ends where it ended.
+    if (high === undefined || points[high]!.value <= value) highByBucket.set(bucket, index);
   }
 
-  return [
-    copyPoint(points[0]!),
-    ...[...finalByBucket.entries()]
-      .sort(([left], [right]) => left - right)
-      .map(([, point]) => copyPoint(point)),
-    copyPoint(points[points.length - 1]!),
-  ];
+  const survivors = new Set<number>([0, lastIndex]);
+  for (const index of lowByBucket.values()) survivors.add(index);
+  for (const index of highByBucket.values()) survivors.add(index);
+  return [...survivors]
+    .sort((left, right) => left - right)
+    .map((index) => copyPoint(points[index]!));
 }

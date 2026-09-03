@@ -230,13 +230,14 @@ export async function executeTrade(
   userId: string,
   input: TradeInput,
 ): Promise<{ result: ExecutionResult; replayed: boolean }> {
+  const idempotencyKey = input.idempotency_key.toLowerCase();
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: one serializable transaction on purpose; split validation from ledger writes before growing.
   return db.transaction().execute(async (transaction) => {
-    const advisoryKey = deriveAdvisoryLockKey(input.idempotency_key);
+    const advisoryKey = deriveAdvisoryLockKey(idempotencyKey);
     await sql`select pg_advisory_xact_lock(${advisoryKey.toString()}::bigint)`.execute(transaction);
 
     const requestFingerprint = deriveTradeRequestFingerprint(userId, input);
-    const replay = await loadReplay(transaction, input.idempotency_key, userId, requestFingerprint);
+    const replay = await loadReplay(transaction, idempotencyKey, userId, requestFingerprint);
     if (replay !== undefined) {
       return { result: replay, replayed: true };
     }
@@ -357,34 +358,6 @@ export async function executeTrade(
       input.action,
       quantity,
     );
-    if (input.action === "buy") {
-      const maxCostCents = parseUsdToCents(input.max_cost_usd);
-      if (cashAmountCents > maxCostCents) {
-        throw new ServiceError(
-          "PRICE_MOVED",
-          `Price moved. New cost: $${formatCentsAsUsd(cashAmountCents)}. Confirm trade?`,
-          { cash_amount_cents: cashAmountCents.toString(), shares: quantity },
-        );
-      }
-    } else {
-      const minProceedsCents = parseUsdToCents(input.min_proceeds_usd);
-      if (cashAmountCents < minProceedsCents) {
-        throw new ServiceError(
-          "PRICE_MOVED",
-          `Price moved. New proceeds: $${formatCentsAsUsd(cashAmountCents)}. Confirm trade?`,
-          { cash_amount_cents: cashAmountCents.toString(), shares: quantity },
-        );
-      }
-    }
-
-    const userCash = parseDatabaseBigint(user.cash_balance_cents, "cash_balance_cents");
-    if (input.action === "buy" && userCash < BigInt(cashAmountCents)) {
-      throw new ServiceError("INSUFFICIENT_CASH", "Insufficient cash balance.", {
-        cash_balance_cents: user.cash_balance_cents,
-        required_cents: cashAmountCents.toString(),
-      });
-    }
-
     const qAfter = market.q.map((value, index) => value + delta[index]!);
     assertFiniteVector(qAfter, market.n_buckets, "Updated market state");
     const holdingsAfterDelta = holdingsBefore.map((value, index) => value + delta[index]!);
@@ -412,6 +385,45 @@ export async function executeTrade(
       return Math.abs(redeemed) < EPS ? 0 : redeemed;
     });
 
+    const probabilitiesBefore = probabilities(market.q, market.b);
+    const probabilitiesAfter = probabilities(qAfter, market.b);
+    const priceBefore = sumMasked(probabilitiesBefore, mask);
+    const priceAfter = sumMasked(probabilitiesAfter, mask);
+    const metricAfter = calculateMetric(market.metric_kind, qAfter, market.b);
+    const sellableAfter = sellableQuantity(holdingsAfter, mask);
+
+    // The slippage guard is checked after the post-trade state is known so a
+    // PRICE_MOVED rejection carries the same fields as a quote: the client
+    // re-presents the full consequence set, not just the new cash figure.
+    const guardCents = parseUsdToCents(
+      input.action === "buy" ? input.max_cost_usd : input.min_proceeds_usd,
+    );
+    if (input.action === "buy" ? cashAmountCents > guardCents : cashAmountCents < guardCents) {
+      throw new ServiceError(
+        "PRICE_MOVED",
+        `Price moved. New ${input.action === "buy" ? "cost" : "proceeds"}: $${formatCentsAsUsd(cashAmountCents)}. Confirm trade?`,
+        {
+          cash_amount_cents: cashAmountCents.toString(),
+          shares: quantity,
+          average_price: Math.abs(engineCostUsd) / quantity,
+          price_after: priceAfter,
+          current_metric_after: metricAfter,
+          expected_redemption_quantity: redemptionQuantity,
+          expected_redemption_cents: redemptionCents.toString(),
+          sellable_quantity: sellableAfter,
+          quoted_at: executionTs.toISOString(),
+        },
+      );
+    }
+
+    const userCash = parseDatabaseBigint(user.cash_balance_cents, "cash_balance_cents");
+    if (input.action === "buy" && userCash < BigInt(cashAmountCents)) {
+      throw new ServiceError("INSUFFICIENT_CASH", "Insufficient cash balance.", {
+        cash_balance_cents: user.cash_balance_cents,
+        required_cents: cashAmountCents.toString(),
+      });
+    }
+
     const signedTradeCash =
       input.action === "buy" ? -BigInt(cashAmountCents) : BigInt(cashAmountCents);
     const cashBalance = userCash + signedTradeCash + BigInt(redemptionCents);
@@ -419,12 +431,6 @@ export async function executeTrade(
       throw new ServiceError("INSUFFICIENT_CASH", "Insufficient cash balance.");
     }
 
-    const probabilitiesBefore = probabilities(market.q, market.b);
-    const probabilitiesAfter = probabilities(qAfter, market.b);
-    const priceBefore = sumMasked(probabilitiesBefore, mask);
-    const priceAfter = sumMasked(probabilitiesAfter, mask);
-    const metricAfter = calculateMetric(market.metric_kind, qAfter, market.b);
-    const sellableAfter = sellableQuantity(holdingsAfter, mask);
     const mmCashDelta =
       (input.action === "buy" ? BigInt(cashAmountCents) : -BigInt(cashAmountCents)) -
       BigInt(redemptionCents);
@@ -437,7 +443,7 @@ export async function executeTrade(
     const tradeId = randomUUID();
     const result: ExecutionResult = {
       trade_id: tradeId,
-      idempotency_key: input.idempotency_key,
+      idempotency_key: idempotencyKey,
       market_sequence: marketSequence,
       action: input.action,
       side: input.side,
@@ -482,7 +488,7 @@ export async function executeTrade(
       .insertInto("trades")
       .values({
         id: tradeId,
-        idempotency_key: input.idempotency_key,
+        idempotency_key: idempotencyKey,
         request_fingerprint: requestFingerprint,
         user_id: user.id,
         market_id: market.id,

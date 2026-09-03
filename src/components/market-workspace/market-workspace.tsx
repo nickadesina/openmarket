@@ -100,12 +100,13 @@ export function MarketWorkspace({ slug, initialMarket, initialMarks }: MarketWor
   }, [marketQuery.data?.status]);
 
   const refreshAuthoritativeData = useCallback(async () => {
+    const refetchOptions = { throwOnError: true };
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.market(slug) }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.marks(slug, range) }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.activity(slug) }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.portfolio }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.markets }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.market(slug) }, refetchOptions),
+      queryClient.invalidateQueries({ queryKey: queryKeys.marks(slug, range) }, refetchOptions),
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity(slug) }, refetchOptions),
+      queryClient.invalidateQueries({ queryKey: queryKeys.portfolio }, refetchOptions),
+      queryClient.invalidateQueries({ queryKey: queryKeys.markets }, refetchOptions),
     ]);
   }, [queryClient, range, slug]);
 
@@ -145,7 +146,14 @@ export function MarketWorkspace({ slug, initialMarket, initialMarks }: MarketWor
   }
 
   const market = marketQuery.data;
-  const activeSelection = selection ?? defaultSelection(market);
+  const selectionExists =
+    selection !== null &&
+    market.contracts.some((contract) => contract.strikeIndex === selection.strikeIndex);
+  const activeSelection = selectionExists ? selection : defaultSelection(market);
+  const activeContract =
+    activeSelection === null
+      ? undefined
+      : market.contracts.find((contract) => contract.strikeIndex === activeSelection.strikeIndex);
   const selectContract = (nextSelection: TradeSelection) => {
     setSelection(nextSelection);
     if (window.matchMedia(MOBILE_QUERY).matches) setSheetOpen(true);
@@ -212,7 +220,7 @@ export function MarketWorkspace({ slug, initialMarket, initialMarks }: MarketWor
         onRetry={() => void activityQuery.refetch()}
       />
 
-      {market.status === "open" && activeSelection !== null ? (
+      {market.status === "open" && activeSelection !== null && activeContract !== undefined ? (
         <div className={styles.mobileTradeBar}>
           <span className={styles.mobileTradeSummary}>
             <span>
@@ -221,11 +229,7 @@ export function MarketWorkspace({ slug, initialMarket, initialMarks }: MarketWor
             </span>
             <strong>
               {formatProbability(
-                (market.contracts.find(
-                  (item) => item.strikeIndex === activeSelection.strikeIndex,
-                ) ?? market.contracts[0])?.[
-                  activeSelection.side === "yes" ? "yesProbability" : "noProbability"
-                ] ?? 0,
+                activeContract[activeSelection.side === "yes" ? "yesProbability" : "noProbability"],
               )}
             </strong>
           </span>

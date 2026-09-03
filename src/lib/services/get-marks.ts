@@ -188,7 +188,12 @@ export async function getMarks(
         value: row.value,
       }));
       const points =
-        range === "1w" || range === "all" ? downsampleMarks(rawPoints, maxPoints) : rawPoints;
+        range === "1w" || range === "all"
+          ? downsampleMarks(rawPoints, maxPoints, {
+              start: windowStart.getTime(),
+              end: now.getTime(),
+            })
+          : rawPoints;
 
       return {
         marketId: market.market_id,

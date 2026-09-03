@@ -130,6 +130,16 @@ describe("service input schemas", () => {
       }).success,
     ).toBe(true);
 
+    expect(
+      tradeInputSchema.parse({
+        ...quoteBase,
+        action: "buy",
+        quantity: 1,
+        max_cost_usd: "1.00",
+        idempotency_key: idempotencyKey.toUpperCase(),
+      }).idempotency_key,
+    ).toBe(idempotencyKey);
+
     for (const input of [
       {
         ...quoteBase,

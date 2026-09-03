@@ -24,13 +24,14 @@ import {
 const MARKET_ID = "00000000-0000-4000-8000-000000000010";
 const USER_ID = "00000000-0000-4000-8000-000000000020";
 const OTHER_USER_ID = "00000000-0000-4000-8000-000000000021";
-const IDEMPOTENCY_KEY = "00000000-0000-4000-8000-000000000030";
+const IDEMPOTENCY_KEY = "6ba7b810-9dad-41d1-80b4-00c04fd430c8";
 const EXECUTION_TS = new Date("2026-01-02T03:04:05.678Z");
 
 interface RecordedQuery {
   readonly table: string;
   values?: unknown;
   set?: unknown;
+  where?: unknown[][];
 }
 
 function queryReturning(
@@ -44,7 +45,13 @@ function queryReturning(
   query.select = vi.fn(fluent);
   query.selectAll = vi.fn(fluent);
   query.innerJoin = vi.fn(fluent);
-  query.where = vi.fn(fluent);
+  query.where = vi.fn((...conditions: unknown[]) => {
+    if (record !== undefined) {
+      record.where ??= [];
+      record.where.push(conditions);
+    }
+    return query;
+  });
   query.orderBy = vi.fn(fluent);
   query.forUpdate = vi.fn(fluent);
   query.returning = vi.fn(fluent);
@@ -90,6 +97,7 @@ function createTransactionHarness(options?: {
   holdingVector?: number[];
 }) {
   const events: string[] = [];
+  const replayLookup: RecordedQuery = { table: "trades" };
   const writes: RecordedQuery[] = [];
   const market: MarketRow = {
     id: MARKET_ID,
@@ -129,7 +137,7 @@ function createTransactionHarness(options?: {
   const transaction = {
     selectFrom: vi.fn((table: string) => {
       if (table === "trades") {
-        return queryReturning(options?.replay, events, "replay lookup");
+        return queryReturning(options?.replay, events, "replay lookup", replayLookup);
       }
       if (table === "markets") {
         return queryReturning(market, events, "market lock");
@@ -179,7 +187,7 @@ function createTransactionHarness(options?: {
     })),
   } as unknown as Kysely<Database>;
 
-  return { db, events, writes, market };
+  return { db, events, writes, market, replayLookup };
 }
 
 beforeEach(() => {
@@ -269,6 +277,27 @@ describe("executeTrade", () => {
       replayed: true,
     });
     expect(harness.events).toEqual(["advisory lock", "replay lookup"]);
+    expect(harness.writes).toEqual([]);
+  });
+
+  it("replays twin-case keys through the canonical database lookup", async () => {
+    const uppercaseBuy: TradeInput = {
+      ...buy,
+      idempotency_key: IDEMPOTENCY_KEY.toUpperCase(),
+    };
+    const harness = createTransactionHarness({
+      replay: {
+        user_id: USER_ID,
+        request_fingerprint: deriveTradeRequestFingerprint(USER_ID, uppercaseBuy),
+        execution_result: stored,
+      },
+    });
+
+    await expect(executeTrade(harness.db, USER_ID, uppercaseBuy)).resolves.toEqual({
+      result: stored,
+      replayed: true,
+    });
+    expect(harness.replayLookup.where).toContainEqual(["idempotency_key", "=", IDEMPOTENCY_KEY]);
     expect(harness.writes).toEqual([]);
   });
 

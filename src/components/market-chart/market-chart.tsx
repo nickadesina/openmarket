@@ -141,16 +141,22 @@ export function MarketChart({
           title: market.metric.label,
           priceFormat,
         });
-        const markSeries = chart.addSeries(LineSeries, {
-          color: cssVar(tokens, "--color-primary"),
-          lineWidth: 1,
-          lineStyle: 2,
-          title: "60m mark",
-          // The mark's own axis label is redundant with the header's "60m
-          // mark" figure and collides with the metric label when they agree.
-          lastValueVisible: false,
-          priceFormat,
-        });
+        // The 60-minute mark is one number for the hour that just ended, so it
+        // is only drawn on the 1h range, where the window is its own window.
+        // Stamped across a day or a week it would claim a flat mark that never was.
+        const markSeries =
+          range === "1h"
+            ? chart.addSeries(LineSeries, {
+                color: cssVar(tokens, "--color-primary"),
+                lineWidth: 1,
+                lineStyle: 2,
+                title: "60m mark",
+                // The mark's own axis label is redundant with the header's "60m
+                // mark" figure and collides with the metric label when they agree.
+                lastValueVisible: false,
+                priceFormat,
+              })
+            : null;
 
         const pointsBySecond = new Map<number, number>();
         for (const point of marks.points)
@@ -169,7 +175,7 @@ export function MarketChart({
           currentData = [{ time: windowStart, value: marks.openValue }, ...currentData];
         }
         currentSeries.setData(currentData);
-        markSeries.setData(currentData.map(({ time }) => ({ time, value: marks.mark60Minutes })));
+        markSeries?.setData(currentData.map(({ time }) => ({ time, value: marks.mark60Minutes })));
         chart.timeScale().fitContent();
 
         observer = new ResizeObserver(([entry]) => {
@@ -202,7 +208,8 @@ export function MarketChart({
             Market history
           </h2>
           <p>
-            Instantaneous metric and current 60-minute time-weighted mark · chart by{" "}
+            Instantaneous metric
+            {range === "1h" ? " and current 60-minute time-weighted mark" : ""} · chart by{" "}
             <a
               href="https://www.tradingview.com/lightweight-charts/"
               rel="noopener noreferrer"

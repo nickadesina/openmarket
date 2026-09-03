@@ -127,8 +127,11 @@ test("an unknown-outcome failure keeps the idempotency key across retries", asyn
 
   await ticket.getByRole("button", { name: "Confirm buy" }).click();
   const alert = ticket.getByRole("alert");
-  await expect(alert).toContainText("Trade unavailable");
+  await expect(alert).toContainText("Outcome unknown");
   await expect(alert).toContainText("Retry with the same request key to avoid a duplicate trade.");
+  // The order is pinned: no second send path exists while the outcome is unknown.
+  await expect(ticket.getByRole("button", { name: "Confirm buy" })).toHaveCount(0);
+  await expect(ticket.getByRole("spinbutton", { name: "Spend" })).toBeDisabled();
   const retryButton = ticket.getByRole("button", { name: "Retry same trade" });
   await expect(retryButton).toBeVisible();
   expect(attempts).toHaveLength(1);
@@ -194,15 +197,31 @@ test("a moved price must be explicitly confirmed and re-executes with the author
   const attempts = await failTradesWith(page, 409, {
     code: "PRICE_MOVED",
     message: "The market moved before execution.",
-    details: { cash_amount_cents: "12345", shares: 12.3 },
+    details: {
+      cash_amount_cents: "12345",
+      shares: 12.3,
+      average_price: 0.61,
+      price_after: 0.66,
+      current_metric_after: 0.66,
+      expected_redemption_quantity: 0,
+      expected_redemption_cents: "0",
+      sellable_quantity: 22.3,
+      quoted_at: "2026-01-01T00:00:00.000Z",
+    },
   });
 
   await ticket.getByRole("button", { name: "Confirm buy" }).click();
   const alert = ticket.getByRole("alert");
   await expect(alert).toContainText("Price moved");
-  await expect(alert).toContainText("Updated quantity: 12.3. Updated cost: $123.45.");
-  const blockedPrimary = ticket.getByRole("button", { name: "Confirm the moved price above" });
-  await expect(blockedPrimary).toBeDisabled();
+  // The requote re-renders the full consequence set, not an abbreviated box.
+  const panel = ticket.locator("dl");
+  await expect(panel).toContainText("12.3");
+  await expect(panel).toContainText("$123.45");
+  await expect(panel).toContainText("61.0%");
+  await expect(panel).toContainText("66.0%");
+  await expect(ticket.getByText("Requoted", { exact: true })).toBeVisible();
+  await expect(ticket.getByText("Max cost", { exact: true })).toBeVisible();
+  await expect(ticket.getByRole("button", { name: "Confirm buy" })).toHaveCount(0);
 
   await page.unroute("**/api/trade");
   const executionPromise = page.waitForResponse((response) =>
@@ -243,7 +262,7 @@ test("a moved price without authoritative details offers a fresh quote instead",
   await expect(ticket.getByText("Cost", { exact: true })).toBeVisible();
 });
 
-test("changing the amount clears a failed execution and its pending retry", async ({
+test("a pending order locks the inputs until it is abandoned", async ({
   page,
   baseURL,
 }, testInfo) => {
@@ -258,8 +277,45 @@ test("changing the amount clears a failed execution and its pending retry", asyn
   await expect(ticket.getByRole("button", { name: "Retry same trade" })).toBeVisible();
   await page.unroute("**/api/trade");
 
-  await ticket.getByRole("spinbutton", { name: "Spend" }).fill("41.00");
+  // Inputs are locked while the order is pending; only Abandon releases the key.
+  await expect(ticket.getByRole("spinbutton", { name: "Spend" })).toBeDisabled();
+  await ticket.getByRole("button", { name: "Abandon order" }).click();
   await expect(ticket.getByRole("alert")).toHaveCount(0);
   await expect(ticket.getByRole("button", { name: "Retry same trade" })).toHaveCount(0);
+  await expect(ticket.getByRole("button", { name: "Confirm buy" })).toBeVisible();
+  await ticket.getByRole("spinbutton", { name: "Spend" }).fill("41.00");
   await expect(ticket.getByRole("button", { name: "Preview buy" })).toBeVisible();
+});
+
+test("a completed trade reports a failed authoritative refresh without an error state", async ({
+  page,
+  baseURL,
+}, testInfo) => {
+  const names = uniqueNames("ticket-refresh", testInfo);
+  const ticket = await openTicket(page, baseURL, names);
+  await previewBuy(page, ticket, "40.00");
+
+  await page.route(`**/api/markets/${names.slug}`, async (route) => {
+    await route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({
+        error: {
+          code: "INTERNAL_ERROR",
+          message: "Simulated refresh failure.",
+          details: {},
+        },
+      }),
+    });
+  });
+
+  const executionPromise = page.waitForResponse((response) =>
+    isApiResponse(response, "POST", "/api/trade"),
+  );
+  await ticket.getByRole("button", { name: "Confirm buy" }).click();
+  expect((await executionPromise).status()).toBe(200);
+
+  await expect(ticket.getByText("Trade completed", { exact: true })).toBeVisible();
+  await expect(ticket).toContainText("Live data has not refreshed yet; polling will catch up.");
+  await expect(ticket.getByRole("alert")).toHaveCount(0);
 });

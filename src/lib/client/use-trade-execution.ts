@@ -5,10 +5,20 @@ import { useState } from "react";
 import type { ExecutionResult } from "../services/execute-trade.js";
 import { ApiClientError, apiRequest } from "./api.js";
 
+/** The authoritative requote the server attaches to a PRICE_MOVED rejection. */
 export interface MovedPrice {
   readonly cashAmountCents: string;
   readonly shares: number;
+  readonly averagePrice: number;
+  readonly priceAfter: number;
+  readonly currentMetricAfter: number;
+  readonly expectedRedemptionQuantity: number;
+  readonly expectedRedemptionCents: string;
+  readonly sellableQuantity: number;
+  readonly quotedAt: string;
 }
+
+export type TradeFields = Readonly<Record<string, unknown>>;
 
 export type TradeOutcome =
   | { readonly status: "executed"; readonly result: ExecutionResult }
@@ -18,8 +28,13 @@ export type TradeOutcome =
       readonly error: ApiClientError;
       readonly movedPrice: MovedPrice | null;
     }
-  /** Execution state is unknown (network failure, 5xx, unreadable response, or idempotency conflict); the idempotency key is kept so a retry cannot duplicate the trade. */
+  /** Execution state is unknown (network failure, 5xx, unreadable response, or idempotency conflict); the request is kept so a retry cannot duplicate the trade. */
   | { readonly status: "unknown" };
+
+interface PendingOrder {
+  readonly key: string;
+  readonly fields: TradeFields;
+}
 
 /**
  * A 4xx response is a definitive rejection: the server received the request and refused it.
@@ -39,43 +54,93 @@ function isOutcomeUnknown(error: unknown): boolean {
 
 function movedPriceDetails(error: ApiClientError): MovedPrice | null {
   if (error.code !== "PRICE_MOVED") return null;
-  const cashAmountCents = error.details.cash_amount_cents;
-  const shares = error.details.shares;
-  return typeof cashAmountCents === "string" && typeof shares === "number"
-    ? { cashAmountCents, shares }
-    : null;
+  const details = error.details;
+  const cashAmountCents = details.cash_amount_cents;
+  const expectedRedemptionCents = details.expected_redemption_cents;
+  const quotedAt = details.quoted_at;
+  const numbers = [
+    details.shares,
+    details.average_price,
+    details.price_after,
+    details.current_metric_after,
+    details.expected_redemption_quantity,
+    details.sellable_quantity,
+  ];
+  if (
+    typeof cashAmountCents !== "string" ||
+    typeof expectedRedemptionCents !== "string" ||
+    typeof quotedAt !== "string" ||
+    !numbers.every((value) => typeof value === "number" && Number.isFinite(value))
+  ) {
+    return null;
+  }
+  const [
+    shares,
+    averagePrice,
+    priceAfter,
+    currentMetricAfter,
+    expectedRedemptionQuantity,
+    sellableQuantity,
+  ] = numbers as number[];
+  return {
+    cashAmountCents,
+    shares: shares!,
+    averagePrice: averagePrice!,
+    priceAfter: priceAfter!,
+    currentMetricAfter: currentMetricAfter!,
+    expectedRedemptionQuantity: expectedRedemptionQuantity!,
+    expectedRedemptionCents,
+    sellableQuantity: sellableQuantity!,
+    quotedAt,
+  };
+}
+
+async function submit(order: PendingOrder): Promise<TradeOutcome> {
+  try {
+    const result = await apiRequest<ExecutionResult>("/api/trade", {
+      method: "POST",
+      body: JSON.stringify({ ...order.fields, idempotency_key: order.key }),
+    });
+    return { status: "executed", result };
+  } catch (error) {
+    if (isOutcomeUnknown(error)) return { status: "unknown" };
+    const rejection = error as ApiClientError;
+    return { status: "rejected", error: rejection, movedPrice: movedPriceDetails(rejection) };
+  }
 }
 
 /**
- * Owns the idempotency-key lifecycle for POST /api/trade: a key is generated per attempt,
- * reused while the previous attempt's outcome is unknown, and dropped once the server
- * either executes or deterministically rejects the trade.
+ * Owns the idempotency-key lifecycle for POST /api/trade. Each `execute` sends a fresh key.
+ * While an attempt's outcome is unknown the exact request (key and fields) is held as the
+ * pending order; `retry` replays it byte-for-byte so a resend can only ever replay the fill.
+ * The pending order is released once the server executes or deterministically rejects it,
+ * or when the caller explicitly discards it.
  */
 export function useTradeExecution() {
-  const [retryKey, setRetryKey] = useState<string | null>(null);
+  const [pending, setPending] = useState<PendingOrder | null>(null);
 
-  async function execute(fields: Readonly<Record<string, unknown>>): Promise<TradeOutcome> {
-    const key = retryKey ?? crypto.randomUUID();
-    setRetryKey(key);
-    try {
-      const result = await apiRequest<ExecutionResult>("/api/trade", {
-        method: "POST",
-        body: JSON.stringify({ ...fields, idempotency_key: key }),
-      });
-      setRetryKey(null);
-      return { status: "executed", result };
-    } catch (error) {
-      if (isOutcomeUnknown(error)) return { status: "unknown" };
-      const rejection = error as ApiClientError;
-      setRetryKey(null);
-      return { status: "rejected", error: rejection, movedPrice: movedPriceDetails(rejection) };
-    }
+  async function settle(order: PendingOrder): Promise<TradeOutcome> {
+    const outcome = await submit(order);
+    setPending(outcome.status === "unknown" ? order : null);
+    return outcome;
   }
 
-  /** Forget the pending key, e.g. when the user changes the trade inputs. */
+  /** Sends a new order. Refused while a previous order is still unresolved. */
+  function execute(fields: TradeFields): Promise<TradeOutcome> {
+    if (pending !== null) return retry();
+    return settle({ key: crypto.randomUUID(), fields });
+  }
+
+  /** Resends the unresolved order with its original key and fields. */
+  function retry(): Promise<TradeOutcome> {
+    if (pending === null) return Promise.reject(new Error("No pending order to retry."));
+    return settle(pending);
+  }
+
+  /** Abandon the unresolved order; a fill that already happened stays on the ledger. */
   function reset() {
-    setRetryKey(null);
+    setPending(null);
   }
 
-  return { execute, reset, canRetry: retryKey !== null };
+  return { execute, retry, reset, pending: pending?.fields ?? null, canRetry: pending !== null };
 }

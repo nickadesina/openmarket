@@ -181,7 +181,17 @@ test("a moved sale price returns to a fresh quote with the authoritative proceed
   await failTradesWith(page, 409, {
     code: "PRICE_MOVED",
     message: "The market moved before execution.",
-    details: { cash_amount_cents: "4321", shares: 4.3 },
+    details: {
+      cash_amount_cents: "4321",
+      shares: 4.3,
+      average_price: 1.0,
+      price_after: 0.4,
+      current_metric_after: 0.4,
+      expected_redemption_quantity: 0,
+      expected_redemption_cents: "0",
+      sellable_quantity: 4.3,
+      quoted_at: "2026-01-01T00:00:00.000Z",
+    },
   });
 
   await sellFlow.getByRole("button", { name: "Sell shares" }).click();
@@ -223,4 +233,107 @@ test("a partial sale executes and updates the remaining position", async ({
     ?.positions.find((item) => item.side === "yes" && item.strikeIndex === 0);
   expect(position?.quantity).toBeCloseTo(purchase.shares - quantity, 5);
   await expectNoHorizontalOverflow(page);
+});
+
+test("the review shows the minimum proceeds bound the wire carries", async ({
+  page,
+  baseURL,
+}, testInfo) => {
+  const names = uniqueNames("pf-guard", testInfo);
+  const { sellFlow, purchase } = await openSellFlow(page, baseURL, names);
+  await reviewSale(page, sellFlow, Number((purchase.shares / 2).toFixed(6)));
+  const review = sellFlow.locator("dl");
+  await expect(review).toContainText("Minimum proceeds");
+  const minimum = await review
+    .locator("div")
+    .filter({ hasText: "Minimum proceeds" })
+    .locator("dd")
+    .innerText();
+
+  const executionPromise = page.waitForResponse((response) =>
+    isApiResponse(response, "POST", "/api/trade"),
+  );
+  await sellFlow.getByRole("button", { name: "Sell shares" }).click();
+  const request = (await executionPromise).request().postDataJSON() as TradeRequest;
+  expect(formatCents(String(Math.round(Number(request.min_proceeds_usd) * 100)))).toBe(minimum);
+});
+
+test("an open sell flow closes to trading when the market settles underneath it", async ({
+  page,
+  baseURL,
+}, testInfo) => {
+  const names = uniqueNames("pf-settled", testInfo);
+  const { sellFlow, purchase } = await openSellFlow(page, baseURL, names);
+  await reviewSale(page, sellFlow, Number((purchase.shares / 2).toFixed(6)));
+
+  // A real settlement zeroes holdings and unmounts the row; the guard defends the
+  // window where the flow is open against a snapshot whose status has flipped.
+  await page.route("**/api/portfolio**", async (route) => {
+    const response = await route.fetch();
+    const portfolio = (await response.json()) as PortfolioResponse;
+    await route.fulfill({
+      response,
+      json: {
+        ...portfolio,
+        markets: portfolio.markets.map((market) =>
+          market.company.slug === names.slug ? { ...market, status: "settled" } : market,
+        ),
+      },
+    });
+  });
+  const refetch = page.waitForResponse((response) =>
+    isApiResponse(response, "GET", "/api/portfolio"),
+  );
+  await page.getByRole("button", { name: "Refresh", exact: true }).click();
+  expect((await refetch).status()).toBe(200);
+
+  await expect(sellFlow.getByRole("button", { name: "Sell shares" })).toHaveCount(0);
+  await expect(sellFlow.getByRole("button", { name: "Review sale" })).toBeDisabled();
+  await expect(sellFlow.getByRole("status")).toContainText("This market has settled.");
+  await expect(page.getByRole("button", { name: "Settled", exact: true })).toBeDisabled();
+  await page.unroute("**/api/portfolio**");
+});
+
+test("a portfolio refresh invalidates a sale review when the position changes", async ({
+  page,
+  baseURL,
+}, testInfo) => {
+  const names = uniqueNames("pf-stale-review", testInfo);
+  const { sellFlow, purchase } = await openSellFlow(page, baseURL, names);
+  await reviewSale(page, sellFlow, Number((purchase.shares / 2).toFixed(6)));
+
+  await page.route("**/api/portfolio**", async (route) => {
+    const response = await route.fetch();
+    const portfolio = (await response.json()) as PortfolioResponse;
+    await route.fulfill({
+      response,
+      json: {
+        ...portfolio,
+        markets: portfolio.markets.map((market) =>
+          market.company.slug === names.slug
+            ? {
+                ...market,
+                positions: market.positions.map((position) => ({
+                  ...position,
+                  quantity: position.quantity + 1,
+                  sellableQuantity: position.sellableQuantity + 1,
+                })),
+              }
+            : market,
+        ),
+      },
+    });
+  });
+  const refetch = page.waitForResponse((response) =>
+    isApiResponse(response, "GET", "/api/portfolio"),
+  );
+  await page.getByRole("button", { name: "Refresh", exact: true }).click();
+  expect((await refetch).status()).toBe(200);
+
+  await expect(sellFlow.getByRole("button", { name: "Sell shares" })).toHaveCount(0);
+  await expect(sellFlow.getByRole("button", { name: "Review sale" })).toBeEnabled();
+  await expect(sellFlow.getByRole("status")).toContainText(
+    "Your position or market price changed since this quote.",
+  );
+  await page.unroute("**/api/portfolio**");
 });

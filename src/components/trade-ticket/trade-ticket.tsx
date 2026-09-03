@@ -11,7 +11,11 @@ import {
   formatQuantity,
   strikeLabel,
 } from "../../lib/client/format.js";
-import { useTradeExecution } from "../../lib/client/use-trade-execution.js";
+import {
+  type MovedPrice,
+  type TradeOutcome,
+  useTradeExecution,
+} from "../../lib/client/use-trade-execution.js";
 import type {
   BuyInputMode,
   ExecutionResult,
@@ -48,11 +52,77 @@ const ERROR_TITLES: Readonly<Record<string, string>> = {
   INSUFFICIENT_CASH: "Insufficient cash",
   INSUFFICIENT_HOLDINGS: "Insufficient holdings",
   USER_REQUIRED: "Username required",
+  RETRYABLE: "Outcome unknown",
 };
 
-function centsToUsd(cents: string): string {
-  const value = Number(cents);
-  return Number.isFinite(value) ? (value / 100).toFixed(2) : "0.00";
+/** Every figure the panel shows for a priced order, whether the quote came from /api/quote or from a PRICE_MOVED requote. */
+interface QuoteView {
+  readonly quantity: number;
+  readonly cashAmountCents: string;
+  readonly averagePrice: number;
+  readonly priceAfter: number;
+  readonly currentMetricAfter: number;
+  readonly sellableQuantity: number;
+  readonly expectedRedemptionQuantity: number;
+  readonly expectedRedemptionCents: string;
+  readonly quotedAt: string;
+  /** The bound the wire carries: max cost for buys, min proceeds for sells. */
+  readonly guardCents: number;
+  readonly moved: boolean;
+}
+
+/**
+ * The slippage guard submitted with an order. Spend buys are bounded by the
+ * spend itself; quantity buys and sells absorb 1% of movement. The same value
+ * is rendered in the quote panel so the bound on the wire is the one on screen.
+ */
+function slippageGuard(
+  action: TradeAction,
+  buyMode: BuyInputMode,
+  amount: string,
+  quote: QuoteResult,
+): { readonly usd: string; readonly cents: number } {
+  if (action === "buy" && buyMode === "spend") {
+    return { usd: amount, cents: Math.round(Number(amount) * 100) };
+  }
+  const cents =
+    action === "buy"
+      ? Math.ceil(quote.engine_cost_usd * 1.01 * 100)
+      : Math.floor(Number(quote.cash_amount_cents) * 0.99);
+  return { usd: (cents / 100).toFixed(2), cents };
+}
+
+function quoteView(quote: QuoteResult, guardCents: number): QuoteView {
+  return {
+    quantity: quote.quantity,
+    cashAmountCents: quote.cash_amount_cents,
+    averagePrice: quote.average_price,
+    priceAfter: quote.price_after,
+    currentMetricAfter: quote.current_metric_after,
+    sellableQuantity: quote.sellable_quantity,
+    expectedRedemptionQuantity: quote.expected_redemption_quantity,
+    expectedRedemptionCents: quote.expected_redemption_cents,
+    quotedAt: quote.quoted_at,
+    guardCents,
+    moved: false,
+  };
+}
+
+function movedView(moved: MovedPrice): QuoteView {
+  return {
+    quantity: moved.shares,
+    cashAmountCents: moved.cashAmountCents,
+    averagePrice: moved.averagePrice,
+    priceAfter: moved.priceAfter,
+    currentMetricAfter: moved.currentMetricAfter,
+    sellableQuantity: moved.sellableQuantity,
+    expectedRedemptionQuantity: moved.expectedRedemptionQuantity,
+    expectedRedemptionCents: moved.expectedRedemptionCents,
+    quotedAt: moved.quotedAt,
+    // Confirming a requote submits its exact cash figure as the bound.
+    guardCents: Number(moved.cashAmountCents),
+    moved: true,
+  };
 }
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: the ticket state machine lives in one component; extract a useTradeTicket hook before growing.
@@ -70,12 +140,11 @@ export function TradeTicket({
   const [phase, setPhase] = useState<TicketPhase>("idle");
   const [error, setError] = useState<TicketError | null>(null);
   const [result, setResult] = useState<ExecutionResult | null>(null);
+  // Null while post-fill data is refreshing; the fill itself is settled either way.
+  const [refreshStale, setRefreshStale] = useState<boolean | null>(false);
   const [needsUsername, setNeedsUsername] = useState(false);
   const [username, setUsername] = useState("");
-  const [movedPrice, setMovedPrice] = useState<{
-    readonly cashAmountCents: string;
-    readonly shares: number;
-  } | null>(null);
+  const [movedPrice, setMovedPrice] = useState<MovedPrice | null>(null);
   const trade = useTradeExecution();
 
   const contract = market.contracts.find((item) => item.strikeIndex === selection.strikeIndex)!;
@@ -89,7 +158,10 @@ export function TradeTicket({
   const quickAmounts = action === "buy" && buyMode === "spend" ? QUICK_SPEND_USD : QUICK_QUANTITY;
   const parsedAmount = Number(amount);
   const validAmount = Number.isFinite(parsedAmount) && parsedAmount > 0;
-  const busy = phase !== "idle";
+  // An order with an unknown outcome pins the ticket: its request key and
+  // fields stay held until it is retried to a verdict or explicitly abandoned.
+  const orderPending = trade.canRetry;
+  const busy = phase !== "idle" || orderPending;
 
   const requestBase = {
     slug: market.company.slug,
@@ -102,28 +174,35 @@ export function TradeTicket({
       ? { ...requestBase, spend_usd: amount }
       : { ...requestBase, quantity: parsedAmount };
 
-  // Any change to the request invalidates the quote and everything derived from it.
+  const view =
+    movedPrice !== null
+      ? movedView(movedPrice)
+      : quote !== null
+        ? quoteView(quote, slippageGuard(action, buyMode, amount, quote).cents)
+        : null;
+
+  // Any change to the request invalidates the quote and everything derived
+  // from it. A pending order is not derived from the form; it survives.
   function resetTradeState() {
     setQuote(null);
     setResult(null);
+    setRefreshStale(false);
     setError(null);
     setNeedsUsername(false);
     setMovedPrice(null);
-    trade.reset();
   }
 
   // The contract can change from the ladder or from the controls below; a
   // quote is only valid for the contract it priced.
   const selectedSide = selection.side;
   const selectedStrikeIndex = selection.strikeIndex;
-  // biome-ignore lint/correctness/useExhaustiveDependencies: reset only when the priced contract changes; trade.reset is stable.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset only when the priced contract changes.
   useEffect(() => {
     setQuote(null);
     setResult(null);
+    setRefreshStale(false);
     setError(null);
     setMovedPrice(null);
-    trade.reset();
-    // trade.reset is stable for the hook's lifetime.
   }, [selectedSide, selectedStrikeIndex]);
 
   function changeSide(side: TradeSelection["side"]) {
@@ -161,6 +240,7 @@ export function TradeTicket({
     setPhase("quoting");
     setError(null);
     setResult(null);
+    setRefreshStale(false);
     try {
       const nextQuote = await apiRequest<QuoteResult>("/api/quote", {
         method: "POST",
@@ -180,43 +260,23 @@ export function TradeTicket({
     }
   }
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: guard construction and outcome branching; split when the sell guard changes.
-  async function executeTrade(confirmedCashAmountCents?: string) {
-    if (quote === null) return;
+  async function settleOrder(send: () => Promise<TradeOutcome>) {
     setPhase("executing");
     setError(null);
     setResult(null);
+    setRefreshStale(false);
 
-    const guard =
-      action === "buy"
-        ? {
-            max_cost_usd:
-              confirmedCashAmountCents !== undefined
-                ? centsToUsd(confirmedCashAmountCents)
-                : buyMode === "spend"
-                  ? amount
-                  : (Math.ceil(quote.engine_cost_usd * 1.01 * 100) / 100).toFixed(2),
-          }
-        : {
-            min_proceeds_usd:
-              confirmedCashAmountCents !== undefined
-                ? centsToUsd(confirmedCashAmountCents)
-                : (Math.floor(Number(quote.cash_amount_cents) * 0.99) / 100).toFixed(2),
-          };
-
-    const outcome = await trade.execute({ ...requestFields, ...guard });
+    const outcome = await send();
     if (outcome.status === "executed") {
+      setRefreshStale(null);
       setResult(outcome.result);
       setQuote(null);
       setMovedPrice(null);
       try {
         await onAuthoritativeRefresh();
+        setRefreshStale(false);
       } catch {
-        setError({
-          code: "REFRESH_FAILED",
-          message:
-            "Trade completed, but live data could not refresh. Automatic polling will try again.",
-        });
+        setRefreshStale(true);
       }
     } else if (outcome.status === "unknown") {
       setError(RETRYABLE_ERROR);
@@ -226,6 +286,22 @@ export function TradeTicket({
       setError({ code: outcome.error.code, message: outcome.error.message });
     }
     setPhase("idle");
+  }
+
+  /** Sends the order priced by the panel: the original quote with its guard, or a requote at its exact figure. */
+  function executeTrade() {
+    if (quote === null) return Promise.resolve();
+    const guardUsd =
+      movedPrice !== null
+        ? (Number(movedPrice.cashAmountCents) / 100).toFixed(2)
+        : slippageGuard(action, buyMode, amount, quote).usd;
+    const guard = action === "buy" ? { max_cost_usd: guardUsd } : { min_proceeds_usd: guardUsd };
+    return settleOrder(() => trade.execute({ ...requestFields, ...guard }));
+  }
+
+  function abandonOrder() {
+    trade.reset();
+    setError(null);
   }
 
   async function createUsername() {
@@ -260,6 +336,13 @@ export function TradeTicket({
   }
 
   const errorTitle = (error === null ? undefined : ERROR_TITLES[error.code]) ?? "Trade unavailable";
+  // 稟議 strip: each box seals when the order has provably cleared that stage.
+  // Sent stays sealed while the outcome is unknown; Filled only on a server 200.
+  const stages = [
+    ["Quoted", view !== null || result !== null || orderPending],
+    ["Sent", phase === "executing" || orderPending || result !== null],
+    ["Filled", result !== null],
+  ] as const;
 
   return (
     <section className={styles.ticket} aria-labelledby="trade-ticket-title">
@@ -285,20 +368,17 @@ export function TradeTicket({
       </header>
 
       <div className={styles.body}>
-        {/* 稟議 strip: one box per stage, each sealed as the order clears it. */}
         <ol className={styles.approvals} aria-label="Order progress">
-          {(
-            [
-              ["Quoted", quote !== null || result !== null || phase === "executing"],
-              ["Confirmed", phase === "executing" || result !== null],
-              ["Filled", result !== null],
-            ] as const
-          ).map(([stage, done]) => (
+          {stages.map(([stage, done]) => (
             <li key={stage} className={styles.approval} aria-current={done ? "step" : undefined}>
               <span className={styles.approvalBox}>
                 {done ? (
                   <span className={styles.approvalSeal}>
                     {stage === "Filled" ? "Filled" : "OK"}
+                  </span>
+                ) : stage === "Filled" && orderPending ? (
+                  <span className={styles.approvalUnknown} role="img" aria-label="Unknown">
+                    ?
                   </span>
                 ) : null}
               </span>
@@ -440,50 +520,60 @@ export function TradeTicket({
           })}
         </div>
 
-        {quote !== null ? (
+        {view !== null ? (
           <div className={styles.quote} aria-live="polite">
             <dl className={styles.quoteTable}>
               <div>
                 <dt>Quantity</dt>
-                <dd>{formatQuantity(quote.quantity)}</dd>
+                <dd>{formatQuantity(view.quantity)}</dd>
               </div>
               <div>
                 <dt>{action === "buy" ? "Cost" : "Proceeds"}</dt>
-                <dd>{formatCents(quote.cash_amount_cents)}</dd>
+                <dd>{formatCents(view.cashAmountCents)}</dd>
+              </div>
+              <div>
+                <dt>{action === "buy" ? "Max cost" : "Min proceeds"}</dt>
+                <dd>{formatCents(String(view.guardCents))}</dd>
               </div>
               <div>
                 <dt>Average price</dt>
-                <dd>{formatProbability(quote.average_price)}</dd>
+                <dd>{formatProbability(view.averagePrice)}</dd>
               </div>
               <div>
                 <dt>Price after</dt>
-                <dd>{formatProbability(quote.price_after)}</dd>
+                <dd>{formatProbability(view.priceAfter)}</dd>
               </div>
               <div>
                 <dt>Metric after</dt>
-                <dd>{formatMetric(quote.current_metric_after, market.metric.kind)}</dd>
+                <dd>{formatMetric(view.currentMetricAfter, market.metric.kind)}</dd>
               </div>
               {action === "sell" ? (
                 <div>
                   <dt>Sellable</dt>
-                  <dd>{formatQuantity(quote.sellable_quantity)}</dd>
+                  <dd>{formatQuantity(view.sellableQuantity)}</dd>
                 </div>
               ) : null}
-              {quote.expected_redemption_quantity > 0 ? (
+              {view.expectedRedemptionQuantity > 0 ? (
                 <div>
                   <dt>Immediate redemption</dt>
                   <dd>
-                    {formatQuantity(quote.expected_redemption_quantity)} shares ·{" "}
-                    {formatCents(quote.expected_redemption_cents)}
+                    {formatQuantity(view.expectedRedemptionQuantity)} shares ·{" "}
+                    {formatCents(view.expectedRedemptionCents)}
                   </dd>
                 </div>
               ) : null}
             </dl>
             <p className={styles.dateStamp}>
-              <span>Quoted</span>
-              <time dateTime={quote.quoted_at}>{formatDateTime(quote.quoted_at)}</time>
+              <span>{view.moved ? "Requoted" : "Quoted"}</span>
+              <time dateTime={view.quotedAt}>{formatDateTime(view.quotedAt)}</time>
             </p>
-            <small>Quotes are previews, not reservations.</small>
+            <small>
+              {view.moved
+                ? `The market moved. Confirming submits ${action === "buy" ? "cost" : "proceeds"} of exactly ${formatCents(view.cashAmountCents)}.`
+                : action === "buy"
+                  ? "Quotes are previews, not reservations. The order fills at or below the max cost or is returned as a requote."
+                  : "Quotes are previews, not reservations. The order fills at or above the min proceeds or is returned as a requote."}
+            </small>
           </div>
         ) : null}
 
@@ -491,18 +581,7 @@ export function TradeTicket({
           <div className={styles.error} role="alert">
             <strong>{errorTitle}</strong>
             <p>{error.message}</p>
-            {error.code === "PRICE_MOVED" && movedPrice !== null ? (
-              <>
-                <p>
-                  Updated quantity: {formatQuantity(movedPrice.shares)}. Updated{" "}
-                  {action === "buy" ? "cost" : "proceeds"}:{" "}
-                  {formatCents(movedPrice.cashAmountCents)}.
-                </p>
-                <button type="button" onClick={() => void executeTrade(movedPrice.cashAmountCents)}>
-                  Confirm new price
-                </button>
-              </>
-            ) : error.code === "PRICE_MOVED" ? (
+            {error.code === "PRICE_MOVED" && movedPrice === null ? (
               <button type="button" onClick={() => void requestQuote()}>
                 Refresh quote
               </button>
@@ -546,12 +625,40 @@ export function TradeTicket({
             <strong>Trade completed</strong>
             <p>
               {formatQuantity(result.shares)} shares at {formatProbability(result.average_price)}{" "}
-              average. Market data has been refreshed.
+              average.{" "}
+              {refreshStale === null
+                ? "Refreshing live market data."
+                : refreshStale
+                  ? "Live data has not refreshed yet; polling will catch up."
+                  : "Market data has been refreshed."}
             </p>
           </div>
         ) : null}
 
-        {!needsUsername ? (
+        {orderPending ? (
+          <div className={styles.orderActions}>
+            <button
+              type="button"
+              className={styles.primary}
+              onClick={() => void settleOrder(trade.retry)}
+              disabled={phase === "executing"}
+            >
+              {phase === "executing" ? "Retrying…" : "Retry same trade"}
+            </button>
+            <button
+              type="button"
+              className={styles.secondary}
+              onClick={abandonOrder}
+              disabled={phase === "executing"}
+            >
+              Abandon order
+            </button>
+            <small>
+              Retrying resends the identical request; the server replays the fill if it already
+              happened. Abandoning does not cancel a fill: check the portfolio.
+            </small>
+          </div>
+        ) : !needsUsername ? (
           quote === null ? (
             <button
               type="button"
@@ -570,23 +677,17 @@ export function TradeTicket({
               type="button"
               className={styles.primary}
               onClick={() => void executeTrade()}
-              disabled={phase === "executing" || movedPrice !== null}
+              disabled={phase === "executing"}
             >
               {phase === "executing"
                 ? "Executing…"
                 : movedPrice !== null
-                  ? "Confirm the moved price above"
+                  ? "Confirm new price"
                   : action === "buy"
                     ? "Confirm buy"
                     : "Confirm sell"}
             </button>
           )
-        ) : null}
-
-        {trade.canRetry && phase !== "executing" && error?.code === "RETRYABLE" ? (
-          <button type="button" className={styles.secondary} onClick={() => void executeTrade()}>
-            Retry same trade
-          </button>
         ) : null}
       </div>
     </section>
