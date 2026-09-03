@@ -76,14 +76,14 @@ test("admin seed through settled portfolio with authoritative idempotent replay"
 
     await page
       .getByRole("region", { name: "Outcome contract" })
-      .getByRole("button", { name: /YES$/ })
+      .getByRole("button", { name: /^YES/ })
       .click();
     await expect(ticket).toBeVisible();
     if (mobile) {
       await expect(page.getByRole("dialog", { name: `Trade ${companyName}` })).toBeVisible();
     }
 
-    await ticket.getByLabel("Spend").fill("125.00");
+    await ticket.getByRole("spinbutton", { name: "Spend" }).fill("125.00");
     const quotePromise = page.waitForResponse((response) =>
       isApiResponse(response, "POST", "/api/quote"),
     );
@@ -229,7 +229,7 @@ test("admin seed through settled portfolio with authoritative idempotent replay"
     await marketArticle.getByRole("button", { name: "Sell", exact: true }).click();
     const sellFlow = page.locator('[aria-label="Sell YES"]');
     const partialQuantity = Number((replayedExecution.shares / 2).toFixed(6));
-    await sellFlow.getByLabel("Quantity").fill(String(partialQuantity));
+    await sellFlow.getByLabel("Quantity", { exact: true }).fill(String(partialQuantity));
     await sellFlow.getByRole("button", { name: "Review sale" }).click();
 
     const salePromise = page.waitForResponse((response) =>
@@ -306,7 +306,7 @@ test("admin seed through settled portfolio with authoritative idempotent replay"
         .getByRole("link", { name: "Browser proof confirmed outcome" }),
     ).toHaveAttribute("href", "https://example.com/openmarket-browser-proof");
     await expect(
-      page.getByRole("region", { name: "Outcome contract" }).getByRole("button", { name: /YES$/ }),
+      page.getByRole("region", { name: "Outcome contract" }).getByRole("button", { name: /^YES/ }),
     ).toBeDisabled();
     await expect(page.getByText("Trading closed", { exact: true })).toBeVisible();
     await expect(page.getByLabel("Trade rail")).toHaveCount(0);

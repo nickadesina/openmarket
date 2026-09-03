@@ -30,7 +30,7 @@ test("a valuation market renders the ladder, anchor, and distribution", async ({
 
   const ladder = page.getByRole("region", { name: "Probability ladder" });
   await expect(ladder.getByRole("columnheader", { name: "Valuation above" })).toBeVisible();
-  const yesButtons = ladder.getByRole("button", { name: /YES$/ });
+  const yesButtons = ladder.getByRole("button", { name: /^YES/ });
   expect(await yesButtons.count()).toBeGreaterThan(1);
   await expect(ladder.getByRole("rowheader").first()).toContainText("$");
 

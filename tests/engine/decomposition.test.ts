@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { decomposeHoldings } from "../../src/lib/engine/decomposition.js";
-import { type DecomposedPosition, EPS } from "../../src/lib/engine/types.js";
+import { type DecomposedPosition, EPS, MIN_QUANTITY } from "../../src/lib/engine/types.js";
 
 describe("decomposeHoldings", () => {
   it("extracts an exact YES suffix", () => {
@@ -69,6 +69,17 @@ describe("decomposeHoldings", () => {
     for (const holding of decomposition.residual) {
       expect(holding).toBeGreaterThanOrEqual(0);
     }
+  });
+
+  it("keeps sub-tradable dust in the residual instead of emitting unsellable positions", () => {
+    const dust = MIN_QUANTITY / 2;
+    const decomposition = decomposeHoldings([0, dust, 1, 1]);
+
+    expect(decomposition.positions).toEqual([{ side: "yes", strikeIndex: 1, quantity: 1 }]);
+    expect(decomposition.residual).toEqual([0, dust, 0, 0]);
+    expect(decomposeHoldings([0, MIN_QUANTITY]).positions).toEqual([
+      { side: "yes", strikeIndex: 0, quantity: MIN_QUANTITY },
+    ]);
   });
 
   it("rejects invalid lengths, non-finite values, and material negatives", () => {

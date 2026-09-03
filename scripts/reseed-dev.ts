@@ -99,8 +99,23 @@ interface Position {
   shares: number;
 }
 
+/** Refuses to run against anything that identifies itself as production. */
+function assertNotProduction(): void {
+  const url = process.env.DATABASE_URL_UNPOOLED?.trim();
+  const host = url === undefined ? undefined : new URL(url).hostname.toLowerCase();
+  const productionHost = process.env.PRODUCTION_DATABASE_HOST?.trim().toLowerCase();
+  if (
+    process.env.VERCEL_ENV === "production" ||
+    process.env.NEON_BRANCH_ROLE === "production" ||
+    (productionHost !== undefined && productionHost.length > 0 && host === productionHost)
+  ) {
+    throw new Error("reseed:dev wipes every trading table and refuses to run against production.");
+  }
+}
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: one linear narrative script; split into seed/trade/backdate phases before it grows.
 async function main(): Promise<void> {
+  assertNotProduction();
   const db = createDirectDatabase();
   const random = mulberry32(20260901);
   try {

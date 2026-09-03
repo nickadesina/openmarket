@@ -142,6 +142,13 @@ export function tradeCost(q: readonly number[], delta: readonly number[], b: num
   return shiftedCost(normalizeState(q, b), delta);
 }
 
+/**
+ * Cash quantization is deliberately one-sided: buys round the engine cost UP to
+ * the next cent and sells round proceeds DOWN. A round trip therefore leaves at
+ * most two cents per trade with the market maker (`markets.mm_cash_flow_cents`),
+ * never with the user, so the ledger can never pay out more than the engine
+ * priced. Settlement entitlements floor the same way.
+ */
 export function quantizeBuyCostCents(costUsd: number): number {
   assertFinite(costUsd, "costUsd");
   if (costUsd < 0) {

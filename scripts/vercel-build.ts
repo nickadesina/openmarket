@@ -16,20 +16,17 @@ function run(command: string, args: readonly string[]): void {
 const vercelEnvironment = process.env.VERCEL_ENV;
 const isDeployTarget = vercelEnvironment === "production" || vercelEnvironment === "preview";
 
+// Migrate and verify the ledger before compiling: a schema or replay failure
+// must abort the deploy before there is a build artifact to promote.
+// Seeding is an explicit operator action (`npm run seed:production`), never a
+// build step: a traded market cannot be reseeded, so an unconditional seed
+// would start failing builds once source metadata ages past its freshness window.
 if (isDeployTarget) {
   validateDeploymentConfig(process.env, vercelEnvironment as DeploymentTarget);
+  run("npm", ["run", "db:migrate"]);
+  run("npm", ["run", "verify:replay"]);
 } else {
   console.log("Skipping deployment migration outside Vercel production/preview.");
 }
 
 run("npm", ["run", "build"]);
-
-// Seeding is an explicit operator action (`npm run seed:production`), never a
-// build step: a traded market cannot be reseeded, so an unconditional seed
-// would start failing builds once source metadata ages past its freshness window.
-if (isDeployTarget) {
-  run("npm", ["run", "db:migrate"]);
-  if (vercelEnvironment === "production") {
-    run("npm", ["run", "verify:replay"]);
-  }
-}

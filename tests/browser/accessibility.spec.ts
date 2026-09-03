@@ -60,22 +60,28 @@ test("keyboard, chart, movement, focus, and responsive overflow contracts", asyn
 
   await test.step("live movement announces a label alongside the glyph", async () => {
     const movementCue = page.getByLabel("Current market metrics").locator("small");
+    // The glyph is a decorative SVG; its direction is exposed as data for
+    // proof that movement is never conveyed by color alone.
     await expect(movementCue).toContainText("Unchanged");
-    await expect(movementCue.locator('[aria-hidden="true"]')).toHaveText("→");
+    await expect(movementCue.locator('[aria-hidden="true"]')).toHaveAttribute(
+      "data-direction",
+      "flat",
+    );
 
     const movementProof = expect
       .poll(
         async () =>
           movementCue.evaluate((element) => ({
             hasLabel: element.textContent?.includes("Moved up") ?? false,
-            glyph: element.querySelector('[aria-hidden="true"]')?.textContent ?? "",
+            glyph:
+              element.querySelector('[aria-hidden="true"]')?.getAttribute("data-direction") ?? "",
           })),
         {
           timeout: 10_000,
           intervals: [50],
         },
       )
-      .toEqual({ hasLabel: true, glyph: "↑" });
+      .toEqual({ hasLabel: true, glyph: "up" });
 
     const tradeResponse = await page.request.post("/api/trade", {
       headers: { Origin: origin },
@@ -97,7 +103,7 @@ test("keyboard, chart, movement, focus, and responsive overflow contracts", asyn
 
   const yesButton = page
     .getByRole("region", { name: "Outcome contract" })
-    .getByRole("button", { name: /YES$/ });
+    .getByRole("button", { name: /^YES/ });
 
   await test.step("the ladder is keyboard reachable with a visible focus indicator", async () => {
     await tabTo(page, yesButton);
@@ -121,7 +127,7 @@ test("keyboard, chart, movement, focus, and responsive overflow contracts", asyn
     await page.keyboard.press("Enter");
     const ticket = page.getByRole("region", { name: "Trade ticket" });
     await expect(ticket).toBeVisible();
-    await expect(ticket.getByLabel("Spend")).toBeVisible();
+    await expect(ticket.getByRole("spinbutton", { name: "Spend" })).toBeVisible();
 
     if (mobile) {
       const dialog = page.getByRole("dialog", { name: `Trade ${names.companyName}` });

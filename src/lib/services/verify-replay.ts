@@ -1,7 +1,13 @@
 import type { Kysely, Transaction } from "kysely";
 
-import type { Database } from "../db/schema.js";
-import { probabilities } from "../engine/lmsr.js";
+import type { Database, TradeAction } from "../db/schema.js";
+import {
+  probabilities,
+  quantizeBuyCostCents,
+  quantizeEntitlementCents,
+  quantizeSellProceedsCents,
+  tradeCost,
+} from "../engine/lmsr.js";
 import { EPS } from "../engine/types.js";
 import { INITIAL_USER_BALANCE_CENTS } from "./user.js";
 
@@ -21,7 +27,11 @@ export interface ReplayTradeInput {
   readonly id: string;
   readonly marketId: string;
   readonly marketSequence: string;
+  readonly action: TradeAction;
   readonly delta: readonly number[];
+  readonly cashAmountCents: string;
+  readonly redemptionQuantity: number;
+  readonly redemptionCents: string;
   readonly metricAfter: number;
   readonly createdAt: Date;
 }
@@ -81,7 +91,8 @@ export interface StateFinding {
     | "INVALID_VECTOR_LENGTH"
     | "NONFINITE_VECTOR_VALUE"
     | "INVALID_LIQUIDITY"
-    | "INVALID_PMF";
+    | "INVALID_PMF"
+    | "INVALID_TRADE";
   readonly detail: string;
 }
 
@@ -98,6 +109,15 @@ export interface NegativeHoldingFinding {
   readonly userId: string;
   readonly bucketIndex: number;
   readonly value: number;
+}
+
+/** A trade whose stored cents disagree with the engine re-run on the replayed state. */
+export interface TradeEconomicsFinding {
+  readonly tradeId: string;
+  readonly marketSequence: string;
+  readonly field: "cash_amount_cents" | "redemption_cents";
+  readonly expected: string;
+  readonly persisted: string;
 }
 
 export interface TradeMarkCardinalityFinding {
@@ -137,6 +157,7 @@ export interface MarketReplayDiagnostics {
   readonly maxBucketDrift: BucketDriftDiagnostic;
   readonly pmfNormalizationError: number | null;
   readonly negativeHoldings: readonly NegativeHoldingFinding[];
+  readonly tradeEconomics: readonly TradeEconomicsFinding[];
   readonly tradeSequences: SequenceDiagnostics;
   readonly markSequences: SequenceDiagnostics;
   readonly tradeMarkCardinality: readonly TradeMarkCardinalityFinding[];
@@ -167,6 +188,7 @@ export interface ReplaySummary {
   readonly maxBucketDrift: number | null;
   readonly maxPmfNormalizationError: number | null;
   readonly negativeHoldingCount: number;
+  readonly tradeEconomicsFailureCount: number;
   readonly sequenceFailureCount: number;
   readonly tradeMarkCardinalityFailureCount: number;
   readonly tradeMarkDisagreementCount: number;
@@ -344,6 +366,7 @@ function analyzeMarket(
   }
 
   const replayedQ = [...market.initialQ];
+  const tradeEconomics: TradeEconomicsFinding[] = [];
   const orderedTrades = parseAndOrder(trades, (trade) => trade.marketSequence);
   for (const { row: trade } of orderedTrades.ordered) {
     if (trade.delta.length !== replayedQ.length) {
@@ -353,22 +376,48 @@ function analyzeMarket(
       });
       continue;
     }
-    for (let index = 0; index < replayedQ.length; index += 1) {
-      const current = replayedQ[index];
-      const delta = trade.delta[index];
-      if (
-        current === undefined ||
-        delta === undefined ||
-        !Number.isFinite(current) ||
-        !Number.isFinite(delta)
-      ) {
-        stateFindings.push({
-          code: "NONFINITE_VECTOR_VALUE",
-          detail: `trade ${trade.id} cannot replay bucket ${index}`,
+    if (!replayedQ.every(Number.isFinite) || !trade.delta.every(Number.isFinite)) {
+      stateFindings.push({
+        code: "NONFINITE_VECTOR_VALUE",
+        detail: `trade ${trade.id} cannot replay against a non-finite vector`,
+      });
+      continue;
+    }
+
+    // Re-price the trade on the replayed state: the ledger must have charged
+    // exactly what the engine charges, not merely balanced its two legs.
+    try {
+      const costUsd = tradeCost(replayedQ, trade.delta, market.b);
+      const expectedCash =
+        trade.action === "buy" ? quantizeBuyCostCents(costUsd) : quantizeSellProceedsCents(costUsd);
+      if (expectedCash.toString() !== trade.cashAmountCents) {
+        tradeEconomics.push({
+          tradeId: trade.id,
+          marketSequence: trade.marketSequence,
+          field: "cash_amount_cents",
+          expected: expectedCash.toString(),
+          persisted: trade.cashAmountCents,
         });
-        continue;
       }
-      replayedQ[index] = current + delta;
+      const expectedRedemption = quantizeEntitlementCents(trade.redemptionQuantity);
+      if (expectedRedemption.toString() !== trade.redemptionCents) {
+        tradeEconomics.push({
+          tradeId: trade.id,
+          marketSequence: trade.marketSequence,
+          field: "redemption_cents",
+          expected: expectedRedemption.toString(),
+          persisted: trade.redemptionCents,
+        });
+      }
+    } catch (error: unknown) {
+      stateFindings.push({
+        code: "INVALID_TRADE",
+        detail: `trade ${trade.id}: ${error instanceof Error ? error.message : "cannot be re-priced"}`,
+      });
+    }
+
+    for (let index = 0; index < replayedQ.length; index += 1) {
+      replayedQ[index] = replayedQ[index]! + trade.delta[index]!;
     }
   }
 
@@ -610,6 +659,7 @@ function analyzeMarket(
     pmfNormalizationError !== null &&
     pmfNormalizationError <= EPS &&
     negativeHoldings.length === 0 &&
+    tradeEconomics.length === 0 &&
     tradeSequences.passed &&
     markSequences.passed &&
     tradeMarkCardinality.length === 0 &&
@@ -623,6 +673,7 @@ function analyzeMarket(
     maxBucketDrift,
     pmfNormalizationError,
     negativeHoldings,
+    tradeEconomics,
     tradeSequences,
     markSequences,
     tradeMarkCardinality,
@@ -744,6 +795,10 @@ export function analyzeReplay(snapshot: ReplaySnapshot): ReplayDiagnostics {
       (total, market) => total + market.negativeHoldings.length,
       0,
     ),
+    tradeEconomicsFailureCount: marketDiagnostics.reduce(
+      (total, market) => total + market.tradeEconomics.length,
+      0,
+    ),
     sequenceFailureCount: marketDiagnostics.reduce(
       (total, market) =>
         total + Number(!market.tradeSequences.passed) + Number(!market.markSequences.passed),
@@ -792,7 +847,18 @@ async function loadSnapshot(db: Transaction<Database>): Promise<ReplaySnapshot> 
     .execute();
   const trades = await db
     .selectFrom("trades")
-    .select(["id", "market_id", "market_sequence", "delta", "metric_after", "created_at"])
+    .select([
+      "id",
+      "market_id",
+      "market_sequence",
+      "action",
+      "delta",
+      "cash_amount_cents",
+      "redemption_quantity",
+      "redemption_cents",
+      "metric_after",
+      "created_at",
+    ])
     .orderBy("market_id", "asc")
     .orderBy("market_sequence", "asc")
     .execute();
@@ -830,7 +896,11 @@ async function loadSnapshot(db: Transaction<Database>): Promise<ReplaySnapshot> 
       id: trade.id,
       marketId: trade.market_id,
       marketSequence: trade.market_sequence,
+      action: trade.action,
       delta: trade.delta,
+      cashAmountCents: trade.cash_amount_cents,
+      redemptionQuantity: trade.redemption_quantity,
+      redemptionCents: trade.redemption_cents,
       metricAfter: trade.metric_after,
       createdAt: trade.created_at,
     })),

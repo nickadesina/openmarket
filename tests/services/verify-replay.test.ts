@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { probabilities } from "../../src/lib/engine/lmsr.js";
+import { probabilities, quantizeBuyCostCents, tradeCost } from "../../src/lib/engine/lmsr.js";
 import { EPS } from "../../src/lib/engine/types.js";
 import { analyzeReplay, type ReplaySnapshot } from "../../src/lib/services/verify-replay.js";
 
@@ -8,6 +8,7 @@ const MARKET_ID = "market-1";
 const TRADE_TIME = new Date("2026-01-01T00:01:00.000Z");
 const Q_AFTER = [0, 1] as const;
 const METRIC_AFTER = probabilities(Q_AFTER, 10)[1]!;
+const CASH_CENTS = quantizeBuyCostCents(tradeCost([0, 0], [0, 1], 10));
 
 function cleanSnapshot(): ReplaySnapshot {
   return {
@@ -20,7 +21,7 @@ function cleanSnapshot(): ReplaySnapshot {
         initialQ: [0, 0],
         q: Q_AFTER,
         lastMarketSequence: "1",
-        mmCashFlowCents: "25",
+        mmCashFlowCents: CASH_CENTS.toString(),
         roundingReserveCents: "1",
       },
     ],
@@ -29,7 +30,11 @@ function cleanSnapshot(): ReplaySnapshot {
         id: "trade-1",
         marketId: MARKET_ID,
         marketSequence: "1",
+        action: "buy",
         delta: [0, 1],
+        cashAmountCents: CASH_CENTS.toString(),
+        redemptionQuantity: 0,
+        redemptionCents: "0",
         metricAfter: METRIC_AFTER,
         createdAt: TRADE_TIME,
       },
@@ -51,7 +56,7 @@ function cleanSnapshot(): ReplaySnapshot {
       },
     ],
     holdings: [{ userId: "user-1", marketId: MARKET_ID, h: [0, 1] }],
-    users: [{ id: "user-1", cashBalanceCents: "9999975" }],
+    users: [{ id: "user-1", cashBalanceCents: (10_000_000 - CASH_CENTS).toString() }],
   };
 }
 
@@ -82,19 +87,53 @@ describe("analyzeReplay", () => {
       contiguous: true,
     });
     expect(market.negativeHoldings).toEqual([]);
+    expect(market.tradeEconomics).toEqual([]);
     expect(market.tradeMarkCardinality).toEqual([]);
     expect(market.tradeMarkDisagreements).toEqual([]);
     expect(market.timestampInversions).toEqual([]);
     expect(report.cashReconciliation).toMatchObject({
       seededBalanceCents: "10000000",
-      currentUserCashCents: "9999975",
-      marketMakerCashFlowCents: "25",
+      currentUserCashCents: (10_000_000 - CASH_CENTS).toString(),
+      marketMakerCashFlowCents: CASH_CENTS.toString(),
       roundingReserveCents: "1",
       differenceCents: "0",
       roundingReserveAccounting:
         "Rounding reserve is reported separately and excluded from the difference because user cash and MM flow both record the same quantized transfers.",
       passed: true,
     });
+  });
+
+  it("flags a balanced trade whose stored cents disagree with the engine", () => {
+    const snapshot = cleanSnapshot();
+    const trade = snapshot.trades[0]!;
+    const skimmed = (CASH_CENTS + 5).toString();
+    const report = analyzeReplay({
+      ...snapshot,
+      markets: [{ ...snapshot.markets[0]!, mmCashFlowCents: skimmed }],
+      trades: [{ ...trade, cashAmountCents: skimmed, redemptionCents: "1" }],
+      users: [{ id: "user-1", cashBalanceCents: (10_000_000 - CASH_CENTS - 5).toString() }],
+    });
+    const market = report.markets[0]!;
+
+    expect(report.cashReconciliation.passed).toBe(true);
+    expect(market.passed).toBe(false);
+    expect(market.tradeEconomics).toEqual([
+      {
+        tradeId: "trade-1",
+        marketSequence: "1",
+        field: "cash_amount_cents",
+        expected: CASH_CENTS.toString(),
+        persisted: skimmed,
+      },
+      {
+        tradeId: "trade-1",
+        marketSequence: "1",
+        field: "redemption_cents",
+        expected: "0",
+        persisted: "1",
+      },
+    ]);
+    expect(report.summary.tradeEconomicsFailureCount).toBe(2);
   });
 
   it("returns structured findings for corrupted state and history", () => {
@@ -106,7 +145,7 @@ describe("analyzeReplay", () => {
           ...snapshot.markets[0]!,
           q: [0.25, 1],
           lastMarketSequence: "3",
-          mmCashFlowCents: "20",
+          mmCashFlowCents: (CASH_CENTS - 5).toString(),
         },
       ],
       trades: [
@@ -115,7 +154,11 @@ describe("analyzeReplay", () => {
           id: "trade-2",
           marketId: MARKET_ID,
           marketSequence: "1",
+          action: "buy",
           delta: [1, 0],
+          cashAmountCents: "0",
+          redemptionQuantity: 0,
+          redemptionCents: "0",
           metricAfter: 0.48,
           createdAt: new Date("2026-01-01T00:02:00.000Z"),
         },
@@ -123,7 +166,11 @@ describe("analyzeReplay", () => {
           id: "trade-3",
           marketId: MARKET_ID,
           marketSequence: "3",
+          action: "buy",
           delta: [0, 0.5],
+          cashAmountCents: "0",
+          redemptionQuantity: 0,
+          redemptionCents: "0",
           metricAfter: 0.53,
           createdAt: new Date("2026-01-01T00:03:00.000Z"),
         },

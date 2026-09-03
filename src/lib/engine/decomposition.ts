@@ -1,4 +1,4 @@
-import { type DecomposedPosition, EPS } from "./types.js";
+import { type DecomposedPosition, EPS, MIN_QUANTITY } from "./types.js";
 
 interface Candidate extends DecomposedPosition {
   readonly width: number;
@@ -42,11 +42,13 @@ export function decomposeHoldings(holdings: readonly number[]): {
       suffixMinimum[bucket] = Math.min(suffixMinimum[bucket + 1]!, residual[bucket]!);
     }
 
+    // Only tradable positions are emitted: anything below MIN_QUANTITY cannot
+    // be sold, so it stays in the residual instead of becoming a dead position.
     let best: Candidate | undefined;
     for (let strikeIndex = 0; strikeIndex < lastBucket; strikeIndex += 1) {
       const yesWidth = lastBucket - strikeIndex;
       const yesQuantity = suffixMinimum[strikeIndex + 1]!;
-      if (yesQuantity > EPS) {
+      if (yesQuantity >= MIN_QUANTITY) {
         const candidate: Candidate = {
           side: "yes",
           strikeIndex,
@@ -61,7 +63,7 @@ export function decomposeHoldings(holdings: readonly number[]): {
 
       const noWidth = strikeIndex + 1;
       const noQuantity = prefixMinimum[strikeIndex]!;
-      if (noQuantity > EPS) {
+      if (noQuantity >= MIN_QUANTITY) {
         const candidate: Candidate = {
           side: "no",
           strikeIndex,

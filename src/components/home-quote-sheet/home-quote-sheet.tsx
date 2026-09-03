@@ -52,9 +52,17 @@ function Change({
     market.metric.kind === "valuation_median"
       ? formatMetricPrice(Math.abs(value), market.metric.kind)
       : `${(Math.abs(value) * 100).toFixed(1)} pts`;
+  if (direction === "flat") {
+    return (
+      <span className={styles.flat}>
+        <MovementArrow direction={direction} size={10} /> Flat
+      </span>
+    );
+  }
   return (
     <span className={styles[direction]}>
-      <MovementArrow direction={direction} size={10} /> {direction === "flat" ? "Flat" : amount}
+      <MovementArrow direction={direction} size={10} />{" "}
+      <span className={styles.visuallyHidden}>{direction === "up" ? "Up" : "Down"}</span> {amount}
     </span>
   );
 }

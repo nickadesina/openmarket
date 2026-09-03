@@ -27,7 +27,7 @@ async function openTicket(
   await expect(page.getByRole("heading", { name: names.companyName })).toBeVisible();
   await page
     .getByRole("region", { name: "Outcome contract" })
-    .getByRole("button", { name: /YES$/ })
+    .getByRole("button", { name: /^YES/ })
     .click();
   const ticket = page.getByRole("region", { name: "Trade ticket" });
   await expect(ticket).toBeVisible();
@@ -35,7 +35,7 @@ async function openTicket(
 }
 
 async function previewBuy(page: Page, ticket: Locator, spendUsd: string): Promise<QuoteResponse> {
-  await ticket.getByLabel("Spend").fill(spendUsd);
+  await ticket.getByRole("spinbutton", { name: "Spend" }).fill(spendUsd);
   const quotePromise = page.waitForResponse((response) =>
     isApiResponse(response, "POST", "/api/quote"),
   );
@@ -53,16 +53,16 @@ test("a quote is invalidated by any input change and gated on a valid amount", a
   const ticket = await openTicket(page, baseURL, uniqueNames("ticket-quote", testInfo));
 
   await expect(ticket.getByRole("button", { name: "Preview buy" })).toBeEnabled();
-  await ticket.getByLabel("Spend").fill("0");
+  await ticket.getByRole("spinbutton", { name: "Spend" }).fill("0");
   await expect(ticket.getByRole("button", { name: "Preview buy" })).toBeDisabled();
-  await ticket.getByLabel("Spend").fill("");
+  await ticket.getByRole("spinbutton", { name: "Spend" }).fill("");
   await expect(ticket.getByRole("button", { name: "Preview buy" })).toBeDisabled();
 
   await previewBuy(page, ticket, "50.00");
   await expect(ticket.getByRole("button", { name: "Confirm buy" })).toBeVisible();
   await expect(ticket.getByText("Quotes are previews, not reservations.")).toBeVisible();
 
-  await ticket.getByLabel("Spend").fill("60.00");
+  await ticket.getByRole("spinbutton", { name: "Spend" }).fill("60.00");
   await expect(ticket.getByText("Cost", { exact: true })).toHaveCount(0);
   await expect(ticket.getByRole("button", { name: "Preview buy" })).toBeVisible();
 
@@ -85,7 +85,7 @@ test("a by-quantity buy quotes with quantity and executes with a 1% cost cap", a
   const ticket = await openTicket(page, baseURL, uniqueNames("ticket-qty", testInfo));
 
   await ticket.getByRole("button", { name: "By quantity" }).click();
-  await ticket.getByLabel("Quantity").fill("10");
+  await ticket.getByLabel("Quantity", { exact: true }).fill("10");
   const quotePromise = page.waitForResponse((response) =>
     isApiResponse(response, "POST", "/api/quote"),
   );
@@ -183,7 +183,7 @@ test("a moved price must be explicitly confirmed and re-executes with the author
 }, testInfo) => {
   const ticket = await openTicket(page, baseURL, uniqueNames("ticket-moved", testInfo));
   await ticket.getByRole("button", { name: "By quantity" }).click();
-  await ticket.getByLabel("Quantity").fill("10");
+  await ticket.getByLabel("Quantity", { exact: true }).fill("10");
   const quotePromise = page.waitForResponse((response) =>
     isApiResponse(response, "POST", "/api/quote"),
   );
@@ -258,7 +258,7 @@ test("changing the amount clears a failed execution and its pending retry", asyn
   await expect(ticket.getByRole("button", { name: "Retry same trade" })).toBeVisible();
   await page.unroute("**/api/trade");
 
-  await ticket.getByLabel("Spend").fill("41.00");
+  await ticket.getByRole("spinbutton", { name: "Spend" }).fill("41.00");
   await expect(ticket.getByRole("alert")).toHaveCount(0);
   await expect(ticket.getByRole("button", { name: "Retry same trade" })).toHaveCount(0);
   await expect(ticket.getByRole("button", { name: "Preview buy" })).toBeVisible();

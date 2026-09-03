@@ -28,6 +28,7 @@ export function MovementArrow({
       width={size}
       height={size}
       aria-hidden="true"
+      data-direction={direction}
       style={{ display: "inline-block", verticalAlign: "-0.0625em" }}
     >
       <path d={path} {...strokeProps} />

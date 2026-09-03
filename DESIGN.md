@@ -31,8 +31,8 @@ typography:
     lineHeight: 1.2
     letterSpacing: "-0.01em"
   metric:
-    fontFamily: "Noto Sans, Segoe UI, system-ui, sans-serif"
-    fontSize: "1.625rem"
+    fontFamily: "Roboto Condensed, Arial Narrow, sans-serif"
+    fontSize: "1.75rem"
     fontWeight: 700
     lineHeight: 1.2
     letterSpacing: "-0.02em"
@@ -54,7 +54,7 @@ typography:
     lineHeight: 1.2
 rounded:
   none: "0"
-  chip: "0.4375rem"
+  chip: "0.25rem"
 spacing:
   "1": "0.25rem"
   "2": "0.5rem"
@@ -91,20 +91,6 @@ components:
     typography: "{typography.label}"
     rounded: "{rounded.none}"
     padding: "0.375rem 0.875rem"
-  stamp-open:
-    backgroundColor: "{colors.paper-white}"
-    textColor: "{colors.utility-red}"
-    typography: "{typography.label}"
-    rounded: "{rounded.none}"
-    padding: "0 0.75rem"
-    height: "1.625rem"
-  stamp-settled:
-    backgroundColor: "{colors.paper-white}"
-    textColor: "{colors.press-ink}"
-    typography: "{typography.label}"
-    rounded: "{rounded.none}"
-    padding: "0 0.75rem"
-    height: "1.625rem"
   input-field:
     backgroundColor: "{colors.paper-white}"
     textColor: "{colors.press-ink}"
@@ -136,7 +122,7 @@ Density comes from real content only — real markets, real trades, real numbers
 never invented rows.
 
 Everything is set square. Corners are right angles everywhere except the one
-sanctioned curve: the company-logo chip (7px). Numbers are tabular everywhere by
+sanctioned curve: the company-logo chip (4px). Numbers are tabular everywhere by
 a global `font-variant-numeric: tabular-nums`, so columns of prices rack up like
 a ledger. Structural labels — table heads, module tabs, nav links, stamps, the
 footer disclosure — speak in one voice: bold Roboto Condensed uppercase with
@@ -147,7 +133,7 @@ SETTLED, like ink stamps on paper.
 - Light-only world: white ground, ink text, hairline gray rules; depth drawn, never cast.
 - One accent: utility red (#d70909) for prices, up-movement, actions, tabs, selection, errors.
 - Movement is never color alone: red-up / ink-down always pairs a drawn arrow with a word.
-- Square geometry; the 7px logo chip is the only radius.
+- Square geometry; the 4px logo chip is the only radius.
 - Tabular numerals globally; condensed bold caps for every structural label.
 - Minimal functional motion (150–220ms ease-out); reduced-motion fully honored.
 
@@ -207,7 +193,7 @@ Six roles at a ~1.2 ratio: 11 / 13 / 15 / 18 / 22 / 28px. Every figure in Roboto
 
 **The Baseline Rule.** Every change over a window is measured from the level in force when the window began: the latest mark at or before the window start, else the first mark, else the current metric. The board's 24h figure, the market header, the chart summary and its opening point, and the quote sheet all share it, so the same day never shows two different changes.
 
-**The Fixed Ramp Rule.** Type sizes are fixed steps from the token ramp (0.6875 / 0.8125 / 0.9375 / 1.125 / 1.375 / 1.75rem); no component declares a literal `font-size`; responsive changes swap steps at breakpoints, never fluid `clamp()` type. (The one sanctioned clamp is the page gutter, which is space, not type.)
+**The Fixed Ramp Rule.** Type sizes are fixed steps from the token ramp (0.6875 / 0.8125 / 0.9375 / 1.125 / 1.375 / 1.75rem, plus `--font-size-micro` 0.5625rem for seal caps only); no component declares a literal `font-size`; responsive changes swap steps at breakpoints, never fluid `clamp()` type. (The one sanctioned clamp is the page gutter, which is space, not type.)
 
 **The Baseline Rule (rows).** Wherever a tab, a label, a caption, a figure, or a trailing control shares a row with other text, the row aligns by `align-items: baseline`, never by box center: the home stat strip, every module header, the ticket header, and the portfolio headers. Mixed fonts and sizes centered by box land on different lines; baselines land on one. Box centering is reserved for rows of controls or icons with no shared text line.
 
@@ -217,7 +203,7 @@ Six roles at a ~1.2 ratio: 11 / 13 / 15 / 18 / 22 / 28px. Every figure in Roboto
 
 A full-width work area under a slim sticky top bar, gutter-padded with
 `--page-gutter: clamp(0.75rem, 2vw, 1.25rem)` and capped at `--content-max`
-(96rem). The shell is a column: sticky header (4.125rem, white, 1px Press Ink
+(96rem). The shell is a column: sticky header (4rem, white, 1px Press Ink
 bottom rule), main region, and a footer band (1px Rule Gray top rule) holding a
 tabular copyright line, a centered bold-caps disclosure, and caps links.
 
@@ -243,14 +229,14 @@ box-shadows in the world are functional, not material: the focus halo
 
 The world is square: `--radius-sm/md/lg` are all 0. Buttons, inputs, tables,
 tabs, stamps, sheets, and modules are hard rectangles. The single sanctioned
-curve is `--radius-chip` (0.4375rem) on company-logo chips, whose slight
+curve is `--radius-chip` (0.25rem) on company-logo chips, whose slight
 rounding sets trademarked marks apart from the system's own geometry. Stamps
 (OPEN/SETTLED) use a heavier 1.5px outline to read as inked impressions;
 everything else rules at 1px. Icons are drawn in-house at a single 1.5px
 round-capped stroke (`src/components/icons/icons.tsx`) — no icon fonts, no
 third-party glyph sets.
 
-**The One Curve Rule.** Radius exists only on logo chips (7px). Any other rounded corner is a defect.
+**The One Curve Rule.** Radius exists only on logo chips (4px). Any other rounded corner is a defect.
 
 ## Components
 
@@ -323,7 +309,7 @@ Two durations only — `--duration-fast` 150ms and `--duration-standard` 220ms �
 ### Don't:
 - **Don't** introduce a dark mode, a second accent hue, or gradients — the world is light-only with one red.
 - **Don't** use red decoratively, or use color as the only carrier of movement, status, or selection.
-- **Don't** round corners (except the 7px logo chip) or cast resting shadows — depth is drawn with rules.
+- **Don't** round corners (except the 4px logo chip) or cast resting shadows — depth is drawn with rules.
 - **Don't** import icon fonts or third-party glyph sets; draw icons at the single 1.5px round-capped stroke.
 - **Don't** fabricate density: no invented rows, filler markets, or decorative stats; empty states teach instead.
 - **Don't** scale type fluidly; swap fixed ramp steps at structural breakpoints.
