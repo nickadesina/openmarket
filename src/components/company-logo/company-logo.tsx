@@ -10,6 +10,10 @@ function hideBrokenLogo(event: SyntheticEvent<HTMLImageElement>) {
   event.currentTarget.hidden = true;
 }
 
+function showLoadedLogo(event: SyntheticEvent<HTMLImageElement>) {
+  event.currentTarget.hidden = false;
+}
+
 export function CompanyLogo({
   name,
   logoPath,
@@ -27,8 +31,8 @@ export function CompanyLogo({
   // biome-ignore lint/correctness/useExhaustiveDependencies: re-check the settled image whenever the mark's path changes.
   useEffect(() => {
     const image = imageNode.current;
-    if (image?.complete && image.naturalWidth === 0) {
-      image.hidden = true;
+    if (image !== null) {
+      image.hidden = image.complete && image.naturalWidth === 0;
     }
   }, [logoPath]);
 
@@ -43,6 +47,7 @@ export function CompanyLogo({
         width={dimension}
         height={dimension}
         onError={hideBrokenLogo}
+        onLoad={showLoadedLogo}
       />
       {/* Initials only stand in for a broken mark; they never sit behind one. */}
       <span className={styles.fallback}>{name.slice(0, 2).toUpperCase()}</span>

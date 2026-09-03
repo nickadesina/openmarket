@@ -346,7 +346,7 @@ export function MarketBoard({
 }: {
   readonly initialData?: MarketListResult | undefined;
 }) {
-  const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
+  const [expandedMarketId, setExpandedMarketId] = useState<string | null>(null);
   const initialQueryData =
     initialData === undefined
       ? {}
@@ -412,13 +412,13 @@ export function MarketBoard({
         </thead>
         <tbody>
           {marketsQuery.data.markets.map((market) => {
-            const expanded = expandedSlug === market.company.slug;
+            const expanded = expandedMarketId === market.marketId;
             return (
               <MarketRowGroup
                 key={market.marketId}
                 market={market}
                 expanded={expanded}
-                onToggle={() => setExpandedSlug(expanded ? null : market.company.slug)}
+                onToggle={() => setExpandedMarketId(expanded ? null : market.marketId)}
               />
             );
           })}

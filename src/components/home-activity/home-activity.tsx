@@ -27,7 +27,7 @@ function itemLabel(item: ActivityItem): string {
 
 function ActivityRow({ item }: { readonly item: ActivityItem }) {
   const action = item.action === "buy" ? "Bought" : "Sold";
-  const cash = formatUsd(Math.abs(Number(item.cashAmountCents)) / 100);
+  const cash = formatUsd((item.action === "buy" ? -1 : 1) * (Number(item.cashAmountCents) / 100));
 
   return (
     <li className={styles.item}>

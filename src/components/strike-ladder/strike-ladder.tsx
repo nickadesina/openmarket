@@ -76,6 +76,8 @@ export function StrikeLadder({ market, selection, onSelect }: StrikeLadderProps)
   const marketId = market.marketId;
   // biome-ignore lint/correctness/useExhaustiveDependencies: scroll to the money once per market, not on every poll.
   useEffect(() => {
+    setShowOver(false);
+    setShowUnder(false);
     const scroller = scrollerNode.current;
     const row = currentRowNode.current;
     if (scroller === null || row === null || scroller.scrollHeight <= scroller.clientHeight) return;
@@ -155,10 +157,15 @@ export function StrikeLadder({ market, selection, onSelect }: StrikeLadderProps)
           <tbody>
             {currentAboveAll ? currentRow : null}
             {visible.map((contract) => {
+              const selectable = market.status === "open";
               const yesSelected =
-                selection?.strikeIndex === contract.strikeIndex && selection.side === "yes";
+                selectable &&
+                selection?.strikeIndex === contract.strikeIndex &&
+                selection.side === "yes";
               const noSelected =
-                selection?.strikeIndex === contract.strikeIndex && selection.side === "no";
+                selectable &&
+                selection?.strikeIndex === contract.strikeIndex &&
+                selection.side === "no";
               const strike =
                 contract.strikeValueUsd === null
                   ? "Outcome"

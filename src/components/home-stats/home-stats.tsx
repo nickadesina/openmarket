@@ -34,6 +34,7 @@ export function HomeStats({
       apiRequest<{ readonly cashBalanceCents: string }>("/api/portfolio?offset=0&limit=1"),
   });
 
+  const marketsUnavailable = marketsQuery.isError && marketsQuery.data === undefined;
   const markets = marketsQuery.data?.markets ?? [];
   const open = markets.filter((market) => market.status === "open");
   const claims = open.reduce((total, market) => total + market.outstandingClaims, 0);
@@ -52,13 +53,14 @@ export function HomeStats({
         <div>
           <dt>Markets</dt>
           <dd>
-            {open.length} open
-            {markets.length > open.length ? ` · ${markets.length - open.length} settled` : null}
+            {marketsUnavailable
+              ? "Unavailable"
+              : `${open.length} open${markets.length > open.length ? ` · ${markets.length - open.length} settled` : ""}`}
           </dd>
         </div>
         <div>
           <dt>Claims outstanding</dt>
-          <dd>{compactFormatter.format(claims)}</dd>
+          <dd>{marketsUnavailable ? "Unavailable" : compactFormatter.format(claims)}</dd>
         </div>
         <div>
           <dt>Last update</dt>
