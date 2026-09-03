@@ -31,6 +31,13 @@ npm run verify:replay    # ledger invariants against DATABASE_URL_UNPOOLED
 - `src/app/api` thin routes over services. `src/components` client UI, one folder per module with its `.module.css`.
 - `src/styles/tokens.css` the six-step type ramp, row heights, one red. `src/styles/shared.module.css` composable primitives: `.moduleTab`, `.seal`, `.buttonBase`.
 
+## Conventions
+
+- Imports are relative and carry the `.js` extension (`../../lib/client/format.js`); there is no path alias. Type-only imports use `import type`.
+- Client formatting lives in `src/lib/client/format.ts`, requests in `api.ts`, React Query keys in `query-keys.ts`, and trade submission in `use-trade-execution.ts`. Add a formatter there before writing an `Intl` instance in a component.
+- Contract prices (average fill, price after) are probabilities of a $1 payout and render through `formatContractPrice`; cash (cost, proceeds, marked value) renders through `formatUsd` or `formatCents`. Both trade reviews render their rows through `src/components/quote-review`.
+- Module CSS never uses `!important` (Biome enforces it); a rule that must outrank a same-file default gets a scoped selector with a one-line comment saying what it outranks.
+
 ## Local traps
 
 - Browse `http://localhost:3000`, never `127.0.0.1`: dev resources are origin-checked and hydration fails silently.

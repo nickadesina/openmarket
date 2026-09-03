@@ -65,6 +65,14 @@ export function formatProbability(value: number): string {
   return probabilityFormatter.format(value);
 }
 
+/**
+ * A contract price (average fill, price after) is a probability of a $1 payout and reads as
+ * one, like the ladder; cash amounts (cost, proceeds, marked value) are the dollar figures.
+ */
+export function formatContractPrice(value: number): string {
+  return probabilityFormatter.format(value);
+}
+
 export function formatValuation(value: number | string): string {
   const numericValue = typeof value === "string" ? Number(value) : value;
   if (!Number.isFinite(numericValue)) return "Unavailable";

@@ -96,11 +96,11 @@
 }
 
 .positive {
-  color: var(--color-positive) !important;
+  color: var(--color-positive);
 }
 
 .negative {
-  color: var(--color-negative) !important;
+  color: var(--color-negative);
 }
 
 .muted {

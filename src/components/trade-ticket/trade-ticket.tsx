@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { ApiClientError, apiRequest } from "../../lib/client/api.js";
 import {
   formatCents,
+  formatContractPrice,
   formatDateTime,
   formatMetric,
   formatProbability,
@@ -24,6 +25,7 @@ import type {
   TradeAction,
   TradeSelection,
 } from "../market-workspace/types.js";
+import { QuoteReview } from "../quote-review/quote-review.js";
 import styles from "./trade-ticket.module.css";
 
 interface TradeTicketProps {
@@ -524,47 +526,37 @@ export function TradeTicket({
 
         {view !== null ? (
           <div className={styles.quote} aria-live="polite">
-            <dl className={styles.quoteTable}>
-              <div>
-                <dt>Quantity</dt>
-                <dd>{formatQuantity(view.quantity)}</dd>
-              </div>
-              <div>
-                <dt>{action === "buy" ? "Cost" : "Proceeds"}</dt>
-                <dd>{formatCents(view.cashAmountCents)}</dd>
-              </div>
-              <div>
-                <dt>{action === "buy" ? "Max cost" : "Min proceeds"}</dt>
-                <dd>{formatCents(String(view.guardCents))}</dd>
-              </div>
-              <div>
-                <dt>Average price</dt>
-                <dd>{formatProbability(view.averagePrice)}</dd>
-              </div>
-              <div>
-                <dt>Price after</dt>
-                <dd>{formatProbability(view.priceAfter)}</dd>
-              </div>
-              <div>
-                <dt>Metric after</dt>
-                <dd>{formatMetric(view.currentMetricAfter, market.metric.kind)}</dd>
-              </div>
-              {action === "sell" ? (
-                <div>
-                  <dt>Sellable</dt>
-                  <dd>{formatQuantity(view.sellableQuantity)}</dd>
-                </div>
-              ) : null}
-              {view.expectedRedemptionQuantity > 0 ? (
-                <div>
-                  <dt>Immediate redemption</dt>
-                  <dd>
-                    {formatQuantity(view.expectedRedemptionQuantity)} shares ·{" "}
-                    {formatCents(view.expectedRedemptionCents)}
-                  </dd>
-                </div>
-              ) : null}
-            </dl>
+            <QuoteReview
+              className={styles.quoteTable}
+              rows={[
+                { label: "Quantity", value: formatQuantity(view.quantity) },
+                {
+                  label: action === "buy" ? "Cost" : "Proceeds",
+                  value: formatCents(view.cashAmountCents),
+                },
+                {
+                  label: action === "buy" ? "Max cost" : "Min proceeds",
+                  value: formatCents(String(view.guardCents)),
+                },
+                { label: "Average price", value: formatContractPrice(view.averagePrice) },
+                { label: "Price after", value: formatProbability(view.priceAfter) },
+                {
+                  label: "Metric after",
+                  value: formatMetric(view.currentMetricAfter, market.metric.kind),
+                },
+                ...(action === "sell"
+                  ? [{ label: "Sellable", value: formatQuantity(view.sellableQuantity) }]
+                  : []),
+                ...(view.expectedRedemptionQuantity > 0
+                  ? [
+                      {
+                        label: "Immediate redemption",
+                        value: `${formatQuantity(view.expectedRedemptionQuantity)} shares · ${formatCents(view.expectedRedemptionCents)}`,
+                      },
+                    ]
+                  : []),
+              ]}
+            />
             <p className={styles.dateStamp}>
               <span>{view.moved ? "Requoted" : "Quoted"}</span>
               <time dateTime={view.quotedAt}>{formatDateTime(view.quotedAt)}</time>
@@ -626,7 +618,7 @@ export function TradeTicket({
           <div className={styles.success} role="status">
             <strong>Trade completed</strong>
             <p>
-              {formatQuantity(result.shares)} shares at {formatProbability(result.average_price)}{" "}
+              {formatQuantity(result.shares)} shares at {formatContractPrice(result.average_price)}{" "}
               average.{" "}
               {refreshStale === null
                 ? "Refreshing live market data."

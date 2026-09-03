@@ -54,8 +54,12 @@
   composes: moduleTab from "../../styles/shared.module.css";
   align-self: start;
   justify-self: start;
-  /* Outranks the muted paragraph color applied to header copy. */
-  color: #ffffff !important;
+}
+
+/* Outranks the muted paragraph color applied to header copy. */
+.pageHeader .stateLabel,
+.statePanel .stateLabel {
+  color: #ffffff;
 }
 
 .summaryBand {
@@ -568,8 +572,9 @@
     gap: var(--space-2);
   }
 
-  .historyValues {
-    flex-direction: row !important;
+  /* Outranks the column direction `.historyRow > div` sets above. */
+  .historyRow .historyValues {
+    flex-direction: row;
     align-items: baseline;
     justify-content: space-between;
     text-align: left;

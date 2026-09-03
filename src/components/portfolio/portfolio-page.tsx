@@ -9,6 +9,7 @@ import {
   contractLabel,
   errorMessage,
   formatCents,
+  formatContractPrice,
   formatDateTime,
   formatQuantity,
   formatUsd,
@@ -25,6 +26,7 @@ import type {
 } from "../../lib/services/portfolio.js";
 import type { QuoteResult } from "../../lib/services/quote.js";
 import { OPEN_ACCOUNT_EDITOR_EVENT } from "../app-shell/account-control.js";
+import { QuoteReview } from "../quote-review/quote-review.js";
 import styles from "./portfolio-page.module.css";
 
 const HISTORY_LIMIT = 20;
@@ -99,30 +101,22 @@ function SaleReview({
 }) {
   return (
     <div className={styles.quoteReview}>
-      <dl>
-        <div>
-          <dt>Shares</dt>
-          <dd>{formatQuantity(quote.quantity)}</dd>
-        </div>
-        <div>
-          <dt>Average price</dt>
-          <dd>{formatUsd(quote.average_price)}</dd>
-        </div>
-        <div>
-          <dt>Estimated proceeds</dt>
-          <dd>{formatCents(quote.cash_amount_cents)}</dd>
-        </div>
-        <div>
-          <dt>Minimum proceeds</dt>
-          <dd>{formatCents(String(minProceedsCents))}</dd>
-        </div>
-        {quote.expected_redemption_quantity > 0 ? (
-          <div>
-            <dt>Full-set redemption</dt>
-            <dd>{formatCents(quote.expected_redemption_cents)}</dd>
-          </div>
-        ) : null}
-      </dl>
+      <QuoteReview
+        rows={[
+          { label: "Shares", value: formatQuantity(quote.quantity) },
+          { label: "Average price", value: formatContractPrice(quote.average_price) },
+          { label: "Estimated proceeds", value: formatCents(quote.cash_amount_cents) },
+          { label: "Minimum proceeds", value: formatCents(String(minProceedsCents)) },
+          ...(quote.expected_redemption_quantity > 0
+            ? [
+                {
+                  label: "Full-set redemption",
+                  value: formatCents(quote.expected_redemption_cents),
+                },
+              ]
+            : []),
+        ]}
+      />
       <p className={styles.quoteTime}>
         Quoted {formatDateTime(quote.quoted_at)}. Quotes are previews, not reservations; the sale
         fills at or above the minimum proceeds or is returned as a requote.
@@ -398,7 +392,7 @@ function PositionRow({
             <dd>
               {basis?.approximateAveragePriceUsd == null
                 ? "Not available"
-                : formatUsd(basis.approximateAveragePriceUsd)}
+                : formatContractPrice(basis.approximateAveragePriceUsd)}
             </dd>
           </div>
           <div>
@@ -627,7 +621,7 @@ export function PortfolioPage() {
                             onComplete={(result) => {
                               setSelection(null);
                               setCompletion(
-                                `Sale completed: ${formatQuantity(result.shares)} shares at ${formatUsd(result.average_price)} average.`,
+                                `Sale completed: ${formatQuantity(result.shares)} shares at ${formatContractPrice(result.average_price)} average.`,
                               );
                             }}
                           />

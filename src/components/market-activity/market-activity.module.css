@@ -95,12 +95,13 @@
   font-variant-numeric: tabular-nums;
 }
 
-.positive {
-  color: var(--color-positive) !important;
+/* Scoped under .list to outrank the muted `.list span` default. */
+.list .positive {
+  color: var(--color-positive);
 }
 
-.negative {
-  color: var(--color-negative) !important;
+.list .negative {
+  color: var(--color-negative);
 }
 
 .message {

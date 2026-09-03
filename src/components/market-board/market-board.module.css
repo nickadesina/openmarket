@@ -68,10 +68,11 @@
   text-align: left;
 }
 
-.expandHeader,
-.expandCell {
+/* Scoped to outrank the `.table thead th` and `.marketRow td` cell padding. */
+.table .expandHeader,
+.marketRow .expandCell {
   width: 2.75rem;
-  padding-right: 0 !important;
+  padding-right: 0;
 }
 
 .expandButton {
@@ -161,9 +162,10 @@
   text-align: left;
 }
 
-.ladderPct {
+/* Scoped under .ladderTable to outrank the left-aligned cell defaults above. */
+.ladderTable .ladderPct {
   width: 6.5rem;
-  text-align: right !important;
+  text-align: right;
 }
 
 .ladderYes {

@@ -199,7 +199,8 @@
   animation: sheet-in var(--duration-standard) var(--ease-out);
 }
 
-.sheetContent:focus {
+/* Radix moves focus into the ticket; the container itself keeps the halo for keyboard focus only. */
+.sheetContent:focus:not(:focus-visible) {
   outline: none;
 }
 

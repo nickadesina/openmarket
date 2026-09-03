@@ -29,8 +29,8 @@
           "level": "error",
           "options": { "maxAllowedComplexity": 25 }
         },
-        // Module CSS uses !important only to outrank cascade order inside one file; each use is commented.
-        "noImportantStyles": "off"
+        // Module CSS outranks its own cascade with scoped selectors, never !important.
+        "noImportantStyles": "error"
       },
       "style": {
         // Module stylesheets group a control's states next to its base rule; the cascade order is intentional and local.
@@ -48,6 +48,11 @@
     }
   },
   "overrides": [
+    {
+      // The reduced-motion reset must beat every animation declaration in the app.
+      "includes": ["src/app/globals.css"],
+      "linter": { "rules": { "complexity": { "noImportantStyles": "off" } } }
+    },
     {
       // Tests read top-to-bottom as scenarios; a higher ceiling keeps them in one place.
       "includes": ["tests/**"],
