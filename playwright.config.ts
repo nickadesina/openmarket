@@ -1,4 +1,5 @@
 import { randomBytes, scryptSync } from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
 
 import { defineConfig, devices } from "@playwright/test";
 
@@ -50,6 +51,21 @@ const adminPassphraseHash = [
   adminSalt.toString("base64url"),
   adminKey.toString("base64url"),
 ].join("$");
+
+/**
+ * `next dev` loads `.env.local` through @next/env, which re-runs `$` variable
+ * expansion over any process variable the file also defines: a raw scrypt hash
+ * would arrive as "scrypt6384…". `\$` is the loader's escape and yields the
+ * literal — but only through that expansion path, so it is applied exactly when
+ * the file shadows the variable. Elsewhere (CI, a checkout without .env.local)
+ * the value passes through untouched.
+ */
+function forNextEnv(name: string, value: string): string {
+  const shadowed =
+    existsSync(".env.local") &&
+    new RegExp(`^\\s*(?:export\\s+)?${name}\\s*=`, "m").test(readFileSync(".env.local", "utf8"));
+  return shadowed ? value.replaceAll("$", "\\$") : value;
+}
 
 const userCookieSecret = randomBytes(32).toString("base64url");
 let adminCookieSecret = randomBytes(32).toString("base64url");
@@ -107,7 +123,7 @@ export default defineConfig({
             APP_ORIGIN: appOrigin,
             USER_COOKIE_SECRET: userCookieSecret,
             ADMIN_COOKIE_SECRET: adminCookieSecret,
-            ADMIN_PASSPHRASE_HASH: adminPassphraseHash,
+            ADMIN_PASSPHRASE_HASH: forNextEnv("ADMIN_PASSPHRASE_HASH", adminPassphraseHash),
           },
         },
       }

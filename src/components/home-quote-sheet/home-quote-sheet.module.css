@@ -1,4 +1,8 @@
 .viewport {
+  /* Containing block for the visually hidden caption and movement labels
+     (position: absolute); otherwise they escape the scroll container and
+     stretch the page horizontally once the sheet is wide. */
+  position: relative;
   overflow-x: auto;
   border: 1px solid var(--color-border);
   background: var(--color-bg);

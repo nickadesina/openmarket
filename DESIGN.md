@@ -273,12 +273,12 @@ A newspaper quote table under the distribution module: grouped caps headers (1H,
 
 ### Trade Ticket (order form)
 Live from first paint on the strike nearest 50%, YES side. Reads top to bottom in the order a brokerage 注文 form does:
-- **Approval strip (稟議):** three ruled boxes — QUOTED, CONFIRMED, FILLED — each receiving a small seal as the order clears that stage. Empty boxes are hairline squares; a sealed box carries the rotated ring.
+- **Approval strip (稟議):** three ruled boxes — QUOTED, SENT, FILLED — each receiving a small seal only once the order has provably cleared that stage. SENT seals when the request leaves the browser and stays sealed while the outcome is unknown; FILLED seals only on a server 200 and shows a muted `?` while an order's outcome is unknown. Boxes never un-seal. Empty boxes are hairline squares; a sealed box carries the rotated ring.
 - **Side plates:** two large hairline-framed plates showing YES and NO with each side's price; the pressed plate fills solid (red for YES, ink for NO).
 - **Strike stepper:** a hairline-boxed control with − and + ends and a centered `select` listing every strike with its YES price; changes here re-highlight the ladder and vice versa.
 - **Segmented controls (Buy/Sell, mode):** hairline-framed white track; buttons are borderless, muted-ink text; the pressed segment fills Utility Red with white text.
 - **Inputs:** 2.25rem hairline-framed white fields, ink text, tabular numerals; a row of four quick-amount chips beneath (pressed chip fills ink).
-- **Quote:** a Spec Table of the quoted figures, followed by a **date stamp** — a hairline-boxed caps "QUOTED | time" mark — and the previews-not-reservations note. Errors are inline red text with a retry path.
+- **Quote:** a Spec Table of the quoted figures including the bound the wire carries (MAX COST for buys, MIN PROCEEDS for sells), followed by a **date stamp** — a hairline-boxed caps "QUOTED | time" mark — and the previews-not-reservations note. A moved price re-renders the same table from the server's requote under a "REQUOTED" stamp, never an abbreviated box. Errors are inline red text; an order whose outcome is unknown locks every input and offers exactly one RETRY (same request key) and one ABANDON.
 - Desktop: sticky right rail; mobile: a fixed bottom bar shows the working contract and price with a TRADE button that opens the bottom sheet (see Layout) with focus trapped inside.
 
 ### Navigation
