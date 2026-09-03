@@ -77,7 +77,10 @@ function buildCurrentData(marks: MarkHistory, range: MarkRange): ChartPoint[] {
   const windowEnd = Math.floor(Date.parse(marks.windowEnd) / 1000) as UTCTimestamp;
   const lastPoint = data[data.length - 1];
   const lastValue = lastPoint !== undefined && "value" in lastPoint ? lastPoint.value : undefined;
-  if (lastPoint !== undefined && lastValue !== marks.currentMetric) {
+  if (
+    lastPoint !== undefined &&
+    (lastPoint.time < windowEnd || lastValue !== marks.currentMetric)
+  ) {
     data =
       lastPoint.time === windowEnd
         ? [...data.slice(0, -1), { time: windowEnd, value: marks.currentMetric }]
