@@ -631,7 +631,7 @@ export function TradeTicket({
               {refreshStale === null
                 ? "Refreshing live market data."
                 : refreshStale
-                  ? "Live data has not refreshed yet; polling will catch up."
+                  ? "Displayed market data may be stale."
                   : "Market data has been refreshed."}
             </p>
           </div>

@@ -46,6 +46,46 @@ function cssVar(tokens: CSSStyleDeclaration, name: string): string {
   return resolveCssColor(tokens.getPropertyValue(name));
 }
 
+type ChartPoint = { time: UTCTimestamp } | { time: UTCTimestamp; value: number };
+
+/** Line data for the metric series: deduped prints, a whitespace anchor at
+ *  the window start, and a pinned current point so the endpoint agrees with
+ *  the text summary when the latest print predates the live metric. */
+function buildCurrentData(marks: MarkHistory, range: MarkRange): ChartPoint[] {
+  const pointsBySecond = new Map<number, number>();
+  for (const point of marks.points)
+    pointsBySecond.set(Math.floor(Date.parse(point.timestamp) / 1000), point.value);
+  let data: ChartPoint[] = Array.from(pointsBySecond, ([time, value]) => ({
+    time: time as UTCTimestamp,
+    value,
+  }));
+  // The x-axis spans the selected range, not just the data extent: a "1d"
+  // toggle over a one-second burst of trades must still read as a day.
+  // lightweight-charts clamps the visible range to the data, so the span
+  // is anchored with a whitespace point at the range start.
+  // The line opens at the level in force when the window began, so a
+  // window with no early prints still shows where the metric stood.
+  const windowStart = Math.floor(Date.parse(marks.windowStart) / 1000) as UTCTimestamp;
+  const firstPoint = data[0];
+  if (range !== "all" && (firstPoint === undefined || windowStart < firstPoint.time)) {
+    const startPoint =
+      data.length === 1 ? { time: windowStart } : { time: windowStart, value: marks.openValue };
+    data = [startPoint, ...data];
+  }
+  // A same-second collision overwrites instead of appending; the chart
+  // rejects duplicate timestamps.
+  const windowEnd = Math.floor(Date.parse(marks.windowEnd) / 1000) as UTCTimestamp;
+  const lastPoint = data[data.length - 1];
+  const lastValue = lastPoint !== undefined && "value" in lastPoint ? lastPoint.value : undefined;
+  if (lastPoint !== undefined && lastValue !== marks.currentMetric) {
+    data =
+      lastPoint.time === windowEnd
+        ? [...data.slice(0, -1), { time: windowEnd, value: marks.currentMetric }]
+        : [...data, { time: windowEnd, value: marks.currentMetric }];
+  }
+  return data;
+}
+
 export function MarketChart({
   market,
   marks,
@@ -158,22 +198,7 @@ export function MarketChart({
               })
             : null;
 
-        const pointsBySecond = new Map<number, number>();
-        for (const point of marks.points)
-          pointsBySecond.set(Math.floor(Date.parse(point.timestamp) / 1000), point.value);
-        let currentData: ({ time: UTCTimestamp } | { time: UTCTimestamp; value: number })[] =
-          Array.from(pointsBySecond, ([time, value]) => ({ time: time as UTCTimestamp, value }));
-        // The x-axis spans the selected range, not just the data extent: a "1d"
-        // toggle over a one-second burst of trades must still read as a day.
-        // lightweight-charts clamps the visible range to the data, so the span
-        // is anchored with a whitespace point at the range start.
-        // The line opens at the level in force when the window began, so a
-        // window with no early prints still shows where the metric stood.
-        const windowStart = Math.floor(Date.parse(marks.windowStart) / 1000) as UTCTimestamp;
-        const firstPoint = currentData[0];
-        if (range !== "all" && (firstPoint === undefined || windowStart < firstPoint.time)) {
-          currentData = [{ time: windowStart, value: marks.openValue }, ...currentData];
-        }
+        const currentData = buildCurrentData(marks, range);
         currentSeries.setData(currentData);
         markSeries?.setData(currentData.map(({ time }) => ({ time, value: marks.mark60Minutes })));
         chart.timeScale().fitContent();

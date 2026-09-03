@@ -316,6 +316,6 @@ test("a completed trade reports a failed authoritative refresh without an error 
   expect((await executionPromise).status()).toBe(200);
 
   await expect(ticket.getByText("Trade completed", { exact: true })).toBeVisible();
-  await expect(ticket).toContainText("Live data has not refreshed yet; polling will catch up.");
+  await expect(ticket).toContainText("Displayed market data may be stale.");
   await expect(ticket.getByRole("alert")).toHaveCount(0);
 });
