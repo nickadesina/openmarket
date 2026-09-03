@@ -84,8 +84,8 @@ test("a refresh replaces a selected strike that no longer exists", async ({
   page,
   baseURL,
 }, testInfo) => {
-  const names = uniqueNames("val-stale-selection", testInfo);
-  const replacementNames = uniqueNames("binary-replacement", testInfo);
+  const names = uniqueNames("stale", testInfo);
+  const replacementNames = uniqueNames("alt", testInfo);
   await seedValuationMarket(page, baseURL, names);
   await seedBinaryMarket(page, baseURL, replacementNames);
   await createUser(page, baseURL, names.username);
