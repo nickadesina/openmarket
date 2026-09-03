@@ -192,6 +192,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  min-width: 0;
 }
 
 .marketLink {
@@ -205,6 +206,7 @@
   transition:
     color var(--duration-fast) var(--ease-out),
     text-decoration-color var(--duration-fast) var(--ease-out);
+  overflow-wrap: anywhere;
 }
 
 .marketLink:hover {
