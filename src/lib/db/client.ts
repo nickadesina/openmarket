@@ -1,5 +1,11 @@
 import { Kysely, PostgresDialect, type PostgresPool } from "kysely";
-import { Client, Pool } from "pg";
+import { Client, Pool, types } from "pg";
+
+// A `date` column is a calendar day, not an instant. pg would otherwise
+// parse it into a Date at local midnight, which the server and the browser
+// then render in different zones (a hydration mismatch on every anchor).
+// The schema declares these columns as strings; keep them "YYYY-MM-DD".
+types.setTypeParser(types.builtins.DATE, (value) => value);
 
 import type { Database } from "./schema.js";
 
