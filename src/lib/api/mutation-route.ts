@@ -28,10 +28,46 @@ function assertMutationRequest(request: Request): void {
   assertAllowedOrigin(request.headers.get("origin"), process.env);
 }
 
-export async function parseMutationBody<T>(request: Request, schema: ZodType<T>): Promise<T> {
+async function readBoundedJson(request: Request, maximumBytes: number): Promise<unknown> {
+  const contentLength = request.headers.get("content-length");
+  if (contentLength !== null && Number(contentLength) > maximumBytes) {
+    throw new ServiceError("INVALID_INPUT", "Request body is too large.");
+  }
+  const reader = request.body?.getReader();
+  if (reader === undefined) {
+    throw new ServiceError("INVALID_INPUT", "Request body is required.");
+  }
+
+  const chunks: Uint8Array[] = [];
+  let byteLength = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      byteLength += value.byteLength;
+      if (byteLength > maximumBytes) {
+        await reader.cancel();
+        throw new ServiceError("INVALID_INPUT", "Request body is too large.");
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(Buffer.concat(chunks)));
+}
+
+export async function parseMutationBody<T>(
+  request: Request,
+  schema: ZodType<T>,
+  maximumBytes?: number,
+): Promise<T> {
   let body: unknown;
   try {
-    body = await request.json();
+    body =
+      maximumBytes === undefined
+        ? await request.json()
+        : await readBoundedJson(request, maximumBytes);
   } catch {
     throw new ServiceError("INVALID_INPUT", "Request body is invalid.");
   }

@@ -9,9 +9,10 @@ import type { Database } from "./schema.js";
 
 export const MIGRATION_FOLDER = fileURLToPath(new URL("./migrations", import.meta.url));
 
-export function createMigrator(db: Kysely<Database>): Migrator {
+export function createMigrator(db: Kysely<Database>, migrationTableSchema?: string): Migrator {
   return new Migrator({
     db,
+    ...(migrationTableSchema === undefined ? {} : { migrationTableSchema }),
     provider: new FileMigrationProvider({
       fs,
       path,

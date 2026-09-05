@@ -13,6 +13,8 @@ colors:
   utility-red: "#d70909"
   utility-red-pressed: "#b40707"
   red-wash: "#fdeaea"
+  movement-green: "#067d21"
+  green-wash: "#e7f3e7"
   ink-wash: "#efeff1"
   caution-ochre: "#8a5a00"
   caution-wash: "#fdf3dd"
@@ -113,9 +115,9 @@ components:
 
 OpenMarket's whole state reads as one ruled rack of labeled modules: a pure white
 ground, near-black compact type, and hairline gray rules boxing every module edge
-to edge. A single utility red is the only voice in the room — it carries prices,
-movement upward, primary actions, module header tabs, selection, and errors, and
-nothing else. The world explicitly refuses both the glowing dark terminal and the
+to edge. Utility red carries prices, primary actions, module header tabs,
+selection, and errors; a deliberately matched green is reserved for upward
+movement and positive gains. The world refuses both the glowing dark terminal and the
 soft-shadow SaaS card grid: there is no dark mode (`color-scheme: light` is
 pinned), no gradients, no resting shadows, and no rounded card silhouettes.
 Density comes from real content only — real markets, real trades, real numbers —
@@ -126,25 +128,42 @@ sanctioned curve: the company-logo chip (4px). Numbers are tabular everywhere by
 a global `font-variant-numeric: tabular-nums`, so columns of prices rack up like
 a ledger. Structural labels — table heads, module tabs, nav links, stamps, the
 footer disclosure — speak in one voice: bold Roboto Condensed uppercase with
-open tracking. Status is stamped, not badged: outlined red OPEN, outlined ink
-SETTLED, like ink stamps on paper.
+open tracking. Settled status is stamped in outlined ink, like a mark on paper.
+Open markets have no status badge.
 
 **Key Characteristics:**
 - Light-only world: white ground, ink text, hairline gray rules; depth drawn, never cast.
-- One accent: utility red (#d70909) for prices, up-movement, actions, tabs, selection, errors.
-- Movement is never color alone: red-up / ink-down always pairs a drawn arrow with a word.
+- Primary accent: utility red (#d70909) for prices, actions, tabs, selection, and errors; green is semantic, not decorative.
+- Movement is never color alone: green-up / ink-down always pairs a drawn arrow with a word.
 - Square geometry; the 4px logo chip is the only radius.
 - Tabular numerals globally; condensed bold caps for every structural label.
 - Minimal functional motion (150–220ms ease-out); reduced-motion fully honored.
 
 ## Colors
 
-An achromatic paper-and-ink neutral scale with one saturated utility red doing
-all semantic work.
+An achromatic paper-and-ink neutral scale with utility red as the primary product
+accent, green reserved for upward movement and gains, and ochre for warnings.
 
 ### Primary
-- **Utility Red** (`--color-primary`, #d70909): the single accent. Carries implied-valuation metrics, module header tab fills, primary action fills, active nav fills, selected segmented-control fills, sparkline strokes, text selection, focus outlines, error text, and upward movement. Pressed/hover state darkens to **Utility Red Pressed** (#b40707).
-- **Red Wash** (`--color-primary-subtle`, #fdeaea): pale red tint for row hover, ladder pivot-row highlight, metric flash-from color, and secondary-button hover fill.
+- **Utility Red** (`--color-primary`, #d70909): the primary product accent. Carries implied-valuation metrics, module header tab fills, primary action fills, active nav fills, selected segmented-control fills, sparkline strokes, text selection, focus outlines, and error text. Pressed/hover state darkens to **Utility Red Pressed** (#b40707). BUY labels and completion/session notice borders remain red; neither denotes upward movement.
+- **Red Wash** (`--color-primary-subtle`, #fdeaea): pale red tint for row hover, ladder pivot-row highlight, and secondary-button hover fill.
+
+### Movement and Gains
+- **Movement Green** (`--color-positive`, #067d21): upward deltas, their arrows, positive portfolio P&L, and the brief upward price flash. It never colors BUY/YES controls, static prices, ordinary chart series, or generic success notices.
+- **Green Wash** (`--color-positive-subtle`, #e7f3e7): upward price-flash background. Downward flashes use Ink Wash; resting prices remain red. Exactly zero P&L is muted, unsigned, and has no Gain/Loss prefix.
+
+**Matched-color derivation.** Tokens are the 8-bit sRGB result of an OKLCH calculation,
+not independent swatch choices. Utility Red is approximately
+`oklch(55.4382% 0.224196 28.9105)`. Define `Cmax(L, h)` as the largest chroma whose
+linear sRGB channels all remain between 0 and 1. The red's relative gamut chroma is
+`s = C / Cmax(L, h) = 0.98656`. For green, choose hue 145 and lightness 0.513, then
+`C = s * Cmax(0.513, 145) = 0.159179`, yielding #067d21. This preserves the red's
+near-maximum relative vividness while lowering lightness enough for small text:
+5.30:1 against white, 4.58:1 against Red Wash, and 4.64:1 against Green Wash.
+An exact lightness/chroma hue swap falls outside sRGB and does not meet these
+contrast requirements; do not substitute it or swap RGB channels. Green Wash
+preserves Red Wash's OKLCH lightness (0.952189) and chroma (0.020721) at hue 145.
+Recalculate these relationships and contrast on all three surfaces if the red changes.
 
 ### Neutral
 - **Paper White** (`--color-bg` / `--color-surface`, #ffffff): the universal ground. Modules are white boxes on white, separated only by rules.
@@ -154,12 +173,12 @@ all semantic work.
 - **Rule Gray** (`--color-border`, #c5c5c5): the outer hairline that boxes every module.
 - **Rule Faint** (`--color-border-subtle`, #e4e4e6): interior hairlines — row separators, column dividers, sparkline baselines.
 - **Ink Wash** (`--color-negative-subtle`, #efeff1): pale neutral tint for down-movement fills and skeleton blocks.
-- **Caution Ochre** (`--color-warning`, #8a5a00) on **Caution Wash** (#fdf3dd): the only non-red semantic pair, for warnings.
+- **Caution Ochre** (`--color-warning`, #8a5a00) on **Caution Wash** (#fdf3dd): reserved for warnings, distinct from movement green and utility red.
 
 ### Named Rules
-**The One Red Rule.** Red is utility, never decoration. If an element is not a price, an upward movement, a primary action, a module tab, a selection, or an error, it does not get red.
+**The Red Interface, Green Movement Rule.** Red is the primary product accent, never decoration. Green means upward movement or a positive gain, not a buy action, a YES outcome, or generic success. Static prices, controls, focus, and errors remain red; downward movement and losses remain ink.
 
-**The Arrow-and-Word Rule.** Movement direction is triple-encoded: color (red up / ink down), a drawn 1.5px stroke arrow, and a word ("up"/"down"). Color alone never carries meaning; flat/unavailable states fall back to muted ink.
+**The Arrow-and-Word Rule.** Movement direction is triple-encoded: color (green up / ink down), a drawn 1.5px stroke arrow, and a word ("up"/"down"). Color alone never carries meaning; flat/unavailable states fall back to muted ink. P&L pairs color with a sign and Gain/Loss label; zero remains neutral.
 
 **The Hairline Rule.** Structure is drawn with 1px rules: Rule Gray (#c5c5c5) for module perimeters, Rule Faint (#e4e4e6) for interior dividers, Press Ink (#131315) only where the world needs a hard edge (the header's bottom rule, stamps, secondary-button borders).
 
@@ -231,7 +250,7 @@ The world is square: `--radius-sm/md/lg` are all 0. Buttons, inputs, tables,
 tabs, stamps, sheets, and modules are hard rectangles. The single sanctioned
 curve is `--radius-chip` (0.25rem) on company-logo chips, whose slight
 rounding sets trademarked marks apart from the system's own geometry. Stamps
-(OPEN/SETTLED) use a heavier 1.5px outline to read as inked impressions;
+(SETTLED) use a heavier 1.5px outline to read as inked impressions;
 everything else rules at 1px. Icons are drawn in-house at a single 1.5px
 round-capped stroke (`src/components/icons/icons.tsx`) — no icon fonts, no
 third-party glyph sets.
@@ -252,7 +271,7 @@ The world's signature label: a small solid Utility Red plate, one compact row ta
 
 ### Hanko Seals (status)
 Status is a seal pressed onto the record, not a badge: a 2.5rem circle, 2px ring with an inner hairline ring, caps text at 0.5625rem, rotated −8° as a hand stamp lands (`.seal` in `shared.module.css`, color via `--seal-color`).
-- **OPEN:** Utility Red seal beside the market title.
+- **OPEN:** No badge or seal beside the market title; trading controls communicate availability.
 - **SETTLED:** Press Ink seal, paired with a muted settled date beneath.
 Seals are outlined, never filled — fill belongs to tabs and actions. On the board, open markets show a red TRADE button in the status column instead of a seal, because that column is where the action lives.
 
@@ -290,11 +309,20 @@ A white hairline-framed plate (1.75 / 2.25 / 2.5rem sizes) with 4px radius holdi
 ### Activity Tape
 A ruled list of 4rem entries separated by faint hairlines: caps BUY (red) / SELL (ink) verbs inline in body-size sentences, with a muted tabular metadata line whose links underline in red on hover.
 
+### Market Comments
+A ruled white module between Distribution and Market Activity, labeled with the
+shared COMMENTS tab. Flat rows show the stored @username, muted exact timestamp,
+and plain body text capped at 80ch; line breaks remain visible. Replies indent one
+level only. No avatars, badges, likes, rich text, or decorative colors. The composer
+discloses shared, unverified account identities and holds drafts through account
+changes and failed submissions. New arrivals wait behind a reveal button; removed
+content leaves a neutral tombstone. Open markets have no red OPEN badge.
+
 ### Loading, Empty, and Error States
 Skeletons match the real layout (logo square, name bar, metric bar, chart block) and pulse #efeff1 → #e4e4e6 over 1.6s; hairline-boxed state panels carry a bold one-liner, a muted explanation (≤60ch), and an outlined RETRY button. Reduced motion stops the pulse.
 
 ### Motion (system-wide)
-Two durations only — `--duration-fast` 150ms and `--duration-standard` 220ms — on one curve, `cubic-bezier(0.16, 1, 0.3, 1)` ease-out. Sanctioned movements: background/border/color transitions, the 1px button press, the chevron rotate, the metric flash (background decays from Red Wash while the figure shows Arrow-and-Word color), the sheet slide-up with overlay fade, and the skeleton pulse. `prefers-reduced-motion` disables all of it, globally and per-module. No entrances, parallax, bouncing, or infinite decorative motion.
+Two durations only — `--duration-fast` 150ms and `--duration-standard` 220ms — on one curve, `cubic-bezier(0.16, 1, 0.3, 1)` ease-out. Sanctioned movements: background/border/color transitions, the 1px button press, the chevron rotate, the metric flash (Green Wash for up, Ink Wash for down, with a direction-colored figure that returns to resting red), the sheet slide-up with overlay fade, and the skeleton pulse. `prefers-reduced-motion` disables all of it, globally and per-module. No entrances, parallax, bouncing, or infinite decorative motion.
 
 ## Do's and Don'ts
 
@@ -307,8 +335,8 @@ Two durations only — `--duration-fast` 150ms and `--duration-standard` 220ms �
 - **Do** honor `prefers-reduced-motion` in every module that animates, on top of the global kill switch.
 
 ### Don't:
-- **Don't** introduce a dark mode, a second accent hue, or gradients — the world is light-only with one red.
-- **Don't** use red decoratively, or use color as the only carrier of movement, status, or selection.
+- **Don't** introduce a dark mode, extra decorative accent hues, or gradients — the world is light-only with red as its primary accent; green and ochre have narrow semantic roles.
+- **Don't** use red or green decoratively, or use color as the only carrier of movement, status, or selection.
 - **Don't** round corners (except the 4px logo chip) or cast resting shadows — depth is drawn with rules.
 - **Don't** import icon fonts or third-party glyph sets; draw icons at the single 1.5px round-capped stroke.
 - **Don't** fabricate density: no invented rows, filler markets, or decorative stats; empty states teach instead.

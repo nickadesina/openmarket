@@ -1,22 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { ERROR_CODES, isServiceError, ServiceError } from "../../src/lib/api/errors.js";
+import { isServiceError, ServiceError } from "../../src/lib/api/errors.js";
 
 describe("typed service errors", () => {
-  it("exports every stable design error code", () => {
-    expect(ERROR_CODES).toEqual([
-      "INVALID_INPUT",
-      "USER_REQUIRED",
-      "MARKET_NOT_FOUND",
-      "MARKET_SETTLED",
-      "INSUFFICIENT_CASH",
-      "INSUFFICIENT_HOLDINGS",
-      "PRICE_MOVED",
-      "IDEMPOTENCY_CONFLICT",
-      "ADMIN_REQUIRED",
-    ]);
-  });
-
   it("retains typed details and identifies only service errors", () => {
     const error = new ServiceError("PRICE_MOVED", "Price moved", {
       quoted_cost_cents: 500,

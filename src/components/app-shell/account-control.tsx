@@ -10,6 +10,7 @@ import { UserIcon } from "../icons/icons.js";
 import styles from "./account-control.module.css";
 
 interface PortfolioIdentity {
+  readonly userId: string;
   readonly username: string;
   readonly cashBalanceCents: string;
 }
@@ -17,10 +18,16 @@ interface PortfolioIdentity {
 /** Cross-page request for the app shell to reveal its shared username editor. */
 export const OPEN_ACCOUNT_EDITOR_EVENT = "openmarket:open-account-editor";
 
+function restoreAccountFocus(targetId: string | null, trigger: HTMLButtonElement | null) {
+  const target = targetId === null ? null : document.getElementById(targetId);
+  (target ?? trigger)?.focus();
+}
+
 export function AccountControl() {
   const queryClient = useQueryClient();
   const titleId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const returnFocusId = useRef<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [username, setUsername] = useState("");
 
@@ -31,24 +38,35 @@ export function AccountControl() {
 
   const userMutation = useMutation({
     mutationFn: (nextUsername: string) =>
-      apiRequest<{ readonly username: string; readonly cash_balance_cents: string }>("/api/user", {
+      apiRequest<{
+        readonly userId: string;
+        readonly username: string;
+        readonly cash_balance_cents: string;
+      }>("/api/user", {
         method: "POST",
         body: JSON.stringify({ username: nextUsername }),
       }),
-    onSuccess(session) {
+    async onSuccess(session) {
+      await queryClient.cancelQueries({ queryKey: queryKeys.portfolio });
       // Seed the identity immediately; the invalidation refetches the authoritative portfolio.
       queryClient.setQueryData<PortfolioIdentity>(queryKeys.portfolio, {
+        userId: session.userId,
         username: session.username,
         cashBalanceCents: session.cash_balance_cents,
       });
       setEditing(false);
       setUsername("");
       void queryClient.invalidateQueries({ queryKey: queryKeys.portfolio });
-      triggerRef.current?.focus();
+      restoreAccountFocus(returnFocusId.current, triggerRef.current);
+      returnFocusId.current = null;
     },
   });
   useEffect(() => {
-    const openEditor = () => setEditing(true);
+    const openEditor = (event: Event) => {
+      const detail = (event as CustomEvent<{ returnFocusId?: string }>).detail;
+      returnFocusId.current = detail?.returnFocusId ?? null;
+      setEditing(true);
+    };
     window.addEventListener(OPEN_ACCOUNT_EDITOR_EVENT, openEditor);
     return () => window.removeEventListener(OPEN_ACCOUNT_EDITOR_EVENT, openEditor);
   }, []);
@@ -58,7 +76,8 @@ export function AccountControl() {
   function closeEditor() {
     setEditing(false);
     userMutation.reset();
-    triggerRef.current?.focus();
+    restoreAccountFocus(returnFocusId.current, triggerRef.current);
+    returnFocusId.current = null;
   }
 
   function submitUsername(event: FormEvent<HTMLFormElement>) {
@@ -98,6 +117,7 @@ export function AccountControl() {
         aria-expanded={editing}
         aria-controls={editing ? `${titleId}-panel` : undefined}
         onClick={() => {
+          returnFocusId.current = null;
           userMutation.reset();
           setEditing((current) => !current);
         }}

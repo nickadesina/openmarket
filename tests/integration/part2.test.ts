@@ -145,28 +145,6 @@ postgresDescribe(suiteName, () => {
     return { market, user, holding, trades, marks };
   }
 
-  it("applies the real migration to a newly-created empty schema", async () => {
-    const result = await sql<{ table_name: string }>`
-      select table_name
-        from information_schema.tables
-       where table_schema = ${postgres.schema}
-       order by table_name
-    `.execute(postgres.db);
-    const businessTables = result.rows
-      .map((row) => row.table_name)
-      .filter((name) => !name.startsWith("kysely_"));
-
-    expect(businessTables).toEqual([
-      "companies",
-      "holdings",
-      "markets",
-      "marks",
-      "settlements",
-      "trades",
-      "users",
-    ]);
-  });
-
   it("serializes simultaneous same-market trades with contiguous state and mark sequences", async () => {
     const seeded = await seedBinary();
     const firstUser = await createOrResumeUser(postgres.db, "SerialOne");

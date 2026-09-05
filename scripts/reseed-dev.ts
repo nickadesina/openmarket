@@ -123,6 +123,8 @@ async function main(): Promise<void> {
     // tables, and TRUNCATE's exclusive locks deadlock against its readers.
     await db.transaction().execute(async (transaction) => {
       for (const table of [
+        "market_comments",
+        "comment_rate_limits",
         "marks",
         "trades",
         "holdings",

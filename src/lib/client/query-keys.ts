@@ -7,5 +7,8 @@ export const queryKeys = {
   marks: (slug: string, range: MarkRange) =>
     ["openmarket", "market", slug, "marks", range] as const,
   activity: (slug?: string) => ["openmarket", "activity", slug ?? "global"] as const,
+  comments: (marketId: string) => ["openmarket", "comments", marketId] as const,
+  commentThread: (marketId: string, parentId: string | null) =>
+    ["openmarket", "comments", marketId, parentId ?? "roots"] as const,
   portfolio: ["openmarket", "portfolio"] as const,
 } as const;

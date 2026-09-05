@@ -257,11 +257,20 @@ export async function seedMarket(
       .select("market_id")
       .where("market_id", "=", existingMarket.id)
       .executeTakeFirst();
+    const comment = await transaction
+      .selectFrom("market_comments")
+      .select("id")
+      .where("market_id", "=", existingMarket.id)
+      .limit(1)
+      .executeTakeFirst();
 
     assertPristine(
       existingMarket,
       marks,
-      trade !== undefined || holding !== undefined || settlement !== undefined,
+      trade !== undefined ||
+        holding !== undefined ||
+        settlement !== undefined ||
+        comment !== undefined,
     );
 
     await transaction

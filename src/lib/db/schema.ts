@@ -102,6 +102,25 @@ export interface SettlementsTable {
   ts: Immutable<Date>;
 }
 
+export interface MarketCommentsTable {
+  id: GeneratedImmutable<string>;
+  market_id: Immutable<string>;
+  user_id: Immutable<string>;
+  parent_id: Immutable<string | null>;
+  body: string | null;
+  client_request_id: Immutable<string>;
+  request_fingerprint: Immutable<string>;
+  created_at: GeneratedImmutable<Date>;
+  removed_at: Date | null;
+}
+
+export interface CommentRateLimitsTable {
+  scope: Immutable<"user" | "network">;
+  key: Immutable<string>;
+  window_started_at: Date;
+  post_count: number;
+}
+
 export interface Database {
   companies: CompaniesTable;
   markets: MarketsTable;
@@ -110,6 +129,8 @@ export interface Database {
   trades: TradesTable;
   marks: MarksTable;
   settlements: SettlementsTable;
+  market_comments: MarketCommentsTable;
+  comment_rate_limits: CommentRateLimitsTable;
 }
 
 export type CompanyRow = Selectable<CompaniesTable>;

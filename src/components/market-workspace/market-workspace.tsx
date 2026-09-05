@@ -10,6 +10,7 @@ import { queryKeys } from "../../lib/client/query-keys.js";
 import { DistributionChart } from "../distribution-chart/distribution-chart.js";
 import { MarketActivity } from "../market-activity/market-activity.js";
 import { MarketChart } from "../market-chart/market-chart.js";
+import { MarketComments } from "../market-comments/market-comments.js";
 import { MarketHeader } from "../market-header/market-header.js";
 import { StrikeLadder } from "../strike-ladder/strike-ladder.js";
 import { TradeTicket } from "../trade-ticket/trade-ticket.js";
@@ -212,6 +213,7 @@ export function MarketWorkspace({ slug, initialMarket, initialMarks }: MarketWor
       </div>
 
       <DistributionChart market={market} />
+      <MarketComments key={market.marketId} marketId={market.marketId} />
       <MarketActivity
         market={market}
         activity={activityQuery.data}

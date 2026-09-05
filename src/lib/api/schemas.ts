@@ -167,6 +167,26 @@ export const settlementInputSchema = z
     path: ["confirm_slug"],
   });
 
+export const commentIdSchema = idempotencyKeySchema;
+
+export const commentInputSchema = z
+  .object({
+    body: z
+      .string()
+      .trim()
+      .min(1)
+      .max(2_000)
+      .refine((body) => !body.includes("\0")),
+    parentId: commentIdSchema.optional(),
+    clientRequestId: commentIdSchema,
+    expectedUserId: commentIdSchema,
+  })
+  .strict();
+
+export const removeCommentInputSchema = z.object({}).strict();
+
+export type CommentInput = z.infer<typeof commentInputSchema>;
+
 export type UsernameInput = z.infer<typeof usernameInputSchema>;
 export type QuoteInput = z.infer<typeof quoteInputSchema>;
 export type TradeInput = z.infer<typeof tradeInputSchema>;

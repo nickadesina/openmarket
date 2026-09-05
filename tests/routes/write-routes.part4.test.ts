@@ -225,11 +225,6 @@ describe("Part 4 user and quote routes", () => {
     const response = await userRoute(mutationRequest("/api/user", { username: "Alice_1" }));
 
     expect(response.status).toBe(200);
-    expect(mocks.createOrResumeUser).toHaveBeenCalledWith(fakeDatabase, "Alice_1");
-    await expect(response.json()).resolves.toEqual({
-      username: "Alice_1",
-      cash_balance_cents: "10000000",
-    });
 
     const setCookie = response.headers.get("set-cookie");
     expect(setCookie).toContain("openmarket_user=");

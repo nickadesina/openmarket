@@ -20,9 +20,12 @@
   --color-primary-subtle: #fdeaea;
   --color-accent: #d70909;
 
-  /* Movement: red is up, ink is down (always paired with an arrow and text). */
-  --color-positive: #d70909;
-  --color-positive-subtle: #fdeaea;
+  /* Movement: green is up/gain, ink is down/loss; arrows and labels remain.
+     Green is derived from red in OKLCH at hue 145: preserve its 98.66% sRGB
+     gamut-chroma fraction, lower L to 0.513 for AA contrast on red hover wash.
+     Green wash preserves the red wash's OKLCH lightness/chroma at hue 145. */
+  --color-positive: #067d21;
+  --color-positive-subtle: #e7f3e7;
   --color-negative: #131315;
   --color-negative-action: #131315;
   --color-negative-action-hover: #2c2c30;

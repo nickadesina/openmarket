@@ -35,10 +35,9 @@ export function MarketHeader({ market, movement }: MarketHeaderProps) {
         <div>
           <div className={styles.titleRow}>
             <h1>{market.company.name}</h1>
-            {/* Status is a seal pressed onto the record, not a badge. */}
-            <span className={market.status === "settled" ? styles.sealSettled : styles.sealOpen}>
-              {market.status === "settled" ? "Settled" : "Open"}
-            </span>
+            {market.status === "settled" ? (
+              <span className={styles.sealSettled}>Settled</span>
+            ) : null}
           </div>
           <p className={styles.prompt}>
             {market.metric.kind === "valuation_median"

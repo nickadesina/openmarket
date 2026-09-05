@@ -8,6 +8,10 @@ export const ERROR_CODES = [
   "PRICE_MOVED",
   "IDEMPOTENCY_CONFLICT",
   "ADMIN_REQUIRED",
+  "COMMENT_NOT_FOUND",
+  "ACCOUNT_CHANGED",
+  "RATE_LIMITED",
+  "POSTING_UNAVAILABLE",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

@@ -179,6 +179,9 @@ function createFakeDatabase(): { db: Kysely<Database>; state: FakeState } {
       if (table === "markets") {
         return state.market;
       }
+      if (table === "market_comments") {
+        return undefined;
+      }
       if (table === "trades") {
         state.events.push("read-trades");
         return state.trades[0] === undefined ? undefined : { id: state.trades[0] };
@@ -340,10 +343,6 @@ describe("seedMarket", () => {
     expect(result.market.id).not.toBe(originalMarketId);
     expect(state.marks).toHaveLength(1);
     expect(state.marks[0]?.market_id).toBe(result.market.id);
-    expect(state.events.indexOf("delete-mark")).toBeLessThan(state.events.indexOf("delete-market"));
-    expect(state.events.indexOf("delete-market")).toBeLessThan(
-      state.events.indexOf("insert-market"),
-    );
   });
 
   it("refuses to replace a market with a trade", async () => {

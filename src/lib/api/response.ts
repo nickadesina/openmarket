@@ -27,6 +27,10 @@ const SERVICE_ERROR_STATUS: Readonly<Record<ErrorCode, number>> = {
   PRICE_MOVED: 409,
   IDEMPOTENCY_CONFLICT: 409,
   ADMIN_REQUIRED: 401,
+  COMMENT_NOT_FOUND: 404,
+  ACCOUNT_CHANGED: 409,
+  RATE_LIMITED: 429,
+  POSTING_UNAVAILABLE: 503,
 };
 
 function jsonBody(value: unknown): string {
@@ -68,9 +72,14 @@ export function jsonError(error: ServiceError, requestId: string): Response {
     },
   };
 
+  const headers = responseHeaders(undefined, requestId);
+  if (error.code === "RATE_LIMITED" && typeof error.details.retryAfterSeconds === "number") {
+    headers.set("Retry-After", String(error.details.retryAfterSeconds));
+  }
+
   return new Response(jsonBody(envelope), {
     status: SERVICE_ERROR_STATUS[error.code],
-    headers: responseHeaders(undefined, requestId),
+    headers,
   });
 }
 

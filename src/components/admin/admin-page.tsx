@@ -9,6 +9,7 @@ import { queryKeys } from "../../lib/client/query-keys.js";
 import type { MarketListResult } from "../../lib/services/list-markets.js";
 import type { SeedMarketOutcome } from "../../lib/services/seed-market.js";
 import type { SettlementResult } from "../../lib/services/settle-market.js";
+import { AdminComments } from "./admin-comments.js";
 import styles from "./admin-page.module.css";
 
 type AdminState = "unknown" | "authenticated" | "required";
@@ -491,8 +492,8 @@ export function AdminPage() {
         <p className={styles.sectionLabel}>Restricted operations</p>
         <h1>Market administration</h1>
         <p>
-          Seed verified market inputs and record final outcomes. Every mutation is validated by the
-          server.
+          Seed verified market inputs, record final outcomes, and moderate market comments. Every
+          mutation is validated by the server.
         </p>
       </header>
 
@@ -505,6 +506,7 @@ export function AdminPage() {
           <div className={styles.operations}>
             <SeedForm onAdminRequired={() => setAdminState("required")} />
             <SettlementForm onAdminRequired={() => setAdminState("required")} />
+            <AdminComments onAdminRequired={() => setAdminState("required")} />
           </div>
         </>
       ) : (
@@ -516,7 +518,8 @@ export function AdminPage() {
             </p>
           ) : null}
           <p className={styles.gatedExplanation}>
-            Seed and settlement controls are hidden until this browser session is authenticated.
+            Seed, settlement, and moderation controls are hidden until this browser session is
+            authenticated.
           </p>
         </>
       )}

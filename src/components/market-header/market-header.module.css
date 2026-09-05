@@ -47,16 +47,8 @@
 }
 
 /* Hanko: a ringed round seal, pressed slightly off-square. */
-.sealOpen,
 .sealSettled {
   composes: seal from "../../styles/shared.module.css";
-}
-
-.sealOpen {
-  --seal-color: var(--color-primary);
-}
-
-.sealSettled {
   --seal-color: var(--color-ink);
 }
 
@@ -179,17 +171,21 @@
   animation: metric-flash var(--duration-standard) var(--ease-out);
 }
 
-.flashUp {
+/* Scoped to outrank the default red `.primaryMetric strong` price. */
+.primaryMetric .flashUp {
   color: var(--color-positive);
+  --metric-flash-background: var(--color-positive-subtle);
 }
 
-.flashDown {
+/* Scoped to outrank the default red `.primaryMetric strong` price. */
+.primaryMetric .flashDown {
   color: var(--color-negative);
+  --metric-flash-background: var(--color-negative-subtle);
 }
 
 @keyframes metric-flash {
   from {
-    background: var(--color-primary-subtle);
+    background: var(--metric-flash-background);
   }
   to {
     background: transparent;

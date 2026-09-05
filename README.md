@@ -31,24 +31,22 @@ Each decision carries its status against the current code.
 the older design document and must change. "Open" means the decision is
 still Nick's to make and is not to be treated as settled.
 
-### D1. Account: anonymous browser account, $10,000 — Drifted
+### D1. Account: shared username paper account, $100,000 — Implemented
 
-- Opening the site creates nothing. The first action that needs an
-  account (a buy, a sell, or opening the portfolio) creates an anonymous
-  account server-side and sets a signed, HTTP-only cookie holding an
-  opaque account id and issue time. No username is collected or shown.
-- Every new account starts with exactly $10,000.00 (1,000,000 cents).
-- Identity comes only from the cookie. There is no route that resumes an
-  account from a user-supplied identifier, so no one can take over
-  another person's paper portfolio by guessing a name.
-- A lost or expired cookie is a lost account in v0. No recovery, no
-  email, no passwords. Cookie lifetime stays 30 days, refreshed on use.
-- Admin access is unchanged: passphrase-backed, separate signed cookie.
-
-Current code: `POST /api/user` takes a username, upserts on the
-normalized name, and issues a cookie for whichever account has that
-name, with a $100,000 opening balance. The header, portfolio gate, and
-browser specs all assume the username flow.
+- Opening the site creates nothing. Entering a username opens or resumes
+  that paper account with a signed, HTTP-only, 30-day cookie.
+- Usernames accept 3–20 ASCII letters, numbers, or underscores. Uniqueness
+  is case-insensitive; the original stored spelling remains the display name.
+- Every new account starts with exactly $100,000.00 (10,000,000 cents).
+- Usernames identify shared paper accounts, not verified people. Anyone
+  who knows a username can resume its account through the normal flow.
+  Cookie signatures prevent tampering, not impersonation through username entry.
+- Trading and commenting resolve the stable user ID on the server from
+  the signed cookie. A client-supplied expected account is only a stale-session
+  check, never authorization to act as that account.
+- Account ownership protection is a separate future product decision.
+  This supersedes the earlier anonymous-account/no-username direction.
+- Admin access remains passphrase-backed with a separate signed cookie.
 
 ### D2. Reusable engine, Anthropic first — Drifted
 
@@ -155,6 +153,26 @@ script safely once anything has traded.
 - Mutation routes require a same-origin `Origin` header and exact JSON
   content type.
 
+### D8. Market discussion — Implemented
+
+- Each market ID has a public discussion between Distribution and Market Activity,
+  including after settlement. Roots load 20 at a time, newest first; one-level
+  replies load oldest first. New arrivals wait behind an explicit reveal action.
+- Comments are trimmed plain text, 1–2,000 UTF-16 units, with preserved line breaks.
+  They use the stored account username and cookie-derived user ID. The composer
+  discloses that shared usernames are not verified identities.
+- Drafts survive account selection and require explicit adoption when their account
+  changes. Publishing is always explicit. Uncertain submissions retain their UUID
+  and original payload for retry; abandoning a retry does not undo a possible post.
+- Ordinary users cannot edit or delete comments. The authenticated `/admin`
+  moderation panel replaces removed bodies with tombstones and preserves replies.
+- PostgreSQL enforces retry deduplication and posting quotas: 5 accepted posts per
+  account and 20 per network in each 60-second window. Replays consume no quota.
+  Comments do not change trading balances, holdings, marks, or market sequences.
+- Public routes: `GET`/`POST /api/markets/by-id/[marketId]/comments`, with optional
+  `parentId` and `cursor` on reads. Removal: `POST /api/admin/comments/[commentId]/remove`.
+  Comment refreshes are independent of trading and pause in background tabs.
+
 ## 3. Non-goals for v0
 
 Real money or payments; passwords, email, OAuth, or recovery; order
@@ -184,9 +202,14 @@ npm run dev              # http://localhost:3000, never 127.0.0.1
   fields from the admin hash Playwright injects and makes admin login
   return 500. Move `.env.local` aside for the run. CI has no
   `.env.local` and is unaffected.
-- Integration tests must run against a database whose `public` schema
-  has not been migrated; the per-test schemas search `public` and skip
-  their own migration if a migration table is already visible.
+- Integration tests create isolated schemas and explicitly scope their migration
+  tables, so concurrent suites do not share migration state.
+- Comment posting in production requires Vercel's trusted
+  `x-vercel-forwarded-for` header with `VERCEL=1`; missing or unsupported trusted
+  addressing disables posting, not reading or trading. Forwarding headers supplied
+  by clients are not used in local development, where requests share one bucket.
+  Network keys are HMAC-hashed; raw addresses are not stored. Limits return HTTP 429
+  with `Retry-After`. Apply migration `002_market_comments` before serving this version.
 
 ## 5. CI and deployment
 
@@ -198,8 +221,8 @@ with a report inside the job's 25-minute budget, and the report and
 traces are uploaded on every run.
 
 Deployment is Vercel plus Neon. `scripts/vercel-build.ts` validates the
-environment for the target, builds, migrates, and (production only)
-verifies replay. See `PART5.md` for the environment contract.
+environment for the target, migrates, verifies ledger replay, then builds.
+See `PART5.md` for the environment contract.
 
 ## 6. Drift register
 
@@ -207,7 +230,7 @@ verifies replay. See `PART5.md` for the environment contract.
 | --- | --- | --- |
 | CI blocked by a table-order assertion | Stale | Fixed before the current head; 15 integration tests pass locally and in the last pushed run. |
 | CI never reaches browser tests | True, different cause | The last pushed run passed build and was cancelled at 25 minutes inside Playwright: every trade-ticket test and the critical flow waited 90 s for a `YES` button whose accessible name changed in the redesign. |
-| Username account with $100,000 instead of anonymous $10,000 | True | `src/lib/services/user.ts`, `POST /api/user`; the older design document records the username flow as intentional. |
+| Shared username account with $100,000 opening balance | Intentional | D1 retains the existing username flow; anonymous accounts are no longer the target. |
 | Any known username resumes that account | True | Upsert on `username_normalized`, cookie issued without any secret. |
 | Production requires exactly Stripe and Anthropic | True | `scripts/production-seed.ts`. |
 | Epochs half-modeled | True | No epoch number, slug-only URLs, slug-scoped activity, board lists every market row. |

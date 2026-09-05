@@ -5,7 +5,7 @@ import { type Kysely, sql } from "kysely";
 import { Client } from "pg";
 
 import { createPooledDatabase, destroyDatabase } from "../../src/lib/db/client.js";
-import { migrateToLatest } from "../../src/lib/db/migrator.js";
+import { createMigrator } from "../../src/lib/db/migrator.js";
 import type { Database } from "../../src/lib/db/schema.js";
 
 export const TEST_DATABASE_SKIP_REASON =
@@ -72,7 +72,8 @@ export async function createPostgresTestDatabase(
   const db = createPooledDatabase(scopedUrl);
 
   try {
-    const migration = await migrateToLatest(db);
+    // Kysely otherwise treats a migration table in any test schema as its own.
+    const migration = await createMigrator(db, schema).migrateToLatest();
     if (migration.error !== undefined) throw migration.error;
 
     const results = migration.results ?? [];
@@ -106,6 +107,8 @@ export async function createPostgresTestDatabase(
 export async function resetPostgresTestDatabase(db: Kysely<Database>): Promise<void> {
   await sql`
     truncate table
+      comment_rate_limits,
+      market_comments,
       settlements,
       marks,
       trades,

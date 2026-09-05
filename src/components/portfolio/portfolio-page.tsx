@@ -364,9 +364,11 @@ function PositionRow({
   const pnlDisplay =
     approximatePnl === null
       ? { className: undefined, text: "Not available" }
-      : approximatePnl >= 0
-        ? { className: styles.positive, text: `+${formatUsd(Math.abs(approximatePnl))}` }
-        : { className: styles.negative, text: `−${formatUsd(Math.abs(approximatePnl))}` };
+      : approximatePnl === 0
+        ? { className: styles.flat, text: formatUsd(0) }
+        : approximatePnl > 0
+          ? { className: styles.positive, text: `+${formatUsd(Math.abs(approximatePnl))}` }
+          : { className: styles.negative, text: `−${formatUsd(Math.abs(approximatePnl))}` };
   const canSell = market.status === "open" && position.sellableQuantity >= MIN_QUANTITY;
 
   return (

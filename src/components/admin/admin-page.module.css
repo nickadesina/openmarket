@@ -118,6 +118,7 @@
 }
 
 .field input,
+.field select,
 .field textarea {
   width: 100%;
   border: 1px solid var(--color-border-strong);
@@ -128,7 +129,8 @@
   font-weight: 450;
 }
 
-.field input {
+.field input,
+.field select {
   height: var(--control-height);
   padding: 0 var(--space-3);
 }
@@ -240,6 +242,7 @@
 
 .field input:focus-visible,
 .field textarea:focus-visible,
+.field select:focus-visible,
 .reviewPanel a:focus-visible {
   box-shadow: var(--focus-ring);
 }
@@ -332,7 +335,7 @@
   gap: var(--space-4);
   padding: var(--space-3) var(--space-4);
   margin-top: var(--space-4);
-  border: 1px solid var(--color-positive);
+  border: 1px solid var(--color-primary);
   border-radius: var(--radius-sm);
   color: var(--color-ink);
   font-size: var(--font-size-sm);
@@ -341,6 +344,76 @@
 .successNotice span,
 .sessionNotice span:last-child {
   color: var(--color-ink-muted);
+}
+
+.commentListPanel {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.commentHelp {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.commentList {
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.commentList > li {
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.comment {
+  min-width: 0;
+  padding: var(--space-4) 0;
+}
+
+.comment:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+.commentMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  overflow-wrap: anywhere;
+}
+
+.commentMeta time,
+.commentRemoved {
+  color: var(--color-ink-muted);
+}
+
+.commentBody,
+.commentRemoved {
+  margin: var(--space-2) 0 var(--space-3);
+  font-size: var(--font-size-md);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.commentActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.commentReplies {
+  padding-left: var(--space-3);
+  margin-top: var(--space-4);
+  border-left: 1px solid var(--color-border);
 }
 
 @media (max-width: 720px) {

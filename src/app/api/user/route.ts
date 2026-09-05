@@ -33,6 +33,7 @@ export function POST(request: Request): Promise<Response> {
 
     return jsonSuccess(
       {
+        userId: user.id,
         username: user.username,
         cash_balance_cents: user.cash_balance_cents,
       },
