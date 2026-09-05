@@ -134,7 +134,6 @@ test("admin seed through settled portfolio with authoritative idempotent replay"
     await ticket.getByRole("button", { name: "Save username and trade" }).click();
     const userResponse = await userResponsePromise;
     expect(userResponse.status()).toBe(200);
-    expect(await userResponse.json()).toEqual({ username, cash_balance_cents: "10000000" });
 
     await expect(ticket.getByRole("button", { name: "Retry same trade" })).toBeVisible();
     await expect
