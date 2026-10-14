@@ -121,6 +121,13 @@ export interface CommentRateLimitsTable {
   post_count: number;
 }
 
+export interface RateLimitsTable {
+  scope: Immutable<"admin_login" | "user_create" | "quote" | "trade">;
+  key: Immutable<string>;
+  window_started_at: Date;
+  request_count: number;
+}
+
 export interface Database {
   companies: CompaniesTable;
   markets: MarketsTable;
@@ -131,6 +138,7 @@ export interface Database {
   settlements: SettlementsTable;
   market_comments: MarketCommentsTable;
   comment_rate_limits: CommentRateLimitsTable;
+  rate_limits: RateLimitsTable;
 }
 
 export type CompanyRow = Selectable<CompaniesTable>;

@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   settleMarket: vi.fn(),
   getAdminPassphraseHash: vi.fn(),
   verifyAdminPassphrase: vi.fn(),
+  consumeRateLimit: vi.fn(),
 }));
 
 vi.mock("../../src/lib/db/runtime.js", () => ({
@@ -39,6 +40,10 @@ vi.mock("../../src/lib/services/settle-market.js", () => ({
 vi.mock("../../src/lib/auth/admin-passphrase.js", () => ({
   getAdminPassphraseHash: mocks.getAdminPassphraseHash,
   verifyAdminPassphrase: mocks.verifyAdminPassphrase,
+}));
+vi.mock("../../src/lib/services/rate-limit.js", () => ({
+  consumeRateLimit: mocks.consumeRateLimit,
+  rateLimitNetworkKey: vi.fn(() => "network-key"),
 }));
 
 import { POST as adminLoginRoute } from "../../src/app/api/admin/login/route.js";
@@ -100,6 +105,7 @@ beforeEach(() => {
   mocks.getRuntimeDatabase.mockReturnValue(fakeDatabase);
   mocks.getAdminPassphraseHash.mockReturnValue("configured-hash");
   mocks.verifyAdminPassphrase.mockResolvedValue(true);
+  mocks.consumeRateLimit.mockResolvedValue(undefined);
   userLookup.select.mockReturnValue(userLookup);
   userLookup.where.mockReturnValue(userLookup);
   userLookup.executeTakeFirst.mockResolvedValue({ id: "user-1" });
@@ -371,6 +377,23 @@ describe("Part 4 admin mutation routes", () => {
     expect(setCookie).toContain("Path=/");
     expect(setCookie).toContain("Max-Age=900");
     expect(setCookie).toContain("Secure");
+  });
+
+  it("rate-limits admin login before any passphrase verification work", async () => {
+    mocks.consumeRateLimit.mockRejectedValue(
+      new ServiceError("RATE_LIMITED", "Too many requests.", { retryAfterSeconds: 42 }),
+    );
+
+    const response = await adminLoginRoute(
+      mutationRequest("/api/admin/login", { passphrase: "correct horse" }),
+    );
+
+    expect(response.status).toBe(429);
+    expect(mocks.consumeRateLimit).toHaveBeenCalledWith(fakeDatabase, "admin_login", "network-key");
+    expect(mocks.verifyAdminPassphrase).not.toHaveBeenCalled();
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: "RATE_LIMITED" },
+    });
   });
 
   it("maps an incorrect admin passphrase to ADMIN_REQUIRED without a cookie", async () => {

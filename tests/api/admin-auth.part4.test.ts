@@ -16,6 +16,14 @@ import {
 } from "../../src/lib/auth/admin-passphrase.js";
 import { requireCurrentAdmin } from "../../src/lib/auth/current-admin.js";
 
+vi.mock("../../src/lib/services/rate-limit.js", () => ({
+  consumeRateLimit: vi.fn(async () => {}),
+  rateLimitNetworkKey: vi.fn(() => "network-key"),
+}));
+vi.mock("../../src/lib/db/runtime.js", () => ({
+  getRuntimeDatabase: vi.fn(() => ({})),
+}));
+
 const APP_ORIGIN = "https://app.openmarket.test";
 const PASSPHRASE = "correct horse battery staple";
 const SALT = Buffer.from("0123456789abcdef", "utf8");

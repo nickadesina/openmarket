@@ -13,6 +13,7 @@ import {
   verifyAdminPassphrase,
 } from "../../../../lib/auth/admin-passphrase.js";
 import { ADMIN_COOKIE_NAME } from "../../../../lib/auth/current-admin.js";
+import { consumeRateLimit, rateLimitNetworkKey } from "../../../../lib/services/rate-limit.js";
 
 export const runtime = "nodejs";
 
@@ -38,6 +39,7 @@ function adminCookie(value: string): string {
 
 export function POST(request: Request): Promise<Response> {
   return withMutationRoute(request, async (context) => {
+    await consumeRateLimit(context.db, "admin_login", rateLimitNetworkKey(request));
     const input = await parseMutationBody(request, adminLoginSchema, 8_192);
     const authenticated = await verifyAdminPassphrase(input.passphrase, getAdminPassphraseHash());
     if (!authenticated) {

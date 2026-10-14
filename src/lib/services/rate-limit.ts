@@ -1,0 +1,127 @@
+import { createHash } from "node:crypto";
+
+import { type Kysely, sql } from "kysely";
+
+import { ServiceError } from "../api/errors.js";
+import type { Database } from "../db/schema.js";
+import { trustedClientAddress } from "../security/comment-address.js";
+
+export type RateLimitScope = "admin_login" | "user_create" | "quote" | "trade";
+
+export interface RateLimitPolicy {
+  readonly limit: number;
+  readonly windowMs: number;
+}
+
+export const RATE_LIMIT_POLICIES: Readonly<Record<RateLimitScope, RateLimitPolicy>> = {
+  admin_login: { limit: 10, windowMs: 15 * 60_000 },
+  user_create: { limit: 20, windowMs: 60_000 },
+  quote: { limit: 120, windowMs: 60_000 },
+  trade: { limit: 30, windowMs: 60_000 },
+};
+
+export interface RateLimitWindowState {
+  readonly windowStartedAtMs: number;
+  readonly count: number;
+}
+
+export interface RateLimitDecision {
+  readonly allowed: boolean;
+  readonly retryAfterSeconds: number;
+  readonly nextWindowStartedAtMs: number;
+  readonly nextCount: number;
+}
+
+/** Pure fixed-window decision; the database wrapper supplies the clock. */
+export function evaluateRateLimitWindow(
+  state: RateLimitWindowState,
+  nowMs: number,
+  policy: RateLimitPolicy,
+): RateLimitDecision {
+  const expiresAtMs = state.windowStartedAtMs + policy.windowMs;
+  if (expiresAtMs <= nowMs) {
+    return { allowed: true, retryAfterSeconds: 0, nextWindowStartedAtMs: nowMs, nextCount: 1 };
+  }
+  if (state.count >= policy.limit) {
+    return {
+      allowed: false,
+      retryAfterSeconds: Math.ceil((expiresAtMs - nowMs) / 1_000),
+      nextWindowStartedAtMs: state.windowStartedAtMs,
+      nextCount: state.count,
+    };
+  }
+  return {
+    allowed: true,
+    retryAfterSeconds: 0,
+    nextWindowStartedAtMs: state.windowStartedAtMs,
+    nextCount: state.count + 1,
+  };
+}
+
+/**
+ * Hashed bucket key for the caller's network. Unlike comment posting this
+ * never fails the request: without a trusted address every caller shares
+ * one unattributed bucket, which limits abuse instead of disabling the route.
+ */
+export function rateLimitNetworkKey(
+  request: Request,
+  environment: Readonly<Record<string, string | undefined>> = process.env,
+): string {
+  const address = trustedClientAddress(request, environment) ?? "unattributed";
+  return createHash("sha256")
+    .update("openmarket.rate-limit.network.v1\0")
+    .update(address)
+    .digest("hex");
+}
+
+/** Consumes one unit of quota, or throws RATE_LIMITED before any real work. */
+export async function consumeRateLimit(
+  db: Kysely<Database>,
+  scope: RateLimitScope,
+  key: string,
+  policy: RateLimitPolicy = RATE_LIMIT_POLICIES[scope],
+): Promise<void> {
+  await db.transaction().execute(async (transaction) => {
+    await transaction
+      .insertInto("rate_limits")
+      .values({
+        scope,
+        key,
+        window_started_at: sql`clock_timestamp()`,
+        request_count: 0,
+      })
+      .onConflict((conflict) => conflict.columns(["scope", "key"]).doNothing())
+      .execute();
+    const counters = await transaction
+      .selectFrom("rate_limits")
+      .selectAll()
+      .where("scope", "=", scope)
+      .where("key", "=", key)
+      .forUpdate()
+      .execute();
+    // Read the database clock after acquiring the row lock, not before the wait.
+    const { now } = await transaction
+      .selectNoFrom(sql<Date>`clock_timestamp()`.as("now"))
+      .executeTakeFirstOrThrow();
+    const counter = counters[0]!;
+    const decision = evaluateRateLimitWindow(
+      { windowStartedAtMs: counter.window_started_at.getTime(), count: counter.request_count },
+      now.getTime(),
+      policy,
+    );
+    if (!decision.allowed) {
+      throw new ServiceError("RATE_LIMITED", "Too many requests. Please wait and try again.", {
+        retryAfterSeconds: decision.retryAfterSeconds,
+      });
+    }
+    await transaction
+      .updateTable("rate_limits")
+      .set({
+        window_started_at: new Date(decision.nextWindowStartedAtMs),
+        request_count: decision.nextCount,
+      })
+      .where("scope", "=", scope)
+      .where("key", "=", key)
+      .execute();
+  });
+}

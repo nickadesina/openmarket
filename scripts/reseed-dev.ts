@@ -125,6 +125,7 @@ async function main(): Promise<void> {
       for (const table of [
         "market_comments",
         "comment_rate_limits",
+        "rate_limits",
         "marks",
         "trades",
         "holdings",
