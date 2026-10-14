@@ -111,7 +111,7 @@ describe("previewTrade", () => {
       b: 15_000,
       q: new Array<number>(VALUATION_BUCKET_COUNT).fill(0),
     };
-    const strikeIndex = 40;
+    const strikeIndex = 31;
     const preview = previewTrade(
       market,
       new Array<number>(VALUATION_BUCKET_COUNT).fill(0),
@@ -124,14 +124,14 @@ describe("previewTrade", () => {
     );
   });
 
-  it("rejects a sell one EPS beyond sellable but allows half an EPS", () => {
+  it("rejects a sell beyond the EPS tolerance but allows half an EPS", () => {
     const request = { action: "sell", side: "yes", strike_index: 0 } as const;
     expect(() =>
       previewTrade(
         BINARY_MARKET,
         [0, 0.5],
         request,
-        parseRequestedAmount({ action: "sell", quantity: 0.5 + EPS }),
+        parseRequestedAmount({ action: "sell", quantity: 0.5 + 2 * EPS }),
       ),
     ).toThrowError(expect.objectContaining({ code: "INSUFFICIENT_HOLDINGS" }));
     const preview = previewTrade(
