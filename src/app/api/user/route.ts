@@ -7,7 +7,7 @@ import {
   signUserCookie,
   USER_COOKIE_MAX_AGE_MS,
 } from "../../../lib/auth/user-cookie.js";
-import { consumeRateLimit, rateLimitNetworkKey } from "../../../lib/services/rate-limit.js";
+import { consumeNetworkRateLimit } from "../../../lib/services/rate-limit.js";
 import { createOrResumeUser, getUserByUsername } from "../../../lib/services/user.js";
 
 export const runtime = "nodejs";
@@ -33,7 +33,7 @@ export function POST(request: Request): Promise<Response> {
     // existing username creates nothing and is never throttled.
     const existing = await getUserByUsername(context.db, input.username);
     if (existing === undefined) {
-      await consumeRateLimit(context.db, "user_create", rateLimitNetworkKey(request));
+      await consumeNetworkRateLimit(context.db, "user_create", request);
     }
     const user = await createOrResumeUser(context.db, input.username);
     const cookieValue = signUserCookie(user.username_normalized, getUserCookieSecret());

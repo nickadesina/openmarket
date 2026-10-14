@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { Database } from "../../src/lib/db/schema.js";
 import {
   assertRateLimitAvailable,
+  consumeNetworkRateLimit,
   consumeRateLimit,
   evaluateRateLimitWindow,
   rateLimitNetworkKey,
@@ -131,6 +132,40 @@ describe("consumeRateLimit", () => {
     expect(updates).toEqual([
       { window_started_at: new Date("2026-01-01T00:00:00.000Z"), request_count: 2 },
     ]);
+  });
+});
+
+describe("consumeNetworkRateLimit", () => {
+  it("skips the shared loopback bucket in development/test", async () => {
+    const transaction = vi.fn(() => {
+      throw new Error("database must not be touched for loopback callers");
+    });
+    const db = { transaction } as unknown as Kysely<Database>;
+    await consumeNetworkRateLimit(db, "user_create", new Request("https://example.test/"));
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it("consumes quota for a trusted production address", async () => {
+    vi.stubEnv("VERCEL", "1");
+    vi.stubEnv("NODE_ENV", "production");
+    try {
+      const now = new Date("2026-01-01T00:00:30.000Z");
+      const { db, updates } = mockDatabase(
+        { window_started_at: new Date("2026-01-01T00:00:00.000Z"), request_count: 1 },
+        now,
+      );
+      await consumeNetworkRateLimit(
+        db,
+        "user_create",
+        new Request("https://example.test/", {
+          headers: { "x-vercel-forwarded-for": "192.0.2.1" },
+        }),
+        { limit: 3, windowMs: MINUTE },
+      );
+      expect(updates).toHaveLength(1);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });
 

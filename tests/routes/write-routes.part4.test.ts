@@ -16,7 +16,8 @@ const mocks = vi.hoisted(() => ({
   getAdminPassphraseHash: vi.fn(),
   verifyAdminPassphrase: vi.fn(),
   consumeRateLimit: vi.fn(),
-  assertRateLimitAvailable: vi.fn(),
+  consumeNetworkRateLimit: vi.fn(),
+  assertNetworkRateLimitAvailable: vi.fn(),
 }));
 
 vi.mock("../../src/lib/db/runtime.js", () => ({
@@ -44,8 +45,8 @@ vi.mock("../../src/lib/auth/admin-passphrase.js", () => ({
 }));
 vi.mock("../../src/lib/services/rate-limit.js", () => ({
   consumeRateLimit: mocks.consumeRateLimit,
-  assertRateLimitAvailable: mocks.assertRateLimitAvailable,
-  rateLimitNetworkKey: vi.fn(() => "network-key"),
+  consumeNetworkRateLimit: mocks.consumeNetworkRateLimit,
+  assertNetworkRateLimitAvailable: mocks.assertNetworkRateLimitAvailable,
   RATE_LIMIT_NETWORK_POLICIES: {
     quote: { limit: 600, windowMs: 60_000 },
     trade: { limit: 120, windowMs: 60_000 },
@@ -112,7 +113,8 @@ beforeEach(() => {
   mocks.getAdminPassphraseHash.mockReturnValue("configured-hash");
   mocks.verifyAdminPassphrase.mockResolvedValue(true);
   mocks.consumeRateLimit.mockResolvedValue(undefined);
-  mocks.assertRateLimitAvailable.mockResolvedValue(undefined);
+  mocks.consumeNetworkRateLimit.mockResolvedValue(undefined);
+  mocks.assertNetworkRateLimitAvailable.mockResolvedValue(undefined);
   userLookup.select.mockReturnValue(userLookup);
   userLookup.where.mockReturnValue(userLookup);
   userLookup.executeTakeFirst.mockResolvedValue({ id: "user-1" });
@@ -403,7 +405,7 @@ describe("Part 4 admin mutation routes", () => {
   });
 
   it("rate-limits admin login before any passphrase verification work", async () => {
-    mocks.assertRateLimitAvailable.mockRejectedValue(
+    mocks.assertNetworkRateLimitAvailable.mockRejectedValue(
       new ServiceError("RATE_LIMITED", "Too many requests.", { retryAfterSeconds: 42 }),
     );
 
@@ -412,10 +414,10 @@ describe("Part 4 admin mutation routes", () => {
     );
 
     expect(response.status).toBe(429);
-    expect(mocks.assertRateLimitAvailable).toHaveBeenCalledWith(
+    expect(mocks.assertNetworkRateLimitAvailable).toHaveBeenCalledWith(
       fakeDatabase,
       "admin_login",
-      "network-key",
+      expect.any(Request),
     );
     expect(mocks.verifyAdminPassphrase).not.toHaveBeenCalled();
     await expect(response.json()).resolves.toMatchObject({
@@ -432,7 +434,11 @@ describe("Part 4 admin mutation routes", () => {
 
     expect(response.status).toBe(401);
     expect(response.headers.get("set-cookie")).toBeNull();
-    expect(mocks.consumeRateLimit).toHaveBeenCalledWith(fakeDatabase, "admin_login", "network-key");
+    expect(mocks.consumeNetworkRateLimit).toHaveBeenCalledWith(
+      fakeDatabase,
+      "admin_login",
+      expect.any(Request),
+    );
     await expect(response.json()).resolves.toMatchObject({
       error: { code: "ADMIN_REQUIRED" },
     });

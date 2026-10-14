@@ -155,3 +155,37 @@ export async function assertRateLimitAvailable(
 ): Promise<void> {
   return applyRateLimit(db, scope, key, policy, false);
 }
+
+/**
+ * Network-keyed variants. In development/test every caller shares the
+ * synthetic "loopback" address, which is not a real network identity:
+ * applying per-network policies to it would throttle the developer and
+ * the browser test suite itself. Those deployments skip network buckets;
+ * per-user limits still apply, and production without a trusted address
+ * keeps the shared unattributed bucket.
+ */
+function networkKeyUnlessLocal(request: Request, keyPrefix: string): string | null {
+  if (trustedClientAddress(request) === "loopback") return null;
+  return `${keyPrefix}${rateLimitNetworkKey(request)}`;
+}
+
+export async function consumeNetworkRateLimit(
+  db: Kysely<Database>,
+  scope: RateLimitScope,
+  request: Request,
+  policy: RateLimitPolicy = RATE_LIMIT_POLICIES[scope],
+  keyPrefix = "",
+): Promise<void> {
+  const key = networkKeyUnlessLocal(request, keyPrefix);
+  if (key !== null) await consumeRateLimit(db, scope, key, policy);
+}
+
+export async function assertNetworkRateLimitAvailable(
+  db: Kysely<Database>,
+  scope: RateLimitScope,
+  request: Request,
+  policy: RateLimitPolicy = RATE_LIMIT_POLICIES[scope],
+): Promise<void> {
+  const key = networkKeyUnlessLocal(request, "");
+  if (key !== null) await assertRateLimitAvailable(db, scope, key, policy);
+}

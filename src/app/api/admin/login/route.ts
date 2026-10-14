@@ -14,9 +14,8 @@ import {
 } from "../../../../lib/auth/admin-passphrase.js";
 import { ADMIN_COOKIE_NAME } from "../../../../lib/auth/current-admin.js";
 import {
-  assertRateLimitAvailable,
-  consumeRateLimit,
-  rateLimitNetworkKey,
+  assertNetworkRateLimitAvailable,
+  consumeNetworkRateLimit,
 } from "../../../../lib/services/rate-limit.js";
 
 export const runtime = "nodejs";
@@ -45,12 +44,11 @@ export function POST(request: Request): Promise<Response> {
   return withMutationRoute(request, async (context) => {
     // Only failed attempts consume quota, so a correct passphrase is never
     // throttled by its own successes; availability is still checked first.
-    const networkKey = rateLimitNetworkKey(request);
-    await assertRateLimitAvailable(context.db, "admin_login", networkKey);
+    await assertNetworkRateLimitAvailable(context.db, "admin_login", request);
     const input = await parseMutationBody(request, adminLoginSchema, 8_192);
     const authenticated = await verifyAdminPassphrase(input.passphrase, getAdminPassphraseHash());
     if (!authenticated) {
-      await consumeRateLimit(context.db, "admin_login", networkKey);
+      await consumeNetworkRateLimit(context.db, "admin_login", request);
       throw new ServiceError("ADMIN_REQUIRED", "Admin authentication failed.");
     }
 

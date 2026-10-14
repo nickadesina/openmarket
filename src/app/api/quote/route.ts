@@ -5,9 +5,9 @@ import { quoteInputSchema } from "../../../lib/api/schemas.js";
 import { requireCurrentUserId } from "../../../lib/auth/current-user.js";
 import { quoteMarket } from "../../../lib/services/quote.js";
 import {
+  consumeNetworkRateLimit,
   consumeRateLimit,
   RATE_LIMIT_NETWORK_POLICIES,
-  rateLimitNetworkKey,
 } from "../../../lib/services/rate-limit.js";
 
 export const runtime = "nodejs";
@@ -27,14 +27,16 @@ export function POST(request: Request): Promise<Response> {
       }
     }
 
-    const networkKey = rateLimitNetworkKey(request);
-    await consumeRateLimit(context.db, "quote", userId ?? networkKey);
-    if (userId !== undefined) {
-      await consumeRateLimit(
+    if (userId === undefined) {
+      await consumeNetworkRateLimit(context.db, "quote", request);
+    } else {
+      await consumeRateLimit(context.db, "quote", userId);
+      await consumeNetworkRateLimit(
         context.db,
         "quote",
-        `network:${networkKey}`,
+        request,
         RATE_LIMIT_NETWORK_POLICIES.quote,
+        "network:",
       );
     }
     const quote = await quoteMarket(context.db, input, userId);

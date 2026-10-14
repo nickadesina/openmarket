@@ -17,9 +17,8 @@ import {
 import { requireCurrentAdmin } from "../../src/lib/auth/current-admin.js";
 
 vi.mock("../../src/lib/services/rate-limit.js", () => ({
-  consumeRateLimit: vi.fn(async () => {}),
-  assertRateLimitAvailable: vi.fn(async () => {}),
-  rateLimitNetworkKey: vi.fn(() => "network-key"),
+  consumeNetworkRateLimit: vi.fn(async () => {}),
+  assertNetworkRateLimitAvailable: vi.fn(async () => {}),
 }));
 vi.mock("../../src/lib/db/runtime.js", () => ({
   getRuntimeDatabase: vi.fn(() => ({})),
