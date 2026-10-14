@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 
 export function POST(request: Request): Promise<Response> {
   return withMutationRoute(request, async (context) => {
-    const input = await parseMutationBody(request, quoteInputSchema);
+    const input = await parseMutationBody(request, quoteInputSchema, 4_096);
     let userId: string | undefined;
 
     try {

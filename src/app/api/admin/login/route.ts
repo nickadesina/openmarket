@@ -38,7 +38,7 @@ function adminCookie(value: string): string {
 
 export function POST(request: Request): Promise<Response> {
   return withMutationRoute(request, async (context) => {
-    const input = await parseMutationBody(request, adminLoginSchema);
+    const input = await parseMutationBody(request, adminLoginSchema, 8_192);
     const authenticated = await verifyAdminPassphrase(input.passphrase, getAdminPassphraseHash());
     if (!authenticated) {
       throw new ServiceError("ADMIN_REQUIRED", "Admin authentication failed.");

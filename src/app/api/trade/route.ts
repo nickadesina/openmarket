@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 
 export function POST(request: Request): Promise<Response> {
   return withMutationRoute(request, async (context) => {
-    const input = await parseMutationBody(request, tradeInputSchema);
+    const input = await parseMutationBody(request, tradeInputSchema, 4_096);
     const userId = await requireCurrentUserId(request, () => context.db);
     const execution = await executeTrade(context.db, userId, input);
 

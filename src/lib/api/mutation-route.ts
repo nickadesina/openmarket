@@ -60,14 +60,11 @@ async function readBoundedJson(request: Request, maximumBytes: number): Promise<
 export async function parseMutationBody<T>(
   request: Request,
   schema: ZodType<T>,
-  maximumBytes?: number,
+  maximumBytes: number,
 ): Promise<T> {
   let body: unknown;
   try {
-    body =
-      maximumBytes === undefined
-        ? await request.json()
-        : await readBoundedJson(request, maximumBytes);
+    body = await readBoundedJson(request, maximumBytes);
   } catch {
     throw new ServiceError("INVALID_INPUT", "Request body is invalid.");
   }

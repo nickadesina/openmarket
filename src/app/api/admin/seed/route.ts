@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 export function POST(request: Request): Promise<Response> {
   return withMutationRoute(request, async (context) => {
     requireCurrentAdmin(request);
-    const input = await parseMutationBody(request, seedInputSchema);
+    const input = await parseMutationBody(request, seedInputSchema, 16_384);
     const result = await seedMarket(context.db, input);
 
     return jsonSuccess(

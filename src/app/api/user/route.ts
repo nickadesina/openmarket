@@ -27,7 +27,7 @@ function userCookie(value: string): string {
 
 export function POST(request: Request): Promise<Response> {
   return withMutationRoute(request, async (context) => {
-    const input = await parseMutationBody(request, usernameInputSchema);
+    const input = await parseMutationBody(request, usernameInputSchema, 1_024);
     const user = await createOrResumeUser(context.db, input.username);
     const cookieValue = signUserCookie(user.username_normalized, getUserCookieSecret());
 
