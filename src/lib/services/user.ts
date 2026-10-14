@@ -22,6 +22,17 @@ export function normalizeUsername(username: string): string {
   return username.toLowerCase();
 }
 
+export async function getUserByUsername(
+  db: Kysely<Database> | Transaction<Database>,
+  username: string,
+): Promise<{ readonly id: string } | undefined> {
+  return db
+    .selectFrom("users")
+    .select("id")
+    .where("username_normalized", "=", normalizeUsername(username))
+    .executeTakeFirst();
+}
+
 export async function createOrResumeUser(
   db: Kysely<Database> | Transaction<Database>,
   username: string,

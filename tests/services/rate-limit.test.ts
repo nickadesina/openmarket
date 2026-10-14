@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { Database } from "../../src/lib/db/schema.js";
 import {
+  assertRateLimitAvailable,
   consumeRateLimit,
   evaluateRateLimitWindow,
   rateLimitNetworkKey,
@@ -93,6 +94,31 @@ describe("consumeRateLimit", () => {
       consumeRateLimit(db, "quote", "user-1", { limit: 3, windowMs: MINUTE }),
     ).rejects.toMatchObject({ code: "RATE_LIMITED", details: { retryAfterSeconds: 30 } });
     expect(updates).toEqual([]);
+  });
+
+  it("checks availability without consuming quota", async () => {
+    const now = new Date("2026-01-01T00:00:30.000Z");
+    const available = mockDatabase(
+      { window_started_at: new Date("2026-01-01T00:00:00.000Z"), request_count: 1 },
+      now,
+    );
+    await assertRateLimitAvailable(available.db, "admin_login", "net", {
+      limit: 3,
+      windowMs: MINUTE,
+    });
+    expect(available.updates).toEqual([]);
+
+    const exhausted = mockDatabase(
+      { window_started_at: new Date("2026-01-01T00:00:00.000Z"), request_count: 3 },
+      now,
+    );
+    await expect(
+      assertRateLimitAvailable(exhausted.db, "admin_login", "net", {
+        limit: 3,
+        windowMs: MINUTE,
+      }),
+    ).rejects.toMatchObject({ code: "RATE_LIMITED" });
+    expect(exhausted.updates).toEqual([]);
   });
 
   it("increments the counter when allowed", async () => {

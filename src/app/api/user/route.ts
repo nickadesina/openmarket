@@ -8,7 +8,7 @@ import {
   USER_COOKIE_MAX_AGE_MS,
 } from "../../../lib/auth/user-cookie.js";
 import { consumeRateLimit, rateLimitNetworkKey } from "../../../lib/services/rate-limit.js";
-import { createOrResumeUser } from "../../../lib/services/user.js";
+import { createOrResumeUser, getUserByUsername } from "../../../lib/services/user.js";
 
 export const runtime = "nodejs";
 
@@ -28,8 +28,13 @@ function userCookie(value: string): string {
 
 export function POST(request: Request): Promise<Response> {
   return withMutationRoute(request, async (context) => {
-    await consumeRateLimit(context.db, "user_create", rateLimitNetworkKey(request));
     const input = await parseMutationBody(request, usernameInputSchema, 1_024);
+    // The limiter guards minting a fresh faucet balance; resuming an
+    // existing username creates nothing and is never throttled.
+    const existing = await getUserByUsername(context.db, input.username);
+    if (existing === undefined) {
+      await consumeRateLimit(context.db, "user_create", rateLimitNetworkKey(request));
+    }
     const user = await createOrResumeUser(context.db, input.username);
     const cookieValue = signUserCookie(user.username_normalized, getUserCookieSecret());
 

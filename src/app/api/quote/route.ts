@@ -4,7 +4,11 @@ import { jsonSuccess } from "../../../lib/api/response.js";
 import { quoteInputSchema } from "../../../lib/api/schemas.js";
 import { requireCurrentUserId } from "../../../lib/auth/current-user.js";
 import { quoteMarket } from "../../../lib/services/quote.js";
-import { consumeRateLimit, rateLimitNetworkKey } from "../../../lib/services/rate-limit.js";
+import {
+  consumeRateLimit,
+  RATE_LIMIT_NETWORK_POLICIES,
+  rateLimitNetworkKey,
+} from "../../../lib/services/rate-limit.js";
 
 export const runtime = "nodejs";
 
@@ -23,7 +27,16 @@ export function POST(request: Request): Promise<Response> {
       }
     }
 
-    await consumeRateLimit(context.db, "quote", userId ?? rateLimitNetworkKey(request));
+    const networkKey = rateLimitNetworkKey(request);
+    await consumeRateLimit(context.db, "quote", userId ?? networkKey);
+    if (userId !== undefined) {
+      await consumeRateLimit(
+        context.db,
+        "quote",
+        `network:${networkKey}`,
+        RATE_LIMIT_NETWORK_POLICIES.quote,
+      );
+    }
     const quote = await quoteMarket(context.db, input, userId);
     return jsonSuccess(quote, { requestId: context.requestId });
   });

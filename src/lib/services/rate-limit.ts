@@ -14,10 +14,19 @@ export interface RateLimitPolicy {
 }
 
 export const RATE_LIMIT_POLICIES: Readonly<Record<RateLimitScope, RateLimitPolicy>> = {
+  // Failed attempts only; the login route checks availability before
+  // verifying and consumes quota only when verification fails.
   admin_login: { limit: 10, windowMs: 15 * 60_000 },
   user_create: { limit: 20, windowMs: 60_000 },
   quote: { limit: 120, windowMs: 60_000 },
   trade: { limit: 30, windowMs: 60_000 },
+};
+
+/** Per-network ceilings consumed alongside the per-user policy, so minting
+ * fresh accounts cannot reset a caller's quote/trade quota. */
+export const RATE_LIMIT_NETWORK_POLICIES: Readonly<Record<"quote" | "trade", RateLimitPolicy>> = {
+  quote: { limit: 600, windowMs: 60_000 },
+  trade: { limit: 120, windowMs: 60_000 },
 };
 
 export interface RateLimitWindowState {
@@ -74,12 +83,12 @@ export function rateLimitNetworkKey(
     .digest("hex");
 }
 
-/** Consumes one unit of quota, or throws RATE_LIMITED before any real work. */
-export async function consumeRateLimit(
+async function applyRateLimit(
   db: Kysely<Database>,
   scope: RateLimitScope,
   key: string,
-  policy: RateLimitPolicy = RATE_LIMIT_POLICIES[scope],
+  policy: RateLimitPolicy,
+  increment: boolean,
 ): Promise<void> {
   await db.transaction().execute(async (transaction) => {
     await transaction
@@ -114,6 +123,7 @@ export async function consumeRateLimit(
         retryAfterSeconds: decision.retryAfterSeconds,
       });
     }
+    if (!increment) return;
     await transaction
       .updateTable("rate_limits")
       .set({
@@ -124,4 +134,24 @@ export async function consumeRateLimit(
       .where("key", "=", key)
       .execute();
   });
+}
+
+/** Consumes one unit of quota, or throws RATE_LIMITED before any real work. */
+export async function consumeRateLimit(
+  db: Kysely<Database>,
+  scope: RateLimitScope,
+  key: string,
+  policy: RateLimitPolicy = RATE_LIMIT_POLICIES[scope],
+): Promise<void> {
+  return applyRateLimit(db, scope, key, policy, true);
+}
+
+/** Throws RATE_LIMITED when the window is exhausted, without consuming quota. */
+export async function assertRateLimitAvailable(
+  db: Kysely<Database>,
+  scope: RateLimitScope,
+  key: string,
+  policy: RateLimitPolicy = RATE_LIMIT_POLICIES[scope],
+): Promise<void> {
+  return applyRateLimit(db, scope, key, policy, false);
 }

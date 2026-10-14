@@ -41,6 +41,8 @@ interface PendingOrder {
  * Anything else leaves the execution state unknown and must be retried with the same key.
  * IDEMPOTENCY_CONFLICT is the exception: the key was already committed (typically by a
  * concurrent attempt), so the trade may have executed and a same-key retry replays it.
+ * RATE_LIMITED is also unknown: the server refused before evaluating the trade, and an
+ * earlier attempt with this key may already have executed, so only a same-key retry is safe.
  */
 function isOutcomeUnknown(error: unknown): boolean {
   return (
@@ -48,7 +50,8 @@ function isOutcomeUnknown(error: unknown): boolean {
     error.status === 0 ||
     error.status >= 500 ||
     error.code === "INVALID_RESPONSE" ||
-    error.code === "IDEMPOTENCY_CONFLICT"
+    error.code === "IDEMPOTENCY_CONFLICT" ||
+    error.code === "RATE_LIMITED"
   );
 }
 
