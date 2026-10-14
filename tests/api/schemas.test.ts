@@ -224,4 +224,27 @@ describe("service input schemas", () => {
     );
     expect(settlementInputSchema.safeParse({ ...valid, admin: true }).success).toBe(false);
   });
+
+  it("caps trade quantity and spend while leaving settlement values uncapped", () => {
+    expect(
+      quoteInputSchema.safeParse({ ...quoteBase, action: "buy", quantity: 1e308 }).success,
+    ).toBe(false);
+    expect(
+      quoteInputSchema.safeParse({ ...quoteBase, action: "buy", spend_usd: "1000000001.00" })
+        .success,
+    ).toBe(false);
+    expect(
+      quoteInputSchema.safeParse({ ...quoteBase, action: "buy", spend_usd: "1000000000.00" })
+        .success,
+    ).toBe(true);
+    expect(
+      tradeInputSchema.safeParse({
+        ...quoteBase,
+        action: "buy",
+        quantity: 5,
+        max_cost_usd: "1000000001.00",
+        idempotency_key: idempotencyKey,
+      }).success,
+    ).toBe(false);
+  });
 });

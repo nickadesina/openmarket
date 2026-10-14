@@ -13,18 +13,8 @@ import type {
   MetricKind,
   TradeAction,
 } from "../db/schema.js";
-import { VALUATION_BOUNDARIES_USD } from "../engine/buckets.js";
-import { contractDelta, contractMask, sellableQuantity } from "../engine/contracts.js";
-import {
-  probabilities,
-  quantizeBuyCostCents,
-  quantizeEntitlementCents,
-  quantizeSellProceedsCents,
-  solveBuyQuantityForSpend,
-  tradeCost,
-} from "../engine/lmsr.js";
-import { impliedValuationMedian } from "../engine/median.js";
-import { EPS, MIN_QUANTITY } from "../engine/types.js";
+import { EPS } from "../engine/types.js";
+import { parseRequestedAmount, previewTrade } from "./preview-trade.js";
 
 export interface ExecutionResult extends JsonObject {
   readonly trade_id: string;
@@ -114,48 +104,6 @@ function assertFiniteVector(vector: readonly number[], expectedLength: number, n
       throw new ServiceError("INVALID_INPUT", `${name} contains a non-finite value.`);
     }
   }
-}
-
-function sumMasked(values: readonly number[], mask: readonly boolean[]): number {
-  let total = 0;
-  for (let index = 0; index < values.length; index += 1) {
-    if (mask[index]) total += values[index]!;
-  }
-  return total;
-}
-
-function calculateMetric(metricKind: MetricKind, q: readonly number[], b: number): number {
-  const pmf = probabilities(q, b);
-  if (metricKind === "valuation_median") {
-    return impliedValuationMedian(pmf, VALUATION_BOUNDARIES_USD);
-  }
-  const yesProbability = pmf[1];
-  if (yesProbability === undefined) {
-    throw new ServiceError("INVALID_INPUT", "Binary market state is invalid.");
-  }
-  return yesProbability;
-}
-
-function validateStrike(
-  metricKind: MetricKind,
-  nBuckets: number,
-  strikeIndex: number,
-): string | null {
-  if (metricKind === "yes_probability") {
-    if (nBuckets !== 2 || strikeIndex !== 0) {
-      throw new ServiceError("INVALID_INPUT", "Binary markets use strike index 0.");
-    }
-    return null;
-  }
-
-  if (
-    nBuckets !== VALUATION_BOUNDARIES_USD.length + 1 ||
-    strikeIndex < 0 ||
-    strikeIndex >= VALUATION_BOUNDARIES_USD.length
-  ) {
-    throw new ServiceError("INVALID_INPUT", "Invalid valuation strike index.");
-  }
-  return VALUATION_BOUNDARIES_USD[strikeIndex]!.toFixed(2);
 }
 
 function invalidTrade(message: string): never {
@@ -310,88 +258,34 @@ export async function executeTrade(
       throw new ServiceError("INVALID_INPUT", "Holdings state is invalid.");
     }
 
-    const strikeValue = validateStrike(market.metric_kind, market.n_buckets, input.strike_index);
-    const mask = contractMask(market.n_buckets, input.strike_index, input.side);
-
-    let quantity: number;
-    let engineCostUsd: number;
-    let cashAmountCents: number;
-    let requestedSpendCents: number | null = null;
-
-    if (input.action === "buy" && "spend_usd" in input) {
-      requestedSpendCents = parseUsdToCents(input.spend_usd);
+    const amount = parseRequestedAmount(input);
+    const requestedSpendCents = amount.spendCents ?? null;
+    if (input.action === "buy" && requestedSpendCents !== null) {
       if (parseUsdToCents(input.max_cost_usd) !== requestedSpendCents) {
         invalidTrade("Spend orders require max cost to equal submitted spend.");
       }
-      try {
-        const solved = solveBuyQuantityForSpend(market.q, mask, market.b, requestedSpendCents);
-        quantity = solved.quantity;
-        engineCostUsd = solved.costUsd;
-        cashAmountCents = solved.cashAmountCents;
-      } catch (error) {
-        if (error instanceof RangeError) invalidTrade(error.message);
-        throw error;
-      }
-    } else {
-      quantity = input.quantity;
-      const preliminaryDelta = contractDelta(
-        market.n_buckets,
-        input.strike_index,
-        input.side,
-        input.action,
-        quantity,
-      );
-      engineCostUsd = tradeCost(market.q, preliminaryDelta, market.b);
-      cashAmountCents =
-        input.action === "buy"
-          ? quantizeBuyCostCents(engineCostUsd)
-          : quantizeSellProceedsCents(engineCostUsd);
     }
 
-    if (!Number.isFinite(quantity) || quantity < MIN_QUANTITY || cashAmountCents === 0) {
-      invalidTrade("Trade produces no transferable quantity.");
-    }
-
-    const delta = contractDelta(
-      market.n_buckets,
-      input.strike_index,
-      input.side,
-      input.action,
-      quantity,
+    const preview = previewTrade(
+      market,
+      holdingsBefore,
+      { action: input.action, side: input.side, strike_index: input.strike_index },
+      amount,
     );
-    const qAfter = market.q.map((value, index) => value + delta[index]!);
+    const strikeValue = preview.strikeValue;
+    const quantity = preview.quantity;
+    const engineCostUsd = preview.engineCostUsd;
+    const cashAmountCents = preview.cashAmountCents;
+    const delta = preview.delta;
+    const qAfter = preview.qAfter;
     assertFiniteVector(qAfter, market.n_buckets, "Updated market state");
-    const holdingsAfterDelta = holdingsBefore.map((value, index) => value + delta[index]!);
-    for (const value of holdingsAfterDelta) {
-      if (value < -EPS) {
-        throw new ServiceError(
-          "INSUFFICIENT_HOLDINGS",
-          "Insufficient vector holdings for this sale.",
-          { sellable_quantity: sellableQuantity(holdingsBefore, mask) },
-        );
-      }
-    }
-    for (let index = 0; index < holdingsAfterDelta.length; index += 1) {
-      if (Math.abs(holdingsAfterDelta[index]!) < EPS) {
-        holdingsAfterDelta[index] = 0;
-      }
-    }
-
-    let redemptionQuantity = Math.min(...holdingsAfterDelta);
-    if (redemptionQuantity <= EPS) redemptionQuantity = 0;
-    const redemptionCents =
-      redemptionQuantity === 0 ? 0 : quantizeEntitlementCents(redemptionQuantity);
-    const holdingsAfter = holdingsAfterDelta.map((value) => {
-      const redeemed = value - redemptionQuantity;
-      return Math.abs(redeemed) < EPS ? 0 : redeemed;
-    });
-
-    const probabilitiesBefore = probabilities(market.q, market.b);
-    const probabilitiesAfter = probabilities(qAfter, market.b);
-    const priceBefore = sumMasked(probabilitiesBefore, mask);
-    const priceAfter = sumMasked(probabilitiesAfter, mask);
-    const metricAfter = calculateMetric(market.metric_kind, qAfter, market.b);
-    const sellableAfter = sellableQuantity(holdingsAfter, mask);
+    const holdingsAfter = preview.holdingsAfter;
+    const redemptionQuantity = preview.redemptionQuantity;
+    const redemptionCents = preview.redemptionCents;
+    const priceBefore = preview.priceBefore;
+    const priceAfter = preview.priceAfter;
+    const metricAfter = preview.metricAfter;
+    const sellableAfter = preview.sellableAfter;
 
     // The slippage guard is checked after the post-trade state is known so a
     // PRICE_MOVED rejection carries the same fields as a quote: the client

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { VALUATION_BOUNDARIES_USD } from "../engine/buckets.js";
-import { MIN_QUANTITY } from "../engine/types.js";
+import { MAX_QUANTITY, MAX_TRADE_SPEND_CENTS, MIN_QUANTITY } from "../engine/types.js";
 import { USERNAME_PATTERN } from "../services/user.js";
 import { parseUsdToCents, USD_MAX_LENGTH } from "./money.js";
 
@@ -11,7 +11,7 @@ const slugSchema = z
   .min(1)
   .max(100)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*(?![\s\S])/);
-const quantitySchema = z.number().finite().min(MIN_QUANTITY);
+const quantitySchema = z.number().finite().min(MIN_QUANTITY).max(MAX_QUANTITY);
 const idempotencyKeySchema = z
   .string()
   .uuid()
@@ -39,6 +39,31 @@ const nonnegativeUsdSchema = z
   .string()
   .max(USD_MAX_LENGTH)
   .refine((value) => isUsd(value, true), "Must be a non-negative USD amount");
+
+function isTradeUsd(value: string, allowZero: boolean): boolean {
+  try {
+    const cents = parseUsdToCents(value);
+    return (allowZero ? cents >= 0 : cents > 0) && cents <= MAX_TRADE_SPEND_CENTS;
+  } catch {
+    return false;
+  }
+}
+
+/** Trade money is capped; seed anchors and settlement values are not. */
+const positiveTradeUsdSchema = z
+  .string()
+  .max(USD_MAX_LENGTH)
+  .refine(
+    (value) => isTradeUsd(value, false),
+    "Must be a positive USD amount within the trade ceiling",
+  );
+const nonnegativeTradeUsdSchema = z
+  .string()
+  .max(USD_MAX_LENGTH)
+  .refine(
+    (value) => isTradeUsd(value, true),
+    "Must be a non-negative USD amount within the trade ceiling",
+  );
 const httpUrlSchema = z
   .string()
   .url()
@@ -70,7 +95,7 @@ const buySpendQuoteSchema = z
   .object({
     ...quoteFields,
     action: z.literal("buy"),
-    spend_usd: positiveUsdSchema,
+    spend_usd: positiveTradeUsdSchema,
   })
   .strict();
 const sellQuoteSchema = z
@@ -97,15 +122,15 @@ const buyQuantityTradeSchema = z
     ...tradeFields,
     action: z.literal("buy"),
     quantity: quantitySchema,
-    max_cost_usd: positiveUsdSchema,
+    max_cost_usd: positiveTradeUsdSchema,
   })
   .strict();
 const buySpendTradeSchema = z
   .object({
     ...tradeFields,
     action: z.literal("buy"),
-    spend_usd: positiveUsdSchema,
-    max_cost_usd: positiveUsdSchema,
+    spend_usd: positiveTradeUsdSchema,
+    max_cost_usd: positiveTradeUsdSchema,
   })
   .strict();
 const sellTradeSchema = z
@@ -113,7 +138,7 @@ const sellTradeSchema = z
     ...tradeFields,
     action: z.literal("sell"),
     quantity: quantitySchema,
-    min_proceeds_usd: nonnegativeUsdSchema,
+    min_proceeds_usd: nonnegativeTradeUsdSchema,
   })
   .strict();
 
