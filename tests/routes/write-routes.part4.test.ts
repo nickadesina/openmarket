@@ -331,6 +331,22 @@ describe("Part 4 trade route", () => {
     await expect(replayResponse.json()).resolves.toEqual(storedResult);
   });
 
+  it("rejects a body over the route cap before executing anything", async () => {
+    const response = await tradeRoute(
+      mutationRequest(
+        "/api/trade",
+        { ...tradeInput, slug: "a".repeat(5_000) },
+        { cookie: userCookieHeader() },
+      ),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: "INVALID_INPUT" },
+    });
+    expect(mocks.executeTrade).not.toHaveBeenCalled();
+  });
+
   it("preserves authoritative PRICE_MOVED details", async () => {
     const movedPriceDetails = {
       cash_amount_cents: "205",

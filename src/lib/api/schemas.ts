@@ -66,6 +66,7 @@ const nonnegativeTradeUsdSchema = z
   );
 const httpUrlSchema = z
   .string()
+  .max(4_096)
   .url()
   .refine((value) => {
     const protocol = new URL(value).protocol;
@@ -151,7 +152,7 @@ export const tradeInputSchema = z.union([
 const seedFields = {
   name: z.string().trim().min(1).max(200),
   slug: slugSchema,
-  logo_path: z.string().trim().min(1),
+  logo_path: z.string().trim().min(1).max(2_048),
   b: z.number().finite().positive(),
 } as const;
 
