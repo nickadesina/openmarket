@@ -95,15 +95,19 @@ export function parseRequestedAmount(input: TradeAmountInput): RequestedAmount {
     throw invalidInput("spend_usd must be a positive decimal-dollar string.");
   }
 
+  let spendCents: number;
   try {
-    const spendCents = parseUsdToCents(spendUsd);
-    if (spendCents < 1 || spendCents > MAX_TRADE_SPEND_CENTS) {
-      throw new RangeError("spend is outside the trade ceiling");
-    }
-    return { quantity: undefined, spendCents };
+    spendCents = parseUsdToCents(spendUsd);
   } catch {
     throw invalidInput("spend_usd must be a positive decimal-dollar string.");
   }
+  if (spendCents < 1) {
+    throw invalidInput("spend_usd must be a positive decimal-dollar string.");
+  }
+  if (spendCents > MAX_TRADE_SPEND_CENTS) {
+    throw invalidInput("spend_usd exceeds the trade ceiling.");
+  }
+  return { quantity: undefined, spendCents };
 }
 
 function canonicalStrikeValue(market: PreviewMarketState, strikeIndex: number): string | null {
@@ -179,6 +183,11 @@ export function previewTrade(
   request: TradePreviewRequest,
   amount: RequestedAmount,
 ): TradePreview {
+  // Defense in depth: callers arrive via parseRequestedAmount, but a
+  // hand-built amount must not be able to skip the spend ceiling.
+  if (amount.spendCents !== undefined && amount.spendCents > MAX_TRADE_SPEND_CENTS) {
+    throw invalidInput("spend_usd exceeds the trade ceiling.");
+  }
   const strikeValue = canonicalStrikeValue(market, request.strike_index);
   assertFiniteVector(market.q, market.n_buckets, "Market state");
   assertFiniteVector(rawHoldings, market.n_buckets, "Holdings");

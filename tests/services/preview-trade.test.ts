@@ -1,8 +1,18 @@
 import { describe, expect, it } from "vitest";
 
+import {
+  VALUATION_BOUNDARIES_USD,
+  VALUATION_BUCKET_COUNT,
+} from "../../src/lib/engine/buckets.js";
 import { contractDelta, contractMask } from "../../src/lib/engine/contracts.js";
-import { quantizeBuyCostCents, tradeCost } from "../../src/lib/engine/lmsr.js";
-import { MAX_QUANTITY, MAX_TRADE_SPEND_CENTS } from "../../src/lib/engine/types.js";
+import {
+  probabilities,
+  quantizeBuyCostCents,
+  solveBuyQuantityForSpend,
+  tradeCost,
+} from "../../src/lib/engine/lmsr.js";
+import { impliedValuationMedian } from "../../src/lib/engine/median.js";
+import { EPS, MAX_QUANTITY, MAX_TRADE_SPEND_CENTS } from "../../src/lib/engine/types.js";
 import { parseRequestedAmount, previewTrade } from "../../src/lib/services/preview-trade.js";
 
 const BINARY_MARKET = {
@@ -66,6 +76,71 @@ describe("previewTrade", () => {
         details: { requested_quantity: 1, sellable_quantity: 0.5 },
       }),
     );
+  });
+
+  it("prices spend orders through the same solver as execution", () => {
+    const amount = parseRequestedAmount({ action: "buy", spend_usd: "25.00" });
+    const preview = previewTrade(
+      BINARY_MARKET,
+      [0, 0],
+      { action: "buy", side: "yes", strike_index: 0 },
+      amount,
+    );
+    const solved = solveBuyQuantityForSpend([0, 0], contractMask(2, 0, "yes"), 100, 2_500);
+    expect(preview.quantity).toBe(solved.quantity);
+    expect(preview.cashAmountCents).toBe(solved.cashAmountCents);
+    expect(preview.cashAmountCents).toBeLessThanOrEqual(2_500);
+  });
+
+  it("enforces the spend ceiling inside previewTrade itself", () => {
+    expect(() =>
+      previewTrade(
+        BINARY_MARKET,
+        [0, 0],
+        { action: "buy", side: "yes", strike_index: 0 },
+        { quantity: undefined, spendCents: MAX_TRADE_SPEND_CENTS + 1 },
+      ),
+    ).toThrowError(expect.objectContaining({ code: "INVALID_INPUT" }));
+  });
+
+  it("prices a valuation strike with its canonical value and median", () => {
+    const market = {
+      metric_kind: "valuation_median" as const,
+      bucket_grid_version: "valuation-v1",
+      n_buckets: VALUATION_BUCKET_COUNT,
+      b: 15_000,
+      q: new Array<number>(VALUATION_BUCKET_COUNT).fill(0),
+    };
+    const strikeIndex = 40;
+    const preview = previewTrade(
+      market,
+      new Array<number>(VALUATION_BUCKET_COUNT).fill(0),
+      { action: "buy", side: "yes", strike_index: strikeIndex },
+      parseRequestedAmount({ action: "buy", quantity: 5 }),
+    );
+    expect(preview.strikeValue).toBe(VALUATION_BOUNDARIES_USD[strikeIndex]!.toFixed(2));
+    expect(preview.metricAfter).toBeCloseTo(
+      impliedValuationMedian(probabilities(preview.qAfter, 15_000), VALUATION_BOUNDARIES_USD),
+    );
+  });
+
+  it("rejects a sell one EPS beyond sellable but allows half an EPS", () => {
+    const request = { action: "sell", side: "yes", strike_index: 0 } as const;
+    expect(() =>
+      previewTrade(
+        BINARY_MARKET,
+        [0, 0.5],
+        request,
+        parseRequestedAmount({ action: "sell", quantity: 0.5 + EPS }),
+      ),
+    ).toThrowError(expect.objectContaining({ code: "INSUFFICIENT_HOLDINGS" }));
+    const preview = previewTrade(
+      BINARY_MARKET,
+      [0, 0.5],
+      request,
+      parseRequestedAmount({ action: "sell", quantity: 0.5 + EPS / 2 }),
+    );
+    expect(preview.holdingsAfter[1]).toBe(0);
   });
 
   it("rejects a strike that is invalid for the market kind", () => {
