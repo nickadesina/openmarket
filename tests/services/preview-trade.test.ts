@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  VALUATION_BOUNDARIES_USD,
-  VALUATION_BUCKET_COUNT,
-} from "../../src/lib/engine/buckets.js";
+import { VALUATION_BOUNDARIES_USD, VALUATION_BUCKET_COUNT } from "../../src/lib/engine/buckets.js";
 import { contractDelta, contractMask } from "../../src/lib/engine/contracts.js";
 import {
   probabilities,
