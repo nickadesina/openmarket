@@ -122,7 +122,9 @@ export interface CommentRateLimitsTable {
 }
 
 export interface RateLimitsTable {
-  scope: Immutable<"admin_login" | "user_create" | "quote" | "trade">;
+  scope: Immutable<
+    "admin_login" | "user_create" | "quote" | "trade" | "tournament_register" | "tournament_login"
+  >;
   key: Immutable<string>;
   window_started_at: Date;
   request_count: number;
@@ -130,13 +132,23 @@ export interface RateLimitsTable {
 
 export type TournamentUnit = "USD_B" | "USD_T" | "bool";
 export type TournamentQuestionStatus = "draft" | "open" | "closed" | "resolved" | "voided";
-export type TournamentProvider = "x" | "dev";
+export type TournamentProvider = "x" | "dev" | "password";
 
 export interface TournamentUsersTable {
   id: GeneratedImmutable<string>;
   created_at: GeneratedImmutable<Date>;
   flagged: Generated<boolean>;
   flag_reason: string | null;
+  /** Self-reported (lab, school, firm); shown beside the name, never verified. */
+  affiliation: string | null;
+}
+
+export interface TournamentPasswordCredentialsTable {
+  user_id: Immutable<string>;
+  username_normalized: Immutable<string>;
+  password_hash: string;
+  created_at: GeneratedImmutable<Date>;
+  updated_at: Generated<Date>;
 }
 
 export interface TournamentIdentitiesTable {
@@ -287,6 +299,7 @@ export interface Database {
   tournament_aggregates: TournamentAggregatesTable;
   tournament_provenance_batches: TournamentProvenanceBatchesTable;
   tournament_provenance_leaves: TournamentProvenanceLeavesTable;
+  tournament_password_credentials: TournamentPasswordCredentialsTable;
 }
 
 export type CompanyRow = Selectable<CompaniesTable>;

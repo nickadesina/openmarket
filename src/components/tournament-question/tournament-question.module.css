@@ -169,28 +169,6 @@
   text-align: right;
 }
 
-.handle {
-  display: inline-flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  font-weight: 600;
-}
-
-.handle a:hover {
-  color: var(--color-primary);
-}
-
-.flag {
-  padding: 0 var(--space-1);
-  border: 1px solid var(--color-warning);
-  color: var(--color-warning);
-  font-family: var(--font-caps);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--caps-tracking);
-  text-transform: uppercase;
-}
-
 .source {
   display: grid;
   gap: var(--space-2);
@@ -298,7 +276,8 @@
 .editorTable tbody th {
   font-family: var(--font-num);
   font-weight: 700;
-  white-space: nowrap;
+  /* Range labels stay on one line; a long floor label wraps instead of widening the table. */
+  overflow-wrap: anywhere;
 }
 
 .floorRow th,
@@ -416,6 +395,11 @@
 
   .weightCell input[type="range"] {
     display: none;
+  }
+
+  .editorTable th,
+  .editorTable td {
+    padding: 0 var(--space-1);
   }
 
   .forecastList {

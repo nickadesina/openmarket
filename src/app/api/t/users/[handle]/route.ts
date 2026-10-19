@@ -16,7 +16,7 @@ export function GET(request: Request, routeContext: UserRouteContext): Promise<R
     async (context) => {
       assertOnlyQueryParameters(new URL(request.url).searchParams, []);
       const { handle } = await routeContext.params;
-      if (!/^[A-Za-z0-9_]{1,50}$/.test(handle)) {
+      if (!/^~?[A-Za-z0-9_]{1,50}$/.test(handle)) {
         throw new ServiceError("INVALID_INPUT", "Invalid handle.", { parameter: "handle" });
       }
       const profile = await getForecaster(context.db, handle);

@@ -2,7 +2,10 @@ import { createHash, randomBytes } from "node:crypto";
 
 import { z } from "zod";
 
+import { safeReturnPath } from "./return-path.js";
 import { getUserCookieSecret, signCookiePayload, verifyCookiePayload } from "./user-cookie.js";
+
+export { safeReturnPath };
 
 /**
  * X OAuth 2.0 Authorization Code with PKCE, user context. Read scopes only;
@@ -42,20 +45,6 @@ export function xClientConfig(environment: Environment = process.env): XClientCo
     clientSecret: secret === undefined || secret === "" ? null : secret,
     redirectUri,
   };
-}
-
-/** Only same-site tournament paths survive the round trip through X. */
-export function safeReturnPath(value: string | null | undefined): string {
-  if (
-    typeof value !== "string" ||
-    value.length > 512 ||
-    !/^\/t(?:[/?#]|$)/.test(value) ||
-    value.startsWith("//") ||
-    value.includes("\\")
-  ) {
-    return "/t";
-  }
-  return value;
 }
 
 interface OAuthState {

@@ -23,8 +23,9 @@ export const IMPLIED_EV_ARR = {
 type Environment = Readonly<Record<string, string | undefined>>;
 
 /**
- * Admins are an allowlist of identities: bare numeric X user ids, or
- * `dev:<id>` for development sign-ins. Comma or whitespace separated.
+ * Admins are an allowlist of identities: bare numeric X user ids,
+ * `password:<username>` for username accounts, or `dev:<id>` for
+ * development sign-ins. Comma or whitespace separated.
  */
 export function tournamentAdminIds(environment: Environment = process.env): ReadonlySet<string> {
   const raw = environment.TOURNAMENT_ADMIN_X_IDS ?? "";
@@ -36,7 +37,7 @@ export function tournamentAdminIds(environment: Environment = process.env): Read
   );
 }
 
-export function adminKey(provider: "x" | "dev", providerUserId: string): string {
+export function adminKey(provider: "x" | "dev" | "password", providerUserId: string): string {
   return provider === "x" ? providerUserId : `${provider}:${providerUserId}`;
 }
 

@@ -7,7 +7,7 @@ import { canonicalProbs } from "../../engine/tournament/forecast.js";
 import { explorerUrl, memoStatus, postMemo, type SolanaConfig } from "../../solana/memo.js";
 import { identitiesFor } from "./identities.js";
 import { buildMerkleTree, merkleRootFromPath } from "./merkle.js";
-import { toNumbers } from "./records.js";
+import { type PublicIdentity, toNumbers } from "./records.js";
 import { forecastEventHash } from "./submit-forecast.js";
 
 /** An hour is batched only once it has been over this long, so late commits land first. */
@@ -171,7 +171,7 @@ export interface ProvenanceProof {
     readonly questionSlug: string;
     readonly questionTitle: string;
     readonly userId: string;
-    readonly handle: string | null;
+    readonly forecaster: PublicIdentity | null;
     readonly submittedAt: string;
     /** The vector exactly as hashed: fixed-precision decimals joined by commas. */
     readonly probsCanonical: string;
@@ -236,7 +236,7 @@ export async function getProvenanceProof(
       questionSlug: event.slug,
       questionTitle: event.title,
       userId: event.user_id,
-      handle: identity?.handle ?? null,
+      forecaster: identity ?? null,
       submittedAt: event.submitted_at.toISOString(),
       probsCanonical: canonicalProbs(probs),
       eventHash: event.event_hash,

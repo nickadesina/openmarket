@@ -38,6 +38,8 @@ const SERVICE_ERROR_STATUS: Readonly<Record<ErrorCode, number>> = {
   FORECASTER_NOT_FOUND: 404,
   SIGN_IN_UNAVAILABLE: 503,
   FORECAST_NOT_FOUND: 404,
+  USERNAME_TAKEN: 409,
+  SIGN_IN_FAILED: 401,
 };
 
 function jsonBody(value: unknown): string {

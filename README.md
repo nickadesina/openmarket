@@ -182,10 +182,23 @@ LMSR, or tokens. Paper accounts and tournament identities never mix.
 
 - Identity: X OAuth 2.0 with PKCE (`users.read tweet.read`, no write
   scopes, no `offline.access`; the token is dropped after the profile
-  fetch). The numeric X id is the identity; handle, name, avatar,
-  `verified`, and account creation date are refreshed on every sign-in.
-  Sessions are server-side rows keyed by the SHA-256 of an opaque cookie
-  token, 30-day sliding expiry. Admin is an allowlist of X ids.
+  fetch), or a username and password (scrypt, the admin passphrase's
+  format; no email, no recovery). The numeric X id is an X account's
+  identity; handle, name, avatar, `verified`, and account creation date
+  are refreshed on every sign-in. Usernames live in their own namespace:
+  shown without an "@", never linked to X, at `/t/u/~username`, so a
+  username can never pass for an X handle. Username accounts have no
+  external account age, so `min_account_age_days` applies to X accounts
+  only. Registration is limited per network (5 an hour); failed sign-ins
+  per network and per username (10 per 15 minutes). Sessions are
+  server-side rows keyed by the SHA-256 of an opaque cookie token,
+  30-day sliding expiry. Admin is an allowlist (`TOURNAMENT_ADMIN_X_IDS`:
+  X ids, or `password:<username>`).
+- Affiliation: any forecaster may state one (lab, school, firm; up to 60
+  characters, free text with a suggested list in
+  `src/lib/config/tournament-affiliations.ts`). It is self-reported,
+  never verified, shown in gray beside the name everywhere, and an admin
+  can override or clear it.
 - Questions: a discrete distribution over buckets that tile the line
   (lower inclusive, upper exclusive) plus one floor bucket ("nothing by
   expiry") on numeric ladders; binaries are Yes/No. Drafts are editable;
@@ -217,18 +230,20 @@ LMSR, or tokens. Paper accounts and tournament identities never mix.
   being superseded. `npm run verify:replay` also recomputes every stored
   score and every open question's live aggregate from the event log.
 
-Pages: `/t` (questions and implied EV/ARR), `/t/q/[slug]`,
+Pages: `/t` (questions and implied EV/ARR), `/t/signin`, `/t/q/[slug]`,
 `/t/u/[handle]`, `/t/leaderboard`, `/t/admin`. Public JSON, cacheable
 for 10 seconds: `GET /api/t/questions`, `/api/t/questions/[slug]`,
 `/api/t/questions/[slug]/forecasts`,
 `/api/t/questions/[slug]/aggregate/history`,
 `/api/t/leaderboard?period=all|YYYY-MM`, `/api/t/users/[handle]`,
 `/api/t/derived`. Session: `GET /api/t/me`,
-`POST /api/t/questions/[slug]/forecasts`, `POST /api/t/auth/logout`;
+`POST /api/t/questions/[slug]/forecasts`, `POST /api/t/me/affiliation`,
+`POST /api/t/auth/logout`; username accounts:
+`POST /api/t/auth/password/register` and `/login`;
 X sign-in starts at `GET /api/t/auth/x/start?return=/t/...`. Admin:
 `POST /api/t/admin/questions` (save draft), and
 `/api/t/admin/questions/[slug]/{open,close,resolve,void,notes}`,
-`/api/t/admin/users/flag`.
+`/api/t/admin/users/flag`, `/api/t/admin/users/affiliation`.
 
 Provenance (phase 2): an hourly job commits each completed hour's event
 hashes to one SHA-256 Merkle root (leaf = sha256(0x00 ‖ event_hash),
@@ -243,8 +258,8 @@ transaction, and re-verifies the hash chain in the visitor's browser.
 Leaves are append-only and batch commitments immutable; `verify:replay`
 rebuilds every root.
 
-Not built yet: CSV export, track-record weighting, a second identity
-provider, prize payment (off-platform by design).
+Not built yet: CSV export, track-record weighting, password change and
+recovery, prize payment (off-platform by design).
 
 ## 3. Non-goals for v0
 
@@ -312,7 +327,8 @@ npm run dev              # http://localhost:3000, never 127.0.0.1
   overrides the public endpoint. Without the key, roots are committed
   and shown but not posted; posting resumes from the oldest pending hour
   once it is set. Fund the wallet with fee SOL only. Apply migration
-  `005_tournament_provenance` before serving this version.
+  `005_tournament_provenance` before serving this version, and
+  `006_tournament_accounts` for affiliations and username accounts.
 
 ## 5. CI and deployment
 

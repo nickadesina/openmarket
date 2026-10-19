@@ -363,7 +363,7 @@ function FlagForm() {
         flag.mutate({ handle, flagged, ...(flagged ? { reason } : {}) });
       }}
     >
-      <Field label="X handle">
+      <Field label="Handle (X handle, or ~username for a username account)">
         <input value={handle} required onChange={(event) => setHandle(event.target.value)} />
       </Field>
       <Field label="Action">
@@ -384,6 +384,36 @@ function FlagForm() {
         Apply
       </button>
       <Outcome mutation={flag} />
+    </form>
+  );
+}
+
+function AffiliationOverrideForm() {
+  const [handle, setHandle] = useState("");
+  const [affiliation, setAffiliation] = useState("");
+  const update = useAdminAction<Record<string, unknown>>("/api/t/admin/users/affiliation");
+  return (
+    <form
+      className={styles.form}
+      onSubmit={(event) => {
+        event.preventDefault();
+        update.mutate({ handle, affiliation: affiliation.trim() === "" ? null : affiliation });
+      }}
+    >
+      <Field label="Handle (X handle, or ~username for a username account)">
+        <input value={handle} required onChange={(event) => setHandle(event.target.value)} />
+      </Field>
+      <Field label="Affiliation (blank clears it)">
+        <input
+          value={affiliation}
+          maxLength={60}
+          onChange={(event) => setAffiliation(event.target.value)}
+        />
+      </Field>
+      <button className={styles.inkButton} type="submit" disabled={update.isPending}>
+        Set affiliation
+      </button>
+      <Outcome mutation={update} />
     </form>
   );
 }
@@ -447,6 +477,12 @@ export function TournamentAdmin() {
           Flag an account
         </h2>
         <FlagForm />
+      </section>
+      <section className={styles.module} aria-labelledby="admin-affiliation">
+        <h2 className={styles.tab} id="admin-affiliation">
+          Override an affiliation
+        </h2>
+        <AffiliationOverrideForm />
       </section>
     </div>
   );

@@ -22,6 +22,16 @@ const markdownSchema = (maximum: number) =>
     .max(maximum)
     .refine((value) => !value.includes("\0"));
 const handleSchema = z.string().regex(/^[A-Za-z0-9_]{1,50}$/);
+/** A profile slug: an X handle, or `~username` for a password account. */
+const profileSlugSchema = z.string().regex(/^~?[A-Za-z0-9_]{1,50}$/);
+/** Trimmed, 1–60 characters, printable; empty or null clears it. */
+const affiliationSchema = z
+  .string()
+  .trim()
+  .max(60)
+  .refine((value) => !/[\p{Cc}\p{Cf}]/u.test(value), "Affiliation has invalid characters")
+  .transform((value) => (value.length === 0 ? null : value))
+  .nullable();
 
 /** Up to 64 buckets; every entry a finite non-negative number. */
 export const forecastInputSchema = z
@@ -99,7 +109,7 @@ export const resolutionNoteSchema = z.object({ note_md: markdownSchema(10_000) }
 
 export const flagUserSchema = z
   .object({
-    handle: handleSchema,
+    handle: profileSlugSchema,
     flagged: z.boolean(),
     reason: z.string().trim().min(1).max(500).optional(),
   })
@@ -111,6 +121,29 @@ export const flagUserSchema = z
 
 export const devSignInSchema = z.object({ handle: handleSchema }).strict();
 
+export const affiliationInputSchema = z.object({ affiliation: affiliationSchema }).strict();
+
+export const adminAffiliationSchema = z
+  .object({ handle: profileSlugSchema, affiliation: affiliationSchema })
+  .strict();
+
+export const PASSWORD_MIN_LENGTH = 10;
+export const PASSWORD_MAX_LENGTH = 200;
+
+export const passwordAccountSchema = z
+  .object({
+    username: z.string().regex(/^[A-Za-z0-9_]{3,20}$/),
+    password: z.string().min(PASSWORD_MIN_LENGTH).max(PASSWORD_MAX_LENGTH),
+  })
+  .strict();
+
+export const passwordSignInSchema = z
+  .object({
+    username: z.string().min(1).max(20),
+    password: z.string().min(1).max(PASSWORD_MAX_LENGTH),
+  })
+  .strict();
+
 export type ForecastInput = z.infer<typeof forecastInputSchema>;
 export type QuestionInput = z.infer<typeof questionInputSchema>;
 export type CloseQuestionInput = z.infer<typeof closeQuestionSchema>;
@@ -118,3 +151,6 @@ export type ResolveQuestionInput = z.infer<typeof resolveQuestionSchema>;
 export type VoidQuestionInput = z.infer<typeof voidQuestionSchema>;
 export type ResolutionNoteInput = z.infer<typeof resolutionNoteSchema>;
 export type FlagUserInput = z.infer<typeof flagUserSchema>;
+export type AdminAffiliationInput = z.infer<typeof adminAffiliationSchema>;
+export type PasswordAccountInput = z.infer<typeof passwordAccountSchema>;
+export type PasswordSignInInput = z.infer<typeof passwordSignInSchema>;

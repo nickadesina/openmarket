@@ -8,7 +8,7 @@ import { queryKeys } from "./query-keys.js";
 export interface ViewerResponse {
   readonly viewer: Viewer | null;
   readonly isAdmin: boolean;
-  readonly signIn: { readonly x: boolean; readonly dev: boolean };
+  readonly signIn: { readonly x: boolean; readonly password: boolean; readonly dev: boolean };
 }
 
 /** The signed-in tournament viewer; shared by the header, the submit widget, and admin. */
@@ -37,4 +37,14 @@ export function useNow(intervalMs = 60_000): number | null {
     return () => window.clearInterval(timer);
   }, [intervalMs]);
   return now;
+}
+
+/** The tournament's own sign-in page, returning to `returnTo` afterwards. */
+export function signInHref(returnTo: string): string {
+  return `/t/signin?return=${encodeURIComponent(returnTo)}`;
+}
+
+/** A forecaster's profile page; password accounts live under `~`. */
+export function forecasterHref(identity: { readonly profileSlug: string }): string {
+  return `/t/u/${identity.profileSlug}`;
 }

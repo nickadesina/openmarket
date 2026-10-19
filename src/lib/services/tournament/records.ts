@@ -4,6 +4,7 @@ import { ServiceError } from "../../api/errors.js";
 import type {
   Database,
   TournamentAggregatesTable,
+  TournamentProvider,
   TournamentQuestionStatus,
   TournamentQuestionsTable,
   TournamentUnit,
@@ -186,7 +187,13 @@ export async function latestAggregateRow(
 }
 
 export interface PublicIdentity {
+  /** X handle, or the username of a password account; the two never share a profile URL. */
   readonly handle: string;
+  readonly provider: TournamentProvider;
+  /** The `/t/u/[slug]` segment: the X handle, or `~username` for a password account. */
+  readonly profileSlug: string;
+  /** Self-reported; null when none is stated. */
+  readonly affiliation: string | null;
   readonly displayName: string;
   readonly avatarUrl: string | null;
   readonly verified: boolean;

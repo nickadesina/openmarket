@@ -6,7 +6,13 @@ import { ServiceError } from "../api/errors.js";
 import type { Database } from "../db/schema.js";
 import { trustedClientAddress } from "../security/comment-address.js";
 
-export type RateLimitScope = "admin_login" | "user_create" | "quote" | "trade";
+export type RateLimitScope =
+  | "admin_login"
+  | "user_create"
+  | "quote"
+  | "trade"
+  | "tournament_register"
+  | "tournament_login";
 
 export interface RateLimitPolicy {
   readonly limit: number;
@@ -20,6 +26,10 @@ export const RATE_LIMIT_POLICIES: Readonly<Record<RateLimitScope, RateLimitPolic
   user_create: { limit: 20, windowMs: 60_000 },
   quote: { limit: 120, windowMs: 60_000 },
   trade: { limit: 30, windowMs: 60_000 },
+  // Tournament password accounts: new accounts per network, and failed
+  // sign-ins only (per network and per username), like the admin login.
+  tournament_register: { limit: 5, windowMs: 60 * 60_000 },
+  tournament_login: { limit: 10, windowMs: 15 * 60_000 },
 };
 
 /** Per-network ceilings consumed alongside the per-user policy, so minting

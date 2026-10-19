@@ -15,7 +15,7 @@ interface ForecasterRouteProps {
 }
 
 async function loadProfile(handle: string): Promise<ForecasterProfile | null> {
-  if (!/^[A-Za-z0-9_]{1,50}$/.test(handle)) return null;
+  if (!/^~?[A-Za-z0-9_]{1,50}$/.test(handle)) return null;
   try {
     return await getForecaster(getRuntimeDatabase(), handle);
   } catch {

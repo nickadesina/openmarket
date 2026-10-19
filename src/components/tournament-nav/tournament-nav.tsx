@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { apiRequest } from "../../lib/client/api.js";
-import { useTournamentViewer } from "../../lib/client/tournament.js";
+import { forecasterHref, useTournamentViewer } from "../../lib/client/tournament.js";
 import { DevSignIn } from "./tournament-account.js";
 import styles from "./tournament-nav.module.css";
 
@@ -28,10 +28,11 @@ export function TournamentNav() {
     ...(viewer.data?.viewer != null
       ? [
           {
-            href: `/t/u/${viewer.data.viewer.identity.handle}`,
+            href: forecasterHref(viewer.data.viewer.identity),
             label: "My forecasts",
             current:
-              pathname.toLowerCase() === `/t/u/${viewer.data.viewer.identity.handle.toLowerCase()}`,
+              decodeURIComponent(pathname).toLowerCase() ===
+              forecasterHref(viewer.data.viewer.identity).toLowerCase(),
           },
         ]
       : []),

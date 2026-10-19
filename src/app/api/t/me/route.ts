@@ -16,7 +16,7 @@ export const runtime = "nodejs";
 export function GET(request: Request): Promise<Response> {
   return withReadRoute(request, async (context) => {
     assertOnlyQueryParameters(new URL(request.url).searchParams, []);
-    const signIn = { x: xClientConfig() !== null, dev: devSignInEnabled() };
+    const signIn = { x: xClientConfig() !== null, password: true, dev: devSignInEnabled() };
     const session = await resolveTournamentSession(context.db, request);
     const viewer = session === null ? null : await getViewer(context.db, session.userId);
     const isAdmin = session === null ? false : await isTournamentAdmin(context.db, session.userId);

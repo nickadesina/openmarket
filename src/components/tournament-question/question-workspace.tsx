@@ -6,6 +6,7 @@ import Link from "next/link";
 import { apiRequest } from "../../lib/client/api.js";
 import {
   formatCoverage,
+  formatForecasterName,
   formatProbability,
   formatScore,
   formatTimeUntil,
@@ -24,6 +25,7 @@ import type {
 } from "../../lib/services/tournament/get-question.js";
 import type { AggregateView } from "../../lib/services/tournament/records.js";
 import { TournamentDistribution } from "../tournament-distribution/tournament-distribution.js";
+import { ForecasterName } from "../tournament-forecaster-name/forecaster-name.js";
 import { Markdown } from "../tournament-markdown/markdown.js";
 import { ForecastEditor } from "./forecast-editor.js";
 import styles from "./tournament-question.module.css";
@@ -221,10 +223,10 @@ function ResolutionModule({
           </thead>
           <tbody>
             {resolution.topForecasters.map((entry, index) => (
-              <tr key={entry.handle}>
+              <tr key={entry.profileSlug}>
                 <td className={styles.figureCell}>{index + 1}</td>
                 <td>
-                  <HandleLink handle={entry.handle} flagged={entry.flagged} />
+                  <ForecasterName identity={entry} />
                 </td>
                 <td className={styles.figureCell}>{formatScore(entry.timeAvgLogScore)}</td>
                 <td className={styles.figureCell}>{formatScore(entry.finalLogScore)}</td>
@@ -235,25 +237,6 @@ function ResolutionModule({
         </table>
       )}
     </div>
-  );
-}
-
-export function HandleLink({
-  handle,
-  flagged,
-}: {
-  readonly handle: string;
-  readonly flagged: boolean;
-}) {
-  return (
-    <span className={styles.handle}>
-      <Link href={`/t/u/${handle}`}>@{handle}</Link>
-      {flagged ? (
-        <span className={styles.flag} title="Flagged: excluded from the crowd aggregate">
-          Flagged
-        </span>
-      ) : null}
-    </span>
   );
 }
 
@@ -305,16 +288,16 @@ function ForecastsTable({
   return (
     <ul className={styles.forecastList}>
       {forecasts.map((forecast) => (
-        <li key={forecast.handle}>
+        <li key={forecast.profileSlug}>
           <div className={styles.forecastMeta}>
-            <HandleLink handle={forecast.handle} flagged={forecast.flagged} />
+            <ForecasterName identity={forecast} />
             <span className={styles.muted}>
               {formatTournamentDateTime(forecast.submittedAt)} · {forecast.submissionCount}{" "}
               submission{forecast.submissionCount === 1 ? "" : "s"} ·{" "}
               <Link
                 className={styles.proofLink}
                 href={`/t/provenance/${forecast.eventId}`}
-                aria-label={`Timestamp proof for @${forecast.handle}'s forecast`}
+                aria-label={`Timestamp proof for ${formatForecasterName(forecast)}'s forecast`}
               >
                 Proof
               </Link>
@@ -324,7 +307,7 @@ function ForecastsTable({
             compact
             buckets={question.buckets}
             unit={question.unit}
-            primary={{ label: `@${forecast.handle}`, probs: forecast.probs }}
+            primary={{ label: formatForecasterName(forecast), probs: forecast.probs }}
             summary={forecast.probs
               .map(
                 (probability, index) =>

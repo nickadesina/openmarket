@@ -6,6 +6,7 @@ import Link from "next/link";
 import { apiRequest } from "../../lib/client/api.js";
 import {
   formatCoverage,
+  formatForecasterName,
   formatProbability,
   formatScore,
   formatTournamentDateTime,
@@ -13,8 +14,10 @@ import {
   formatTournamentValue,
 } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
+import { useTournamentViewer } from "../../lib/client/tournament.js";
 import type { ForecasterProfile, OpenPosition } from "../../lib/services/tournament/forecaster.js";
 import { TournamentDistribution } from "../tournament-distribution/tournament-distribution.js";
+import { AffiliationEditor } from "./affiliation-editor.js";
 import styles from "./forecaster-page.module.css";
 
 function positionHeadline(position: OpenPosition): string {
@@ -33,10 +36,10 @@ function crowdHeadline(position: OpenPosition): string {
 
 function OpenPositionRow({
   position,
-  handle,
+  name,
 }: {
   readonly position: OpenPosition;
-  readonly handle: string;
+  readonly name: string;
 }) {
   const crowd = position.aggregate?.published === true ? position.aggregate.probs : null;
   return (
@@ -49,7 +52,7 @@ function OpenPositionRow({
       </div>
       <dl className={styles.figures}>
         <div>
-          <dt>@{handle}</dt>
+          <dt>{name}</dt>
           <dd className={styles.own}>{positionHeadline(position)}</dd>
         </div>
         <div>
@@ -66,11 +69,9 @@ function OpenPositionRow({
         buckets={position.buckets}
         unit={position.unit}
         primary={
-          crowd === null
-            ? { label: `@${handle}`, probs: position.probs }
-            : { label: "Crowd", probs: crowd }
+          crowd === null ? { label: name, probs: position.probs } : { label: "Crowd", probs: crowd }
         }
-        overlay={crowd === null ? null : { label: `@${handle}`, probs: position.probs }}
+        overlay={crowd === null ? null : { label: name, probs: position.probs }}
         summary={`Updated ${formatTournamentDateTime(position.lastUpdatedAt)}. ${position.buckets
           .map(
             (bucket) => `${bucket.label} ${formatProbability(position.probs[bucket.index] ?? 0)}`,
@@ -88,6 +89,7 @@ export function ForecasterPage({
   readonly handle: string;
   readonly initialProfile: ForecasterProfile | null;
 }) {
+  const viewer = useTournamentViewer();
   const profileQuery = useQuery({
     queryKey: queryKeys.tournamentForecaster(handle),
     queryFn: () => apiRequest<ForecasterProfile>(`/api/t/users/${encodeURIComponent(handle)}`),
@@ -101,8 +103,8 @@ export function ForecasterPage({
   if (profileQuery.isError) {
     return (
       <div className={styles.statePanel} role="alert">
-        <strong>No forecaster @{handle}.</strong>
-        <p>Profiles appear once someone signs in with X and submits a forecast.</p>
+        <strong>No forecaster {handle}.</strong>
+        <p>Profiles appear once someone signs in and submits a forecast.</p>
         <Link className={styles.backLink} href="/t/leaderboard">
           Leaderboard
         </Link>
@@ -112,6 +114,8 @@ export function ForecasterPage({
 
   const profile = profileQuery.data;
   const { identity } = profile;
+  const name = formatForecasterName(identity);
+  const ownProfile = viewer.data?.viewer?.identity.profileSlug === identity.profileSlug;
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -120,13 +124,29 @@ export function ForecasterPage({
           <img className={styles.avatar} src={identity.avatarUrl} alt="" width={48} height={48} />
         )}
         <div>
-          <h1>
-            <a href={`https://x.com/${identity.handle}`} target="_blank" rel="noopener noreferrer">
-              @{identity.handle}
-            </a>
-          </h1>
+          <div className={styles.nameRow}>
+            <h1>
+              {identity.provider === "x" ? (
+                <a
+                  href={`https://x.com/${identity.handle}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {name}
+                </a>
+              ) : (
+                name
+              )}
+            </h1>
+            {identity.affiliation === null ? null : (
+              <span className={styles.affiliation} title="Self-reported affiliation">
+                {identity.affiliation}
+              </span>
+            )}
+          </div>
           <p className={styles.headerMeta}>
-            <span>{identity.displayName}</span>
+            {identity.displayName === identity.handle ? null : <span>{identity.displayName}</span>}
+            {identity.provider === "password" ? <span>Username account</span> : null}
             {identity.verified ? <span>Verified on X</span> : null}
             {identity.flagged ? (
               <span className={styles.flag}>Flagged: excluded from the crowd</span>
@@ -139,6 +159,8 @@ export function ForecasterPage({
         </dl>
       </header>
 
+      {ownProfile ? <AffiliationEditor current={identity.affiliation} /> : null}
+
       <section className={styles.section} aria-labelledby="open-title">
         <h2 className={styles.tab} id="open-title">
           Open positions
@@ -148,7 +170,7 @@ export function ForecasterPage({
         ) : (
           <ul className={styles.positions}>
             {profile.open.map((position) => (
-              <OpenPositionRow key={position.slug} position={position} handle={identity.handle} />
+              <OpenPositionRow key={position.slug} position={position} name={name} />
             ))}
           </ul>
         )}

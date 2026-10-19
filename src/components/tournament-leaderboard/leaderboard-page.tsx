@@ -8,6 +8,7 @@ import { apiRequest } from "../../lib/client/api.js";
 import { formatCoverage, formatScore, formatTournamentPeriod } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
 import type { Leaderboard } from "../../lib/services/tournament/leaderboard.js";
+import { ForecasterName } from "../tournament-forecaster-name/forecaster-name.js";
 import styles from "./leaderboard-page.module.css";
 
 export function LeaderboardPage({
@@ -108,7 +109,7 @@ export function LeaderboardPage({
           </thead>
           <tbody>
             {leaderboardQuery.data.entries.map((entry) => (
-              <tr key={entry.handle}>
+              <tr key={entry.profileSlug}>
                 <td className={styles.rank}>{entry.rank}</td>
                 <td>
                   <span className={styles.forecaster}>
@@ -124,17 +125,7 @@ export function LeaderboardPage({
                         height={28}
                       />
                     )}
-                    <Link href={`/t/u/${entry.handle}`}>@{entry.handle}</Link>
-                    <a
-                      className={styles.xLink}
-                      href={`https://x.com/${entry.handle}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`@${entry.handle} on X`}
-                    >
-                      X
-                    </a>
-                    {entry.flagged ? <span className={styles.flag}>Flagged</span> : null}
+                    <ForecasterName identity={entry} xLink />
                   </span>
                 </td>
                 <td className={styles.score}>{formatScore(entry.totalScore)}</td>

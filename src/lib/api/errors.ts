@@ -19,6 +19,8 @@ export const ERROR_CODES = [
   "FORECASTER_NOT_FOUND",
   "SIGN_IN_UNAVAILABLE",
   "FORECAST_NOT_FOUND",
+  "USERNAME_TAKEN",
+  "SIGN_IN_FAILED",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

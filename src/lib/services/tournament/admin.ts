@@ -23,6 +23,7 @@ import {
   numericBuckets,
 } from "../../engine/tournament/buckets.js";
 import { recomputeAggregate } from "./aggregate.js";
+import { userIdForHandle } from "./identities.js";
 import {
   databaseNow,
   effectiveStatus,
@@ -401,16 +402,11 @@ export async function setUserFlag(
   input: FlagUserInput,
 ): Promise<{ readonly handle: string; readonly flagged: boolean; readonly recomputed: number }> {
   return db.transaction().execute(async (transaction) => {
-    const identity = await transaction
-      .selectFrom("tournament_identities")
-      .select(["user_id", "handle"])
-      .where("handle_normalized", "=", input.handle.toLowerCase())
-      .orderBy("last_login_at", "desc")
-      .limit(1)
-      .executeTakeFirst();
-    if (identity === undefined) {
+    const userId = await userIdForHandle(transaction, input.handle);
+    if (userId === undefined) {
       throw new ServiceError("FORECASTER_NOT_FOUND", "No forecaster has that handle.");
     }
+    const identity = { user_id: userId, handle: input.handle };
     await transaction
       .updateTable("tournament_users")
       .set({ flagged: input.flagged, flag_reason: input.flagged ? input.reason! : null })

@@ -205,6 +205,9 @@ postgresDescribe(suiteName, () => {
     });
     expect(proof.status).toBe(200);
     expect(proof.headers.get("cache-control")).toContain("max-age=10");
-    expect(await proof.json()).toMatchObject({ pathMatches: true, event: { handle: "Prover" } });
+    expect(await proof.json()).toMatchObject({
+      pathMatches: true,
+      event: { forecaster: { handle: "Prover", profileSlug: "Prover" } },
+    });
   });
 });

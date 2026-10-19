@@ -6,8 +6,8 @@ import { usePathname } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { apiRequest } from "../../lib/client/api.js";
-import { errorMessage } from "../../lib/client/format.js";
-import { useTournamentViewer, xSignInHref } from "../../lib/client/tournament.js";
+import { errorMessage, formatForecasterName } from "../../lib/client/format.js";
+import { forecasterHref, signInHref, useTournamentViewer } from "../../lib/client/tournament.js";
 import { UserIcon } from "../icons/icons.js";
 import styles from "./tournament-nav.module.css";
 
@@ -72,11 +72,11 @@ export function TournamentAccount() {
       <div className={styles.account}>
         <Link
           className={styles.accountHandle}
-          href={`/t/u/${viewer.identity.handle}`}
-          aria-label={`@${viewer.identity.handle}, your forecasts`}
+          href={forecasterHref(viewer.identity)}
+          aria-label={`${formatForecasterName(viewer.identity)}, your forecasts`}
         >
           <UserIcon />
-          <span className={styles.wideOnly}>@{viewer.identity.handle}</span>
+          <span className={styles.wideOnly}>{formatForecasterName(viewer.identity)}</span>
         </Link>
         <button
           className={`${styles.accountButton} ${styles.wideOnly}`}
@@ -92,19 +92,15 @@ export function TournamentAccount() {
 
   return (
     <div className={styles.account}>
-      {data?.signIn.x === true ? (
-        <a className={styles.signInButton} href={xSignInHref(pathname)} aria-label="Sign in with X">
-          <span className={styles.wideOnly}>Sign in with X</span>
-          <span className={styles.narrowOnly}>Sign in</span>
-        </a>
-      ) : null}
+      {pathname === "/t/signin" ? null : (
+        <Link className={styles.signInButton} href={signInHref(pathname)}>
+          Sign in
+        </Link>
+      )}
       {data?.signIn.dev === true ? (
         <span className={styles.wideOnly}>
           <DevSignIn />
         </span>
-      ) : null}
-      {data !== undefined && !data.signIn.x && !data.signIn.dev ? (
-        <span className={styles.accountMuted}>X sign-in is not configured</span>
       ) : null}
     </div>
   );

@@ -219,3 +219,11 @@ export function formatTimeUntil(target: string, now: number): string {
   if (hours < 48) return `in ${hours} h`;
   return `in ${Math.floor(hours / 24)} days`;
 }
+
+/** "@handle" for an X account; a password account's username carries no "@", so it never reads as one. */
+export function formatForecasterName(identity: {
+  readonly handle: string;
+  readonly provider: "x" | "dev" | "password";
+}): string {
+  return identity.provider === "password" ? identity.handle : `@${identity.handle}`;
+}

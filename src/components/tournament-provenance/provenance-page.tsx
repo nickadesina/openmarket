@@ -8,6 +8,7 @@ import { formatTournamentDateTime } from "../../lib/client/format.js";
 import { verifyProofInBrowser } from "../../lib/client/provenance.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
 import type { ProvenanceProof } from "../../lib/services/tournament/provenance.js";
+import { ForecasterName } from "../tournament-forecaster-name/forecaster-name.js";
 import styles from "./provenance-page.module.css";
 
 function Check({ ok }: { readonly ok: boolean | null | undefined }) {
@@ -66,8 +67,15 @@ export function ProvenancePage({
       <header className={styles.header}>
         <h1>Timestamp proof</h1>
         <p>
-          {event.handle === null ? "A forecast" : `@${event.handle}'s forecast`} on{" "}
-          <Link href={`/t/q/${event.questionSlug}`}>{event.questionTitle}</Link>, submitted{" "}
+          {event.forecaster === null ? (
+            "A forecast"
+          ) : (
+            <>
+              <ForecasterName identity={event.forecaster} />
+              's forecast
+            </>
+          )}{" "}
+          on <Link href={`/t/q/${event.questionSlug}`}>{event.questionTitle}</Link>, submitted{" "}
           {formatTournamentDateTime(event.submittedAt)}.
         </p>
       </header>

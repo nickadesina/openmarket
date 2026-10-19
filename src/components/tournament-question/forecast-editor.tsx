@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useId, useState } from "react";
 
@@ -11,7 +12,7 @@ import {
   formatScore,
   formatTournamentDateTime,
 } from "../../lib/client/format.js";
-import { useTournamentViewer, xSignInHref } from "../../lib/client/tournament.js";
+import { signInHref, useTournamentViewer } from "../../lib/client/tournament.js";
 import { pointLogScore } from "../../lib/engine/tournament/score.js";
 import type { QuestionDetail } from "../../lib/services/tournament/get-question.js";
 import type { StoredForecast } from "../../lib/services/tournament/submit-forecast.js";
@@ -72,24 +73,15 @@ export function ForecastEditor({ question }: { readonly question: QuestionDetail
   }
 
   if (viewer === null) {
-    const signIn = viewerQuery.data?.signIn;
     return (
       <div className={styles.signInPanel}>
         <p>
-          <strong>Sign in with X to forecast.</strong> Your X account is your identity on the
-          leaderboard; only its public profile is stored.
+          <strong>Sign in to forecast.</strong> Use your X account, or a username and password; your
+          name is how the leaderboard shows you.
         </p>
-        {signIn?.x === true ? (
-          <a className={styles.primaryButton} href={xSignInHref(pathname)}>
-            Sign in with X
-          </a>
-        ) : (
-          <p className={styles.muted}>
-            {signIn?.dev === true
-              ? "Use the development sign-in in the header."
-              : "X sign-in is not configured on this deployment."}
-          </p>
-        )}
+        <Link className={styles.primaryButton} href={signInHref(pathname)}>
+          Sign in
+        </Link>
       </div>
     );
   }
