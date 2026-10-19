@@ -30,7 +30,8 @@
     "seed:production": "tsx scripts/production-seed.ts",
     "seed:dev": "tsx scripts/seed-dev.ts",
     "reseed:dev": "tsx scripts/reseed-dev.ts",
-    "seed:tournament": "tsx scripts/seed-tournament.ts"
+    "seed:tournament": "tsx scripts/seed-tournament.ts",
+    "provenance:batch": "tsx scripts/provenance-batch.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.11",

@@ -310,7 +310,14 @@ function ForecastsTable({
             <HandleLink handle={forecast.handle} flagged={forecast.flagged} />
             <span className={styles.muted}>
               {formatTournamentDateTime(forecast.submittedAt)} · {forecast.submissionCount}{" "}
-              submission{forecast.submissionCount === 1 ? "" : "s"}
+              submission{forecast.submissionCount === 1 ? "" : "s"} ·{" "}
+              <Link
+                className={styles.proofLink}
+                href={`/t/provenance/${forecast.eventId}`}
+                aria-label={`Timestamp proof for @${forecast.handle}'s forecast`}
+              >
+                Proof
+              </Link>
             </span>
           </div>
           <TournamentDistribution

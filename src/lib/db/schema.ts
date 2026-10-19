@@ -245,6 +245,25 @@ export interface TournamentAggregatesTable {
   weighting_version: Immutable<string>;
 }
 
+export interface TournamentProvenanceBatchesTable {
+  id: GeneratedImmutable<string>;
+  hour_start: Immutable<Date>;
+  root: Immutable<string>;
+  leaf_count: Immutable<number>;
+  memo: Immutable<string>;
+  tx_signature: string | null;
+  posted_at: Date | null;
+  confirmed_at: Date | null;
+  created_at: GeneratedImmutable<Date>;
+}
+
+export interface TournamentProvenanceLeavesTable {
+  event_id: Immutable<string>;
+  batch_id: Immutable<string>;
+  leaf_index: Immutable<number>;
+  path: Immutable<string[]>;
+}
+
 export interface Database {
   companies: CompaniesTable;
   markets: MarketsTable;
@@ -266,6 +285,8 @@ export interface Database {
   tournament_resolution_notes: TournamentResolutionNotesTable;
   tournament_scores: TournamentScoresTable;
   tournament_aggregates: TournamentAggregatesTable;
+  tournament_provenance_batches: TournamentProvenanceBatchesTable;
+  tournament_provenance_leaves: TournamentProvenanceLeavesTable;
 }
 
 export type CompanyRow = Selectable<CompaniesTable>;

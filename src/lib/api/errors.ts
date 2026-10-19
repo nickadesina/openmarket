@@ -18,6 +18,7 @@ export const ERROR_CODES = [
   "ACCOUNT_TOO_NEW",
   "FORECASTER_NOT_FOUND",
   "SIGN_IN_UNAVAILABLE",
+  "FORECAST_NOT_FOUND",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

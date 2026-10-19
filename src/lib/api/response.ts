@@ -37,6 +37,7 @@ const SERVICE_ERROR_STATUS: Readonly<Record<ErrorCode, number>> = {
   ACCOUNT_TOO_NEW: 403,
   FORECASTER_NOT_FOUND: 404,
   SIGN_IN_UNAVAILABLE: 503,
+  FORECAST_NOT_FOUND: 404,
 };
 
 function jsonBody(value: unknown): string {

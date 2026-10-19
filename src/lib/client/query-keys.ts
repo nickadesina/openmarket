@@ -22,4 +22,6 @@ export const queryKeys = {
     ["openmarket", "tournament", "forecaster", handle.toLowerCase()] as const,
   tournamentDerived: ["openmarket", "tournament", "derived"] as const,
   tournamentAdmin: ["openmarket", "tournament", "admin"] as const,
+  tournamentProvenance: (eventId: string) =>
+    ["openmarket", "tournament", "provenance", eventId] as const,
 } as const;

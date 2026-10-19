@@ -6,6 +6,7 @@ import type { Bucket } from "../../engine/tournament/buckets.js";
 import { deriveNumbers, type QuestionRecord, type TournamentDb, toNumbers } from "./records.js";
 
 export interface LatestVector {
+  readonly eventId: string;
   readonly userId: string;
   readonly probs: number[];
   readonly submittedAt: Date;
@@ -25,7 +26,7 @@ export async function latestVectors(
   let query = db
     .selectFrom("tournament_forecast_events as events")
     .innerJoin("tournament_users as users", "users.id", "events.user_id")
-    .select(["events.user_id", "events.probs", "events.submitted_at"])
+    .select(["events.id", "events.user_id", "events.probs", "events.submitted_at"])
     .distinctOn("events.user_id")
     .where("events.question_id", "=", questionId)
     .where("events.submitted_at", "<", before);
@@ -35,6 +36,7 @@ export async function latestVectors(
     .orderBy("events.submitted_at", "desc")
     .execute();
   return rows.map((row) => ({
+    eventId: row.id,
     userId: row.user_id,
     probs: toNumbers(row.probs),
     submittedAt: row.submitted_at,

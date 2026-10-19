@@ -230,8 +230,20 @@ X sign-in starts at `GET /api/t/auth/x/start?return=/t/...`. Admin:
 `/api/t/admin/questions/[slug]/{open,close,resolve,void,notes}`,
 `/api/t/admin/users/flag`.
 
-Not built yet: phase-2 Merkle batching to Solana (the per-event hash is
-already stored), CSV export, track-record weighting, a second identity
+Provenance (phase 2): an hourly job commits each completed hour's event
+hashes to one SHA-256 Merkle root (leaf = sha256(0x00 ‖ event_hash),
+node = sha256(0x01 ‖ left ‖ right), odd nodes promoted) five minutes
+after the hour ends, stores every event's path, and posts
+`openmarket.tournament.v1 <hour> <root> <leaf count>` as an SPL Memo
+transaction from a system wallet. The transaction is built and signed
+without a Solana SDK (Node's ed25519), and a post that never lands is
+re-sent after three minutes. `/t/provenance/[eventId]` (JSON at
+`/api/t/provenance/[eventId]`) shows the hash inputs, batch, path, and
+transaction, and re-verifies the hash chain in the visitor's browser.
+Leaves are append-only and batch commitments immutable; `verify:replay`
+rebuilds every root.
+
+Not built yet: CSV export, track-record weighting, a second identity
 provider, prize payment (off-platform by design).
 
 ## 3. Non-goals for v0
@@ -287,6 +299,20 @@ npm run dev              # http://localhost:3000, never 127.0.0.1
   `dev:<handle>`); it is off in every other mode. Launch questions:
   `npm run seed:tournament` writes the three drafts, `-- --open`
   (optionally `--opens-at=<ISO>`) opens them.
+- Provenance: `.github/workflows/provenance.yml` calls
+  `/api/t/cron/provenance` hourly with `Authorization: Bearer
+  $CRON_SECRET`; the route refuses anything else. Set the same
+  `CRON_SECRET` (at least 16 characters) in Vercel and as a GitHub
+  Actions secret; the workflow skips itself without it, and
+  `vars.PROVENANCE_URL` overrides the target. A GitHub schedule rather
+  than Vercel Cron keeps hourly runs plan-independent; missed runs catch
+  up. `npm run provenance:batch` runs the same job by hand. `SOLANA_PROVENANCE_SECRET_KEY` is the fee wallet (the
+  64-byte `solana-keygen` JSON array, or its base58), `SOLANA_CLUSTER`
+  is `mainnet-beta` (default) or `devnet`, and `SOLANA_RPC_URL`
+  overrides the public endpoint. Without the key, roots are committed
+  and shown but not posted; posting resumes from the oldest pending hour
+  once it is set. Fund the wallet with fee SOL only. Apply migration
+  `005_tournament_provenance` before serving this version.
 
 ## 5. CI and deployment
 

@@ -2,6 +2,7 @@ import type { Kysely } from "kysely";
 
 import type { Database } from "../../db/schema.js";
 import { computeAggregate, latestVectors } from "./aggregate.js";
+import { buildMerkleTree, merkleRootFromPath } from "./merkle.js";
 import {
   effectiveStatus,
   type QuestionRecord,
@@ -15,13 +16,14 @@ const TOLERANCE = 1e-9;
 
 export interface TournamentFinding {
   readonly slug: string;
-  readonly check: "event_shape" | "live_resolution" | "scores" | "aggregate";
+  readonly check: "event_shape" | "live_resolution" | "scores" | "aggregate" | "provenance";
   readonly detail: string;
 }
 
 export interface TournamentVerification {
   readonly questionsChecked: number;
   readonly eventsChecked: number;
+  readonly batchesChecked: number;
   readonly findings: TournamentFinding[];
   readonly passed: boolean;
 }
@@ -118,6 +120,42 @@ async function checkAggregate(
 }
 
 /**
+ * Every provenance batch must re-derive: its leaves, in order, rebuild the
+ * committed root, and each stored path folds its event hash to that root.
+ */
+async function checkProvenance(db: Kysely<Database>, fail: Fail): Promise<number> {
+  const batches = await db
+    .selectFrom("tournament_provenance_batches")
+    .select(["id", "root", "leaf_count", "hour_start"])
+    .orderBy("hour_start")
+    .execute();
+  for (const batch of batches) {
+    const leaves = await db
+      .selectFrom("tournament_provenance_leaves as leaves")
+      .innerJoin("tournament_forecast_events as events", "events.id", "leaves.event_id")
+      .select(["leaves.leaf_index", "leaves.path", "events.event_hash"])
+      .where("leaves.batch_id", "=", batch.id)
+      .orderBy("leaves.leaf_index")
+      .execute();
+    const hour = batch.hour_start.toISOString();
+    if (
+      leaves.length !== batch.leaf_count ||
+      leaves.length === 0 ||
+      buildMerkleTree(leaves.map((leaf) => leaf.event_hash)).root !== batch.root
+    ) {
+      fail("provenance", `batch ${hour} does not rebuild its root`);
+      continue;
+    }
+    for (const leaf of leaves) {
+      if (merkleRootFromPath(leaf.event_hash, leaf.path) !== batch.root) {
+        fail("provenance", `batch ${hour} leaf ${leaf.leaf_index} path does not fold to the root`);
+      }
+    }
+  }
+  return batches.length;
+}
+
+/**
  * Recomputes the tournament's derived state from its system of record
  * (forecast events and resolutions): stored scores must match the scorer,
  * and every open question's live aggregate must match the aggregator.
@@ -137,9 +175,14 @@ export async function verifyTournament(db: Kysely<Database>): Promise<Tournament
     if (effectiveStatus(question, now) === "open") await checkAggregate(db, question, fail);
   }
 
+  const batchesChecked = await checkProvenance(db, (check, detail) =>
+    findings.push({ slug: "(provenance)", check, detail }),
+  );
+
   return {
     questionsChecked: rows.length,
     eventsChecked,
+    batchesChecked,
     findings,
     passed: findings.length === 0,
   };

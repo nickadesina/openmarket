@@ -308,6 +308,8 @@ export async function getQuestion(db: Kysely<Database>, slug: string): Promise<Q
 }
 
 export interface PublicForecast extends PublicIdentity {
+  /** The event in force; its provenance proof lives at /t/provenance/[eventId]. */
+  readonly eventId: string;
   readonly probs: number[];
   readonly submittedAt: string;
   readonly submissionCount: number;
@@ -346,6 +348,7 @@ export async function listLatestForecasts(
         : [
             {
               ...identity,
+              eventId: vector.eventId,
               probs: vector.probs,
               submittedAt: vector.submittedAt.toISOString(),
               submissionCount: countByUser.get(vector.userId) ?? 0,
