@@ -1,0 +1,91 @@
+.module {
+  min-width: 0;
+}
+
+/* Tab strip: gray plates on a red rule; the selected plate fills red and
+   joins the rule, the way a brokerage panel names its open view. */
+.strip {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  border-bottom: 2px solid var(--color-primary);
+}
+
+.tabs {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.tab {
+  min-height: var(--control-height);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border);
+  border-bottom: 0;
+  background: var(--color-surface-hover);
+  color: var(--color-ink-muted);
+  font: inherit;
+  font-family: var(--font-caps);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.tab:hover {
+  background: var(--color-primary-subtle);
+  color: var(--color-ink);
+}
+
+.tab[aria-selected="true"] {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.tab:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.caption {
+  margin: 0;
+  padding-bottom: var(--space-2);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+  text-align: right;
+}
+
+/* The red rule already closes the top of the panel; drop the panel
+   module's own top hairline so the two do not stack. */
+.panel > :first-child {
+  border-top: 0;
+}
+
+@media (max-width: 42rem) {
+  .strip {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .tabs {
+    order: 1;
+  }
+
+  .tab {
+    flex: 1 1 0;
+    padding: 0 var(--space-2);
+  }
+
+  .caption {
+    padding-bottom: var(--space-1);
+    text-align: left;
+  }
+}

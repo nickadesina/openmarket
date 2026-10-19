@@ -33,6 +33,13 @@
   margin: var(--space-1) 0 0;
 }
 
+/* The contract leads the ticket. Scoped to outrank the muted `.header p` default. */
+.header .contract {
+  color: var(--color-ink);
+  font-size: var(--font-size-md);
+  font-weight: 700;
+}
+
 .close {
   min-height: 2rem;
   padding-inline: var(--space-2);

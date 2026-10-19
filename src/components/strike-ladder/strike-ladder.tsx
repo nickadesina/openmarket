@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 
 import { formatMetricPrice, formatProbability, formatValuation } from "../../lib/client/format.js";
 import type { MarketDetail, TradeSelection } from "../market-workspace/types.js";
@@ -14,10 +14,11 @@ interface StrikeLadderProps {
 
 type Contract = MarketDetail["contracts"][number];
 
-// Outside this band a strike is near-certain on one side; the board folds
+// Outside this band a strike is all but settled on one side; the board folds
 // those into OVER / UNDER aggregate rows the way a Japanese 板 caps its tails.
-const CONTESTED_MIN = 0.015;
-const CONTESTED_MAX = 0.985;
+// A flat tail of 96–98% strikes says nothing a single summary row cannot.
+const CONTESTED_MIN = 0.05;
+const CONTESTED_MAX = 0.95;
 
 function strikeValue(contract: Contract): number {
   return contract.strikeValueUsd === null ? Number.NaN : Number(contract.strikeValueUsd);
@@ -27,8 +28,6 @@ export function StrikeLadder({ market, selection, onSelect }: StrikeLadderProps)
   const isBinary = market.metric.kind === "yes_probability";
   const [showOver, setShowOver] = useState(false);
   const [showUnder, setShowUnder] = useState(false);
-  const scrollerNode = useRef<HTMLDivElement>(null);
-  const currentRowNode = useRef<HTMLTableRowElement>(null);
 
   // Highest strike first, like a price board: the book reads downward from
   // the improbable top to the near-certain bottom.
@@ -74,21 +73,14 @@ export function StrikeLadder({ market, selection, onSelect }: StrikeLadderProps)
   const currentAboveAll = !isBinary && visible.length > 0 && strikeValue(visible[0]!) <= current;
 
   const marketId = market.marketId;
-  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll to the money once per market, not on every poll.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: fold the tails again when the market changes, not on every poll.
   useEffect(() => {
     setShowOver(false);
     setShowUnder(false);
-    const scroller = scrollerNode.current;
-    const row = currentRowNode.current;
-    if (scroller === null || row === null || scroller.scrollHeight <= scroller.clientHeight) return;
-    scroller.scrollTop = Math.max(
-      0,
-      row.offsetTop - scroller.clientHeight / 2 + row.offsetHeight / 2,
-    );
   }, [marketId]);
 
   const currentRow = (
-    <tr className={styles.currentRow} ref={currentRowNode} key="current">
+    <tr className={styles.currentRow} key="current">
       <td colSpan={3}>
         <span className={styles.currentLabel}>{market.metric.label}</span>
         <strong className={styles.currentValue}>
@@ -139,7 +131,7 @@ export function StrikeLadder({ market, selection, onSelect }: StrikeLadderProps)
 
       {tailRow(overTail, "over", showOver, () => setShowOver((value) => !value))}
 
-      <div className={styles.tableScroller} ref={scrollerNode}>
+      <div className={styles.tableScroller}>
         <table className={styles.table}>
           <thead>
             <tr>

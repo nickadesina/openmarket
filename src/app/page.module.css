@@ -10,36 +10,25 @@
   gap: var(--space-5);
 }
 
-.section,
 .activity {
   min-width: 0;
 }
 
-.section {
-  display: grid;
-  align-content: start;
-}
-
-.section > .sectionHeader:not(:first-child) {
-  margin-top: var(--space-5);
-}
-
-.sectionHeader {
-  display: flex;
-  /* Tab text and caption share a baseline. */
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-4);
-}
-
-.tab {
-  composes: moduleTab from "../styles/shared.module.css";
-}
-
-.sectionHeader p {
+/* Rail box head: a gray band under a red top rule, quieter than a module
+   tab because the tabbed panel already carries the page's red plate. */
+.boxHead {
   margin: 0;
-  color: var(--color-ink-muted);
-  font-size: var(--font-size-xs);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-top: 2px solid var(--color-primary);
+  border-bottom: 0;
+  background: var(--color-surface-hover);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  line-height: 1;
+  text-transform: uppercase;
 }
 
 .disclosure {
@@ -71,16 +60,5 @@
 @media (max-width: 42rem) {
   .page {
     gap: var(--space-4);
-  }
-
-  .sectionHeader {
-    margin-bottom: 0;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-1);
-  }
-
-  .sectionHeader h2 {
-    white-space: nowrap;
   }
 }

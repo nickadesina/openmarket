@@ -1,39 +1,51 @@
+/* The index strip: a gray band of ruled cells, the brokerage convention of
+   reading every level at a glance before the board. */
 .strip {
   display: flex;
-  /* Everything in the strip shares one baseline: the title, the caps
-     labels, the figures, and the refresh note. Box-centering mixed fonts
-     and sizes puts each on its own line. */
-  align-items: baseline;
-  gap: var(--space-4);
-  border-bottom: 1px solid var(--color-border);
+  flex-wrap: wrap;
+  align-items: stretch;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-hover);
   font-variant-numeric: tabular-nums;
 }
 
-.title {
-  flex: 0 0 auto;
-  margin: 0;
-  padding: var(--space-3) var(--space-4) var(--space-3) 0;
-  border-right: 1px solid var(--color-border);
-  font-size: var(--font-size-md);
-  font-weight: 700;
-  letter-spacing: -0.01em;
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
+.index,
 .facts {
   display: flex;
   min-width: 0;
   margin: 0;
+  padding: 0;
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--space-4) var(--space-6);
+  list-style: none;
 }
 
-.facts > div {
+/* Every cell shares one baseline: caps label, figure, and movement word.
+   Box-centering mixed fonts and sizes puts each on its own line. */
+.cell {
   display: flex;
+  min-height: var(--row-table);
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
   align-items: baseline;
-  gap: var(--space-3);
+  gap: var(--space-2);
+  border-right: 1px solid var(--color-border);
+  white-space: nowrap;
 }
 
+.cell > span:first-child {
+  align-self: center;
+}
+
+.name,
 .facts dt {
   color: var(--color-ink-muted);
   font-family: var(--font-caps);
@@ -41,45 +53,79 @@
   font-weight: 700;
   letter-spacing: var(--caps-tracking);
   text-transform: uppercase;
-  white-space: nowrap;
 }
 
+.name {
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+.name:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--color-primary);
+  text-underline-offset: 0.1875em;
+}
+
+.name:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.level,
 .facts dd {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
   margin: 0;
   font-family: var(--font-num);
   font-size: var(--font-size-md);
   font-weight: 700;
-  white-space: nowrap;
 }
 
+.level,
 .cash {
   color: var(--color-primary);
 }
 
-.note {
+.up,
+.down,
+.flat {
+  font-size: var(--font-size-sm);
+}
+
+.up {
+  color: var(--color-positive);
+}
+
+.down {
+  color: var(--color-negative);
+}
+
+.flat {
   color: var(--color-ink-muted);
-  font-family: var(--font-caps);
+}
+
+.note {
+  margin: 0 0 0 auto;
+  padding: var(--space-2) var(--space-4);
+  align-self: center;
+  color: var(--color-ink-muted);
   font-size: var(--font-size-xs);
-  letter-spacing: var(--caps-tracking);
-  text-transform: uppercase;
 }
 
 @media (max-width: 42rem) {
-  .strip {
-    flex-direction: column;
-    gap: var(--space-2);
-    padding-bottom: var(--space-3);
+  .index,
+  .facts {
+    width: 100%;
   }
 
-  .title {
-    padding-right: 0;
+  .index .cell {
+    width: 100%;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .cell {
     border-right: 0;
   }
 
-  .facts {
-    gap: var(--space-2) var(--space-4);
+  .note {
+    margin-left: 0;
   }
 }

@@ -2,6 +2,7 @@ import { HomeActivity } from "../components/home-activity/home-activity.js";
 import { HomeDistribution } from "../components/home-distribution/home-distribution.js";
 import { HomeQuoteSheet } from "../components/home-quote-sheet/home-quote-sheet.js";
 import { HomeStats } from "../components/home-stats/home-stats.js";
+import { HomeTabs } from "../components/home-tabs/home-tabs.js";
 import { MarketBoard } from "../components/market-board/market-board.js";
 import { getRuntimeDatabase } from "../lib/db/runtime.js";
 import { type ActivityPage, getActivity } from "../lib/services/get-activity.js";
@@ -40,39 +41,34 @@ export default async function HomePage() {
       <HomeStats initialData={data.markets} />
 
       <div className={styles.workspace}>
-        <section className={styles.section} aria-labelledby="market-board-title">
-          <div className={styles.sectionHeader}>
-            <h2 id="market-board-title" className={styles.tab}>
-              Market board
-            </h2>
-            <p>Open markets first, ordered by open interest</p>
-          </div>
-          <MarketBoard initialData={data.markets} />
-
-          <div className={styles.sectionHeader}>
-            <h2 id="distribution-title" className={styles.tab}>
-              Where the market lands
-            </h2>
-            <p>80% probability band, median, and the last public round on one log axis</p>
-          </div>
-          <HomeDistribution initialData={data.markets} />
-
-          <div className={styles.sectionHeader}>
-            <h2 id="quote-sheet-title" className={styles.tab}>
-              Quote sheet
-            </h2>
-            <p>Change, high, and low over the past hour, day, week, and all time</p>
-          </div>
-          <HomeQuoteSheet initialData={data.markets} />
-        </section>
+        <HomeTabs
+          label="Markets"
+          tabs={[
+            {
+              key: "board",
+              label: "Board",
+              caption: "Open markets first, ordered by open interest",
+              content: <MarketBoard initialData={data.markets} />,
+            },
+            {
+              key: "distribution",
+              label: "Distribution",
+              caption: "80% probability band, median, and the last public round on one log axis",
+              content: <HomeDistribution initialData={data.markets} />,
+            },
+            {
+              key: "quotes",
+              label: "Quotes",
+              caption: "Change, high, and low over the past hour, day, week, and all time",
+              content: <HomeQuoteSheet initialData={data.markets} />,
+            },
+          ]}
+        />
 
         <aside className={styles.activity} aria-labelledby="global-activity-title">
-          <div className={styles.sectionHeader}>
-            <h2 id="global-activity-title" className={styles.tab}>
-              Global activity
-            </h2>
-            <p>Recent public executions</p>
-          </div>
+          <h2 id="global-activity-title" className={styles.boxHead}>
+            Recent trades
+          </h2>
           <HomeActivity initialData={data.activity} />
         </aside>
       </div>
