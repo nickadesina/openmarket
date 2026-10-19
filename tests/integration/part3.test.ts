@@ -84,8 +84,9 @@ postgresDescribe(suiteName, () => {
       marketId: seeded.market.id,
       status: "open",
       sequence: "1",
-      outstandingClaims: 3,
+      openInterest: 3,
     });
+    expect(detail.openInterest).toBe(3);
     expect(detail.marketId).toBe(seeded.market.id);
     expect(detail.sequence).toBe("1");
     expect(detail.pmf).toHaveLength(2);

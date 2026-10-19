@@ -2,14 +2,13 @@ import {
   formatDateTime,
   formatMetricPrice,
   formatPrice,
+  formatUsd,
   formatValuation,
 } from "../../lib/client/format.js";
 import { CompanyLogo } from "../company-logo/company-logo.js";
 import { MovementArrow } from "../icons/icons.js";
 import type { MarketDetail } from "../market-workspace/types.js";
 import styles from "./market-header.module.css";
-
-const claimsFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 
 interface MarketHeaderProps {
   readonly market: MarketDetail;
@@ -80,8 +79,8 @@ export function MarketHeader({ market, movement }: MarketHeaderProps) {
             <dd>{formatMetricPrice(market.metric.mark60Minutes, market.metric.kind)}</dd>
           </div>
           <div>
-            <dt>Claims</dt>
-            <dd>{claimsFormatter.format(market.outstandingClaims)}</dd>
+            <dt>Open interest</dt>
+            <dd>{formatUsd(market.openInterest)}</dd>
           </div>
           {market.anchor !== null ? (
             <div>

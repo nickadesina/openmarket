@@ -44,7 +44,7 @@ function marketRow(overrides: Record<string, unknown> = {}) {
 
 interface ReadRows {
   readonly market: readonly unknown[];
-  readonly claims: readonly unknown[];
+  readonly openInterest: readonly unknown[];
   readonly prior: readonly unknown[];
   readonly marks: readonly unknown[];
   readonly activity: readonly unknown[];
@@ -57,7 +57,7 @@ function readDatabase(rows: ReadRows): {
   readonly setAccessMode: Mock;
 } {
   const marketQuery = queryReturning(rows.market);
-  const claimsQuery = queryReturning(rows.claims);
+  const openInterestQuery = queryReturning(rows.openInterest);
   const priorQuery = queryReturning(rows.prior);
   const marksQuery = queryReturning(rows.marks);
   const activityQuery = queryReturning(rows.activity);
@@ -74,7 +74,7 @@ function readDatabase(rows: ReadRows): {
   });
   const transactionDb = {
     selectFrom,
-    selectNoFrom: vi.fn(() => claimsQuery),
+    selectNoFrom: vi.fn(() => openInterestQuery),
   };
   const execute = vi.fn(async (callback: (transaction: typeof transactionDb) => Promise<unknown>) =>
     callback(transactionDb),
@@ -96,7 +96,7 @@ describe("getMarket", () => {
     const qBefore = [...q];
     const { db, setIsolationLevel, setAccessMode } = readDatabase({
       market: [marketRow({ q })],
-      claims: [{ outstanding_claims: 123.5 }],
+      openInterest: [{ open_interest: 123.5 }],
       prior: [
         {
           market_sequence: "0",
@@ -141,7 +141,7 @@ describe("getMarket", () => {
       );
     }
     expect(detail.metric.mark60Minutes).toBeCloseTo(20);
-    expect(detail.outstandingClaims).toBe(123.5);
+    expect(detail.openInterest).toBe(123.5);
     expect(detail.recentActivity[0]).not.toHaveProperty("userId");
     expect(detail.settlement).toBeNull();
     expect(q).toEqual(qBefore);
@@ -168,7 +168,7 @@ describe("getMarket", () => {
           settled_at: settledAt,
         }),
       ],
-      claims: [{ outstanding_claims: 0 }],
+      openInterest: [{ open_interest: 0 }],
       prior: [],
       marks: [],
       activity: [],

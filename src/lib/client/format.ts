@@ -47,6 +47,11 @@ export function formatUsd(value: number): string {
   return usdFormatter.format(value);
 }
 
+/** Cash at board density ($48.3K); open interest and other dollar totals in strips and tables. */
+export function formatCompactUsd(value: number): string {
+  return Number.isFinite(value) ? compactValuationFormatter.format(value) : "Unavailable";
+}
+
 export function formatCents(value: string): string {
   const cents = Number(value);
   return Number.isFinite(cents) ? usdFormatter.format(cents / 100) : "Unavailable";

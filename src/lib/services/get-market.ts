@@ -16,6 +16,7 @@ import {
 import { probabilities } from "../engine/lmsr.js";
 import { calculateTimeWeightedAverage } from "../engine/twap.js";
 import type { OrderedMark } from "../engine/types.js";
+import { openInterestSql } from "./open-interest.js";
 
 export interface GetMarketOptions {
   readonly now?: Date;
@@ -66,7 +67,8 @@ export interface MarketDetail {
   readonly bucketGridVersion: string;
   readonly pmf: number[];
   readonly contracts: MarketContract[];
-  readonly outstandingClaims: number;
+  /** Open interest in dollars (D4), the same figure the market board shows. */
+  readonly openInterest: number;
   readonly sequence: string;
   readonly recentActivity: MarketActivitySummary[];
   readonly settlement: {
@@ -215,14 +217,10 @@ export async function getMarket(
       }
 
       const changeCutoff = new Date(now.getTime() - CHANGE_WINDOW_MS);
-      const [claimsRow, changeRow, priorMark, markRows, activityRows, settlement] =
+      const [openInterestRow, changeRow, priorMark, markRows, activityRows, settlement] =
         await Promise.all([
           transaction
-            .selectNoFrom(
-              sql<number>`coalesce((select sum(bucket_quantity) from holdings as claim_holding cross join lateral unnest(claim_holding.h) as bucket(bucket_quantity) where claim_holding.market_id = ${market.market_id}), 0)`.as(
-                "outstanding_claims",
-              ),
-            )
+            .selectNoFrom(openInterestSql(market.market_id).as("open_interest"))
             .executeTakeFirstOrThrow(),
           transaction
             .selectNoFrom(
@@ -322,7 +320,7 @@ export async function getMarket(
         bucketGridVersion: market.bucket_grid_version,
         pmf,
         contracts,
-        outstandingClaims: claimsRow.outstanding_claims,
+        openInterest: openInterestRow.open_interest,
         sequence: market.last_market_sequence,
         recentActivity: activityRows.map((row) => ({
           marketSequence: row.market_sequence,

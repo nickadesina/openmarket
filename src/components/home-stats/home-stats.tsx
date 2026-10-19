@@ -3,15 +3,11 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { apiRequest, POLL_INTERVAL_MS } from "../../lib/client/api.js";
-import { formatCents } from "../../lib/client/format.js";
+import { formatCents, formatCompactUsd } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
 import type { MarketListResult } from "../../lib/services/list-markets.js";
 import styles from "./home-stats.module.css";
 
-const compactFormatter = new Intl.NumberFormat("en-US", {
-  notation: "compact",
-  maximumFractionDigits: 1,
-});
 const clockFormatter = new Intl.DateTimeFormat("en-US", { timeStyle: "medium" });
 
 /** Hairline strip of live facts under the top bar: only figures the API actually reports. */
@@ -37,7 +33,7 @@ export function HomeStats({
   const marketsUnavailable = marketsQuery.isError && marketsQuery.data === undefined;
   const markets = marketsQuery.data?.markets ?? [];
   const open = markets.filter((market) => market.status === "open");
-  const claims = open.reduce((total, market) => total + market.outstandingClaims, 0);
+  const openInterest = open.reduce((total, market) => total + market.openInterest, 0);
   const asOf = marketsQuery.data?.asOf;
 
   return (
@@ -59,8 +55,8 @@ export function HomeStats({
           </dd>
         </div>
         <div>
-          <dt>Claims outstanding</dt>
-          <dd>{marketsUnavailable ? "Unavailable" : compactFormatter.format(claims)}</dd>
+          <dt>Open interest</dt>
+          <dd>{marketsUnavailable ? "Unavailable" : formatCompactUsd(openInterest)}</dd>
         </div>
         <div>
           <dt>Last update</dt>

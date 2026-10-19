@@ -83,7 +83,7 @@ on company slug and so mixes epochs, and the board lists every market
 row while every row links to `/m/[slug]`, which resolves to the newest
 epoch.
 
-### D4. Open interest — Drifted
+### D4. Open interest — Implemented
 
 - Open interest for a market is the market maker's maximum payout
   liability in dollars: the largest, over outcome buckets, of the sum
@@ -93,10 +93,11 @@ epoch.
 - It is labeled "Open interest" and formatted as currency. The board
   sorts open markets by it.
 
-Current code: "Outstanding claims" sums every bucket entry of every
-holdings vector, so one YES contract at the lowest strike counts 40
-times as much as the same contract at the highest strike. That figure
-is retained only as an internal diagnostic if at all.
+Current code: `openInterestSql` in `src/lib/services/open-interest.ts`
+is the one query; `listMarkets` and `getMarket` both return it as
+`openInterest`. The board column, the home strip (summed over open
+markets) and the market header all read "Open interest" in dollars. The
+old summed-bucket "Outstanding claims" figure is gone.
 
 ### D5. Distribution scaling — Open
 
@@ -240,6 +241,6 @@ See `PART5.md` for the environment contract.
 | Any known username resumes that account | True | Upsert on `username_normalized`, cookie issued without any secret. |
 | Production requires exactly Stripe and Anthropic | True | `scripts/production-seed.ts`. |
 | Epochs half-modeled | True | No epoch number, slug-only URLs, slug-scoped activity, board lists every market row. |
-| Outstanding claims varies with mask width | True | `sum(unnest(h))` in `get-market.ts` and `list-markets.ts`. |
+| Outstanding claims varies with mask width | Fixed | Both services read `openInterestSql`, the largest per-bucket total. |
 | Grid and floor impose artificial tails | True | Universal grid in `buckets.ts`; 0.001 floor in `seed.ts`. Decision open. |
 | Deployment deadlocks after 30 days | Overstated | Builds do not seed. Re-running the seed script after 30 days fails against traded markets; deployments continue. |

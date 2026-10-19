@@ -45,7 +45,7 @@ export default async function HomePage() {
             <h2 id="market-board-title" className={styles.tab}>
               Market board
             </h2>
-            <p>Open markets first, ordered by outstanding claims</p>
+            <p>Open markets first, ordered by open interest</p>
           </div>
           <MarketBoard initialData={data.markets} />
 

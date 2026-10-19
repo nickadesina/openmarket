@@ -28,7 +28,7 @@ function marketRow(overrides: Record<string, unknown>) {
     company_name: "Acme",
     company_slug: "acme",
     company_logo_path: "/acme.svg",
-    outstanding_claims: 3,
+    open_interest: 3,
     change_baseline: 100,
     ...overrides,
   };
@@ -68,19 +68,19 @@ function readDatabase(
 }
 
 describe("listMarkets", () => {
-  it("sorts open claims first, appends settled markets deterministically, and applies change fallbacks", async () => {
+  it("sorts open interest first, appends settled markets deterministically, and applies change fallbacks", async () => {
     const marketRows = [
       marketRow({
         market_id: "settled-old",
         status: "settled",
         company_slug: "zeta",
         settled_at: new Date("2025-02-01T00:00:00.000Z"),
-        outstanding_claims: 99,
+        open_interest: 99,
       }),
       marketRow({
         market_id: "open-low",
         company_slug: "low",
-        outstanding_claims: 3,
+        open_interest: 3,
         current_metric: 0.7,
         change_baseline: 0.7,
         metric_kind: "yes_probability",
@@ -93,12 +93,12 @@ describe("listMarkets", () => {
         status: "settled",
         company_slug: "alpha",
         settled_at: new Date("2025-03-01T00:00:00.000Z"),
-        outstanding_claims: 100,
+        open_interest: 100,
       }),
       marketRow({
         market_id: "open-high",
         company_slug: "high",
-        outstanding_claims: 8,
+        open_interest: 8,
         current_metric: 150,
         change_baseline: 110,
       }),
