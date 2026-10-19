@@ -180,6 +180,12 @@ books, leverage, or counterparties; queues, websockets, or a separate
 API service; automated settlement sources; public profiles or
 leaderboards; exact cross-strike cost-basis accounting.
 
+Shelved: timing/survival strips (IPO-filing and primary-round "by date"
+markets, a hazard curve, a clock account, and a leaderboard) were built
+and tested but not shipped. The code and its docs live on the
+`shelved/timing-strips` branch; start with `docs/timing-strips/README.md`
+there.
+
 ## 4. Running it
 
 Requirements: Node 22 (CI and Vercel pin 22; newer local versions work
