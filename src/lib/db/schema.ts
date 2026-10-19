@@ -128,6 +128,123 @@ export interface RateLimitsTable {
   request_count: number;
 }
 
+export type TournamentUnit = "USD_B" | "USD_T" | "bool";
+export type TournamentQuestionStatus = "draft" | "open" | "closed" | "resolved" | "voided";
+export type TournamentProvider = "x" | "dev";
+
+export interface TournamentUsersTable {
+  id: GeneratedImmutable<string>;
+  created_at: GeneratedImmutable<Date>;
+  flagged: Generated<boolean>;
+  flag_reason: string | null;
+}
+
+export interface TournamentIdentitiesTable {
+  user_id: Immutable<string>;
+  provider: Immutable<TournamentProvider>;
+  provider_user_id: Immutable<string>;
+  handle: string;
+  handle_normalized: string;
+  display_name: string;
+  avatar_url: string | null;
+  verified: boolean;
+  provider_created_at: Date | null;
+  last_login_at: Date;
+}
+
+export interface TournamentSessionsTable {
+  id: Immutable<string>;
+  user_id: Immutable<string>;
+  created_at: GeneratedImmutable<Date>;
+  expires_at: Date;
+}
+
+export interface TournamentQuestionsTable {
+  id: GeneratedImmutable<string>;
+  slug: string;
+  title: string;
+  description_md: string;
+  rulebook_md: string;
+  rulebook_version: number;
+  unit: TournamentUnit;
+  bucket_count: number;
+  opens_at: Date;
+  closes_at: Date;
+  expiry_at: Date;
+  closed_at: Date | null;
+  status: TournamentQuestionStatus;
+  min_account_age_days: Generated<number>;
+  extremization: Generated<number>;
+  x_thread_url: string | null;
+  void_note_md: string | null;
+  created_at: GeneratedImmutable<Date>;
+}
+
+export interface TournamentBucketsTable {
+  question_id: Immutable<string>;
+  index: Immutable<number>;
+  kind: Immutable<"range" | "floor">;
+  /** numeric; pg returns strings. */
+  lower: Immutable<string | null>;
+  upper: Immutable<string | null>;
+  label: Immutable<string>;
+}
+
+export interface TournamentForecastEventsTable {
+  id: GeneratedImmutable<string>;
+  user_id: Immutable<string>;
+  question_id: Immutable<string>;
+  submitted_at: Immutable<Date>;
+  /** numeric[]; pg returns strings. */
+  probs: Immutable<string[]>;
+  client_hash: Immutable<string | null>;
+  event_hash: Immutable<string>;
+}
+
+export interface TournamentResolutionsTable {
+  id: GeneratedImmutable<string>;
+  question_id: Immutable<string>;
+  resolved_at: Immutable<Date>;
+  winning_bucket_index: Immutable<number>;
+  resolved_value: Immutable<string | null>;
+  rung_fired: Immutable<number | null>;
+  source_url: Immutable<string | null>;
+  source_excerpt: Immutable<string | null>;
+  note_md: Immutable<string>;
+  resolver_user_id: Immutable<string>;
+  superseded_by: string | null;
+}
+
+export interface TournamentResolutionNotesTable {
+  id: GeneratedImmutable<string>;
+  question_id: Immutable<string>;
+  created_at: GeneratedImmutable<Date>;
+  note_md: Immutable<string>;
+}
+
+export interface TournamentScoresTable {
+  resolution_id: Immutable<string>;
+  user_id: Immutable<string>;
+  question_id: Immutable<string>;
+  time_avg_log_score: Immutable<number>;
+  final_log_score: Immutable<number>;
+  coverage: Immutable<number>;
+  computed_at: Immutable<Date>;
+}
+
+export interface TournamentAggregatesTable {
+  id: GeneratedImmutable<string>;
+  question_id: Immutable<string>;
+  computed_at: Immutable<Date>;
+  probs: Immutable<string[] | null>;
+  n_forecasters: Immutable<number>;
+  median_value: Immutable<string | null>;
+  p_floor: Immutable<string | null>;
+  p_yes: Immutable<string | null>;
+  extremization: Immutable<number>;
+  weighting_version: Immutable<string>;
+}
+
 export interface Database {
   companies: CompaniesTable;
   markets: MarketsTable;
@@ -139,6 +256,16 @@ export interface Database {
   market_comments: MarketCommentsTable;
   comment_rate_limits: CommentRateLimitsTable;
   rate_limits: RateLimitsTable;
+  tournament_users: TournamentUsersTable;
+  tournament_identities: TournamentIdentitiesTable;
+  tournament_sessions: TournamentSessionsTable;
+  tournament_questions: TournamentQuestionsTable;
+  tournament_buckets: TournamentBucketsTable;
+  tournament_forecast_events: TournamentForecastEventsTable;
+  tournament_resolutions: TournamentResolutionsTable;
+  tournament_resolution_notes: TournamentResolutionNotesTable;
+  tournament_scores: TournamentScoresTable;
+  tournament_aggregates: TournamentAggregatesTable;
 }
 
 export type CompanyRow = Selectable<CompaniesTable>;

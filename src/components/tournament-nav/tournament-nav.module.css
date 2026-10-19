@@ -1,0 +1,176 @@
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-5);
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-3);
+  margin: 0;
+}
+
+.tab {
+  composes: moduleTab from "../../styles/shared.module.css";
+}
+
+.caption {
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.link {
+  display: inline-flex;
+  min-height: var(--control-height-sm);
+  padding: 0 var(--space-3);
+  align-items: center;
+  border: 1px solid var(--color-border);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+button.link {
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.link:hover {
+  background: var(--color-primary-subtle);
+}
+
+.linkActive {
+  border-color: var(--color-ink);
+  background: var(--color-ink);
+  color: #ffffff;
+}
+
+.linkActive:hover {
+  background: var(--color-negative-action-hover);
+}
+
+/* Header account control on tournament pages. */
+.account {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-2);
+  padding-left: var(--space-3);
+  border-left: 1px solid var(--color-border);
+}
+
+.accountSkeleton {
+  width: 8rem;
+  height: var(--control-height-sm);
+  align-self: center;
+  background: var(--color-skeleton);
+}
+
+.accountHandle {
+  display: inline-flex;
+  overflow: hidden;
+  max-width: 11rem;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountHandle:hover {
+  color: var(--color-primary);
+}
+
+.signInButton {
+  composes: primaryButton from "../../styles/shared.module.css";
+}
+
+.accountButton {
+  composes: buttonBase from "../../styles/shared.module.css";
+  min-height: var(--control-height-sm);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-ink);
+  background: var(--color-surface);
+  font-size: var(--font-size-xs);
+}
+
+.accountButton:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.accountMuted {
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+}
+
+.accountError {
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+}
+
+.devForm {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.devInput {
+  width: 7rem;
+  min-height: var(--control-height-sm);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+}
+
+.narrowOnly,
+/* Outranks the composed link display on the section bar's sign-out button. */
+.nav .narrowOnly {
+  display: none;
+}
+
+@media (max-width: 42rem) {
+  .wideOnly,
+  /* Outranks the composed button display from shared.module.css. */
+  .account .wideOnly {
+    display: none;
+  }
+
+  .narrowOnly,
+  .nav .narrowOnly {
+    display: inline-flex;
+  }
+
+  .signInButton {
+    padding: 0 var(--space-3);
+  }
+
+  .account {
+    padding-left: var(--space-2);
+  }
+
+  .accountHandle {
+    max-width: 6rem;
+  }
+
+  .devInput {
+    width: 5rem;
+  }
+}

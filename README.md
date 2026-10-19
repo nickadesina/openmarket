@@ -173,6 +173,67 @@ script safely once anything has traded.
   `parentId` and `cursor` on reads. Removal: `POST /api/admin/comments/[commentId]/remove`.
   Comment refreshes are independent of trading and pause in background tabs.
 
+### D9. Forecasting tournament — Implemented
+
+A log-scored forecasting tournament under `/t`, separate from the paper
+markets: its own users, sessions, questions, and ledger
+(`tournament_*` tables, migration `004_tournament`). No money, trading,
+LMSR, or tokens. Paper accounts and tournament identities never mix.
+
+- Identity: X OAuth 2.0 with PKCE (`users.read tweet.read`, no write
+  scopes, no `offline.access`; the token is dropped after the profile
+  fetch). The numeric X id is the identity; handle, name, avatar,
+  `verified`, and account creation date are refreshed on every sign-in.
+  Sessions are server-side rows keyed by the SHA-256 of an opaque cookie
+  token, 30-day sliding expiry. Admin is an allowlist of X ids.
+- Questions: a discrete distribution over buckets that tile the line
+  (lower inclusive, upper exclusive) plus one floor bucket ("nothing by
+  expiry") on numeric ladders; binaries are Yes/No. Drafts are editable;
+  opening pins the record. Close is automatic at `closes_at`, or manual
+  and back-dated to a resolution document's public time (later events
+  stay in the log and are never counted).
+- Forecasts: append-only events, renormalized to ten decimals, hashed
+  (`event_hash`, phase-2 provenance input), one per user and question
+  per 10 seconds, refused for X accounts younger than the question's
+  `min_account_age_days` (default 90).
+- Aggregate: geometric mean of odds over each non-flagged forecaster's
+  latest vector, clamped at ε = 0.001, extremized (a = 1.5, stored per
+  question and per row with weighting `equal-v1`), recomputed on every
+  write. Published only from five forecasters; derived median (floor
+  excluded, log-linear inside the crossing bucket, open ends report
+  their edge), P(floor), P(yes).
+- Scoring: time-averaged log score relative to uniform, 100 / ln n ×
+  mean of ln(n · max(p, ε)) on the winning bucket over the open window;
+  uniform before a first forecast; coverage recorded, not ranked. Written
+  once per resolution as immutable rows. A correction inside the 72-hour
+  dispute window supersedes the live resolution and rescoring writes a
+  new set; afterwards nothing changes. Voided questions write no scores.
+- Leaderboard: sum of scores over live resolutions in the period (all
+  time, or a calendar month in America/Los_Angeles); ties break on mean
+  coverage. Flagged accounts are scored and shown, marked, and excluded
+  from the aggregate.
+- Database triggers keep `tournament_forecast_events` and
+  `tournament_scores` append-only and let a resolution change only by
+  being superseded. `npm run verify:replay` also recomputes every stored
+  score and every open question's live aggregate from the event log.
+
+Pages: `/t` (questions and implied EV/ARR), `/t/q/[slug]`,
+`/t/u/[handle]`, `/t/leaderboard`, `/t/admin`. Public JSON, cacheable
+for 10 seconds: `GET /api/t/questions`, `/api/t/questions/[slug]`,
+`/api/t/questions/[slug]/forecasts`,
+`/api/t/questions/[slug]/aggregate/history`,
+`/api/t/leaderboard?period=all|YYYY-MM`, `/api/t/users/[handle]`,
+`/api/t/derived`. Session: `GET /api/t/me`,
+`POST /api/t/questions/[slug]/forecasts`, `POST /api/t/auth/logout`;
+X sign-in starts at `GET /api/t/auth/x/start?return=/t/...`. Admin:
+`POST /api/t/admin/questions` (save draft), and
+`/api/t/admin/questions/[slug]/{open,close,resolve,void,notes}`,
+`/api/t/admin/users/flag`.
+
+Not built yet: phase-2 Merkle batching to Solana (the per-event hash is
+already stored), CSV export, track-record weighting, a second identity
+provider, prize payment (off-platform by design).
+
 ## 3. Non-goals for v0
 
 Real money or payments; passwords, email, OAuth, or recovery; order
@@ -216,6 +277,16 @@ npm run dev              # http://localhost:3000, never 127.0.0.1
   by clients are not used in local development, where requests share one bucket.
   Network keys are HMAC-hashed; raw addresses are not stored. Limits return HTTP 429
   with `Retry-After`. Apply migration `002_market_comments` before serving this version.
+- Tournament: `X_CLIENT_ID` (and `X_CLIENT_SECRET` for a confidential
+  client) enable X sign-in; the callback is
+  `${APP_ORIGIN}/api/t/auth/x/callback` unless `X_REDIRECT_URI` is set,
+  and must be registered in the X developer portal. Without them the
+  tournament is read-only. `TOURNAMENT_ADMIN_X_IDS` lists admin X ids
+  (comma separated). For local work without X, `TOURNAMENT_DEV_SIGN_IN=1`
+  under `next dev` adds a handle-only sign-in (allowlist it as
+  `dev:<handle>`); it is off in every other mode. Launch questions:
+  `npm run seed:tournament` writes the three drafts, `-- --open`
+  (optionally `--opens-at=<ISO>`) opens them.
 
 ## 5. CI and deployment
 

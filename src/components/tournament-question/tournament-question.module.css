@@ -1,0 +1,414 @@
+.page {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.visuallyHidden {
+  composes: visuallyHidden from "../../styles/shared.module.css";
+}
+
+.header h1 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-xl);
+  letter-spacing: -0.01em;
+  line-height: var(--line-height-tight);
+  text-wrap: balance;
+}
+
+.headerMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+}
+
+.headerMeta a {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--color-border);
+}
+
+.headerMeta a:hover {
+  text-decoration-color: var(--color-primary);
+}
+
+.workspace {
+  display: grid;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr) minmax(22rem, 34rem);
+  gap: var(--space-5);
+}
+
+.module {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+}
+
+.tab {
+  composes: moduleTab from "../../styles/shared.module.css";
+  justify-self: start;
+}
+
+.crowd,
+.resolution,
+.rulebook,
+.editor,
+.signInPanel {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+}
+
+.specTable {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  margin: 0;
+  border-top: 1px solid var(--color-border);
+  border-left: 1px solid var(--color-border);
+}
+
+.specTable > div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: var(--row-compact);
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.specTable dt {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-2);
+  border-right: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-hover);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.specTable dd {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 0;
+  padding: 0 var(--space-2);
+  font-family: var(--font-num);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-align: right;
+}
+
+.specTable .priceFigure {
+  color: var(--color-primary);
+  font-size: var(--font-size-md);
+}
+
+.statePanel {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+}
+
+.statePanel p {
+  max-width: 60ch;
+  margin: 0;
+  color: var(--color-ink-muted);
+}
+
+.muted {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}
+
+.subheading {
+  margin: 0;
+  font-family: var(--font-caps);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.table {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.table th {
+  height: var(--row-compact);
+  padding: 0 var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-hover);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.table td {
+  height: var(--row-compact);
+  padding: 0 var(--space-2);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.figureCell {
+  font-family: var(--font-num);
+  font-weight: 700;
+  text-align: right;
+}
+
+.handle {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-weight: 600;
+}
+
+.handle a:hover {
+  color: var(--color-primary);
+}
+
+.flag {
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-warning);
+  color: var(--color-warning);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.source {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.source a {
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--color-primary);
+}
+
+.source blockquote {
+  max-width: 80ch;
+  margin: 0;
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--color-border-strong);
+}
+
+.note {
+  display: grid;
+  gap: var(--space-1);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.noteStamp {
+  color: var(--color-ink-muted);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.forecastList {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  list-style: none;
+}
+
+.forecastList > li {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-right: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.forecastMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+/* Forecast editor. */
+.publicNotice {
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-warning);
+  background: var(--color-warning-subtle);
+  color: var(--color-ink);
+  font-size: var(--font-size-sm);
+}
+
+.editorTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.editorTable th,
+.editorTable td {
+  height: var(--row-table);
+  padding: 0 var(--space-2);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.editorTable thead th {
+  height: var(--row-compact);
+  border-bottom-color: var(--color-border);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.editorTable tbody th {
+  font-family: var(--font-num);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.floorRow th,
+.floorRow td {
+  background: var(--color-surface-elevated);
+}
+
+.weightCell {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.weightCell input[type="range"] {
+  width: 100%;
+  min-width: 4rem;
+  accent-color: var(--color-primary);
+}
+
+.weightInput {
+  width: 4.5rem;
+  min-height: var(--control-height-sm);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border);
+  font-family: var(--font-num);
+  text-align: right;
+}
+
+.editorActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.primaryButton {
+  composes: primaryButton from "../../styles/shared.module.css";
+  justify-self: start;
+}
+
+.secondaryButton {
+  composes: buttonBase from "../../styles/shared.module.css";
+  justify-self: start;
+  border: 1px solid var(--color-ink);
+  background: var(--color-surface);
+}
+
+.secondaryButton:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.error {
+  margin: 0;
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+}
+
+.stamp {
+  display: inline-flex;
+  justify-self: start;
+  margin: 0;
+  border: 1px solid var(--color-ink);
+  font-family: var(--font-num);
+  font-size: var(--font-size-xs);
+}
+
+.stamp span {
+  padding: var(--space-1) var(--space-2);
+  border-right: 1px solid var(--color-ink);
+  font-family: var(--font-caps);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.stamp time {
+  padding: var(--space-1) var(--space-2);
+}
+
+.signInPanel p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.skeleton,
+.editorSkeleton {
+  composes: skeletonBlock from "../../styles/shared.module.css";
+  height: 20rem;
+}
+
+.editorSkeleton {
+  height: 12rem;
+}
+
+@media (max-width: 72rem) {
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 42rem) {
+  .page {
+    gap: var(--space-5);
+  }
+
+  .crowd,
+  .resolution,
+  .rulebook,
+  .editor,
+  .signInPanel {
+    padding: var(--space-3);
+  }
+
+  .weightCell input[type="range"] {
+    display: none;
+  }
+
+  .forecastList {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

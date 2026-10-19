@@ -1,0 +1,210 @@
+.board {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.visuallyHidden {
+  composes: visuallyHidden from "../../styles/shared.module.css";
+}
+
+.derived {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  border: 1px solid var(--color-border);
+}
+
+.derived > div {
+  padding: var(--space-3) var(--space-4);
+  border-right: 1px solid var(--color-border-subtle);
+}
+
+.derived > div:last-child {
+  border-right: 0;
+}
+
+.derived dt,
+.table th {
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.derived dd {
+  margin: var(--space-1) 0 0;
+  font-family: var(--font-num);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+}
+
+.derived small {
+  color: var(--color-ink-muted);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+}
+
+.derived .derivedFigure {
+  color: var(--color-primary);
+  font-size: var(--font-size-xl);
+}
+
+.table {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-collapse: collapse;
+}
+
+.table th {
+  height: var(--row-compact);
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-hover);
+}
+
+.table td {
+  height: var(--row-board);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+  vertical-align: middle;
+}
+
+.table tbody tr:hover {
+  background: var(--color-primary-subtle);
+}
+
+.questionLink {
+  display: block;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  line-height: var(--line-height-tight);
+}
+
+.questionLink:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--color-primary);
+}
+
+.unit,
+.sub {
+  display: block;
+  color: var(--color-ink-muted);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+}
+
+.crowd {
+  color: var(--color-primary);
+  font-family: var(--font-num);
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.crowdPending {
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+}
+
+.figure {
+  font-family: var(--font-num);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+}
+
+.status {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.statePanel {
+  display: grid;
+  max-width: 60ch;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+}
+
+.statePanel p {
+  margin: 0;
+  color: var(--color-ink-muted);
+}
+
+.retry {
+  composes: buttonBase from "../../styles/shared.module.css";
+  justify-self: start;
+  border: 1px solid var(--color-ink);
+  background: var(--color-surface);
+}
+
+.retry:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.skeleton {
+  composes: skeletonBlock from "../../styles/shared.module.css";
+  height: 16rem;
+}
+
+@media (max-width: 52rem) {
+  .derived {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .derived > div {
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+
+  .derived > div:last-child {
+    border-bottom: 0;
+  }
+
+  .table thead {
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .table,
+  .table tbody,
+  .table tr,
+  .table td {
+    display: block;
+  }
+
+  .table tr {
+    padding: var(--space-3);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .table td {
+    display: grid;
+    height: auto;
+    grid-template-columns: 7rem minmax(0, 1fr);
+    gap: var(--space-2);
+    padding: var(--space-1) 0;
+    border-bottom: 0;
+  }
+
+  .table td::before {
+    content: attr(data-label);
+    color: var(--color-ink);
+    font-family: var(--font-caps);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    letter-spacing: var(--caps-tracking);
+    text-transform: uppercase;
+  }
+
+  .crowd {
+    white-space: normal;
+  }
+}

@@ -12,6 +12,12 @@ export const ERROR_CODES = [
   "ACCOUNT_CHANGED",
   "RATE_LIMITED",
   "POSTING_UNAVAILABLE",
+  "QUESTION_NOT_FOUND",
+  "QUESTION_NOT_OPEN",
+  "QUESTION_STATE",
+  "ACCOUNT_TOO_NEW",
+  "FORECASTER_NOT_FOUND",
+  "SIGN_IN_UNAVAILABLE",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];
