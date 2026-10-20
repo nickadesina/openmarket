@@ -26,7 +26,7 @@
 }
 
 .sectionLabel {
-  composes: moduleTab from "../../styles/shared.module.css";
+  composes: sectionHead from "../../styles/shared.module.css";
 }
 
 .loginPanel,

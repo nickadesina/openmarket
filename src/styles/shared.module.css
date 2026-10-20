@@ -65,6 +65,32 @@
   text-transform: uppercase;
 }
 
+/* Section head: ink caps behind a short red tick. Names every module
+   that is read rather than acted in; the solid plate above is kept for
+   the module you act in (the trade ticket) and the selected tab. */
+.sectionHead {
+  display: inline-flex;
+  margin: 0;
+  align-items: baseline;
+  gap: var(--space-2);
+  color: var(--color-ink);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.sectionHead::before {
+  content: "";
+  width: 0.25rem;
+  height: 0.75rem;
+  flex: 0 0 auto;
+  align-self: center;
+  background: var(--color-primary);
+}
+
 /* Hanko seal: a double-ringed circle in one color, pressed a few degrees
    off-square the way a hand stamp lands. Status, never decoration. */
 .seal {

@@ -13,7 +13,7 @@
 }
 
 .tab {
-  composes: moduleTab from "../../styles/shared.module.css";
+  composes: sectionHead from "../../styles/shared.module.css";
 }
 
 .header p,
@@ -54,9 +54,12 @@
   text-transform: uppercase;
 }
 
-.ranges button[aria-pressed="true"] {
+/* A pressed setting fills ink, like the ticket's toggles; red stays with prices.
+   The hover pair outranks the generic ink hover text below. */
+.ranges button[aria-pressed="true"],
+.ranges button[aria-pressed="true"]:hover {
   color: #ffffff;
-  background: var(--color-primary);
+  background: var(--color-ink);
 }
 
 .ranges button:hover,

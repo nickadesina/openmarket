@@ -14,7 +14,7 @@
 }
 
 .tab {
-  composes: moduleTab from "../../styles/shared.module.css";
+  composes: sectionHead from "../../styles/shared.module.css";
 }
 
 .header p,

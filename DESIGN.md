@@ -145,7 +145,7 @@ An achromatic paper-and-ink neutral scale with utility red as the primary produc
 accent, green reserved for upward movement and gains, and ochre for warnings.
 
 ### Primary
-- **Utility Red** (`--color-primary`, #d70909): the primary product accent. Carries implied-valuation metrics, module header tab fills, primary action fills, active nav fills, selected segmented-control fills, sparkline strokes, text selection, focus outlines, and error text. Pressed/hover state darkens to **Utility Red Pressed** (#b40707). Ticket BUY controls and completion/session notice borders remain red; neither denotes upward movement. The activity tape is ink: its verbs and cash amounts never take red.
+- **Utility Red** (`--color-primary`, #d70909): the primary product accent. Carries implied-valuation metrics, the trade ticket's tab and the selected tab-strip plate, section-head ticks, primary action fills, active nav fills, sparkline strokes, text selection, focus outlines, and error text. Pressed/hover state darkens to **Utility Red Pressed** (#b40707). Ticket BUY controls and completion/session notice borders remain red; neither denotes upward movement. The activity tape is ink: its verbs and cash amounts never take red.
 - **Red Wash** (`--color-primary-subtle`, #fdeaea): pale red tint for row hover, ladder pivot-row highlight, and secondary-button hover fill.
 
 ### Movement and Gains
@@ -227,7 +227,7 @@ bottom rule), main region, and a footer band (1px Rule Gray top rule) holding a
 tabular copyright line, a centered bold-caps disclosure, and caps links.
 
 - **Home:** the Index Strip (the page `h1` is visually hidden), then a two-column workspace — one tabbed markets module (Board · Distribution · Quotes) dominant (`minmax(0,1fr)`) with the RECENT TRADES rail box (`minmax(19rem, 23rem)`). Collapses to one column at 72rem. Below, a muted small-print disclosure paragraph (max 80ch).
-- **Market page:** chart and strike ladder in the main region with a sticky trade rail (`position: sticky; top: --space-4`) on desktop; under 52rem the rail disappears and the selected strike opens a bottom sheet (fixed, max-height min(88dvh, 48rem), overlay scrim of 34% ink).
+- **Market page:** the Quote Band, then chart, strike ladder and implied distribution (open by default) in the main region with a sticky trade rail (`position: sticky; top: --space-4`) on desktop; under 52rem the rail disappears and the selected strike opens a bottom sheet (fixed, max-height min(88dvh, 48rem), overlay scrim of 34% ink).
 - **Board table:** rows are 4rem tall (`--row-board`) with hairline column dividers; under 58rem the table reflows into stacked label/value grids (the `thead` goes visually hidden, `data-label` pseudo-content supplies caps labels) and the inline ladder/expand affordance is suppressed in favor of the market page.
 - **Spacing:** the 8-step rem scale (0.25 → 4rem); modules sit `--space-5` (1.5rem) apart, cell padding is `--space-3` (0.75rem), control height is a uniform 2.25rem.
 
@@ -267,13 +267,18 @@ third-party glyph sets.
 - **States:** `:active` nudges down 1px; disabled drops to 48% opacity with `not-allowed`; `:focus-visible` gets the pale-red halo ring.
 
 ### Module Header Tabs
-The world's signature label: a small solid Utility Red plate, one compact row tall (padding 0.5rem 1rem, line-height 1), holding white Roboto Condensed 700 caps at `--font-size-sm` with 0.09em tracking, sitting flush on top of its ruled module ("TRADE TICKET", "PROBABILITY LADDER"). It is one shared class, `.moduleTab` in `src/styles/shared.module.css`, composed by every module; no file restates it. One tab per module; the tab is the module's name, never a control.
+The world's signature label: a small solid Utility Red plate, one compact row tall (padding 0.5rem 1rem, line-height 1), holding white Roboto Condensed 700 caps at `--font-size-sm` with 0.09em tracking, sitting flush on top of its ruled module. It is one shared class, `.moduleTab` in `src/styles/shared.module.css`; no file restates it. The solid plate is reserved for the module you act in, the TRADE TICKET (and its empty-rail placeholder), and, drawn by the Tab Strip, the selected view. The tab is the module's name, never a control.
+
+**The One Plate Rule.** A page carries at most one solid red name plate outside a tab strip. Every module that is read rather than acted in is named by a Section Head.
+
+### Section Head
+Ink Roboto Condensed 700 caps at `--font-size-sm`, 0.09em tracking, line-height 1, behind a 0.25rem × 0.75rem Utility Red tick (`.sectionHead` in `src/styles/shared.module.css`, composed as each module's `.tab`). Names the market history, probability ladder, implied distribution, comments, market activity and resolution modules, the portfolio's positions and trade history, and the admin sections.
 
 ### Tab Strip (home)
 When one module offers several views of the same markets, the views share a tab strip instead of stacking modules. Gray plates (Paper Hover fill, Rule Gray hairline, muted caps at `--font-size-sm`, 0.09em tracking, `--control-height` tall) sit on a 2px Utility Red rule; the selected plate fills red with white caps and joins the rule. The active view's caption sits right-aligned on the same rule. Panels stay mounted and are hidden, so each keeps its own polling; the panel's own top hairline is dropped under the red rule. Keyboard: arrows, Home and End move focus and selection together (`src/components/home-tabs`).
 
-### Index Strip (home)
-A Paper Hover band, Rule Gray boxed, of baseline-aligned ruled cells: one per open valuation market with a published anchor (logo chip, caps name link, red four-digit level, then the level against the last public round in Arrow-and-Word form, e.g. "Up 15.7% vs last round"), then paper cash when signed in, open interest in dollars, and the last trade's date and time, with a muted refresh note at the end. The round comparison is the strip's change figure because it is never empty; a quiet day's 24h change is. Under 42rem the market cells take full rows and the fact cells drop their rules.
+### Index Strip (home, portfolio)
+A Paper Hover band, Rule Gray boxed, of baseline-aligned ruled cells: one per open valuation market with a published anchor (logo chip, caps name link, red four-digit level, then the level against the last public round in Arrow-and-Word form, e.g. "Up 15.7% vs last round"), then paper cash when signed in, open interest in dollars, and the last trade's date and time, with a muted refresh note at the end. The round comparison is the strip's change figure because it is never empty; a quiet day's 24h change is. Under 42rem the market cells take full rows and the fact cells drop their rules. The portfolio's summary (cash, holdings mark, account value in red) uses the same band, its cells stacking one per row under the portfolio's narrow breakpoint.
 
 ### Rail Box Head
 A side-rail module is named by a quieter head than the red tab: Paper Hover band, 2px Utility Red top rule, ink caps at `--font-size-sm`, closed by the module's own hairlines ("RECENT TRADES").
@@ -306,7 +311,7 @@ A newspaper quote table under the distribution module: grouped caps headers (1H,
 Live from first paint on the strike nearest 50%, YES side. The header names the working contract in ink at body size ("YES · Valuation above $1T") so a fresh ticket opens on what you are trading. Reads top to bottom in the order a brokerage 注文 form does; the approval strip comes last, under the action that drives it:
 - **Side plates:** two large hairline-framed plates showing YES and NO with each side's price; the pressed plate fills solid (red for YES, ink for NO).
 - **Strike stepper:** a hairline-boxed control with − and + ends and a centered `select` listing every strike with its YES price; changes here re-highlight the ladder and vice versa.
-- **Segmented controls (Buy/Sell, mode):** hairline-framed white track; buttons are borderless, muted-ink text; the pressed segment fills Utility Red with white text.
+- **Segmented controls (Buy/Sell, mode):** hairline-framed white track; buttons are borderless, muted-ink text; the pressed segment fills Press Ink with white text, like the pressed amount chip; in the ticket, red is left to the YES plate and the submit button.
 - **Inputs:** 2.25rem hairline-framed white fields, ink text, tabular numerals; a row of four quick-amount chips beneath (pressed chip fills ink).
 - **Quote:** a Spec Table of the quoted figures including the bound the wire carries (MAX COST for buys, MIN PROCEEDS for sells), followed by a **date stamp** — a hairline-boxed caps "QUOTED | time" mark — and the previews-not-reservations note. A moved price re-renders the same table from the server's requote under a "REQUOTED" stamp, never an abbreviated box. Errors are inline red text; an order whose outcome is unknown locks every input and offers exactly one RETRY (same request key) and one ABANDON.
 - **Approval strip (稟議):** three ruled boxes — QUOTED, SENT, FILLED — each receiving a small seal only once the order has provably cleared that stage. SENT seals when the request leaves the browser and stays sealed while the outcome is unknown; FILLED seals only on a server 200 and shows a muted `?` while an order's outcome is unknown. Boxes never un-seal. Empty boxes are hairline squares; a sealed box carries the rotated ring.
@@ -331,7 +336,7 @@ changes and failed submissions. New arrivals wait behind a reveal button; remove
 content leaves a neutral tombstone. Open markets have no red OPEN badge.
 
 ### Loading, Empty, and Error States
-Skeletons match the real layout (logo square, name bar, metric bar, chart block) and pulse #efeff1 → #e4e4e6 over 1.6s; hairline-boxed state panels carry a bold one-liner, a muted explanation (≤60ch), and an outlined RETRY button. Reduced motion stops the pulse.
+Skeletons match the real layout (logo square, name bar, metric bar, chart block) and pulse #efeff1 → #e4e4e6 over 1.6s; hairline-boxed state panels carry a bold one-liner, a muted explanation (≤60ch), and an outlined RETRY button. Reduced motion stops the pulse. A quiet window on a traded market is not empty: the history chart holds the level in force at the window start flat to now, and its summary says no trades fell in the range and when the last one was. Only a market with no trades at all shows the first-trade message.
 
 ### Motion (system-wide)
 Two durations only — `--duration-fast` 150ms and `--duration-standard` 220ms — on one curve, `cubic-bezier(0.16, 1, 0.3, 1)` ease-out. Sanctioned movements: background/border/color transitions, the 1px button press, the chevron rotate, the metric flash (Green Wash for up, Ink Wash for down, with a direction-colored figure that returns to resting red), the sheet slide-up with overlay fade, and the skeleton pulse. `prefers-reduced-motion` disables all of it, globally and per-module. No entrances, parallax, bouncing, or infinite decorative motion.
