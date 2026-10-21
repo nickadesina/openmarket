@@ -15,6 +15,8 @@ disagree; a Claude Doc that has an in-repo copy is listed with it.
 | `PRODUCT.md`, `DESIGN.md` | Product voice and the visual system | before changing a screen |
 | `PART1.md`–`PART5.md` | The original build parts (engine, persistence, read APIs, UI, deployment) for the LMSR ladder; still accurate as engine/persistence/API reference, superseded on product decisions by `README.md` §2 | when working in `src/lib/engine`, `src/lib/services`, `src/app/api` |
 | `docs/prompts/implement-dealer.md` | The implementation brief for the agent that builds the dealer design | when starting that work |
+| `docs/decisions/NNNN-*.md` | Agreed changes that supplement the design (first: `event_flags` shape and the ingest hand-off) | before any milestone a decision names |
+| `tests/fixtures/event-flags.json` | 161 fixture flags (scoop / release / print) derived from `backtest/events.csv`; what settlement and mid-model tests read until ingest exists | writing any test that needs a flag |
 
 ## Backtest (evidence for D11–D12)
 
