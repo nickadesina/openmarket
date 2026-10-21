@@ -21,6 +21,8 @@ const compactValuationFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
   notation: "compact",
+  // Explicit, or Node's ICU pads small values ($0.0) where browsers print $0 and hydration fails.
+  minimumFractionDigits: 0,
   maximumFractionDigits: 1,
 });
 // Market prices carry four significant digits so adjacent levels stay

@@ -60,7 +60,7 @@ test("a username account created on the sign-in page returns to where it started
   const username = uniqueHandle("pw", testInfo).slice(0, 20);
   await page.goto("/t/signin?return=%2Fportfolio");
   await page.getByRole("button", { name: "Create account" }).first().click();
-  await page.getByLabel("Username").fill(username);
+  await page.getByRole("textbox", { name: "Username" }).fill(username);
   await page.getByLabel("Password").fill("browser-test-password");
   await page.getByRole("button", { name: "Create account" }).last().click();
 
@@ -86,7 +86,7 @@ test("admin moderation is gated by the tournament admin allowlist", async ({
   await signInDev(page, baseURL, "pw_admin");
   await page.reload();
   await expect(page.getByRole("heading", { name: "Market comments" })).toBeVisible();
-  await expect(page.getByLabel("Market")).toBeVisible();
+  await expect(page.getByRole("combobox", { name: /^Market/ })).toBeVisible();
   await expect(page.getByText(/passphrase/i)).toHaveCount(0);
   await expectNoHorizontalOverflow(page);
 });
