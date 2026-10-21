@@ -4,6 +4,7 @@ import { ServiceError } from "../api/errors.js";
 import type { QuoteInput } from "../api/schemas.js";
 import type { Database, MetricKind } from "../db/schema.js";
 import { parseRequestedAmount, previewTrade } from "./preview-trade.js";
+import { assertBookLive, findTradeBook } from "./trade-book.js";
 
 export interface QuoteResult {
   readonly market_id: string;
@@ -33,39 +34,12 @@ export interface QuoteResult {
 async function quoteMarketFromSnapshot(
   db: Transaction<Database>,
   input: QuoteInput,
-  userId?: string,
+  userId: string | undefined,
+  now: Date,
 ): Promise<QuoteResult> {
-  const market = await db
-    .selectFrom("companies")
-    .innerJoin("markets", "markets.company_id", "companies.id")
-    .select([
-      "markets.id as market_id",
-      "markets.n_buckets",
-      "markets.bucket_grid_version",
-      "markets.metric_kind",
-      "markets.b",
-      "markets.q",
-      "markets.last_market_sequence",
-    ])
-    .where("companies.slug", "=", input.slug)
-    .where("markets.status", "=", "open")
-    .orderBy("markets.created_at", "desc")
-    .executeTakeFirst();
-
-  if (market === undefined) {
-    const latestMarket = await db
-      .selectFrom("companies")
-      .innerJoin("markets", "markets.company_id", "companies.id")
-      .select("markets.status")
-      .where("companies.slug", "=", input.slug)
-      .orderBy("markets.created_at", "desc")
-      .executeTakeFirst();
-
-    if (latestMarket?.status === "settled") {
-      throw new ServiceError("MARKET_SETTLED", "This market has settled.");
-    }
-    throw new ServiceError("MARKET_NOT_FOUND", "Market not found.");
-  }
+  const book = await findTradeBook(db, input, false);
+  assertBookLive(book, now);
+  const market = { ...book.market, market_id: book.market.id };
   if (input.action === "sell" && userId === undefined) {
     throw new ServiceError("USER_REQUIRED", "A user is required to quote a sell.");
   }
@@ -90,6 +64,7 @@ async function quoteMarketFromSnapshot(
     holdings,
     { action: input.action, side: input.side, strike_index: input.strike_index },
     amount,
+    book.dealer === null ? null : { pFloor: book.dealer.pFloor },
   );
 
   return {
@@ -110,18 +85,20 @@ async function quoteMarketFromSnapshot(
     expected_redemption_cents: String(preview.redemptionCents),
     sellable_quantity: preview.sellableAfter,
     market_state_fingerprint: `${market.market_id}:${market.last_market_sequence}`,
-    quoted_at: new Date().toISOString(),
+    quoted_at: now.toISOString(),
   };
 }
 
+/** Quotes an LMSR trade; `now` is the clock a dealer binary's window is checked against. */
 export async function quoteMarket(
   db: Kysely<Database>,
   input: QuoteInput,
   userId?: string,
+  now: Date = new Date(),
 ): Promise<QuoteResult> {
   return db
     .transaction()
     .setIsolationLevel("repeatable read")
     .setAccessMode("read only")
-    .execute((transaction) => quoteMarketFromSnapshot(transaction, input, userId));
+    .execute((transaction) => quoteMarketFromSnapshot(transaction, input, userId, now));
 }

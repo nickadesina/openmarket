@@ -12,6 +12,8 @@ import {
 } from "../../src/lib/services/dealer/get-instrument-quote.js";
 import { runDealerJob } from "../../src/lib/services/dealer/run-dealer-job.js";
 import { verifyDealer } from "../../src/lib/services/dealer/verify-dealer.js";
+import { executeTrade } from "../../src/lib/services/execute-trade.js";
+import { quoteMarket } from "../../src/lib/services/quote.js";
 import { verifyReplay } from "../../src/lib/services/verify-replay.js";
 import { insertUser, seedFixtureListings } from "./dealer-fixture.js";
 import {
@@ -324,5 +326,72 @@ postgresDescribe(suiteName, () => {
     expect((await call(forwardId, "?side=long")).status).toBe(400);
     expect((await call("not-a-uuid")).status).toBe(400);
     expect((await call(randomUUID())).status).toBe(404);
+  });
+
+  it("trades the binary's LMSR by market id and refuses a trade past the clamp", async () => {
+    const binary = await instrumentOf("modal", "binary");
+    const buy = {
+      market_id: binary.market_id,
+      action: "buy",
+      side: "yes",
+      strike_index: 0,
+      quantity: 100,
+    } as const;
+    const quote = await quoteMarket(postgres.db, buy, userId, TRADE_AT);
+    expect(quote).toMatchObject({ market_id: binary.market_id, metric_kind: "yes_probability" });
+
+    const traded = await executeTrade(
+      postgres.db,
+      userId,
+      { ...buy, idempotency_key: randomUUID(), max_cost_usd: "100.00" },
+      { now: TRADE_AT },
+    );
+    expect(traded.result).toMatchObject({
+      side: "yes",
+      shares: 100,
+      cash_amount_cents: quote.cash_amount_cents,
+      price_after: quote.price_after,
+    });
+    const fill = await postgres.db
+      .selectFrom("quotes")
+      .selectAll()
+      .where("trade_id", "=", traded.result.trade_id)
+      .executeTakeFirstOrThrow();
+    expect(fill).toMatchObject({ reason: "fill", price: traded.result.current_metric });
+
+    // Buying NO hard enough would push YES under p_floor: refused whole, at quote and at trade.
+    const dump = { ...buy, side: "no", quantity: 10_000 } as const;
+    const clamped = await expectServiceError(
+      quoteMarket(postgres.db, dump, userId, TRADE_AT),
+      "PRICE_CLAMPED",
+    );
+    expect(clamped.details).toMatchObject({ p_floor: DEALER_PARAMS.dealer.p_floor });
+    await expectServiceError(
+      executeTrade(
+        postgres.db,
+        userId,
+        { ...dump, idempotency_key: randomUUID(), max_cost_usd: "100000.00" },
+        { now: TRADE_AT },
+      ),
+      "PRICE_CLAMPED",
+    );
+
+    // The slug names a company's ladder book; a dealer book is reached by id only.
+    await expectServiceError(
+      quoteMarket(postgres.db, { ...buy, market_id: undefined, slug: "modal" }, userId, TRADE_AT),
+      "MARKET_NOT_FOUND",
+    );
+    const forward = await instrumentOf("modal", "forward");
+    await expectServiceError(
+      quoteMarket(postgres.db, { ...buy, market_id: forward.market_id }, userId, TRADE_AT),
+      "INVALID_INPUT",
+    );
+    await expectServiceError(
+      quoteMarket(postgres.db, buy, userId, new Date(binary.expires_at.getTime() + 1)),
+      "INSTRUMENT_CLOSED",
+    );
+
+    expect((await verifyReplay(postgres.db)).passed).toBe(true);
+    expect(await verifyDealer(postgres.db)).toMatchObject({ passed: true, findings: [] });
   });
 });

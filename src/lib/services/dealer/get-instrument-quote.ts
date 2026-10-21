@@ -92,7 +92,13 @@ export async function loadInstrumentBook(
 }
 
 /** Refuses an instrument that is not live at `at`: resolved, expired, past T, or its book settled. */
-export function assertLive(book: InstrumentBook, at: Date): void {
+export function assertLive(
+  book: {
+    readonly instrument: Pick<InstrumentRow, "id" | "state" | "opens_at" | "expires_at">;
+    readonly market: Pick<MarketRow, "status">;
+  },
+  at: Date,
+): void {
   const { instrument, market } = book;
   if (
     !LIVE_STATES.includes(instrument.state) ||

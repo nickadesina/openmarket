@@ -79,11 +79,28 @@ export const usernameInputSchema = z
   })
   .strict();
 
+/**
+ * A book is addressed by `market_id` (a dealer binary) or by `slug` (a
+ * company's ladder market, which has no instrument); exactly one of them.
+ */
 const quoteFields = {
-  slug: slugSchema,
+  slug: slugSchema.optional(),
+  market_id: z
+    .string()
+    .uuid()
+    .transform((value) => value.toLowerCase())
+    .optional(),
   side: z.enum(["yes", "no"]),
   strike_index: strikeIndexSchema,
 } as const;
+
+function oneBook(input: {
+  readonly slug?: string | undefined;
+  readonly market_id?: string | undefined;
+}): boolean {
+  return (input.slug === undefined) !== (input.market_id === undefined);
+}
+const ONE_BOOK = { message: "Give exactly one of slug or market_id" } as const;
 
 const buyQuantityQuoteSchema = z
   .object({
@@ -107,11 +124,9 @@ const sellQuoteSchema = z
   })
   .strict();
 
-export const quoteInputSchema = z.union([
-  buyQuantityQuoteSchema,
-  buySpendQuoteSchema,
-  sellQuoteSchema,
-]);
+export const quoteInputSchema = z
+  .union([buyQuantityQuoteSchema, buySpendQuoteSchema, sellQuoteSchema])
+  .refine(oneBook, ONE_BOOK);
 
 const tradeFields = {
   ...quoteFields,
@@ -143,11 +158,9 @@ const sellTradeSchema = z
   })
   .strict();
 
-export const tradeInputSchema = z.union([
-  buyQuantityTradeSchema,
-  buySpendTradeSchema,
-  sellTradeSchema,
-]);
+export const tradeInputSchema = z
+  .union([buyQuantityTradeSchema, buySpendTradeSchema, sellTradeSchema])
+  .refine(oneBook, ONE_BOOK);
 
 /** A dealer book or instrument id: a UUID, compared lower-case. */
 const bookIdSchema = idempotencyKeySchema;

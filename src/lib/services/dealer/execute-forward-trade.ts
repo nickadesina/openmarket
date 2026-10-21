@@ -195,8 +195,9 @@ export async function executeForwardTrade(
     const replay = await loadReplay(transaction, idempotencyKey, userId, fingerprint);
     if (replay !== undefined) return { result: replay, replayed: true };
 
-    const at = await executionTime(transaction, options.now);
     const book = await loadInstrumentBook(transaction, input.instrument_id, true);
+    // The clock is read after the book's lock, so marks keep sequence order in time.
+    const at = await executionTime(transaction, options.now);
     const state = await loadForwardBook(transaction, book, at);
     const user = await transaction
       .selectFrom("users")
