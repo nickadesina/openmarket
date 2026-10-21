@@ -146,4 +146,50 @@ describe("previewTrade", () => {
       previewTrade(BINARY_MARKET, [0, 0], { action: "buy", side: "yes", strike_index: 1 }, amount),
     ).toThrowError(expect.objectContaining({ code: "INVALID_INPUT" }));
   });
+
+  it("refuses a dealer binary's trade that would leave [p_floor, 1 − p_floor], either way", () => {
+    const clamp = { pFloor: 0.05 };
+    const yes = { action: "buy", side: "yes", strike_index: 0 } as const;
+    // ln(0.95/0.05) ≈ 2.944 at b = 100: 290 YES stays inside, 300 does not.
+    const inside = previewTrade(
+      BINARY_MARKET,
+      [0, 0],
+      yes,
+      parseRequestedAmount({ action: "buy", quantity: 290 }),
+      clamp,
+    );
+    expect(inside.priceAfter).toBeLessThan(0.95);
+    expect(() =>
+      previewTrade(
+        BINARY_MARKET,
+        [0, 0],
+        yes,
+        parseRequestedAmount({ action: "buy", quantity: 300 }),
+        clamp,
+      ),
+    ).toThrowError(
+      expect.objectContaining({
+        code: "PRICE_CLAMPED",
+        details: expect.objectContaining({ p_floor: 0.05, p_ceiling: 0.95 }),
+      }),
+    );
+    expect(() =>
+      previewTrade(
+        BINARY_MARKET,
+        [0, 0],
+        { ...yes, side: "no" },
+        parseRequestedAmount({ action: "buy", quantity: 300 }),
+        clamp,
+      ),
+    ).toThrowError(expect.objectContaining({ code: "PRICE_CLAMPED" }));
+    // Without a clamp (a ladder or legacy binary), the same trade prices.
+    expect(
+      previewTrade(
+        BINARY_MARKET,
+        [0, 0],
+        yes,
+        parseRequestedAmount({ action: "buy", quantity: 300 }),
+      ).priceAfter,
+    ).toBeGreaterThan(0.95);
+  });
 });

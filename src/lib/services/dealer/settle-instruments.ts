@@ -216,7 +216,11 @@ export function rulebookEvents(
     if (flag.kind === "print" && flag.source_rank !== null) {
       const eventType = flag.promoted_from_kind === "s1_public" ? "ipo" : "priced_round";
       events.push({ ...base, eventType, rank: flag.source_rank as SourceRank });
-    } else if (kind === "binary" && qualifiesUnreviewed(flag)) {
+    } else if (
+      kind === "binary" &&
+      (flag.kind === "release" || flag.kind === "s1_public") &&
+      qualifiesUnreviewed(flag)
+    ) {
       const eventType = flag.kind === "s1_public" ? "public_s1" : "priced_round";
       events.push({ ...base, eventType, rank: flag.source_rank as SourceRank });
     }
