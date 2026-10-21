@@ -1,6 +1,6 @@
 # Backtest results — what the numbers mean
 
-Run on 2026-10-19 against `events.csv` (14 companies, 56 priced
+Run on 2026-10-21 (binary expiry per decision 0002; first run 2026-10-19) against `events.csv` (14 companies, 56 priced
 rounds, Jan 2024 – Oct 19 2026). Reproduce with `python3 analyze.py`.
 Parameters: Q = $25k, κ = 1.0, b = $2k, s_floor = 0.05, p_floor = 0.05,
 event-flag widening on Tier-1 leaks (spread ×3, Q ÷2, b ÷2, 72 h),
@@ -12,7 +12,7 @@ months (mega / red-hot), hazard jump to 0.80 within 60 days of a leak.
 Against an insider who knows every print before any leak, the
 five-name dealer book (OpenAI, Anthropic, Anduril, Modal, Instinct)
 would have lost about **$53,000 a year** — roughly a fifth of the
-~$270,000-a-year bound it carried — and the forward never hit its cap.
+~$260,000-a-year bound it carried — and the forward never hit its cap.
 Against a trader whose only edge is reading Tier-1 leaks, about
 $2,300 a year. The prior landed within sd 0.35 log of the print on
 mega-caps and 0.62 on red-hot names; 1 of 45 prints fell outside the
@@ -32,12 +32,12 @@ clip.
 | | T = 12 months | T = 3 months |
 | --- | --- | --- |
 | Forward lives / settled / voided | 18 / 16 / 2 (11%) | 49 / 16 / 33 (67%) |
-| Binary quarters / resolved YES | 59 / 16 | 59 / 16 |
+| Binary quarters / resolved YES | 55 / 16 | 55 / 16 |
 | Insider: forward loss total, per settlement, max | $93.8k, $5.9k, $21.9k (Modal Sep 25) | $52.3k, $3.3k, $14.3k |
-| Insider: binary loss total, per quarter, max | $54.7k, $0.9k, $5.8k | same |
+| Insider: binary loss total, per quarter, max | $54.3k, $1.0k, $5.8k | same |
 | Insider total, annualised | **$53k/yr** | $38k/yr |
 | Leak-reader: forward loss total | $6.5k ($5.9k of it Modal May 26: leaked $2.5B, printed $4.65B) | $20.4k |
-| Bound carried | 16 × $25k + 59 × $6k ≈ $754k → $270k/yr | same |
+| Bound carried | 16 × $25k + 55 × $6k ≈ $730k → $260k/yr | same |
 | Realised insider loss / bound | 20% | 14% |
 
 ## Reading each output
@@ -71,7 +71,7 @@ clip.
 1. **The binary's bound is not b·ln 2.** That holds only from a 50/50
    start. Against a 10–20% hazard prior an informed YES-buyer takes
    b·ln(1/p); the bound is b·ln(1/p_floor) ≈ $6,000 at defaults. The
-   binary bleeds as much as the forward to an insider ($54.7k vs
+   binary bleeds as much as the forward to an insider ($54.3k vs
    $93.8k over the window).
 2. **Uniform T = 3 months is wrong for the mega-caps.** Per-name T
    (launch 270/180/270/120/90 days) is the adopted fix.

@@ -30,8 +30,14 @@ Pays $1 if the name announces a priced round (labs: files a public S-1)
 on or before the current calendar quarter-end. Prices **when**.
 
 - Outcomes YES / NO. Resolves YES on the first qualifying announcement
-  ≤ T; NO at T + 1 day otherwise. Early YES lists next quarter's binary
-  the same day.
+  **strictly after the binary's listing time** and ≤ T; NO at T + 1 day
+  otherwise. "Quarter" names the expiry, not an event window: any
+  qualifying announcement between listing and T counts, including a
+  second round in the same calendar quarter.
+- Expiry T is the current calendar quarter-end if at least 21 days
+  remain at listing, otherwise the next quarter-end. The first binary
+  for a name lists at listing; each successor lists the same day its
+  predecessor resolves or expires (decision 0002).
 - LMSR with liquidity b (default $2,000); price clamped to
   [p_floor, 1 − p_floor], p_floor = 0.05. Worst-case house loss per
   quarter is b·ln(1/p_floor) ≈ $6,000 — not b·ln 2, which only holds

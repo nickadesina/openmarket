@@ -46,18 +46,18 @@ at_listing,xAI,mega,2025-09-19,-0.1597555520433147,2743.8888010828678,
 at_listing,xAI,mega,2026-01-06,-0.5909231575038518,13523.078937596294,
 at_listing,Anduril,,,,,8098.05548460337
 at_listing,Anthropic,,,,,14758.353671889869
-at_listing,Cognition,,,,,13328.301717850485
-at_listing,Cursor,,,,,11252.04225406718
-at_listing,Greptile,,,,,5031.982559921008
-at_listing,Harvey,,,,,13519.2994822381
-at_listing,Instinct,,,,,12430.060590585288
-at_listing,Mercor,,,,,6701.190079197223
-at_listing,Modal,,,,,13653.850403901093
-at_listing,OpenAI,,,,,5802.153270081233
-at_listing,Perplexity,,,,,20285.957470195644
+at_listing,Cognition,,,,,13251.373177652755
+at_listing,Cursor,,,,,11172.244815432043
+at_listing,Greptile,,,,,4939.8760064373655
+at_listing,Harvey,,,,,13328.713146072876
+at_listing,Instinct,,,,,12327.474001810187
+at_listing,Mercor,,,,,6618.653231089346
+at_listing,Modal,,,,,13552.404240204285
+at_listing,OpenAI,,,,,5597.345163525936
+at_listing,Perplexity,,,,,20031.130486221795
 at_listing,Safe Superintelligence,,,,,6252.1269521017875
-at_listing,Valar Atomics,,,,,8386.522806988562
-at_listing,xAI,,,,,10383.101772497757
+at_listing,Valar Atomics,,,,,8284.312418191574
+at_listing,xAI,,,,,10193.796436445
 pre_leak,OpenAI,mega,2025-03-31,-0.08314843057111787,828.7107642779467,
 pre_leak,OpenAI,mega,2026-03-31,0.31311895229410425,6577.973807352607,
 pre_leak,Anthropic,redhot,2024-01-11,0.281390545232302,0.0,
@@ -105,18 +105,18 @@ pre_leak,xAI,mega,2025-09-19,-0.1597555520433147,2743.8888010828678,
 pre_leak,xAI,mega,2026-01-06,-0.5909231575038518,13523.078937596294,
 pre_leak,Anduril,,,,,8098.05548460337
 pre_leak,Anthropic,,,,,14758.353671889869
-pre_leak,Cognition,,,,,13328.301717850485
-pre_leak,Cursor,,,,,11252.04225406718
-pre_leak,Greptile,,,,,5031.982559921008
-pre_leak,Harvey,,,,,13519.2994822381
-pre_leak,Instinct,,,,,12430.060590585288
-pre_leak,Mercor,,,,,6701.190079197223
-pre_leak,Modal,,,,,13653.850403901093
-pre_leak,OpenAI,,,,,5802.153270081233
-pre_leak,Perplexity,,,,,20285.957470195644
+pre_leak,Cognition,,,,,13251.373177652755
+pre_leak,Cursor,,,,,11172.244815432043
+pre_leak,Greptile,,,,,4939.8760064373655
+pre_leak,Harvey,,,,,13328.713146072876
+pre_leak,Instinct,,,,,12327.474001810187
+pre_leak,Mercor,,,,,6618.653231089346
+pre_leak,Modal,,,,,13552.404240204285
+pre_leak,OpenAI,,,,,5597.345163525936
+pre_leak,Perplexity,,,,,20031.130486221795
 pre_leak,Safe Superintelligence,,,,,6252.1269521017875
-pre_leak,Valar Atomics,,,,,8386.522806988562
-pre_leak,xAI,,,,,10383.101772497757
+pre_leak,Valar Atomics,,,,,8284.312418191574
+pre_leak,xAI,,,,,10193.796436445
 at_leak,OpenAI,mega,2025-03-31,-0.08314843057111787,0.0,
 at_leak,OpenAI,mega,2026-03-31,0.31311895229410425,0.0,
 at_leak,Anthropic,redhot,2024-01-11,0.281390545232302,0.0,
