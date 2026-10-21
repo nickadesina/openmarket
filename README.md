@@ -371,7 +371,10 @@ file is stale against the backtest, changed without a version entry
 for its new digest, or overridden in code;
 `.github/workflows/backtest.yml` fails when a rerun does not reproduce
 it. Rewriting a published version's digest instead of adding one is
-not caught by a test, only by review. No quoting code exists yet.
+not caught by a test, only by review. `src/lib/engine/dealer/forward.ts`
+(quote, fill, collateral, settlement credit), `binary.ts` (two-outcome
+seed, price clamp, loss bounds) and `lifecycle.ts` (`instruments.state`
+transitions) are pure and not yet wired to a service or route.
 
 ### D13. Rulebook and settlement — Adopted
 
