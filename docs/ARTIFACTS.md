@@ -27,6 +27,7 @@ disagree; a Claude Doc that has an in-repo copy is listed with it.
 | --- | --- |
 | `backtest/sim.py` | Prior (leave-one-out tier step-up, Weibull hazard, leak overrides), dealer (LMSR binary, clipped forward with cap, event-flag widening), four trader scenarios |
 | `backtest/analyze.py` | Runs the scenarios on an events file; writes `out/summary.csv`, `out/calibration.csv`, `out/losses_T12.csv`, `out/meta.json`, four PNG charts |
+| `backtest/golden.py` | Reruns the calibration run (T = 12, no trader, leave-one-out, from 2024) and records sim.py's prior for the listed names with its inputs; writes `out/prior_golden.json` |
 | `backtest/events.csv` | Merged events: 64 rows, 56 priced rounds, 14 companies, Jan 2024–Oct 19 2026; tenders/secondaries recorded but excluded as prints |
 | `backtest/data/labs.csv` | OpenAI and Anthropic rounds with leak dates and notes on conflicts |
 | `backtest/data/anduril_modal_instinct.csv` | The three red-hot names |
@@ -39,6 +40,7 @@ disagree; a Claude Doc that has an in-repo copy is listed with it.
 | `backtest/out/losses_T12.csv` | Per-print forward loss and per-name binary loss under each scenario at T = 12 |
 | `backtest/out/calibration.csv` | Per-print prior error with tier, used for σ_tier |
 | `backtest/out/params.json` | Every parameter the app's model and dealer read, with the SHA-256 of the backtest inputs that produced it; imported by `src/lib/config/dealer.ts` |
+| `backtest/out/prior_golden.json` | Every binary quarter's p, forward life's opening mid and weekly dealer mid sim.py gives the five listed names, with the inputs to recompute each; `tests/engine/dealer/prior.test.ts` holds `src/lib/engine/dealer/prior.ts` to it at 1e-9 |
 | `backtest/requirements.txt` | Pinned pandas, numpy, matplotlib for `backtest.yml` |
 | `tests/fixtures/rulebook-events.json` | How rulebook v1 resolves every row of `events.csv` and each listed name's forward lives and binary quarters; a rule change re-baselines it |
 

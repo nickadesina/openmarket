@@ -371,7 +371,11 @@ file is stale against the backtest, changed without a version entry
 for its new digest, or overridden in code;
 `.github/workflows/backtest.yml` fails when a rerun does not reproduce
 it. Rewriting a published version's digest instead of adding one is
-not caught by a test, only by review. No quoting code exists yet.
+not caught by a test, only by review. `src/lib/engine/dealer/prior.ts`
+ports sim.py's prior (tier, binary p, forward mid with leak re-centring);
+`tests/engine/dealer/prior.test.ts` agrees with
+`backtest/out/prior_golden.json`, which `backtest/golden.py` writes from
+sim.py, to 1e-9. No quoting code exists yet.
 
 ### D13. Rulebook and settlement — Adopted
 
