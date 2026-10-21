@@ -13,9 +13,15 @@ export interface ReadRouteContext {
 
 export type ReadRouteHandler = (context: ReadRouteContext) => Response | Promise<Response>;
 
+export interface ReadRouteOptions {
+  /** Public, user-agnostic reads may be shared-cached this long; errors are never cached. */
+  readonly cacheSeconds?: number;
+}
+
 export async function withReadRoute(
   request: Request,
   handler: ReadRouteHandler,
+  options: ReadRouteOptions = {},
 ): Promise<Response> {
   const requestId = randomUUID();
   const startedAt = performance.now();
@@ -32,7 +38,12 @@ export async function withReadRoute(
   try {
     response = await handler(context);
     response.headers.set("Content-Type", "application/json; charset=utf-8");
-    response.headers.set("Cache-Control", "no-store");
+    response.headers.set(
+      "Cache-Control",
+      options.cacheSeconds === undefined
+        ? "no-store"
+        : `public, max-age=${options.cacheSeconds}, s-maxage=${options.cacheSeconds}`,
+    );
     response.headers.set(REQUEST_ID_HEADER, requestId);
   } catch (error: unknown) {
     failureCode = errorCode(error);

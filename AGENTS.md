@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # OpenMarket, for agents
 
-Paper-money markets on private-company valuations. Two markets, Anthropic and Stripe. Product limits live in `PRODUCT.md`; the visual system and its named rules live in `DESIGN.md`. Read both before changing a screen.
+Paper-money markets on private-company valuations. Two markets, Anthropic and Stripe. Separately, a log-scored forecasting tournament under `/t` with its own X-authenticated users and `tournament_*` tables (README D9); nothing in it touches the markets' ledger. Product limits live in `PRODUCT.md`; the visual system and its named rules live in `DESIGN.md`. Read both before changing a screen.
 
 ## Gates (all run in CI; run them before you finish)
 
@@ -26,8 +26,8 @@ npm run verify:replay    # ledger invariants against DATABASE_URL_UNPOOLED
 
 ## Layout of the code
 
-- `src/lib/engine` pure LMSR arithmetic, buckets, median and quantiles. No I/O.
-- `src/lib/services` one file per operation on the ledger (`quote`, `execute-trade`, `get-market`, `get-marks`, `verify-replay`).
+- `src/lib/engine` pure LMSR arithmetic, buckets, median and quantiles. No I/O. `engine/tournament` holds the tournament's buckets, scoring, aggregate, and median.
+- `src/lib/services` one file per operation on the ledger (`quote`, `execute-trade`, `get-market`, `get-marks`, `verify-replay`); `services/tournament` likewise for the tournament.
 - `src/app/api` thin routes over services. `src/components` client UI, one folder per module with its `.module.css`.
 - `src/styles/tokens.css` the six-step type ramp, row heights, one red. `src/styles/shared.module.css` composable primitives: `.moduleTab`, `.seal`, `.buttonBase`.
 

@@ -1,0 +1,165 @@
+.page {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.page h1 {
+  margin: 0;
+  font-size: var(--font-size-xl);
+}
+
+.module {
+  display: grid;
+  min-width: 0;
+}
+
+.tab {
+  composes: sectionHead from "../../styles/shared.module.css";
+  justify-self: start;
+  margin-bottom: var(--space-3);
+}
+
+.questions {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  list-style: none;
+}
+
+.question {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.questionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.meta {
+  display: block;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+}
+
+.link {
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.link:hover {
+  color: var(--color-primary);
+}
+
+.question details > summary {
+  cursor: pointer;
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.form {
+  display: grid;
+  max-width: 48rem;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+}
+
+.module > .form {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.field > span {
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.field input,
+.field select,
+.field textarea {
+  min-height: var(--control-height);
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: var(--font-size-sm);
+}
+
+.code {
+  font-family: ui-monospace, monospace;
+}
+
+.confirm {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.confirm strong {
+  color: var(--color-primary);
+  font-family: var(--font-num);
+}
+
+/* Irreversible admin actions speak in ink, not red. */
+.inkButton {
+  composes: buttonBase from "../../styles/shared.module.css";
+  justify-self: start;
+  border: 1px solid var(--color-negative-action);
+  background: var(--color-negative-action);
+  color: #ffffff;
+}
+
+.inkButton:hover:not(:disabled) {
+  background: var(--color-negative-action-hover);
+}
+
+.error {
+  margin: 0;
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+}
+
+.result {
+  overflow: auto;
+  max-height: 12rem;
+  margin: 0;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-elevated);
+  font-size: var(--font-size-xs);
+}
+
+.statePanel {
+  display: grid;
+  max-width: 60ch;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+}
+
+.statePanel p {
+  margin: 0;
+  color: var(--color-ink-muted);
+}
+
+.skeleton {
+  composes: skeletonBlock from "../../styles/shared.module.css";
+  height: 12rem;
+}
