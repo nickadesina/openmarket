@@ -9,7 +9,9 @@
       "*.ts",
       "*.mjs",
       "!!.impeccable",
-      "!next-env.d.ts"
+      "!next-env.d.ts",
+      // Generated fixtures: their generators own the bytes, and the ingest must reproduce event-flags.json exactly.
+      "!tests/fixtures"
     ]
   },
   "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },

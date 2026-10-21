@@ -1,0 +1,65 @@
+company,event_type,round_name,announcement_date,post_money_usd,amount_raised_usd,lead,leak_date,leak_post_money_usd,notes
+OpenAI,tender_or_secondary,2023 VC tender,2023-04-28,28000000000,300000000.0,,2023-01-05,29000000000.0,Secondary; not a print
+OpenAI,tender_or_secondary,2024 employee tender,2024-02-16,86000000000,,Thrive Capital,2023-09-26,85000000000.0,Secondary; not a print
+OpenAI,priced_round,Oct 2024 round,2024-10-02,157000000000,6600000000.0,Thrive Capital,2024-08-28,100000000000.0,"WSJ/Bloomberg Aug 28 2024 >$100B; convertible structure, treated as priced"
+OpenAI,priced_round,Mar 2025 SoftBank round,2025-03-31,300000000000,40000000000.0,SoftBank,2025-01-30,340000000000.0,WSJ Jan 30 2025 up to $340B; Bloomberg same day $300B; closed $300B post
+OpenAI,tender_or_secondary,Oct 2025 employee secondary,2025-10-02,500000000000,6600000000.0,,2025-08-06,500000000000.0,Secondary at new mark; not a print under the rulebook
+OpenAI,priced_round,2026 mega-round (final close),2026-03-31,852000000000,122000000000.0,SoftBank; a16z; D.E. Shaw; MGX; TPG; T. Rowe,2025-12-17,750000000000.0,The Information Dec 17 2025 ~$750B; first close Feb 27 2026 at $730B pre; final close Mar 31 2026 $852B post. Confidential S-1 Jun 8 2026; no public S-1 as of Oct 19 2026
+Anthropic,priced_round,Series C,2023-05-23,4100000000,450000000.0,Spark Capital,2023-03-08,4100000000.0,$4.1B reported as pre-money; approximate
+Anthropic,priced_round,Series D,2024-01-11,18400000000,750000000.0,Menlo Ventures,2023-12-21,18400000000.0,No dated close found; Jan 11 2024 Forbes SPV disclosure used as a floor. Weak date
+Anthropic,priced_round,Series E,2025-03-03,61500000000,3500000000.0,Lightspeed,2025-01-07,60000000000.0,WSJ Jan 7 2025 $2B at $60B; upsized Feb 24 to $3.5B/$61.5B
+Anthropic,priced_round,Series F,2025-09-02,183000000000,13000000000.0,ICONIQ; Fidelity; Lightspeed,2025-07-25,150000000000.0,FT Jul 25 2025 >$150B; Bloomberg Jul 29 ~$170B
+Anthropic,priced_round,Series G,2026-02-12,380000000000,30000000000.0,GIC; Coatue,2026-01-07,360000000000.0,Bloomberg/WSJ Jan 7 2026 ~$10B at $350B pre; FT Jan 27 upsized ~$20B; closed $30B at $380B post
+Anthropic,tender_or_secondary,Employee tender,2026-04-08,350000000000,,,2026-02-04,350000000000.0,At Series G price; no new mark
+Anthropic,priced_round,Series H,2026-05-28,965000000000,65000000000.0,Altimeter; Dragoneer; Greenoaks; Sequoia,2026-05-12,930000000000.0,Strict 'in talks' leak Bloomberg May 12 2026 $30B+ at >$900B pre; earlier offers-received signal Apr 14 at $800B+. Confidential draft S-1 Jun 1 2026; no public S-1 as of Oct 19 2026
+Anduril,priced_round,Series E,2022-12-02,8480000000,1480000000.0,Valor Equity Partners,2022-05-24,6650000000.0,Delaware COI via Prime Unicorn/TechCrunch May 24 2022 implied ~$6.65B pre; Axios close Dec 2 2022
+Anduril,priced_round,Series F,2024-08-07,14000000000,1500000000.0,Founders Fund & Sands Capital,2024-05-20,12500000000.0,The Information leak ~May 20 2024 at $12.5B+; Bloomberg Jun 25 2024 reported secured at $14B; official announcement Aug 7 2024
+Anduril,priced_round,Series G,2025-06-05,30500000000,2500000000.0,Founders Fund,2025-02-07,28000000000.0,CNBC/Bloomberg Feb 7 2025: up to $2.5B at $28B pre; announced Jun 5 2025 at $30.5B post
+Anduril,priced_round,Series H,2026-05-13,61000000000,5000000000.0,Thrive Capital & a16z,2026-02-13,60000000000.0,"The Information Feb 13 2026 >$60B; Bloomberg/WSJ Mar 3 ~$4B at ~$60B; announced May 13 2026 $5B at $61B. Forge-only G-1 extension (Jan 2026, $32.5B) excluded as unverified"
+Anduril,tender_or_secondary,Employee tender,2026-10-14,90000000000,1300000000.0,,2026-10-14,90000000000.0,Secondary only; $94.80/sh ~ $90B implied. Open $100B primary talks (Reuters Jul 24 2026) not closed as of Oct 19 2026
+Modal,priced_round,Series A,2023-10-10,145180000,16000000.0,Redpoint Ventures,,,Post-money from Forge
+Modal,priced_round,Series B,2025-09-29,1100000000,87000000.0,Lux Capital,2025-05-15,1000000000.0,"The Information unicorn piece ~May 2025; exact day unknown, mid-month placeholder"
+Modal,priced_round,Series C,2026-05-21,4650000000,355000000.0,General Catalyst & Redpoint,2026-02-11,2500000000.0,TechCrunch Feb 11 2026 early talks at ~$2.5B (= tranche 1); The Information May 13 2026 ~$4.5B; Reuters close May 21 2026 at $4.65B
+Modal,priced_round,Series D,2026-10-14,15750000000,750000000.0,Accel,2026-09-23,15000000000.0,Bloomberg Sep 23 2026 ~$15B; TechCrunch Sep 28 $750M at $15.75B post; Axios close Oct 14 2026
+Instinct,priced_round,Seed,2026-04-01,147740000,17300000.0,Conviction; Greenoaks,,,Forge round date; no contemporaneous press; disclosed by Forbes Aug 26 2026. Low confidence on valuation
+Instinct,priced_round,Series A,2026-08-01,567760000,75000000.0,Kleiner Perkins,,,"Forge round date; first public report Forbes Aug 26 2026 (>$500M, early August)"
+Instinct,priced_round,Series B,2026-08-26,2500000000,250000000.0,Index Ventures & Benchmark,2026-08-26,2500000000.0,Forbes 'in talks' and WSJ 'raised' same day
+Instinct,priced_round,Series C,2026-09-28,10000000000,1000000000.0,Sequoia & Benchmark,2026-09-15,10000000000.0,The Information Sep 15 2026 $1B at ~$10B; Business Wire close Sep 28 2026
+Cursor,priced_round,Series A,2024-08-22,400000000,60000000.0,a16z,,,
+Cursor,priced_round,Series B,2024-12-19,2600000000,100000000.0,Thrive Capital,2024-11-08,2500000000.0,TechCrunch bidding-war report Nov 8 2024 ~$2.5B
+Cursor,priced_round,Series C,2025-06-05,9900000000,900000000.0,Thrive Capital,2025-03-07,10000000000.0,Bloomberg Mar 7 2025 ~$10B; FT May 5 reported $9.0B closed; official Jun 5 at $9.9B
+Cursor,priced_round,Series D,2025-11-13,29300000000,2300000000.0,Accel; Coatue,2025-06-17,19000000000.0,Weak leak: Bloomberg Jun 17 2025 unsolicited offers at $18-20B; company said not raising. $50B 2026 round never closed (SpaceX acquisition)
+Safe Superintelligence,priced_round,Round 1,2024-09-04,5000000000,1000000000.0,NFDG; a16z; Sequoia; DST,,,
+Safe Superintelligence,priced_round,Round 2,2025-04-12,32000000000,2000000000.0,Greenoaks,2025-02-07,20000000000.0,"Reuters Feb 7 2025 $20B; Bloomberg Feb 17 >$30B; FT close ~Apr 12. Jul 2026 NVIDIA $5B has no reported post-money, excluded"
+xAI,priced_round,Series B,2024-05-26,24000000000,6000000000.0,Valor,2024-04-05,18000000000.0,WSJ Apr 5 2024 $3B at $18B; Bloomberg Apr 25 $6B at $18B pre
+xAI,priced_round,Series C,2024-12-23,50000000000,6000000000.0,Valor; a16z; Sequoia; QIA et al.,2024-10-29,40000000000.0,WSJ Oct 29 2024 $40B; raised to $50B by Nov 20
+xAI,priced_round,Series D tranche 1,2025-07-01,113000000000,5000000000.0,Morgan Stanley-arranged,2025-06-17,,Post-money inferred from contemporaneous secondary/debt docs; low confidence
+xAI,priced_round,Series D tranche 2,2025-09-19,200000000000,10000000000.0,Valor; QIA; Kingdom,2025-07-11,185000000000.0,FT Jul 11 2025 $170-200B; Bloomberg Sep 19 close at $200B
+xAI,priced_round,Series E,2026-01-06,230000000000,20000000000.0,Valor; StepStone; Fidelity; QIA; MGX,2025-11-19,230000000000.0,WSJ Nov 19 2025 $15B at $230B; upsized to $20B. Feb 2026 SpaceX merger excluded
+Mercor,priced_round,Series A,2024-09-19,250000000,30000000.0,Benchmark,,,
+Mercor,priced_round,Series B,2025-02-20,2000000000,100000000.0,Felicis,,,
+Mercor,priced_round,Series C,2025-10-27,10000000000,350000000.0,Felicis,2025-09-09,10000000000.0,TechCrunch Sep 9 2025 $10B+. $20B 2026 round not closed as of Oct 19 2026
+Harvey,priced_round,Series C,2024-07-23,1500000000,100000000.0,GV,2024-06-10,2000000000.0,The Information Jun 10 2024 targeted $2B+; closed at $1.5B
+Harvey,priced_round,Series D,2025-02-12,3000000000,300000000.0,Sequoia,2025-01-16,3000000000.0,
+Harvey,priced_round,Series E,2025-06-23,5000000000,300000000.0,Kleiner Perkins; Coatue,2025-05-14,5000000000.0,
+Harvey,priced_round,Series F,2025-12-04,8000000000,160000000.0,a16z,2025-10-29,8000000000.0,
+Harvey,priced_round,Series G,2026-03-25,11000000000,200000000.0,GIC; Sequoia,2026-02-09,11000000000.0,
+Harvey,priced_round,Series H,2026-09-09,15500000000,550000000.0,Diffusion; Lightspeed,2026-08-07,15500000000.0,
+Cognition,priced_round,Series B,2024-04-24,2000000000,175000000.0,Founders Fund,2024-03-30,2000000000.0,
+Cognition,priced_round,Series C,2025-03-18,4000000000,,8VC,,,Amount undisclosed
+Cognition,priced_round,Series C-2,2025-09-08,10200000000,400000000.0,Founders Fund,2025-07-24,10000000000.0,Leak source Forbes (non-Tier-1)
+Cognition,priced_round,Series D,2026-05-27,26000000000,1000000000.0,Lux; General Catalyst; 8VC,2026-04-23,25000000000.0,
+Cognition,priced_round,Series E,2026-09-08,48000000000,2000000000.0,a16z; Accel,2026-08-12,40000000000.0,Bloomberg Aug 12 $40B+; Sep 2 ~$47B
+Perplexity,priced_round,Series B,2024-01-04,520000000,73600000.0,IVP,,,
+Perplexity,priced_round,Series B-1,2024-04-23,1040000000,62700000.0,Daniel Gross,,,
+Perplexity,priced_round,Series C,2024-06-27,3000000000,250000000.0,SoftBank Vision Fund 2,,,Close date approximate
+Perplexity,priced_round,Series D,2024-12-18,9000000000,500000000.0,IVP,2024-10-20,8000000000.0,WSJ Oct 20 2024 $8B; Bloomberg Oct 21 $9B
+Perplexity,priced_round,Series E,2025-05-12,14000000000,500000000.0,Accel,2025-03-20,18000000000.0,"Leak target $18B; closed at $14B. Announcement date = terms date, weak"
+Perplexity,priced_round,Series E ext,2025-07-17,18000000000,100000000.0,,,,
+Perplexity,priced_round,Series E ext 2,2025-09-10,20000000000,200000000.0,,,,NVIDIA $30B+ talks Aug 2026 not closed
+Valar Atomics,priced_round,Seed,2025-02-19,36300000,19000000.0,,,,Post-money from Forge COI estimate
+Valar Atomics,priced_round,Series A,2025-11-10,260000000,130000000.0,Snowpoint,,,Post-money from Forge COI estimate
+Valar Atomics,priced_round,Series A-2,2026-03-31,2000000000,340000000.0,,,,Bloomberg Mar 31 2026; no pre-leak found
+Valar Atomics,priced_round,Series B,2026-08-03,6000000000,1000000000.0,Sequoia,2026-07-17,6000000000.0,The Information Jul 17 2026 $1B at ~$5B pre
+Greptile,priced_round,Series A,2025-09-23,180000000,25000000.0,Benchmark,2025-07-18,180000000.0,TechCrunch Jul 18 2025 $30M at $180M; closed $25M
+Greptile,priced_round,Series B,2026-10-19,750000000,50000000.0,Menlo Ventures,2026-08-31,,"From earlier research pass: PitchBook logged a Series B dated Aug 31 2026 ($40M), Tracxn Aug 14; announced Oct 19 2026 at $750M. Database entry treated as a flag without terms"

@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # OpenMarket, for agents
 
-Paper-money markets on private-company valuations. Two markets, Anthropic and Stripe. Separately, a log-scored forecasting tournament under `/t` with its own X-authenticated users and `tournament_*` tables (README D9); nothing in it touches the markets' ledger. Product limits live in `PRODUCT.md`; the visual system and its named rules live in `DESIGN.md`. Read both before changing a screen.
+Paper-money markets on private-company valuations. The code on `master` runs two 41-bucket LMSR markets (Anthropic, Stripe) and, separately, a log-scored forecasting tournament under `/t` with its own users and `tournament_*` tables (README D9). The adopted design is five names with a quarterly binary and a next-print forward each, quoted by the venue as dealer. `README.md` section 2 (D10–D14) is the decision record, `CONTRACTS.md` is normative for the instruments, `TECHNICAL_DESIGN.md` is the build plan, and `backtest/` is the evidence — read the first two before touching anything under `src/lib/engine/dealer` or `src/lib/services/dealer`. Product limits live in `PRODUCT.md`; the visual system and its named rules live in `DESIGN.md`. Read both before changing a screen.
 
 ## Gates (all run in CI; run them before you finish)
 
@@ -27,6 +27,8 @@ npm run verify:replay    # ledger invariants against DATABASE_URL_UNPOOLED
 ## Layout of the code
 
 - `src/lib/engine` pure LMSR arithmetic, buckets, median and quantiles. No I/O. `engine/tournament` holds the tournament's buckets, scoring, aggregate, and median.
+- `src/lib/engine/dealer` the dealer design's pure code: `rulebook.ts` (what settles, versioned). `src/lib/services/dealer` one file per dealer operation.
+- `src/lib/config/dealer.ts` reads `backtest/out/params.json`; never write a parameter in code. A rerun of `backtest/analyze.py` that changes it adds a model version with the file's digest to `PARAMS_SHA256_BY_MODEL_VERSION`; never rewrite a published one.
 - `src/lib/services` one file per operation on the ledger (`quote`, `execute-trade`, `get-market`, `get-marks`, `verify-replay`); `services/tournament` likewise for the tournament.
 - `src/app/api` thin routes over services. `src/components` client UI, one folder per module with its `.module.css`.
 - `src/styles/tokens.css` the six-step type ramp, row heights, one red. `src/styles/shared.module.css` composable primitives: `.moduleTab`, `.seal`, `.buttonBase`.
@@ -47,3 +49,5 @@ npm run verify:replay    # ledger invariants against DATABASE_URL_UNPOOLED
 - Playwright reads `CI` to pick port 3000 and the checkout's own `APP_ORIGIN`; a shell with `CI=true` exported runs the local suite in CI mode. `env -u CI npm run test:browser:local` restores the local layout.
 - Rebuild dev data with `npm run reseed:dev` (real anchors, scripted sixteen-day narrative), then `npm run verify:replay`, then `scripts/dump-dev-seed.sh` to refresh `scripts/dev-seed.sql`. `pg_dump` aborts on the Neon 18 / client 17 mismatch; the dumper is psql only.
 - Real data only. Never invent rows, stats, or copy; every figure on a screen derives from the API.
+- Dealer parameters (μ, λ, k, σ per tier, b, Q, κ, T) are read from `backtest/out/params.json` via `src/lib/config/dealer.ts`. Change them by changing the backtest and re-running `python3 backtest/analyze.py`, never by editing the config.
+- Not open to agents: two contracts per name; void-and-refund on no print; log units in the engine; the dealer always quotes; every published price carries its model, rulebook and blend versions.
