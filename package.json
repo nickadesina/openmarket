@@ -29,7 +29,8 @@
     "deploy:check:preview": "tsx scripts/verify-production-config.ts --target=preview",
     "seed:listings": "tsx scripts/seed-listings.ts",
     "seed:tournament": "tsx scripts/seed-tournament.ts",
-    "provenance:batch": "tsx scripts/provenance-batch.ts"
+    "provenance:batch": "tsx scripts/provenance-batch.ts",
+    "api-key:create": "tsx scripts/api-key-create.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.11",

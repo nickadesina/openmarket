@@ -43,6 +43,7 @@ const SERVICE_ERROR_STATUS: Readonly<Record<ErrorCode, number>> = {
   CAP_EXCEEDED: 409,
   PRICE_CLAMPED: 409,
   INSTRUMENT_CLOSED: 409,
+  API_KEY_INVALID: 401,
 };
 
 function jsonBody(value: unknown): string {

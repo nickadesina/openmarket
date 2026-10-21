@@ -128,7 +128,7 @@ export interface CommentRateLimitsTable {
 }
 
 export interface RateLimitsTable {
-  scope: Immutable<"quote" | "trade" | "tournament_register" | "tournament_login">;
+  scope: Immutable<"quote" | "trade" | "tournament_register" | "tournament_login" | "ref">;
   key: Immutable<string>;
   window_started_at: Date;
   request_count: number;
@@ -440,6 +440,16 @@ export interface SourceHealthTable {
   last_error: string | null;
 }
 
+/** The reference API's keyed tier (migration 010); only the key's SHA-256 is stored. */
+export interface ApiKeysTable {
+  id: GeneratedImmutable<string>;
+  name: Immutable<string>;
+  key_hash: Immutable<string>;
+  quota_per_minute: number;
+  created_at: GeneratedImmutable<Date>;
+  revoked_at: Date | null;
+}
+
 /** The `dealer_pnl` view (migration 009): cents, from the dealer's side. */
 export interface DealerPnlView {
   listing_id: ColumnType<string, never, never>;
@@ -494,6 +504,7 @@ export interface Database {
   tournament_instrument_links: TournamentInstrumentLinksTable;
   source_health: SourceHealthTable;
   dealer_pnl: DealerPnlView;
+  api_keys: ApiKeysTable;
 }
 
 export type CompanyRow = Selectable<CompaniesTable>;
