@@ -37,6 +37,10 @@ jobs:
         id: backtest
         run: python backtest/analyze.py
 
+      - name: Write the prior's golden cases
+        # tests/engine/dealer/prior.test.ts holds src/lib/engine/dealer/prior.ts to this file.
+        run: python backtest/golden.py
+
       - name: Committed outputs match a fresh run
         # Charts are excluded: their bytes depend on the runner's fonts.
         # Intent-to-add makes a newly written output show up in the diff.
