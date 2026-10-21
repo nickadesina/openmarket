@@ -27,6 +27,8 @@ npm run verify:replay    # ledger invariants against DATABASE_URL_UNPOOLED
 ## Layout of the code
 
 - `src/lib/engine` pure LMSR arithmetic, buckets, median and quantiles. No I/O.
+- `src/lib/engine/dealer` the dealer design's pure code: `rulebook.ts` (what settles, versioned). `src/lib/services/dealer` one file per dealer operation.
+- `src/lib/config/dealer.ts` reads `backtest/out/params.json`; never write a parameter in code. A rerun of `backtest/analyze.py` that changes it bumps `MODEL_VERSION` and re-pins `PARAMS_SHA256`.
 - `src/lib/services` one file per operation on the ledger (`quote`, `execute-trade`, `get-market`, `get-marks`, `verify-replay`).
 - `src/app/api` thin routes over services. `src/components` client UI, one folder per module with its `.module.css`.
 - `src/styles/tokens.css` the six-step type ramp, row heights, one red. `src/styles/shared.module.css` composable primitives: `.moduleTab`, `.seal`, `.buttonBase`.

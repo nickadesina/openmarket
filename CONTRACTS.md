@@ -14,7 +14,7 @@ Guide" differ, this file wins once merged.
 | Listing rule | Last print ≥ ~$500M; last priced round ≤ 9 months ago; lead of last round identifiable from public record. Scale by adding names, never contract types or states. |
 | Print | Post-money of a **priced** primary equity round, publicly reported per the rulebook. For the labs, an IPO first-day-close market cap is also a print. Not: SAFEs, notes, same-price extensions, secondaries, tenders, debt. |
 | Announcement | First public, dated statement that a priced round closed. "In talks" reporting is not an announcement. |
-| Entry price F₀ | The forward's quoted mid at the moment a position opens, in ln USD. Each position carries its own F₀. |
+| Entry price F₀ | The side of the dealer's quote a position fills at when it opens (ask for a long, bid for a short), in ln USD. Each position carries its own F₀. |
 | Expiry T | Binary: calendar quarter-end. Forward: **per name** (`listings.forward_t_days`), rolling. |
 | Settlement hierarchy | Published, versioned source ranking. Rank 1 company/lead release; 2 SEC filing; 3 two independent Tier-1 outlets citing closed terms; 4 one Tier-1 outlet. State charter price-per-share re-centres the mid and never settles. |
 | Clip κ | Symmetric bound on the forward's payout in log units. Default 1.0 (0.37×–2.72× of F₀). |
@@ -87,8 +87,10 @@ s_floor = 0.05; σ_tier = prior-error sd (0.35 mega-cap, 0.62 red-hot).
 The side whose fill would breach Q is pulled.
 
 Event flags (Tier-1 scoop, Form D, charter amendment, "closing"
-statement): s × 3, Q ÷ 2 for new positions, b ÷ 2, until the model
-re-prices or 72 h pass.
+statement): the forward's s × 3 and Q ÷ 2 for new positions, until the
+model re-prices or 72 h pass. The binary is seeded once per quarter at
+the model p with a fixed b and is not re-centred or re-scaled
+mid-quarter, so its bound stays b·ln(1/p_floor).
 
 Hard loss bound per name: Q·κ per forward settlement plus
 b·ln(1/p_floor) per binary quarter. Five names at defaults, ~2

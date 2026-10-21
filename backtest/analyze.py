@@ -1,12 +1,12 @@
 """Run scenarios on the merged events file and produce charts + tables."""
-import sys, math, json
+import sys, math, json, hashlib
 from datetime import date
 import pandas as pd, numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 sys.path.insert(0, __import__("os").path.dirname(__file__))
-from sim import Params, load_events, run
+from sim import DATA_THROUGH, Params, load_events, run
 
 HERE = __import__("os").path.dirname(__import__("os").path.abspath(__file__))
 EVENTS = sys.argv[1] if len(sys.argv) > 1 else f"{HERE}/events.csv"
@@ -24,6 +24,10 @@ plt.rcParams.update({"font.family": "sans-serif", "axes.edgecolor": C["axis"], "
 
 df = load_events(EVENTS)
 LISTED = ["OpenAI", "Anthropic", "Anduril", "Modal", "Instinct"]
+# Launch forward expiry per listed name, in days (README D11). A proposal the
+# harness carries until the per_name_t scenario computes it; an operator
+# applies it to listings.forward_t_days.
+FORWARD_T_DAYS = {"OpenAI": 270, "Anthropic": 180, "Anduril": 270, "Modal": 120, "Instinct": 90}
 ANALOGS = [c for c in df.company.unique() if c not in LISTED]
 ALL = LISTED + ANALOGS
 START = date(2024, 1, 1)
@@ -158,3 +162,43 @@ savefig(fig, "4_resolutions_per_quarter")
 json.dump({"bound_fwd": bound_fwd, "bound_bin_uniform": bound_bin_uniform, "bound_bin_floor": bound_bin_floor,
            "listed": LISTED, "analogs": ANALOGS}, open(f"{OUT}/meta.json", "w"), indent=1)
 print("\nbounds: fwd", bound_fwd, "bin uniform", round(bound_bin_uniform), "bin floor", round(bound_bin_floor))
+
+# ---------------------------------------------------------------- params.json: every number the app's model reads
+# src/lib/config/dealer.ts imports this file; tests/config/dealer-params.test.ts
+# fails if it is stale against these inputs, and backtest.yml fails if a rerun
+# does not reproduce it byte for byte.
+def sha256_of(path):
+    with open(path, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()
+
+if os.path.abspath(EVENTS) == os.path.abspath(f"{HERE}/events.csv"):
+    cal = results[(12, "none")]["settlements"]; cal = cal[~cal.voided]
+    sigma_tier = {t: float(cal[cal.tier == t].prior_err.std()) for t in ("mega", "redhot")}
+    loo = results[(12, "none")]["loo_prior"]
+    params = {
+        "inputs_sha256": {name: sha256_of(f"{HERE}/{name}") for name in ("events.csv", "sim.py", "analyze.py")},
+        "data_through": DATA_THROUGH.isoformat(),
+        "tier": {"mega_threshold_usd": p0.mega_threshold},
+        "prior": {
+            "mu_stepup": {c: {t: loo[(c, t)] for t in ("mega", "redhot")} for c in LISTED},
+            "mu_stepup_fallback": p0.mu_stepup,
+            "cadence_months": p0.cadence_months,
+            "weibull_k": p0.weibull_k,
+            "days_per_month": p0.days_per_month,
+            "leak_hazard_near": p0.leak_hazard_60d,
+            "leak_hazard_far": p0.leak_hazard_far,
+            "leak_window_days": p0.leak_window_days,
+        },
+        "sigma_tier": sigma_tier,
+        "dealer": {
+            "kappa": p0.kappa, "cap_usd": p0.Q, "b_usd": p0.b, "s_floor": p0.s_floor,
+            "gamma": p0.gamma, "p_floor": p0.p_floor,
+            "flag_spread_mult": p0.flag_spread_mult, "flag_cap_mult": p0.flag_q_mult,
+            "flag_hours": p0.flag_days * 24,
+        },
+        "forward_t_days": FORWARD_T_DAYS,
+    }
+    with open(f"{OUT}/params.json", "w") as f:
+        json.dump(params, f, indent=1, sort_keys=True)
+        f.write("\n")
+    print("params.json written")

@@ -42,7 +42,16 @@ Each decision carries its status against the current code.
 the older design document and must change. "Open" means the decision is
 still Nick's to make and is not to be treated as settled.
 
-### D1. Account: shared username paper account, $100,000 — Implemented
+### D1. Account: shared username paper account, $100,000 — Superseded
+
+Decided 2026-10-21: tournament sign-in (D9) becomes the only identity.
+The username-only paper account, its cookie, and the passphrase admin
+are removed, with every trace, in the dealer milestone
+(`TECHNICAL_DESIGN.md` §12, milestone 6). A paper balance opens at
+$100,000 the first time a tournament user trades.
+
+Current code: as described below, unchanged until then.
+
 
 - Opening the site creates nothing. Entering a username opens or resumes
   that paper account with a signed, HTTP-only, 30-day cookie.
@@ -203,7 +212,12 @@ section D9 becomes this one on merge.
   fails any clause is not listed. Scaling means adding names at two
   prices each, never adding contract types or states.
 - Tier by last print: mega-cap ≥ $10B, red-hot below. Tier sets the
-  prior and the dealer's depth, never a settlement rule.
+  prior and the dealer's depth, never a settlement rule. At their
+  current prints all five names are mega-cap (Instinct $10B, Modal
+  $15.75B); confirmed 2026-10-21.
+- The Anthropic and Stripe ladder markets are delisted and removed,
+  with their rows and every mention, in milestone 6. Stripe is not
+  listed (decided 2026-10-21).
 
 Current code: `scripts/production-seed.ts` requires exactly Stripe and
 Anthropic. Supersedes the D2 flagship line.
@@ -227,10 +241,18 @@ Anthropic. Supersedes the D2 flagship line.
   drawn from the forward mid and the prior width. It is no longer a
   trading surface. D5 (grid scaling) is moot for trading and stays
   open only for the display.
+- A forward position's entry price F₀ is the side of the quote it
+  filled at (ask for a long, bid for a short), not the mid; the spread
+  is what the dealer earns (decided 2026-10-21; `CONTRACTS.md` fixed).
+- Closing a forward before settlement: not decided. Until it is, a
+  position is held to settlement or void, and the ticket says so.
 
 Full semantics, edge cases and lifecycle: `CONTRACTS.md`.
 
-Current code: trades YES/NO threshold claims against the ladder.
+Current code: trades YES/NO threshold claims against the ladder. The
+launch T per name is carried in `backtest/out/params.json` as a
+declared proposal (`FORWARD_T_DAYS` in `backtest/analyze.py`); the
+backtest does not compute it yet (`per_name_t` is still to run).
 
 ### D12. The venue is the dealer — Adopted
 
@@ -245,8 +267,14 @@ Current code: trades YES/NO threshold claims against the ladder.
   $370k/yr worst case; the backtest's realised insider loss is ~20% of
   the bound carried.
 - Event flags (Tier-1 scoop, Form D, charter amendment, "closing"
-  statement) widen the spread ×3, halve Q for new positions and halve b
-  for 72 hours or until the model re-prices.
+  statement) widen the forward's spread ×3 and halve its Q for new
+  positions for 72 hours or until the model re-prices. The binary is
+  seeded once per quarter at the model p with a fixed b and is not
+  re-centred or re-scaled mid-quarter, which keeps its bound at
+  b·ln(1/p_floor) and matches the backtest (decided 2026-10-21; the
+  earlier "halve b" is dropped).
+- The labs' binary ("public S-1 by quarter-end") uses the backtest's
+  round-hazard prior as-is (decided 2026-10-21); `inputs_json` will say so.
 - Informed traders are supply, not risk: the bound is the price paid
   to turn leaked term sheets into a public price.
 - Restricted persons (employees, directors, investors of a listed
@@ -255,6 +283,14 @@ Current code: trades YES/NO threshold claims against the ladder.
 - Parameters (μ, λ, k, σ per tier, T proposals) are owned by
   `backtest/`, written to `backtest/out/params.json` and read at build
   time. A hand-edited parameter is a failing test.
+
+Current code: `backtest/analyze.py` writes `backtest/out/params.json`
+with the SHA-256 of its inputs; `src/lib/config/dealer.ts` imports and
+validates it and pins its digest to `MODEL_VERSION`.
+`tests/config/dealer-params.test.ts` fails when the file is stale
+against the backtest, edited without a version bump, or overridden in
+code, and `.github/workflows/backtest.yml` fails when a rerun does not
+reproduce it. No quoting code exists yet.
 
 ### D13. Rulebook and settlement — Adopted
 
@@ -272,6 +308,17 @@ Current code: trades YES/NO threshold claims against the ladder.
 - OpenMarket does not own the hierarchy; it publishes it. The reason
   not to list on Kalshi is network effects on one vertical, not that
   they cannot list a curve.
+- Both instruments allow a day after their deadline for an
+  announcement dated on or before it to be observed: the binary
+  resolves NO, and the forward voids, one day after T.
+
+Current code: `src/lib/engine/dealer/rulebook.ts` (v1.0.0) states the
+rules as data and resolves a binary or a forward from the events it is
+given; `GET /api/ref/rulebook` publishes it with `rulebook_version`,
+`model_version` and `as_of`. `tests/fixtures/rulebook-events.json`
+records how it resolves every row of `backtest/events.csv` (each row
+entering as rank 1, since the file carries no source rank). No settle
+job reads it yet.
 
 ### D14. Reference price API — Adopted
 
@@ -285,6 +332,10 @@ Current code: trades YES/NO threshold claims against the ladder.
 - The model's forecast log (`model_mids`) is public and unredacted.
 - A keyed tier exists from day one so the first desk that asks gets a
   key the same day; nothing is gated at launch.
+
+Current code: only `GET /api/ref/rulebook` exists, served `no-store`
+like every read route; the 60 s cache arrives with the reference API
+(milestone 8), using the tournament branch's `cacheSeconds` option.
 
 ## 3. Non-goals for v0
 
@@ -372,3 +423,13 @@ See `PART5.md` for the environment contract.
 | Tournament is in `master` | False | It is on `claude/kind-bohr-nf4w3p`; merge is milestone 1. |
 | `shelved/timing-strips` branch exists | False | Not on the remote as of 2026-10-21; the "by date" market is reinstated as D11's binary. |
 | Loss bound on a binary is b·ln 2 | False | Only from a 50/50 start; against a hazard prior it is b·ln(1/p_floor). D12 states the correct figure. |
+| `events.csv` carries source URLs | False | Sources are free text in `notes`; there is no URL column. Listing anchors need one before `seed:listings` (milestone 3). |
+| `events.csv` has 56 priced rounds | Partly | 59 `priced_round` rows; 56 fall in Jan 2024–Oct 2026, three are earlier (Anduril Dec 2022, Anthropic May 2023, Modal Oct 2023) and seed the prior. |
+| σ_tier is 0.35 / 0.62 | Rounded | The backtest's figures are 0.3455 / 0.6204 (`params.json` → `sigma_tier`); the code uses those, `CONTRACTS.md` keeps the rounded ones as prose. |
+| The backtest owns every dealer parameter | Partly | μ, σ_tier are computed; λ, k, κ, Q, b, s_floor, γ, p_floor, the flag multipliers and the launch T are declared in `sim.py`/`analyze.py` and published through `params.json`. γ is unused by the simulation. |
+| Entry price F₀ is the quoted mid | Fixed | It contradicted the quote formula and the backtest, which fill at bid/ask. `CONTRACTS.md` now says the filled side. |
+| Flags halve the binary's b | Dropped | Never simulated, and it needs a mutable b with an adjustment log in replay. Flags act on the forward only (D12). |
+| Three cron routes | Conflict | `TECHNICAL_DESIGN.md` names four jobs (ingest, mid, dealer, settle). The mid step runs inside `/api/cron/dealer`, so there are three routes. |
+| `outcome = void` is a tournament schema change | False | The tournament already has `status = 'voided'` and `voidQuestion`, which writes no scores. The bridge uses it. |
+| Launch T settles most forward lives | False for some | On `events.csv` with roll-on-void, Modal (120 d) settles 3 of 10 lives and Anduril (270 d) 3 of 7; `tests/fixtures/rulebook-events.json` lists each. |
+| Early YES rolls into next quarter's binary | Open | Read literally, a second round in the same quarter resolves the next quarter's binary YES early: Instinct's Q4 2026 and Q1 2027 binaries resolve on its Aug 26 and Sep 28 2026 rounds. Nick to confirm or restrict the next binary to its own quarter. |

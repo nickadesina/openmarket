@@ -28,6 +28,10 @@ from datetime import date, timedelta
 import pandas as pd
 import numpy as np
 
+# Events after this date are not in the sample; open intervals are censored here.
+DATA_THROUGH = date(2026, 10, 19)
+
+
 # ---------------------------------------------------------------- parameters
 @dataclass
 class Params:
@@ -50,6 +54,9 @@ class Params:
     weibull_k: float = 1.6      # >1: hazard rises with time since last round
     mega_threshold: float = 10e9
     leak_hazard_60d: float = 0.80  # P(announce within 60d | Tier-1 leak)
+    leak_hazard_far: float = 0.95  # same, when quarter-end is more than leak_window_days after the leak
+    leak_window_days: int = 60
+    days_per_month: float = 30.4375
 
 
 def tier_of(last_print: float, p: Params) -> str:
@@ -79,7 +86,7 @@ def quarter_end(d: date) -> date:
 
 
 def months_between(a: date, b: date) -> float:
-    return (b - a).days / 30.4375
+    return (b - a).days / Params.days_per_month
 
 
 # ---------------------------------------------------------------- data
@@ -100,7 +107,7 @@ def prints_for(df: pd.DataFrame, company: str, include_tenders: bool) -> pd.Data
 # ---------------------------------------------------------------- core sim
 def simulate_company(df: pd.DataFrame, company: str, p: Params, scenario: str,
                      include_tenders: bool = False, loo_prior: dict | None = None,
-                     start: date | None = None, end: date = date(2026, 10, 19)) -> dict:
+                     start: date | None = None, end: date = DATA_THROUGH) -> dict:
     ev = prints_for(df, company, include_tenders)
     if len(ev) < 2:
         return {"company": company, "settlements": [], "binaries": [], "weeks": []}
@@ -127,7 +134,7 @@ def simulate_company(df: pd.DataFrame, company: str, p: Params, scenario: str,
         # ---- forward lives: roll every T months from listing until print
         t_roll = t_list
         while t_roll < t_print and t_roll <= end:
-            T_end = t_roll + timedelta(days=int(30.4375 * p.T_months))
+            T_end = t_roll + timedelta(days=int(p.days_per_month * p.T_months))
             mid0 = ln_last + mu
             voided = t_print > T_end
             settlements.append({
@@ -189,7 +196,7 @@ def simulate_company(df: pd.DataFrame, company: str, p: Params, scenario: str,
             p_model = p_round_by(t_now, t_qe, p.weibull_k, lam)
             # leak before quarter start? then hazard jumps
             if leak is not None and leak <= qd:
-                p_model = max(p_model, p.leak_hazard_60d if (qe - leak).days <= 60 else 0.95)
+                p_model = max(p_model, p.leak_hazard_60d if (qe - leak).days <= p.leak_window_days else p.leak_hazard_far)
             p_model = min(max(p_model, p.p_floor), 1 - p.p_floor)
             outcome_yes = t_print <= qe
             b = p.b
@@ -219,7 +226,7 @@ def simulate_company(df: pd.DataFrame, company: str, p: Params, scenario: str,
     lam = p.cadence_months[tier]
     t_roll = t_list
     while True:
-        T_end = t_roll + timedelta(days=int(30.4375 * p.T_months))
+        T_end = t_roll + timedelta(days=int(p.days_per_month * p.T_months))
         if T_end > end:
             break
         settlements.append({"company": company, "tier": tier, "listed": t_roll, "expiry": T_end,

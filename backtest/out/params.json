@@ -1,0 +1,70 @@
+{
+ "data_through": "2026-10-19",
+ "dealer": {
+  "b_usd": 2000.0,
+  "cap_usd": 25000.0,
+  "flag_cap_mult": 0.5,
+  "flag_hours": 72,
+  "flag_spread_mult": 3.0,
+  "gamma": 0.5,
+  "kappa": 1.0,
+  "p_floor": 0.05,
+  "s_floor": 0.05
+ },
+ "forward_t_days": {
+  "Anduril": 270,
+  "Anthropic": 180,
+  "Instinct": 90,
+  "Modal": 120,
+  "OpenAI": 270
+ },
+ "inputs_sha256": {
+  "analyze.py": "29cae1693729ab5f412c027c00a22dc081ced040a77a144a6cad71abfa065edd",
+  "events.csv": "257c8789fa80ec234d653f2e86b4d8ef05362b4e97cb80a4aa171376239f6849",
+  "sim.py": "a9bfd2c7d535969d2eda7704e2212d7655c6299d4aa48bce1993a9698d154c07"
+ },
+ "prior": {
+  "cadence_months": {
+   "mega": 11.0,
+   "redhot": 7.0
+  },
+  "days_per_month": 30.4375,
+  "leak_hazard_far": 0.95,
+  "leak_hazard_near": 0.8,
+  "leak_window_days": 60,
+  "mu_stepup": {
+   "Anduril": {
+    "mega": 0.7306850998790105,
+    "redhot": 1.3370233121131079
+   },
+   "Anthropic": {
+    "mega": 0.647536669307893,
+    "redhot": 1.2199731456723772
+   },
+   "Instinct": {
+    "mega": 0.7306850998790105,
+    "redhot": 1.0986122886681098
+   },
+   "Modal": {
+    "mega": 0.7306850998790105,
+    "redhot": 1.0986122886681098
+   },
+   "OpenAI": {
+    "mega": 0.7306850998790105,
+    "redhot": 1.2784982288927424
+   }
+  },
+  "mu_stepup_fallback": {
+   "mega": 0.5306282510621704,
+   "redhot": 0.9162907318741551
+  },
+  "weibull_k": 1.6
+ },
+ "sigma_tier": {
+  "mega": 0.3455074891727178,
+  "redhot": 0.6203776820851955
+ },
+ "tier": {
+  "mega_threshold_usd": 10000000000.0
+ }
+}

@@ -36,6 +36,9 @@ disagree; a Claude Doc that has an in-repo copy is listed with it.
 | `backtest/out/summary.csv` | Per scenario × T × group: settlements, voids, void rate, forward and binary loss totals / per-unit / max |
 | `backtest/out/losses_T12.csv` | Per-print forward loss and per-name binary loss under each scenario at T = 12 |
 | `backtest/out/calibration.csv` | Per-print prior error with tier, used for σ_tier |
+| `backtest/out/params.json` | Every parameter the app's model and dealer read, with the SHA-256 of the backtest inputs that produced it; imported by `src/lib/config/dealer.ts` |
+| `backtest/requirements.txt` | Pinned pandas, numpy, matplotlib for `backtest.yml` |
+| `tests/fixtures/rulebook-events.json` | How rulebook v1 resolves every row of `events.csv` and each listed name's forward lives and binary quarters; a rule change re-baselines it |
 
 Fact-check status: 13 of 14 key dates and valuations confirmed against
 primary or Tier-1 sources on 2026-10-19; the FT Anthropic $150B+ leak

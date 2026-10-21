@@ -18,6 +18,11 @@ python3 analyze.py other.csv  # another events file with the same columns
   leak_date, leak_post_money_usd, notes`. Tenders and secondaries are
   recorded but excluded as prints.
 - `out/` — committed results from the last run; `RESULTS.md` explains what each file and number means.
+- `out/params.json` — every parameter the app reads (`src/lib/config/dealer.ts`),
+  with the SHA-256 of `events.csv`, `sim.py` and `analyze.py`. Never edit
+  it by hand: rerun, bump `MODEL_VERSION`, re-pin `PARAMS_SHA256`.
+  `.github/workflows/backtest.yml` fails if a rerun does not reproduce
+  `out/` and posts `summary.csv` on the PR.
 
 Headline (five listed names, Q = $25k, κ = 1, b = $2k, p_floor = 0.05,
 T = 12 months): insider who knows every print pre-leak ≈ $53k/yr,
@@ -27,4 +32,4 @@ first, median 47 days ahead. T = 3 months voids 67% of forward lives,
 which is why T is per name.
 
 Scenarios still to run: `down_round`, `heat_scaled_q`, `per_name_t`,
-`b_sweep`. Requires pandas, numpy, matplotlib.
+`b_sweep`. Requires pandas, numpy, matplotlib (`pip install -r requirements.txt`).

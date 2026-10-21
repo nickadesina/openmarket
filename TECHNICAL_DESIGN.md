@@ -60,13 +60,31 @@ branch uses.
 | --- | --- | --- |
 | `listings` | one row per listed name, versioned parameters | `company_id`, `tier`, `kappa`, `cap_cents`, `b_cents`, `spread_floor`, `forward_t_days`, `p_floor`, `version`, `valid_from` |
 | `instruments` | one row per live or past contract | `listing_id`, `kind` (binary/forward), `epoch`, `question`, `expiry`, `entry_ref_ln`, `state`, `opened_at`, `closed_at` |
-| `event_flags` | ingested public evidence (append-only) | `company_id`, `kind` (form_d/charter/scoop/release/s1_public/print/user_submitted), `source_url`, `source_rank`, `observed_at`, `published_at`, `terms_json`, `confidence`, `dedupe_key` |
+| `event_flags` | ingested public evidence (append-only) | `company_id`, `kind`, `source_url`, `source_rank`, `observed_at`, `published_at`, `terms_json`, `confidence`, `dedupe_key`, `promoted_from`, `run_id` |
 | `model_mids` | every mid the model produced (append-only) | `instrument_id`, `model_version`, `rulebook_version`, `computed_at`, `mid_ln` or `p`, `inputs_json` |
 | `quotes` | every two-way quote posted (append-only; the tape) | `instrument_id`, `posted_at`, `bid_ln`, `ask_ln` or `price`, `mid_ln`, `half_spread`, `inventory_cents`, `cap_cents_effective`, `flag_state`, `model_mid_id` |
 | `forward_positions` | open and settled forward positions | `instrument_id`, `user_id`, `side`, `notional_cents`, `entry_ln`, `trade_id`, `settled_at`, `settle_ln`, `payout_cents`, `voided_at` |
 | `reference_prices` | the published blend | `listing_id`, `kind`, `as_of`, `value`, `blend_version`, `w_model`, `w_traded`, `w_crowd`, `components_json` |
 | `tournament_instrument_links` | bridge | `question_id`, `instrument_id` |
 | `cron_runs` | job idempotency | `job`, `run_id` (unique), `started_at`, `finished_at` |
+| `source_health` | per-source last success, written by ingest; ships empty so `/admin/dealer` reads it from day one | `source`, `last_success_at`, `last_error_at`, `last_error` |
+
+`event_flags`, pinned for the ingest (Nick, 2026-10-21):
+
+- `kind` is a closed enum: `form_d | form_d_amend | charter | scoop |
+  release | s1_public | print | user_submitted`. No free text.
+- `terms_json` has a fixed shape: `{amount_usd?, valuation_usd?,
+  valuation_basis: "pre"|"post"|"unknown", lead?, pps_usd?, outlet?,
+  quote?}`. The mid model and settlement read only `valuation_usd` and
+  `valuation_basis`.
+- `print` rows carry `promoted_from` (FK to the `release`/`s1_public`
+  flag they came from; null for admin-created prints) and require
+  `source_rank`. Rank is nullable on every other kind.
+- `dedupe_key` is indexed, not unique: syndications of one scoop share
+  a key and the rulebook counts distinct outlets within it. `run_id`
+  is a FK to `cron_runs` for provenance.
+- `observed_at` is required, `published_at` nullable; the table is
+  append-only by trigger.
 
 A binary instrument maps onto the existing `markets` LMSR columns with
 `n_buckets = 2`, so `quote`/`execute-trade` run unchanged. A forward
@@ -104,8 +122,9 @@ with no preceding `scoop` is logged as an ingestion miss.
 
 `src/lib/engine/dealer/prior.ts`, pure. TypeScript port of
 `backtest/sim.py`'s prior; a unit test asserts agreement to 1e-9 on
-`backtest/events.csv`. `/api/cron/mid` appends a `model_mids` row per
-live instrument after each ingest run.
+`backtest/events.csv`. The first step of `/api/cron/dealer` appends a
+`model_mids` row per live instrument; there is no separate mid route,
+so the jobs stay three (ingest, dealer, settle).
 
 - Forward mid: `m = ln V_last + μ_tier`; on a scoop with a valuation,
   `m = ln V_leak` (re-centre, keep width); on a charter filing, the
@@ -145,7 +164,7 @@ State machine on `instruments.state`, one fixture test per transition:
 
 | From | To | Trigger | Effect |
 | --- | --- | --- | --- |
-| quoting | widened | `scoop`, `form_d`, `charter` or `release` flag | s×3, Q÷2 new, b÷2, `widened_until = now+72h` |
+| quoting | widened | `scoop`, `form_d`, `charter` or `release` flag | forward s×3 and Q÷2 new; binary unchanged; `widened_until = now+72h` |
 | widened | quoting | newer `model_mids` row, or `widened_until` passed | restore |
 | quoting/widened | resolved | `print` (forward) or announcement (binary) dated ≤ expiry | settle |
 | quoting/widened | expired | expiry with no event | binary NO; forward void |
@@ -177,7 +196,7 @@ The bridge is a mapping, not a mechanism:
 | Contract | Question type | Mapping |
 | --- | --- | --- |
 | Binary | Yes/No, `closes_at` = quarter-end, back-dated close on the resolution document | link row; the `print`/`release` flag is the resolution document |
-| Forward | numeric ladder + floor bucket "no print by expiry" | scored only if a print lands by T; a void closes unscored (`outcome = void`, the one schema change) |
+| Forward | numeric ladder + floor bucket "no print by expiry" | scored only if a print lands by T; a void closes unscored (the tournament's existing `status = 'voided'`; no schema change) |
 
 The live aggregate (median / mean p, forecaster count, recency weight)
 feeds `reference_prices` as the crowd component once `n ≥ N_min` (10).
@@ -276,9 +295,9 @@ Anthropic Series D has no dated close.
 | 1 | Merge tournament branch to `master` | existing CI green | — |
 | 2 | Rulebook + fixtures + `backtest.yml` | fixtures resolve; summary posted on PR | — |
 | 3 | `007_dealer` + `seed:listings` | migrate + replay in build | 1 |
-| 4 | Ingest + flags + admin queue | seeded scoop → flag in < 15 min on staging | 2, 3 |
+| 4 | Ingest + flags + admin queue (owned by Nick; the dealer reads `event_flags` and tests use `tests/fixtures/event-flags.json`) | seeded scoop → flag in < 15 min | 2, 3 |
 | 5 | Mid model (TS port) | agrees with `sim.py` to 1e-9 | 2, 3 |
-| 6 | Dealer + settlement + ticket UI | five names quoting on staging; fixture print settles and rolls | 4, 5 |
+| 6 | Dealer + settlement + ticket UI | five names quoting; a fixture print settles both instruments and rolls, in an integration test against CI Postgres (no staging gate, 2026-10-21) | 3, 5 |
 | 7 | Tournament bridge | crowd weight appears with ≥ 10 forecasters | 1, 6 |
 | 8 | Reference API + `/admin/dealer` + alerts | public endpoints cached, versions in every payload | 6, 7 |
 

@@ -1,0 +1,1044 @@
+{
+  "rulebook_version": "1.0.0",
+  "as_of": "2026-10-19T23:59:59.000Z",
+  "rows": [
+    {
+      "company": "OpenAI",
+      "round": "2023 VC tender",
+      "date": "2023-04-28",
+      "event_type": "tender_or_secondary",
+      "print": false,
+      "resolves_binary": false
+    },
+    {
+      "company": "OpenAI",
+      "round": "2024 employee tender",
+      "date": "2024-02-16",
+      "event_type": "tender_or_secondary",
+      "print": false,
+      "resolves_binary": false
+    },
+    {
+      "company": "OpenAI",
+      "round": "Oct 2024 round",
+      "date": "2024-10-02",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": false
+    },
+    {
+      "company": "OpenAI",
+      "round": "Mar 2025 SoftBank round",
+      "date": "2025-03-31",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": false
+    },
+    {
+      "company": "OpenAI",
+      "round": "Oct 2025 employee secondary",
+      "date": "2025-10-02",
+      "event_type": "tender_or_secondary",
+      "print": false,
+      "resolves_binary": false
+    },
+    {
+      "company": "OpenAI",
+      "round": "2026 mega-round (final close)",
+      "date": "2026-03-31",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": false
+    },
+    {
+      "company": "Anthropic",
+      "round": "Series C",
+      "date": "2023-05-23",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": false
+    },
+    {
+      "company": "Anthropic",
+      "round": "Series D",
+      "date": "2024-01-11",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": false
+    },
+    {
+      "company": "Anthropic",
+      "round": "Series E",
+      "date": "2025-03-03",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": false
+    },
+    {
+      "company": "Anthropic",
+      "round": "Series F",
+      "date": "2025-09-02",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": false
+    },
+    {
+      "company": "Anthropic",
+      "round": "Series G",
+      "date": "2026-02-12",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": false
+    },
+    {
+      "company": "Anthropic",
+      "round": "Employee tender",
+      "date": "2026-04-08",
+      "event_type": "tender_or_secondary",
+      "print": false,
+      "resolves_binary": false
+    },
+    {
+      "company": "Anthropic",
+      "round": "Series H",
+      "date": "2026-05-28",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": false
+    },
+    {
+      "company": "Anduril",
+      "round": "Series E",
+      "date": "2022-12-02",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Anduril",
+      "round": "Series F",
+      "date": "2024-08-07",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Anduril",
+      "round": "Series G",
+      "date": "2025-06-05",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Anduril",
+      "round": "Series H",
+      "date": "2026-05-13",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Anduril",
+      "round": "Employee tender",
+      "date": "2026-10-14",
+      "event_type": "tender_or_secondary",
+      "print": false,
+      "resolves_binary": false
+    },
+    {
+      "company": "Modal",
+      "round": "Series A",
+      "date": "2023-10-10",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Modal",
+      "round": "Series B",
+      "date": "2025-09-29",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Modal",
+      "round": "Series C",
+      "date": "2026-05-21",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Modal",
+      "round": "Series D",
+      "date": "2026-10-14",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Instinct",
+      "round": "Seed",
+      "date": "2026-04-01",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Instinct",
+      "round": "Series A",
+      "date": "2026-08-01",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Instinct",
+      "round": "Series B",
+      "date": "2026-08-26",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Instinct",
+      "round": "Series C",
+      "date": "2026-09-28",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Cursor",
+      "round": "Series A",
+      "date": "2024-08-22",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Cursor",
+      "round": "Series B",
+      "date": "2024-12-19",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Cursor",
+      "round": "Series C",
+      "date": "2025-06-05",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Cursor",
+      "round": "Series D",
+      "date": "2025-11-13",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Safe Superintelligence",
+      "round": "Round 1",
+      "date": "2024-09-04",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Safe Superintelligence",
+      "round": "Round 2",
+      "date": "2025-04-12",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "xAI",
+      "round": "Series B",
+      "date": "2024-05-26",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "xAI",
+      "round": "Series C",
+      "date": "2024-12-23",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "xAI",
+      "round": "Series D tranche 1",
+      "date": "2025-07-01",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "xAI",
+      "round": "Series D tranche 2",
+      "date": "2025-09-19",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "xAI",
+      "round": "Series E",
+      "date": "2026-01-06",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Mercor",
+      "round": "Series A",
+      "date": "2024-09-19",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Mercor",
+      "round": "Series B",
+      "date": "2025-02-20",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Mercor",
+      "round": "Series C",
+      "date": "2025-10-27",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Harvey",
+      "round": "Series C",
+      "date": "2024-07-23",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Harvey",
+      "round": "Series D",
+      "date": "2025-02-12",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Harvey",
+      "round": "Series E",
+      "date": "2025-06-23",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Harvey",
+      "round": "Series F",
+      "date": "2025-12-04",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Harvey",
+      "round": "Series G",
+      "date": "2026-03-25",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Harvey",
+      "round": "Series H",
+      "date": "2026-09-09",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Cognition",
+      "round": "Series B",
+      "date": "2024-04-24",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Cognition",
+      "round": "Series C",
+      "date": "2025-03-18",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Cognition",
+      "round": "Series C-2",
+      "date": "2025-09-08",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Cognition",
+      "round": "Series D",
+      "date": "2026-05-27",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Cognition",
+      "round": "Series E",
+      "date": "2026-09-08",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Perplexity",
+      "round": "Series B",
+      "date": "2024-01-04",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Perplexity",
+      "round": "Series B-1",
+      "date": "2024-04-23",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Perplexity",
+      "round": "Series C",
+      "date": "2024-06-27",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Perplexity",
+      "round": "Series D",
+      "date": "2024-12-18",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Perplexity",
+      "round": "Series E",
+      "date": "2025-05-12",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Perplexity",
+      "round": "Series E ext",
+      "date": "2025-07-17",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Perplexity",
+      "round": "Series E ext 2",
+      "date": "2025-09-10",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Valar Atomics",
+      "round": "Seed",
+      "date": "2025-02-19",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Valar Atomics",
+      "round": "Series A",
+      "date": "2025-11-10",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Valar Atomics",
+      "round": "Series A-2",
+      "date": "2026-03-31",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Valar Atomics",
+      "round": "Series B",
+      "date": "2026-08-03",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Greptile",
+      "round": "Series A",
+      "date": "2025-09-23",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    },
+    {
+      "company": "Greptile",
+      "round": "Series B",
+      "date": "2026-10-19",
+      "event_type": "priced_round",
+      "print": true,
+      "resolves_binary": true
+    }
+  ],
+  "listed": {
+    "Anduril": {
+      "binary_event": "priced_round",
+      "forward_t_days": 270,
+      "forwards": [
+        {
+          "opens": "2022-12-02",
+          "expires": "2023-08-29",
+          "status": "void"
+        },
+        {
+          "opens": "2023-08-29",
+          "expires": "2024-05-25",
+          "status": "void"
+        },
+        {
+          "opens": "2024-05-25",
+          "expires": "2025-02-19",
+          "status": "settled",
+          "event": "Anduril · Series F",
+          "settle_ln": 23.36232316656167
+        },
+        {
+          "opens": "2024-08-07",
+          "expires": "2025-05-04",
+          "status": "void"
+        },
+        {
+          "opens": "2025-05-04",
+          "expires": "2026-01-29",
+          "status": "settled",
+          "event": "Anduril · Series G",
+          "settle_ln": 24.140992520559777
+        },
+        {
+          "opens": "2025-06-05",
+          "expires": "2026-03-02",
+          "status": "void"
+        },
+        {
+          "opens": "2026-03-02",
+          "expires": "2026-11-27",
+          "status": "settled",
+          "event": "Anduril · Series H",
+          "settle_ln": 24.83413970111972
+        },
+        {
+          "opens": "2026-05-13",
+          "expires": "2027-02-07",
+          "status": "open"
+        }
+      ],
+      "binaries": [
+        {
+          "quarter_end": "2024-03-31",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2024-06-30",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2024-09-30",
+          "status": "yes",
+          "event": "Anduril · Series F"
+        },
+        {
+          "quarter_end": "2024-12-31",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2025-03-31",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2025-06-30",
+          "status": "yes",
+          "event": "Anduril · Series G"
+        },
+        {
+          "quarter_end": "2025-09-30",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2025-12-31",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2026-03-31",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2026-06-30",
+          "status": "yes",
+          "event": "Anduril · Series H"
+        },
+        {
+          "quarter_end": "2026-09-30",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2026-12-31",
+          "status": "open"
+        }
+      ]
+    },
+    "Anthropic": {
+      "binary_event": "public_s1",
+      "forward_t_days": 180,
+      "forwards": [
+        {
+          "opens": "2023-05-23",
+          "expires": "2023-11-19",
+          "status": "void"
+        },
+        {
+          "opens": "2023-11-19",
+          "expires": "2024-05-17",
+          "status": "settled",
+          "event": "Anthropic · Series D",
+          "settle_ln": 23.63561650156135
+        },
+        {
+          "opens": "2024-01-11",
+          "expires": "2024-07-09",
+          "status": "void"
+        },
+        {
+          "opens": "2024-07-09",
+          "expires": "2025-01-05",
+          "status": "void"
+        },
+        {
+          "opens": "2025-01-05",
+          "expires": "2025-07-04",
+          "status": "settled",
+          "event": "Anthropic · Series E",
+          "settle_ln": 24.842303011758883
+        },
+        {
+          "opens": "2025-03-03",
+          "expires": "2025-08-30",
+          "status": "void"
+        },
+        {
+          "opens": "2025-08-30",
+          "expires": "2026-02-26",
+          "status": "settled",
+          "event": "Anthropic · Series F",
+          "settle_ln": 25.932751989787832
+        },
+        {
+          "opens": "2025-09-02",
+          "expires": "2026-03-01",
+          "status": "settled",
+          "event": "Anthropic · Series G",
+          "settle_ln": 26.663437089666843
+        },
+        {
+          "opens": "2026-02-12",
+          "expires": "2026-08-11",
+          "status": "settled",
+          "event": "Anthropic · Series H",
+          "settle_ln": 27.595393938285397
+        },
+        {
+          "opens": "2026-05-28",
+          "expires": "2026-11-24",
+          "status": "open"
+        }
+      ],
+      "binaries": [
+        {
+          "quarter_end": "2024-03-31",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2024-06-30",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2024-09-30",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2024-12-31",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2025-03-31",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2025-06-30",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2025-09-30",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2025-12-31",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2026-03-31",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2026-06-30",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2026-09-30",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2026-12-31",
+          "status": "open"
+        }
+      ]
+    },
+    "Instinct": {
+      "binary_event": "priced_round",
+      "forward_t_days": 90,
+      "forwards": [
+        {
+          "opens": "2026-04-01",
+          "expires": "2026-06-30",
+          "status": "void"
+        },
+        {
+          "opens": "2026-06-30",
+          "expires": "2026-09-28",
+          "status": "settled",
+          "event": "Instinct · Series A",
+          "settle_ln": 20.157209352181003
+        },
+        {
+          "opens": "2026-08-01",
+          "expires": "2026-10-30",
+          "status": "settled",
+          "event": "Instinct · Series B",
+          "settle_ln": 21.639556568820566
+        },
+        {
+          "opens": "2026-08-26",
+          "expires": "2026-11-24",
+          "status": "settled",
+          "event": "Instinct · Series C",
+          "settle_ln": 23.025850929940457
+        },
+        {
+          "opens": "2026-09-28",
+          "expires": "2026-12-27",
+          "status": "open"
+        }
+      ],
+      "binaries": [
+        {
+          "quarter_end": "2024-03-31",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2024-06-30",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2024-09-30",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2024-12-31",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2025-03-31",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2025-06-30",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2025-09-30",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2025-12-31",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2026-03-31",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2026-06-30",
+          "status": "yes",
+          "event": "Instinct · Seed"
+        },
+        {
+          "quarter_end": "2026-09-30",
+          "status": "yes",
+          "event": "Instinct · Series A"
+        },
+        {
+          "quarter_end": "2026-12-31",
+          "status": "yes",
+          "event": "Instinct · Series B"
+        },
+        {
+          "quarter_end": "2027-03-31",
+          "status": "yes",
+          "event": "Instinct · Series C"
+        },
+        {
+          "quarter_end": "2027-06-30",
+          "status": "open"
+        }
+      ]
+    },
+    "Modal": {
+      "binary_event": "priced_round",
+      "forward_t_days": 120,
+      "forwards": [
+        {
+          "opens": "2023-10-10",
+          "expires": "2024-02-07",
+          "status": "void"
+        },
+        {
+          "opens": "2024-02-07",
+          "expires": "2024-06-06",
+          "status": "void"
+        },
+        {
+          "opens": "2024-06-06",
+          "expires": "2024-10-04",
+          "status": "void"
+        },
+        {
+          "opens": "2024-10-04",
+          "expires": "2025-02-01",
+          "status": "void"
+        },
+        {
+          "opens": "2025-02-01",
+          "expires": "2025-06-01",
+          "status": "void"
+        },
+        {
+          "opens": "2025-06-01",
+          "expires": "2025-09-29",
+          "status": "settled",
+          "event": "Modal · Series B",
+          "settle_ln": 20.818576016750736
+        },
+        {
+          "opens": "2025-09-29",
+          "expires": "2026-01-27",
+          "status": "void"
+        },
+        {
+          "opens": "2026-01-27",
+          "expires": "2026-05-27",
+          "status": "settled",
+          "event": "Modal · Series C",
+          "settle_ln": 22.260133056545676
+        },
+        {
+          "opens": "2026-05-21",
+          "expires": "2026-09-18",
+          "status": "void"
+        },
+        {
+          "opens": "2026-09-18",
+          "expires": "2027-01-16",
+          "status": "settled",
+          "event": "Modal · Series D",
+          "settle_ln": 23.480106202218053
+        },
+        {
+          "opens": "2026-10-14",
+          "expires": "2027-02-11",
+          "status": "open"
+        }
+      ],
+      "binaries": [
+        {
+          "quarter_end": "2024-03-31",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2024-06-30",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2024-09-30",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2024-12-31",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2025-03-31",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2025-06-30",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2025-09-30",
+          "status": "yes",
+          "event": "Modal · Series B"
+        },
+        {
+          "quarter_end": "2025-12-31",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2026-03-31",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2026-06-30",
+          "status": "yes",
+          "event": "Modal · Series C"
+        },
+        {
+          "quarter_end": "2026-09-30",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2026-12-31",
+          "status": "yes",
+          "event": "Modal · Series D"
+        },
+        {
+          "quarter_end": "2027-03-31",
+          "status": "open"
+        }
+      ]
+    },
+    "OpenAI": {
+      "binary_event": "public_s1",
+      "forward_t_days": 270,
+      "forwards": [
+        {
+          "opens": "2024-10-02",
+          "expires": "2025-06-29",
+          "status": "settled",
+          "event": "OpenAI · Mar 2025 SoftBank round",
+          "settle_ln": 26.42704831160261
+        },
+        {
+          "opens": "2025-03-31",
+          "expires": "2025-12-26",
+          "status": "void"
+        },
+        {
+          "opens": "2025-12-26",
+          "expires": "2026-09-22",
+          "status": "settled",
+          "event": "OpenAI · 2026 mega-round (final close)",
+          "settle_ln": 27.470852363775727
+        },
+        {
+          "opens": "2026-03-31",
+          "expires": "2026-12-26",
+          "status": "open"
+        }
+      ],
+      "binaries": [
+        {
+          "quarter_end": "2024-03-31",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2024-06-30",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2024-09-30",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2024-12-31",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2025-03-31",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2025-06-30",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2025-09-30",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2025-12-31",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2026-03-31",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2026-06-30",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2026-09-30",
+          "status": "no"
+        },
+        {
+          "quarter_end": "2026-12-31",
+          "status": "open"
+        }
+      ]
+    }
+  }
+}
