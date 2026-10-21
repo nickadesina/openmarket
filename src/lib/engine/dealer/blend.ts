@@ -46,6 +46,11 @@ export const BLEND_SCHEDULE: BlendSchedule = Object.freeze({
   crowd: Object.freeze({ max_weight: 0.3, n0: 20, n_min: 10 }),
 });
 
+/** Every schedule ever published, so a stored row recomputes under its own version. */
+export const BLEND_SCHEDULES_BY_VERSION: Readonly<Record<string, BlendSchedule>> = Object.freeze({
+  [BLEND_VERSION]: BLEND_SCHEDULE,
+});
+
 export type BlendKind = "forward" | "binary";
 
 export interface BlendWeights {

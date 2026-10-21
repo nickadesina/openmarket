@@ -382,11 +382,11 @@ function withoutAsOf(inputs: JsonValue): JsonValue {
 }
 
 /** Stable JSON: object keys sorted, so jsonb's key order does not matter. */
-function canonical(value: JsonValue): string {
+export function canonicalJson(value: JsonValue): string {
   if (value === null || typeof value !== "object") return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
   const keys = Object.keys(value).sort();
-  return `{${keys.map((key) => `${JSON.stringify(key)}:${canonical(value[key]!)}`).join(",")}}`;
+  return `{${keys.map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key]!)}`).join(",")}}`;
 }
 
 /** True when `next` would repeat `previous`: same versions, value and inputs but the as-of. */
@@ -401,8 +401,8 @@ export function sameMid(
     previous.model_version === modelVersion &&
     previous.rulebook_version === rulebookVersion &&
     previous.value === next.value &&
-    canonical(withoutAsOf(previous.inputs)) ===
-      canonical(withoutAsOf(next.inputs as unknown as JsonValue))
+    canonicalJson(withoutAsOf(previous.inputs)) ===
+      canonicalJson(withoutAsOf(next.inputs as unknown as JsonValue))
   );
 }
 

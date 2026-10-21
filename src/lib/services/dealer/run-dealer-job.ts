@@ -6,6 +6,7 @@ import { computeMids } from "./compute-mids.js";
 import { type CronRunOutcome, runCronJob } from "./cron-run.js";
 import { type DealerHealth, getDealerHealth } from "./get-dealer-health.js";
 import { listInstruments } from "./list-instruments.js";
+import { writeReferencePrices } from "./reference-prices.js";
 import { requote } from "./requote.js";
 
 export interface DealerStepContext {
@@ -21,13 +22,15 @@ export interface DealerStepContext {
  * flags and mids seen since their last change; `list` gives every active
  * listing a live binary and forward; `mids` writes the model mid of every
  * live instrument (a just-listed one already has its first); `requote` posts
- * each quote that moved.
+ * each quote that moved; `reference` publishes each blended reference price
+ * that moved (README D14).
  */
 export const DEALER_STEPS = {
   state: (context: DealerStepContext) => applyFlags(context.db, context.now),
   list: (context: DealerStepContext) => listInstruments(context.db, context.runId, context.now),
   mids: (context: DealerStepContext) => computeMids(context.db, context.runId, context.now),
   requote: (context: DealerStepContext) => requote(context.db, context.now),
+  reference: (context: DealerStepContext) => writeReferencePrices(context.db, context.now),
 } as const;
 
 type DealerSteps = typeof DEALER_STEPS;

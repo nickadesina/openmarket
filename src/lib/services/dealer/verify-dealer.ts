@@ -4,6 +4,7 @@ import { PARAMS_SHA256_BY_MODEL_VERSION } from "../../config/dealer.js";
 import type { Database, ForwardSide, QuoteRow } from "../../db/schema.js";
 import { type MidInputs, midFromInputs } from "./compute-mids.js";
 import { type ForwardQuoteListing, forwardQuoteFor } from "./dealer-books.js";
+import { verifyReferencePrices } from "./reference-prices.js";
 
 /** A stored mid must recompute from its inputs this closely. */
 export const MID_TOLERANCE = 1e-12;
@@ -12,13 +13,14 @@ export const QUOTE_TOLERANCE = 1e-12;
 
 export interface DealerFinding {
   readonly id: string;
-  readonly check: "mid_recompute" | "quote_recompute" | "fill_entry";
+  readonly check: "mid_recompute" | "quote_recompute" | "fill_entry" | "reference_recompute";
   readonly detail: string;
 }
 
 export interface DealerVerification {
   readonly midsChecked: number;
   readonly quotesChecked: number;
+  readonly referencesChecked: number;
   readonly findings: DealerFinding[];
   readonly passed: boolean;
 }
@@ -161,7 +163,8 @@ function checkForwardQuote(
  * inputs: a forward's bid, ask and spread from its model mid, the open
  * inventory and its flag state through forward.ts; a binary's price from its
  * model p (list), the trade it filled (fill) or the book's mark (requote). A
- * fill's position entered at the side of the quote it filled.
+ * fill's position entered at the side of the quote it filled. Every
+ * `reference_prices` row recomputes from its components (reference-prices.ts).
  */
 export async function verifyDealer(db: Kysely<Database>): Promise<DealerVerification> {
   const findings: DealerFinding[] = [];
@@ -239,9 +242,15 @@ export async function verifyDealer(db: Kysely<Database>): Promise<DealerVerifica
     }
   }
 
+  const references = await verifyReferencePrices(db, PARAMS_SHA256_BY_MODEL_VERSION);
+  for (const finding of references.findings) {
+    findings.push({ ...finding, check: "reference_recompute" });
+  }
+
   return {
     midsChecked,
     quotesChecked: quotes.length,
+    referencesChecked: references.checked,
     findings,
     passed: findings.length === 0,
   };
