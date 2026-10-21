@@ -129,27 +129,18 @@ live instrument after each ingest run.
 15 minutes and after any flag. Execution reads the latest quote inside
 the ledger's advisory-locked transaction.
 
-Forward quote:
+Forward quote, per-name T, event-flag multipliers and the hard loss
+bound are as `CONTRACTS.md` → The dealer specifies; this document does
+not restate them. The engine reads γ, σ_tier, s_floor, Q, b, κ and T
+from `src/lib/config/dealer.ts` (backtest-owned). The side whose fill
+would push |I| past Q is pulled. Notional-for-notional fills at the
+posted bid/ask.
 
-    m̃ = m − γ·κ·I/Q        s = s_floor + σ_tier·|I|/Q
-    bid = m̃ − s             ask = m̃ + s
-
-γ = 0.5, σ_tier = 0.35 (mega) / 0.62 (red-hot), s_floor = 0.05 at
-launch, all backtest-owned. The side whose fill would push |I| past Q
-is pulled. Notional-for-notional fills at the posted bid/ask.
-
-Per-name T from `listings.forward_t_days` (launch: 270 / 180 / 270 /
-120 / 90 days for OpenAI / Anthropic / Anduril / Modal / Instinct).
-
-State machine on `instruments.state`, one fixture test per transition:
-
-| From | To | Trigger | Effect |
-| --- | --- | --- | --- |
-| quoting | widened | `scoop`, `form_d`, `charter` or `release` flag | s×3, Q÷2 new, b÷2, `widened_until = now+72h` |
-| widened | quoting | newer `model_mids` row, or `widened_until` passed | restore |
-| quoting/widened | resolved | `print` (forward) or announcement (binary) dated ≤ expiry | settle |
-| quoting/widened | expired | expiry with no event | binary NO; forward void |
-| resolved/expired | new instrument | immediate | successor listed |
+State machine on `instruments.state`, one fixture test per transition,
+transitions as `CONTRACTS.md` → Lifecycle: quoting → widened on a flag
+(`widened_until = now + 72h`), back on a newer `model_mids` row or
+expiry of the hold; resolved on a qualifying event ≤ expiry; expired
+otherwise; both list a successor immediately.
 
 Settlement (`/api/cron/settle`, hourly and on demand): one transaction
 per instrument; binary pays $1/YES share; forward pays
@@ -174,10 +165,9 @@ numeric ladders with a floor bucket, binaries, append-only forecast
 events, log scoring, leaderboard, X sign-in and Merkle commitments.
 The bridge is a mapping, not a mechanism:
 
-| Contract | Question type | Mapping |
-| --- | --- | --- |
-| Binary | Yes/No, `closes_at` = quarter-end, back-dated close on the resolution document | link row; the `print`/`release` flag is the resolution document |
-| Forward | numeric ladder + floor bucket "no print by expiry" | scored only if a print lands by T; a void closes unscored (`outcome = void`, the one schema change) |
+Mapping per `CONTRACTS.md` → Tournament mapping; the one schema change
+is `outcome = void` on `tournament_questions` for a forward that
+expires without a print.
 
 The live aggregate (median / mean p, forecaster count, recency weight)
 feeds `reference_prices` as the crowd component once `n ≥ N_min` (10).
