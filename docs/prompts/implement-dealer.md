@@ -4,7 +4,15 @@ You are implementing the architecture change recorded in `README.md`
 §2 (D10–D14), specified in `CONTRACTS.md`, and planned in
 `TECHNICAL_DESIGN.md`, inside the `nickadesina/openmarket` repository.
 Read those three files and `AGENTS.md` in full before writing code.
-`docs/ARTIFACTS.md` tells you where everything else is.
+`docs/ARTIFACTS.md` tells you where everything else is;
+`docs/decisions/` holds agreed changes that supplement the design —
+read every file there before starting a milestone it names.
+
+**Milestone 4 (ingest) is owned elsewhere** — see
+`docs/decisions/0001-event-flags-and-ingest-handoff.md`. You create
+the `event_flags` table in `007_dealer` with the pinned shape in that
+file, and until ingest lands your tests read
+`tests/fixtures/event-flags.json`.
 
 ## What you are building
 
@@ -94,14 +102,10 @@ dependencies are not merged.
    the five names with verified last prints (use
    `backtest/events.csv` as the source of truth), idempotent on
    `(company, listed_at)`. Migrate + replay in the build.
-4. **Ingest.** `/api/cron/ingest` + `ingest.yml` (15 min). EDGAR
-   full-text and Form D for the five names; state charter watchlist;
-   Tier-1 RSS + one LLM extractor behind
-   `src/lib/services/ingest/extract.ts` with the schema in
-   `TECHNICAL_DESIGN.md` §4; `dedupe_key`; admin confirmation queue
-   for sub-high-confidence releases. Gate: a seeded scoop fixture
-   becomes a flag within one job run on staging. Record per-source
-   last-success.
+4. **Ingest — not yours.** Owned per
+   `docs/decisions/0001-event-flags-and-ingest-handoff.md`. Skip it;
+   milestones 5–8 depend on the table and the fixture, not on the
+   job.
 5. **Mid model.** `src/lib/engine/dealer/prior.ts`, a port of the
    prior in `backtest/sim.py`; `/api/cron/mid`; a test asserting
    agreement with `sim.py` to 1e-9 on `events.csv` (run the Python in
@@ -123,8 +127,9 @@ dependencies are not merged.
 8. **Reference API + admin + alerts.** `/api/ref/*` per
    `TECHNICAL_DESIGN.md` §8, `blend.ts`, `api_keys`, `/admin/dealer`
    (pnl, source last-success, widened instruments, resolution queue),
-   a daily Actions job that fails on a silent source or a >72 h
-   widen. Gate: public endpoints cached 60 s with versions in every
+   a daily Actions job that fails on a >72 h widen (the silent-source
+   check ships with ingest; read `source_health` against an empty
+   table until then). Gate: public endpoints cached 60 s with versions in every
    payload.
 
 ## How to work
