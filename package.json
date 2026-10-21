@@ -28,6 +28,7 @@
     "deploy:check": "tsx scripts/verify-production-config.ts --target=production",
     "deploy:check:preview": "tsx scripts/verify-production-config.ts --target=preview",
     "seed:production": "tsx scripts/production-seed.ts",
+    "seed:listings": "tsx scripts/seed-listings.ts",
     "seed:dev": "tsx scripts/seed-dev.ts",
     "reseed:dev": "tsx scripts/reseed-dev.ts",
     "seed:tournament": "tsx scripts/seed-tournament.ts",

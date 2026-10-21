@@ -131,6 +131,7 @@ function createFakeDatabase(): { db: Kysely<Database>; state: FakeState } {
           rounding_reserve_cents: values.rounding_reserve_cents as string,
           created_at: CREATED_AT,
           settled_at: values.settled_at as Date | null,
+          instrument_id: null,
         };
         state.nextMarketId += 1;
         state.market = market;

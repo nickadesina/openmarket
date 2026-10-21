@@ -26,6 +26,10 @@ function winningBucket(metricKind: MetricKind, settledValueUsd: string): number 
     throw new ServiceError("INVALID_INPUT", "Settlement value is invalid.");
   }
 
+  if (metricKind === "forward_ln") {
+    throw new ServiceError("INVALID_INPUT", "Forward settlement is not yet supported.");
+  }
+
   if (metricKind === "yes_probability") {
     if (settledValueCents !== 0 && settledValueCents !== 100) {
       throw new ServiceError("INVALID_INPUT", "Binary settlement value must be 0 or 1.");

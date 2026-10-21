@@ -1,9 +1,13 @@
 import type { ColumnType, Generated, Insertable, Selectable, Updateable } from "kysely";
 
 export type MarketStatus = "open" | "settled";
-export type MetricKind = "valuation_median" | "yes_probability";
+/** `forward_ln` is a dealer forward's book: q = [open long, open short] notional in USD. */
+export type MetricKind = "valuation_median" | "yes_probability" | "forward_ln";
 export type TradeAction = "buy" | "sell";
-export type ContractSide = "yes" | "no";
+/** An LMSR claim side; the ladder and the binary trade these. */
+export type ClaimSide = "yes" | "no";
+export type ForwardSide = "long" | "short";
+export type ContractSide = ClaimSide | ForwardSide;
 
 export type JsonPrimitive = boolean | number | string | null;
 export type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
@@ -42,6 +46,8 @@ export interface MarketsTable {
   rounding_reserve_cents: Generated<string>;
   created_at: GeneratedImmutable<Date>;
   settled_at: Date | null;
+  /** Set when this row is a dealer instrument's book; null for the ladder markets. */
+  instrument_id: GeneratedImmutable<string | null>;
 }
 
 export interface UsersTable {
@@ -276,6 +282,164 @@ export interface TournamentProvenanceLeavesTable {
   path: Immutable<string[]>;
 }
 
+export type ListingTier = "mega" | "redhot";
+export type BinaryEventKind = "priced_round" | "public_s1";
+export type InstrumentKind = "binary" | "forward";
+export type InstrumentState = "quoting" | "widened" | "resolved" | "expired";
+export type EventFlagKind =
+  | "form_d"
+  | "form_d_amend"
+  | "charter"
+  | "scoop"
+  | "release"
+  | "s1_public"
+  | "print"
+  | "user_submitted";
+export type EventFlagConfidence = "high" | "medium" | "low";
+export type CronRunStatus = "running" | "succeeded" | "failed";
+export type QuoteReason = "list" | "requote" | "fill" | "widen" | "restore";
+export type QuoteFlagState = "normal" | "widened";
+
+export interface ListingsTable {
+  id: GeneratedImmutable<string>;
+  company_id: Immutable<string>;
+  tier: Immutable<ListingTier>;
+  binary_event: Immutable<BinaryEventKind>;
+  kappa: Immutable<number>;
+  /** bigint; pg returns strings. */
+  cap_cents: Immutable<string>;
+  b_cents: Immutable<string>;
+  spread_floor: Immutable<number>;
+  gamma: Immutable<number>;
+  p_floor: Immutable<number>;
+  forward_t_days: Immutable<number>;
+  model_version: Immutable<string>;
+  anchor_round: Immutable<string>;
+  anchor_date: Immutable<string>;
+  /** numeric; pg returns strings. */
+  anchor_post_money_usd: Immutable<string>;
+  anchor_source_url: Immutable<string>;
+  anchor_source_rank: Immutable<number | null>;
+  listed_at: Immutable<Date>;
+  delisted_at: Date | null;
+}
+
+export interface InstrumentsTable {
+  id: GeneratedImmutable<string>;
+  listing_id: Immutable<string>;
+  kind: Immutable<InstrumentKind>;
+  epoch: Immutable<number>;
+  question: Immutable<string>;
+  opens_at: Immutable<Date>;
+  expires_at: Immutable<Date>;
+  entry_ref_ln: Immutable<number | null>;
+  state: InstrumentState;
+  widened_until: Date | null;
+  closed_at: Date | null;
+  resolution_json: JsonValue | null;
+}
+
+export interface EventFlagsTable {
+  id: GeneratedImmutable<string>;
+  company_id: Immutable<string>;
+  kind: Immutable<EventFlagKind>;
+  source_url: Immutable<string | null>;
+  source_rank: Immutable<number | null>;
+  observed_at: Immutable<Date>;
+  published_at: Immutable<Date | null>;
+  terms_json: Immutable<JsonObject>;
+  confidence: Immutable<EventFlagConfidence>;
+  dedupe_key: Immutable<string>;
+  promoted_from: Immutable<string | null>;
+  run_id: Immutable<string | null>;
+  created_at: GeneratedImmutable<Date>;
+}
+
+export interface CronRunsTable {
+  id: GeneratedImmutable<string>;
+  job: Immutable<string>;
+  run_id: Immutable<string>;
+  started_at: GeneratedImmutable<Date>;
+  finished_at: Date | null;
+  status: CronRunStatus;
+  detail_json: JsonValue | null;
+}
+
+export interface ModelMidsTable {
+  id: GeneratedImmutable<string>;
+  instrument_id: Immutable<string>;
+  model_version: Immutable<string>;
+  rulebook_version: Immutable<string>;
+  computed_at: Immutable<Date>;
+  mid_ln: Immutable<number | null>;
+  p: Immutable<number | null>;
+  inputs_json: Immutable<JsonValue>;
+  run_id: Immutable<string | null>;
+}
+
+export interface QuotesTable {
+  id: GeneratedImmutable<string>;
+  instrument_id: Immutable<string>;
+  posted_at: Immutable<Date>;
+  reason: Immutable<QuoteReason>;
+  model_mid_id: Immutable<string | null>;
+  mid_ln: Immutable<number | null>;
+  bid_ln: Immutable<number | null>;
+  ask_ln: Immutable<number | null>;
+  price: Immutable<number | null>;
+  half_spread: Immutable<number | null>;
+  inventory_cents: Immutable<string>;
+  cap_cents_effective: Immutable<string>;
+  flag_state: Immutable<QuoteFlagState>;
+  trade_id: Immutable<string | null>;
+  model_version: Immutable<string>;
+  rulebook_version: Immutable<string>;
+}
+
+export interface ForwardPositionsTable {
+  id: GeneratedImmutable<string>;
+  instrument_id: Immutable<string>;
+  user_id: Immutable<string>;
+  trade_id: Immutable<string>;
+  side: Immutable<ForwardSide>;
+  notional_cents: Immutable<string>;
+  entry_ln: Immutable<number>;
+  collateral_cents: Immutable<string>;
+  opened_at: Immutable<Date>;
+  settled_at: Date | null;
+  settle_ln: number | null;
+  payout_cents: string | null;
+  voided_at: Date | null;
+}
+
+export interface ReferencePricesTable {
+  id: GeneratedImmutable<string>;
+  listing_id: Immutable<string>;
+  kind: Immutable<InstrumentKind>;
+  as_of: Immutable<Date>;
+  value: Immutable<number>;
+  blend_version: Immutable<string>;
+  model_version: Immutable<string>;
+  rulebook_version: Immutable<string>;
+  w_model: Immutable<number>;
+  w_traded: Immutable<number>;
+  w_crowd: Immutable<number>;
+  components_json: Immutable<JsonValue>;
+}
+
+export interface TournamentInstrumentLinksTable {
+  id: GeneratedImmutable<string>;
+  question_id: Immutable<string>;
+  instrument_id: Immutable<string>;
+}
+
+export interface SourceHealthTable {
+  source: Immutable<string>;
+  last_success_at: Date | null;
+  last_error_at: Date | null;
+  last_error: string | null;
+}
+
 export interface Database {
   companies: CompaniesTable;
   markets: MarketsTable;
@@ -300,6 +464,16 @@ export interface Database {
   tournament_provenance_batches: TournamentProvenanceBatchesTable;
   tournament_provenance_leaves: TournamentProvenanceLeavesTable;
   tournament_password_credentials: TournamentPasswordCredentialsTable;
+  listings: ListingsTable;
+  instruments: InstrumentsTable;
+  event_flags: EventFlagsTable;
+  cron_runs: CronRunsTable;
+  model_mids: ModelMidsTable;
+  quotes: QuotesTable;
+  forward_positions: ForwardPositionsTable;
+  reference_prices: ReferencePricesTable;
+  tournament_instrument_links: TournamentInstrumentLinksTable;
+  source_health: SourceHealthTable;
 }
 
 export type CompanyRow = Selectable<CompaniesTable>;
@@ -329,3 +503,31 @@ export type MarkUpdate = Updateable<MarksTable>;
 export type SettlementRow = Selectable<SettlementsTable>;
 export type SettlementInsert = Insertable<SettlementsTable>;
 export type SettlementUpdate = Updateable<SettlementsTable>;
+
+export type ListingRow = Selectable<ListingsTable>;
+export type ListingInsert = Insertable<ListingsTable>;
+export type ListingUpdate = Updateable<ListingsTable>;
+
+export type InstrumentRow = Selectable<InstrumentsTable>;
+export type InstrumentInsert = Insertable<InstrumentsTable>;
+export type InstrumentUpdate = Updateable<InstrumentsTable>;
+
+export type EventFlagRow = Selectable<EventFlagsTable>;
+export type EventFlagInsert = Insertable<EventFlagsTable>;
+
+export type CronRunRow = Selectable<CronRunsTable>;
+export type CronRunInsert = Insertable<CronRunsTable>;
+export type CronRunUpdate = Updateable<CronRunsTable>;
+
+export type ModelMidRow = Selectable<ModelMidsTable>;
+export type ModelMidInsert = Insertable<ModelMidsTable>;
+
+export type QuoteRow = Selectable<QuotesTable>;
+export type QuoteInsert = Insertable<QuotesTable>;
+
+export type ForwardPositionRow = Selectable<ForwardPositionsTable>;
+export type ForwardPositionInsert = Insertable<ForwardPositionsTable>;
+export type ForwardPositionUpdate = Updateable<ForwardPositionsTable>;
+
+export type ReferencePriceRow = Selectable<ReferencePricesTable>;
+export type ReferencePriceInsert = Insertable<ReferencePricesTable>;

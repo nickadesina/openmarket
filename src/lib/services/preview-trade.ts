@@ -1,6 +1,6 @@
 import { ServiceError } from "../api/errors.js";
 import { parseUsdToCents } from "../api/money.js";
-import type { ContractSide, MetricKind, TradeAction } from "../db/schema.js";
+import type { ClaimSide, MetricKind, TradeAction } from "../db/schema.js";
 import {
   VALUATION_BOUNDARIES_USD,
   VALUATION_BUCKET_COUNT,
@@ -40,7 +40,7 @@ export interface PreviewMarketState {
 
 export interface TradePreviewRequest {
   readonly action: TradeAction;
-  readonly side: ContractSide;
+  readonly side: ClaimSide;
   readonly strike_index: number;
 }
 
@@ -113,6 +113,11 @@ export function parseRequestedAmount(input: TradeAmountInput): RequestedAmount {
 function canonicalStrikeValue(market: PreviewMarketState, strikeIndex: number): string | null {
   if (!Number.isInteger(strikeIndex)) {
     throw invalidInput("Strike index must be an integer.");
+  }
+
+  // Forward books trade through the dealer quoter (milestone 6), never the LMSR.
+  if (market.metric_kind === "forward_ln") {
+    throw invalidInput("Forward trading is not yet supported.");
   }
 
   if (market.metric_kind === "yes_probability") {

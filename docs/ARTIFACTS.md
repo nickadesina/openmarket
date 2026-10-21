@@ -32,15 +32,7 @@ disagree; a Claude Doc that has an in-repo copy is listed with it.
 | `backtest/data/labs.csv` | OpenAI and Anthropic rounds with leak dates and notes on conflicts |
 | `backtest/data/anduril_modal_instinct.csv` | The three red-hot names |
 | `backtest/data/analogs.csv` | Cursor, SSI, xAI, Mercor, Harvey, Cognition, Perplexity, Valar Atomics, Greptile |
-| `backtest/out/1_forward_loss_per_print.png` | House loss on the forward per print, five listed names, insider vs leak-reader, against the $25k cap |
-| `backtest/out/2_void_rate.png` | Share of forward lives that void at T = 3 vs 12 months per name — the chart behind the per-name-T decision |
-| `backtest/out/3_prior_calibration.png` | Realised ln(print) minus the prior mid, 45 prints, by tier, with the spread floor and the clip marked |
-| `backtest/out/4_resolutions_per_quarter.png` | Priced rounds per quarter, listed vs analog names — how often the scoreboard moves |
-| `backtest/out/summary.csv` | Per scenario × T × group: settlements, voids, void rate, forward and binary loss totals / per-unit / max |
-| `backtest/out/losses_T12.csv` | Per-print forward loss and per-name binary loss under each scenario at T = 12 |
-| `backtest/out/calibration.csv` | Per-print prior error with tier, used for σ_tier |
-| `backtest/out/params.json` | Every parameter the app's model and dealer read, with the SHA-256 of the backtest inputs that produced it; imported by `src/lib/config/dealer.ts` |
-| `backtest/out/prior_golden.json` | Every binary quarter's p, forward life's opening mid and weekly dealer mid sim.py gives the five listed names, with the inputs to recompute each; `tests/engine/dealer/prior.test.ts` holds `src/lib/engine/dealer/prior.ts` to it at 1e-9 |
+| `backtest/out/*` | Committed results of the last run — four charts and four CSV/JSON tables, each read in `backtest/RESULTS.md`, plus `params.json` (every parameter the app reads, with the SHA-256 of the inputs that produced it; imported by `src/lib/config/dealer.ts`) and `prior_golden.json` (sim.py's binary p, forward opening mid and weekly mid for the five names, with inputs; `tests/engine/dealer/prior.test.ts` holds `src/lib/engine/dealer/prior.ts` to it at 1e-9) |
 | `backtest/requirements.txt` | Pinned pandas, numpy, matplotlib for `backtest.yml` |
 | `tests/fixtures/rulebook-events.json` | How rulebook v1 resolves every row of `events.csv` and each listed name's forward lives and binary quarters; a rule change re-baselines it |
 
