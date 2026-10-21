@@ -132,7 +132,23 @@ postgresDescribe(suiteName, () => {
           current_metric: Number(SERIES_G.postMoneyUsd),
         },
       ])
-      .execute();
+      .returning(["id", "current_metric"])
+      .execute()
+      .then((books) =>
+        db
+          .insertInto("marks")
+          .values(
+            books.map((market) => ({
+              market_id: market.id,
+              market_sequence: "0",
+              trade_id: null,
+              // Before the wall-clock runs that quote these books.
+              ts: new Date("2026-01-01T00:00:00.000Z"),
+              value: market.current_metric,
+            })),
+          )
+          .execute(),
+      );
 
     const flags = fixtureFlagsFor("anthropic", ["scoop", "release"]);
     await db
@@ -229,7 +245,13 @@ postgresDescribe(suiteName, () => {
     });
     expect(await mids()).toHaveLength(2);
 
-    expect(await verifyDealer(postgres.db)).toEqual({ midsChecked: 2, findings: [], passed: true });
+    expect(await verifyDealer(postgres.db)).toEqual({
+      midsChecked: 2,
+      // The requote step's first quote of each hand-made book.
+      quotesChecked: 2,
+      findings: [],
+      passed: true,
+    });
   });
 
   it("refuses a missing or wrong secret before claiming the run", async () => {

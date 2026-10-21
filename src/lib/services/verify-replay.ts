@@ -1,6 +1,11 @@
 import type { Kysely, Transaction } from "kysely";
 
-import type { Database, TradeAction } from "../db/schema.js";
+import type { Database, ForwardSide, MetricKind, TradeAction } from "../db/schema.js";
+import {
+  collateralCents,
+  settlementCreditCents,
+  voidCreditCents,
+} from "../engine/dealer/forward.js";
 import {
   probabilities,
   quantizeBuyCostCents,
@@ -14,6 +19,8 @@ import { INITIAL_USER_BALANCE_CENTS } from "./user.js";
 export interface ReplayMarketInput {
   readonly id: string;
   readonly companySlug: string;
+  /** A `forward_ln` book replays by forward rules; anything else by the LMSR. Default LMSR. */
+  readonly metricKind?: MetricKind;
   readonly nBuckets: number;
   readonly b: number;
   readonly initialQ: readonly number[];
@@ -28,6 +35,8 @@ export interface ReplayTradeInput {
   readonly marketId: string;
   readonly marketSequence: string;
   readonly action: TradeAction;
+  /** yes/no on an LMSR book, long/short on a forward. Absent in pre-dealer snapshots. */
+  readonly contractSide?: string;
   readonly delta: readonly number[];
   readonly cashAmountCents: string;
   readonly redemptionQuantity: number;
@@ -55,12 +64,42 @@ export interface ReplayUserInput {
   readonly cashBalanceCents: string;
 }
 
+/** A `forward_positions` row: one per forward trade. */
+export interface ReplayForwardPositionInput {
+  readonly id: string;
+  readonly marketId: string;
+  readonly tradeId: string;
+  readonly side: ForwardSide;
+  readonly notionalCents: string;
+  readonly entryLn: number;
+  readonly collateralCents: string;
+  readonly settled: boolean;
+  readonly settleLn: number | null;
+  /** Credit − collateral, as the settle job stored it. */
+  readonly payoutCents: string | null;
+  readonly voided: boolean;
+}
+
 export interface ReplaySnapshot {
   readonly markets: readonly ReplayMarketInput[];
   readonly trades: readonly ReplayTradeInput[];
   readonly marks: readonly ReplayMarkInput[];
   readonly holdings: readonly ReplayHoldingInput[];
   readonly users: readonly ReplayUserInput[];
+  readonly forwardPositions?: readonly ReplayForwardPositionInput[];
+}
+
+/** A forward book whose trades, positions or cash disagree with forward.ts's rules. */
+export interface ForwardFinding {
+  readonly code:
+    | "TRADE_WITHOUT_POSITION"
+    | "POSITION_WITHOUT_TRADE"
+    | "POSITION_MISMATCH"
+    | "COLLATERAL"
+    | "DELTA"
+    | "CREDIT"
+    | "MM_CASH_FLOW";
+  readonly detail: string;
 }
 
 export interface SequenceRange {
@@ -163,6 +202,7 @@ export interface MarketReplayDiagnostics {
   readonly tradeMarkCardinality: readonly TradeMarkCardinalityFinding[];
   readonly tradeMarkDisagreements: readonly TradeMarkDisagreement[];
   readonly timestampInversions: readonly TimestampInversionFinding[];
+  readonly forwardFindings: readonly ForwardFinding[];
   readonly mmCashFlowCents: string;
   readonly roundingReserveCents: string;
   readonly passed: boolean;
@@ -333,12 +373,209 @@ function analyzeSequences(
   };
 }
 
+/**
+ * Replays a book's trades in sequence order from initial_q. An LMSR book's
+ * cash is re-priced on the replayed state; a forward's is checked against its
+ * position by analyzeForwardBook, since a fill moves no price.
+ */
+function replayTrades(
+  market: ReplayMarketInput,
+  trades: readonly ReplayTradeInput[],
+  stateFindings: StateFinding[],
+  isForward: boolean,
+): { q: number[]; tradeEconomics: TradeEconomicsFinding[] } {
+  const replayedQ = [...market.initialQ];
+  const tradeEconomics: TradeEconomicsFinding[] = [];
+  const orderedTrades = parseAndOrder(trades, (trade) => trade.marketSequence);
+  for (const { row: trade } of orderedTrades.ordered) {
+    if (trade.delta.length !== replayedQ.length) {
+      stateFindings.push({
+        code: "INVALID_VECTOR_LENGTH",
+        detail: `trade ${trade.id} delta has ${trade.delta.length} buckets; expected ${replayedQ.length}`,
+      });
+      continue;
+    }
+    if (!replayedQ.every(Number.isFinite) || !trade.delta.every(Number.isFinite)) {
+      stateFindings.push({
+        code: "NONFINITE_VECTOR_VALUE",
+        detail: `trade ${trade.id} cannot replay against a non-finite vector`,
+      });
+      continue;
+    }
+
+    // Re-price the trade on the replayed state: the ledger must have charged
+    // exactly what the engine charges, not merely balanced its two legs.
+    if (!isForward) repriceLmsrTrade(market, trade, replayedQ, tradeEconomics, stateFindings);
+
+    for (let index = 0; index < replayedQ.length; index += 1) {
+      replayedQ[index] = replayedQ[index]! + trade.delta[index]!;
+    }
+  }
+  return { q: replayedQ, tradeEconomics };
+}
+
+function repriceLmsrTrade(
+  market: ReplayMarketInput,
+  trade: ReplayTradeInput,
+  replayedQ: readonly number[],
+  tradeEconomics: TradeEconomicsFinding[],
+  stateFindings: StateFinding[],
+): void {
+  try {
+    const costUsd = tradeCost(replayedQ, trade.delta, market.b);
+    const expectedCash =
+      trade.action === "buy" ? quantizeBuyCostCents(costUsd) : quantizeSellProceedsCents(costUsd);
+    if (expectedCash.toString() !== trade.cashAmountCents) {
+      tradeEconomics.push({
+        tradeId: trade.id,
+        marketSequence: trade.marketSequence,
+        field: "cash_amount_cents",
+        expected: expectedCash.toString(),
+        persisted: trade.cashAmountCents,
+      });
+    }
+    const expectedRedemption = quantizeEntitlementCents(trade.redemptionQuantity);
+    if (expectedRedemption.toString() !== trade.redemptionCents) {
+      tradeEconomics.push({
+        tradeId: trade.id,
+        marketSequence: trade.marketSequence,
+        field: "redemption_cents",
+        expected: expectedRedemption.toString(),
+        persisted: trade.redemptionCents,
+      });
+    }
+  } catch (error: unknown) {
+    stateFindings.push({
+      code: "INVALID_TRADE",
+      detail: `trade ${trade.id}: ${error instanceof Error ? error.message : "cannot be re-priced"}`,
+    });
+  }
+}
+
+function pmfError(market: ReplayMarketInput, stateFindings: StateFinding[]): number | null {
+  try {
+    const pmf = probabilities(market.q, market.b);
+    const sum = pmf.reduce((total, probability) => total + probability, 0);
+    if (!Number.isFinite(sum)) throw new RangeError("non-finite PMF sum");
+    return Math.abs(sum - 1);
+  } catch (error: unknown) {
+    stateFindings.push({
+      code: "INVALID_PMF",
+      detail: error instanceof Error ? error.message : "PMF calculation failed",
+    });
+    return null;
+  }
+}
+
+function positionMismatch(
+  trade: ReplayTradeInput,
+  position: ReplayForwardPositionInput,
+  kappa: number,
+): ForwardFinding[] {
+  const findings: ForwardFinding[] = [];
+  const notional = Number(position.notionalCents);
+  const usd = notional / 100;
+  const expectedDelta = position.side === "long" ? [usd, 0] : [0, usd];
+  if (trade.contractSide !== undefined && trade.contractSide !== position.side) {
+    findings.push({
+      code: "POSITION_MISMATCH",
+      detail: `trade ${trade.id} is ${trade.contractSide}; its position is ${position.side}`,
+    });
+  }
+  if (!trade.delta.every((value, index) => numbersAgree(value, expectedDelta[index]!))) {
+    findings.push({
+      code: "DELTA",
+      detail: `trade ${trade.id} delta ${JSON.stringify(trade.delta)} is not ${position.side} ${usd}`,
+    });
+  }
+  const collateral = String(collateralCents(notional, kappa));
+  if (collateral !== position.collateralCents || collateral !== trade.cashAmountCents) {
+    findings.push({
+      code: "COLLATERAL",
+      detail: `trade ${trade.id}: N·κ is ${collateral}; position ${position.collateralCents}, trade cash ${trade.cashAmountCents}`,
+    });
+  }
+  return findings;
+}
+
+/** Cash a position has been credited back: its settlement credit, its void refund, or none. */
+function creditOf(
+  position: ReplayForwardPositionInput,
+  kappa: number,
+  findings: ForwardFinding[],
+): bigint {
+  const terms = {
+    side: position.side,
+    notionalCents: Number(position.notionalCents),
+    entryLn: position.entryLn,
+    kappa,
+  };
+  if (position.voided) return BigInt(voidCreditCents(terms));
+  if (!position.settled) return 0n;
+  if (position.settleLn === null || position.payoutCents === null) {
+    findings.push({ code: "CREDIT", detail: `position ${position.id} settled without a payout` });
+    return 0n;
+  }
+  const credit = settlementCreditCents(terms, position.settleLn);
+  const payout = BigInt(credit) - BigInt(position.collateralCents);
+  if (payout.toString() !== position.payoutCents) {
+    findings.push({
+      code: "CREDIT",
+      detail: `position ${position.id}: payout ${position.payoutCents}, forward.ts ${payout}`,
+    });
+  }
+  return BigInt(credit);
+}
+
+/**
+ * A forward book (`forward_ln`, b = κ): trades and positions pair 1:1, each
+ * trade's delta is its notional on its side, its cash is N·κ rounded up, and
+ * the book's market-maker cash flow is Σ collateral − Σ credits recomputed
+ * through forward.ts.
+ */
+function analyzeForwardBook(
+  market: ReplayMarketInput,
+  trades: readonly ReplayTradeInput[],
+  positions: readonly ReplayForwardPositionInput[],
+): ForwardFinding[] {
+  const findings: ForwardFinding[] = [];
+  const kappa = market.b;
+  const byTrade = new Map(positions.map((position) => [position.tradeId, position]));
+  const tradeIds = new Set(trades.map((trade) => trade.id));
+  let collateral = 0n;
+  for (const trade of trades) {
+    const position = byTrade.get(trade.id);
+    if (position === undefined) {
+      findings.push({ code: "TRADE_WITHOUT_POSITION", detail: `trade ${trade.id}` });
+      continue;
+    }
+    findings.push(...positionMismatch(trade, position, kappa));
+    collateral += BigInt(trade.cashAmountCents);
+  }
+  let credits = 0n;
+  for (const position of positions) {
+    if (!tradeIds.has(position.tradeId)) {
+      findings.push({ code: "POSITION_WITHOUT_TRADE", detail: `position ${position.id}` });
+    }
+    credits += creditOf(position, kappa, findings);
+  }
+  const expected = collateral - credits;
+  if (parseInteger(market.mmCashFlowCents) !== expected) {
+    findings.push({
+      code: "MM_CASH_FLOW",
+      detail: `mm_cash_flow_cents is ${market.mmCashFlowCents}; Σ collateral − Σ credits is ${expected}`,
+    });
+  }
+  return findings;
+}
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: every ledger invariant checked in one pass; split per invariant family before growing.
 function analyzeMarket(
   market: ReplayMarketInput,
   trades: readonly ReplayTradeInput[],
   marks: readonly ReplayMarkInput[],
   holdings: readonly ReplayHoldingInput[],
+  positions: readonly ReplayForwardPositionInput[] = [],
 ): MarketReplayDiagnostics {
   const stateFindings: StateFinding[] = [];
   const parsedLastSequence = parseInteger(market.lastMarketSequence);
@@ -365,61 +602,11 @@ function analyzeMarket(
     stateFindings.push({ code: "INVALID_LIQUIDITY", detail: `b is ${String(market.b)}` });
   }
 
-  const replayedQ = [...market.initialQ];
-  const tradeEconomics: TradeEconomicsFinding[] = [];
-  const orderedTrades = parseAndOrder(trades, (trade) => trade.marketSequence);
-  for (const { row: trade } of orderedTrades.ordered) {
-    if (trade.delta.length !== replayedQ.length) {
-      stateFindings.push({
-        code: "INVALID_VECTOR_LENGTH",
-        detail: `trade ${trade.id} delta has ${trade.delta.length} buckets; expected ${replayedQ.length}`,
-      });
-      continue;
-    }
-    if (!replayedQ.every(Number.isFinite) || !trade.delta.every(Number.isFinite)) {
-      stateFindings.push({
-        code: "NONFINITE_VECTOR_VALUE",
-        detail: `trade ${trade.id} cannot replay against a non-finite vector`,
-      });
-      continue;
-    }
-
-    // Re-price the trade on the replayed state: the ledger must have charged
-    // exactly what the engine charges, not merely balanced its two legs.
-    try {
-      const costUsd = tradeCost(replayedQ, trade.delta, market.b);
-      const expectedCash =
-        trade.action === "buy" ? quantizeBuyCostCents(costUsd) : quantizeSellProceedsCents(costUsd);
-      if (expectedCash.toString() !== trade.cashAmountCents) {
-        tradeEconomics.push({
-          tradeId: trade.id,
-          marketSequence: trade.marketSequence,
-          field: "cash_amount_cents",
-          expected: expectedCash.toString(),
-          persisted: trade.cashAmountCents,
-        });
-      }
-      const expectedRedemption = quantizeEntitlementCents(trade.redemptionQuantity);
-      if (expectedRedemption.toString() !== trade.redemptionCents) {
-        tradeEconomics.push({
-          tradeId: trade.id,
-          marketSequence: trade.marketSequence,
-          field: "redemption_cents",
-          expected: expectedRedemption.toString(),
-          persisted: trade.redemptionCents,
-        });
-      }
-    } catch (error: unknown) {
-      stateFindings.push({
-        code: "INVALID_TRADE",
-        detail: `trade ${trade.id}: ${error instanceof Error ? error.message : "cannot be re-priced"}`,
-      });
-    }
-
-    for (let index = 0; index < replayedQ.length; index += 1) {
-      replayedQ[index] = replayedQ[index]! + trade.delta[index]!;
-    }
-  }
+  const isForward = market.metricKind === "forward_ln";
+  const replayed = replayTrades(market, trades, stateFindings, isForward);
+  const replayedQ = replayed.q;
+  const tradeEconomics = replayed.tradeEconomics;
+  const forwardFindings = isForward ? analyzeForwardBook(market, trades, positions) : [];
 
   let maximumDrift = -1;
   let driftBucket: number | null = null;
@@ -461,18 +648,8 @@ function analyzeMarket(
       driftBucket === null || driftTolerance === null || maximumDrift > driftTolerance,
   };
 
-  let pmfNormalizationError: number | null = null;
-  try {
-    const pmf = probabilities(market.q, market.b);
-    const sum = pmf.reduce((total, probability) => total + probability, 0);
-    if (!Number.isFinite(sum)) throw new RangeError("non-finite PMF sum");
-    pmfNormalizationError = Math.abs(sum - 1);
-  } catch (error: unknown) {
-    stateFindings.push({
-      code: "INVALID_PMF",
-      detail: error instanceof Error ? error.message : "PMF calculation failed",
-    });
-  }
+  // A forward's q is open notional, not LMSR quantities: it has no PMF.
+  const pmfNormalizationError = isForward ? 0 : pmfError(market, stateFindings);
 
   const negativeHoldings: NegativeHoldingFinding[] = [];
   for (const holding of holdings) {
@@ -664,7 +841,8 @@ function analyzeMarket(
     markSequences.passed &&
     tradeMarkCardinality.length === 0 &&
     tradeMarkDisagreements.length === 0 &&
-    timestampInversions.length === 0;
+    timestampInversions.length === 0 &&
+    forwardFindings.length === 0;
 
   return {
     marketId: market.id,
@@ -679,6 +857,7 @@ function analyzeMarket(
     tradeMarkCardinality,
     tradeMarkDisagreements,
     timestampInversions,
+    forwardFindings,
     mmCashFlowCents: market.mmCashFlowCents,
     roundingReserveCents: market.roundingReserveCents,
     passed,
@@ -762,12 +941,20 @@ export function analyzeReplay(snapshot: ReplaySnapshot): ReplayDiagnostics {
     holdingsByMarket.set(holding.marketId, rows);
   }
 
+  const positionsByMarket = new Map<string, ReplayForwardPositionInput[]>();
+  for (const position of snapshot.forwardPositions ?? []) {
+    const rows = positionsByMarket.get(position.marketId) ?? [];
+    rows.push(position);
+    positionsByMarket.set(position.marketId, rows);
+  }
+
   const marketDiagnostics = snapshot.markets.map((market) =>
     analyzeMarket(
       market,
       tradesByMarket.get(market.id) ?? [],
       marksByMarket.get(market.id) ?? [],
       holdingsByMarket.get(market.id) ?? [],
+      positionsByMarket.get(market.id) ?? [],
     ),
   );
   const cashReconciliation = analyzeCash(snapshot);
@@ -834,6 +1021,7 @@ async function loadSnapshot(db: Transaction<Database>): Promise<ReplaySnapshot> 
     .select([
       "markets.id",
       "companies.slug as company_slug",
+      "markets.metric_kind",
       "markets.n_buckets",
       "markets.b",
       "markets.initial_q",
@@ -852,6 +1040,7 @@ async function loadSnapshot(db: Transaction<Database>): Promise<ReplaySnapshot> 
       "market_id",
       "market_sequence",
       "action",
+      "contract_side",
       "delta",
       "cash_amount_cents",
       "redemption_quantity",
@@ -879,11 +1068,31 @@ async function loadSnapshot(db: Transaction<Database>): Promise<ReplaySnapshot> 
     .select(["id", "cash_balance_cents"])
     .orderBy("id", "asc")
     .execute();
+  const positions = await db
+    .selectFrom("forward_positions")
+    .innerJoin("markets", "markets.instrument_id", "forward_positions.instrument_id")
+    .select([
+      "forward_positions.id",
+      "markets.id as market_id",
+      "forward_positions.trade_id",
+      "forward_positions.side",
+      "forward_positions.notional_cents",
+      "forward_positions.entry_ln",
+      "forward_positions.collateral_cents",
+      "forward_positions.settled_at",
+      "forward_positions.settle_ln",
+      "forward_positions.payout_cents",
+      "forward_positions.voided_at",
+    ])
+    .orderBy("forward_positions.opened_at", "asc")
+    .orderBy("forward_positions.id", "asc")
+    .execute();
 
   return {
     markets: markets.map((market) => ({
       id: market.id,
       companySlug: market.company_slug,
+      metricKind: market.metric_kind,
       nBuckets: market.n_buckets,
       b: market.b,
       initialQ: market.initial_q,
@@ -897,6 +1106,7 @@ async function loadSnapshot(db: Transaction<Database>): Promise<ReplaySnapshot> 
       marketId: trade.market_id,
       marketSequence: trade.market_sequence,
       action: trade.action,
+      contractSide: trade.contract_side,
       delta: trade.delta,
       cashAmountCents: trade.cash_amount_cents,
       redemptionQuantity: trade.redemption_quantity,
@@ -919,6 +1129,19 @@ async function loadSnapshot(db: Transaction<Database>): Promise<ReplaySnapshot> 
     users: users.map((user) => ({
       id: user.id,
       cashBalanceCents: user.cash_balance_cents,
+    })),
+    forwardPositions: positions.map((position) => ({
+      id: position.id,
+      marketId: position.market_id,
+      tradeId: position.trade_id,
+      side: position.side,
+      notionalCents: position.notional_cents,
+      entryLn: position.entry_ln,
+      collateralCents: position.collateral_cents,
+      settled: position.settled_at !== null,
+      settleLn: position.settle_ln,
+      payoutCents: position.payout_cents,
+      voided: position.voided_at !== null,
     })),
   };
 }
