@@ -59,7 +59,9 @@ test("keyboard, chart, movement, focus, and responsive overflow contracts", asyn
   let a11yBalanceCents!: string;
 
   await test.step("live movement announces a label alongside the glyph", async () => {
-    const movementCue = page.getByLabel("Current market metrics").locator("small");
+    const movementCue = page
+      .getByLabel("Current market metrics")
+      .locator("dd", { hasText: "(24h)" });
     // The glyph is a decorative SVG; its direction is exposed as data for
     // proof that movement is never conveyed by color alone.
     await expect(movementCue).toContainText("Unchanged");

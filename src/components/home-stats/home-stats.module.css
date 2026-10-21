@@ -116,9 +116,13 @@
     width: 100%;
   }
 
+  /* A name, its level and its movement do not fit one phone-width line;
+     the movement wraps under the name instead of widening the page. */
   .index .cell {
     width: 100%;
+    flex-wrap: wrap;
     border-bottom: 1px solid var(--color-border);
+    white-space: normal;
   }
 
   .cell {

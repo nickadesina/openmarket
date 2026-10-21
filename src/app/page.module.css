@@ -1,5 +1,8 @@
 .page {
   display: grid;
+  /* An auto column grows to the widest module (the board's table) and
+     pushes the page past a phone's width; this one never exceeds it. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-5);
 }
 

@@ -27,7 +27,7 @@ test("a valuation market renders the ladder, anchor, and distribution", async ({
   ).toBeVisible();
 
   const metrics = page.getByLabel("Current market metrics");
-  await expect(metrics.getByText("Reference anchor")).toBeVisible();
+  await expect(metrics.getByText("Vs last round")).toBeVisible();
   await expect(metrics).toContainText("$65B");
 
   const ladder = page.getByRole("region", { name: "Probability ladder" });
@@ -45,8 +45,8 @@ test("a valuation market renders the ladder, anchor, and distribution", async ({
     await underRow.click();
   }
 
-  const distribution = page.getByText("Implied distribution");
-  await distribution.click();
+  // The implied distribution opens by default; a click would collapse it.
+  await expect(page.getByText("Implied distribution")).toBeVisible();
   await expect(page.getByText(/Highest-probability outcomes:/)).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
