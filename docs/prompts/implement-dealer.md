@@ -16,21 +16,13 @@ file, and until ingest lands your tests read
 
 ## What you are building
 
-Five listed private companies (OpenAI, Anthropic, Anduril, Modal,
-Instinct), two contracts each:
-
-1. a **quarterly timing binary** ("priced round announced by
-   quarter-end"; for the labs, "public S-1 filed by quarter-end"),
-   market-made by the LMSR this repo already has, restricted to two
-   outcomes;
-2. a **next-print forward** on ln(post-money of the next priced
-   round), quoted two-way by the venue around a published model mid,
-   with a per-position entry price, a payout clip κ, a dealer position
-   cap Q, a per-name expiry T, and **void-and-refund if no print by T**.
-
-Plus the jobs that feed them (ingest public evidence into
-`event_flags`, compute `model_mids`, requote, settle and roll) and a
-read-only reference-price API.
+Five listed names, two contracts each — a quarterly timing binary on
+the existing two-outcome LMSR and a dealer-quoted next-print forward
+with clip, cap, per-name expiry and void-and-refund — exactly as
+`CONTRACTS.md` defines them; plus the jobs that feed them (ingest is
+not yours: see below), the mid model, settlement and roll, and a
+read-only reference-price API. Do not re-derive the instrument from
+this brief; `CONTRACTS.md` is normative.
 
 ## The constraint that governs every choice
 
