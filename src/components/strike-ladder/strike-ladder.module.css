@@ -118,16 +118,13 @@
   white-space: nowrap;
 }
 
-.noHead {
-  text-align: right;
-}
-
 .strikeHead {
+  width: 50%;
   text-align: center;
 }
 
 .yesHead {
-  text-align: left;
+  text-align: right;
 }
 
 .table tbody td,
@@ -137,25 +134,10 @@
   border-bottom: 1px solid var(--color-border-subtle);
 }
 
-.noCell,
-.yesCell {
-  width: 36%;
-}
-
-.noCell {
-  text-align: right;
-}
-
-.yesCell {
-  text-align: left;
-}
-
 /* The spine: strike centered, with the bucket's probability mass drawn as
    a bar behind it (the depth column of this book). */
 .strikeCell {
   position: relative;
-  width: 28%;
-  border-left: 1px solid var(--color-border-subtle);
   border-right: 1px solid var(--color-border-subtle);
   color: var(--color-ink);
   text-align: center;
@@ -177,8 +159,14 @@
   position: relative;
 }
 
-.selectedRow .strikeCell {
-  background: var(--color-surface-elevated);
+/* P(next print > strike): a read figure, red like every price on the page. */
+.table tbody .probabilityCell {
+  padding: 0 var(--space-4);
+  color: var(--color-primary);
+  font-family: var(--font-num);
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  text-align: right;
 }
 
 .currentRow td {
@@ -207,91 +195,6 @@
   font-weight: 700;
 }
 
-.noPrice,
-.yesPrice {
-  display: inline-grid;
-  width: 100%;
-  min-height: var(--row-table);
-  padding: 0 var(--space-3);
-  border: 0;
-  align-items: center;
-  gap: var(--space-2);
-  background: transparent;
-  color: var(--color-ink);
-  cursor: pointer;
-  font: inherit;
-}
-
-.noPrice {
-  grid-template-columns: minmax(0, 1fr) auto;
-  text-align: right;
-}
-
-.yesPrice {
-  grid-template-columns: auto minmax(0, 1fr);
-  text-align: left;
-}
-
-.noPrice strong,
-.yesPrice strong {
-  font-family: var(--font-num);
-  font-size: var(--font-size-md);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.yesPrice strong {
-  color: var(--color-primary);
-}
-
-.noPrice span,
-.yesPrice span {
-  color: var(--color-ink-muted);
-  font-family: var(--font-caps);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--caps-tracking);
-}
-
-.noPrice:hover:not(:disabled) {
-  background: var(--color-negative-subtle);
-}
-
-.yesPrice:hover:not(:disabled) {
-  background: var(--color-primary-subtle);
-}
-
-.yesPrice[aria-pressed="true"],
-.yesPrice[aria-pressed="true"]:hover {
-  background: var(--color-primary);
-  color: #ffffff;
-}
-
-.noPrice[aria-pressed="true"],
-.noPrice[aria-pressed="true"]:hover {
-  background: var(--color-ink);
-  color: #ffffff;
-}
-
-.yesPrice[aria-pressed="true"] strong,
-.yesPrice[aria-pressed="true"] span,
-.noPrice[aria-pressed="true"] strong,
-.noPrice[aria-pressed="true"] span {
-  color: #ffffff;
-}
-
-.noPrice:focus-visible,
-.yesPrice:focus-visible {
-  box-shadow: inset var(--focus-ring);
-  outline: 0;
-}
-
-.noPrice:disabled,
-.yesPrice:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 @media (max-width: 36rem) {
   .header {
     flex-direction: column;
@@ -299,27 +202,8 @@
     padding: var(--space-4);
   }
 
-  .noCell,
-  .yesCell {
-    width: 33%;
-  }
-
   .strikeCell {
-    width: 34%;
     font-size: var(--font-size-sm);
-  }
-
-  .noPrice,
-  .yesPrice {
-    grid-template-columns: 1fr;
-    gap: 0;
-    padding: 0 var(--space-2);
-    line-height: 1.1;
-  }
-
-  .noPrice span,
-  .yesPrice span {
-    font-size: var(--font-size-xs);
   }
 
   .tailRow {

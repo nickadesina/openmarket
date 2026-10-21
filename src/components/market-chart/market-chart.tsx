@@ -4,12 +4,14 @@ import type { UTCTimestamp } from "lightweight-charts";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { formatDateTime, formatMetricPrice } from "../../lib/client/format.js";
-import type { MarketDetail, MarkHistory, MarkRange } from "../market-workspace/types.js";
+import type { MarkHistory, MarkRange } from "../market-workspace/types.js";
 import styles from "./market-chart.module.css";
 
 interface MarketChartProps {
-  readonly market: MarketDetail;
+  /** What the line is, as the summary names it: "Forward mid". */
+  readonly label: string;
   readonly marks: MarkHistory | undefined;
+  readonly lastTradeAt: string | null;
   readonly range: MarkRange;
   readonly loading: boolean;
   readonly error: boolean;
@@ -93,8 +95,9 @@ function buildCurrentData(marks: MarkHistory, range: MarkRange): ChartPoint[] {
 }
 
 export function MarketChart({
-  market,
+  label,
   marks,
+  lastTradeAt,
   range,
   loading,
   error,
@@ -103,40 +106,29 @@ export function MarketChart({
 }: MarketChartProps) {
   const chartNode = useRef<HTMLDivElement>(null);
   const [renderFailed, setRenderFailed] = useState(false);
+  const kind = marks?.metricKind ?? "forward_ln";
 
-  // A quiet range on a market that has traded still has a level: the one in
-  // force at the window start, held flat to now. Only an untraded market is empty.
-  const traded = Number(market.sequence) > 0;
-  const lastTrade = market.recentActivity[0]?.createdAt;
-
+  // A book has a level from its listing mark on; a quiet range holds the level
+  // in force at the window start and ends at the current one.
   const summary = useMemo(() => {
-    if (marks !== undefined && marks.points.length === 0 && traded) {
-      return `No trades in the ${range} range. ${market.metric.label} has held at ${formatMetricPrice(marks.currentMetric, market.metric.kind)}${lastTrade === undefined ? "" : ` since the last trade on ${formatDateTime(lastTrade)}`}.`;
-    }
-    if (marks === undefined || marks.points.length === 0) {
-      return `Current ${market.metric.label.toLowerCase()} is ${formatMetricPrice(market.metric.current, market.metric.kind)}. No historical changes are available for this range.`;
-    }
-    // From the level in force at the window start to the current metric,
-    // matching the board's change baseline rather than the first print inside.
+    if (marks === undefined) return `${label} history is loading.`;
     const first = marks.openValue;
     const last = marks.currentMetric;
     const delta = last - first;
-    const direction = delta > 0 ? "increased" : delta < 0 ? "decreased" : "was unchanged";
-    const magnitude = formatMetricPrice(Math.abs(delta), market.metric.kind);
-    return `${market.metric.label} ${direction}${delta === 0 ? "" : ` by ${magnitude}`} during the ${range} range, from ${formatMetricPrice(first, market.metric.kind)} to ${formatMetricPrice(last, market.metric.kind)}. The current 60-minute mark is ${formatMetricPrice(marks.mark60Minutes, market.metric.kind)}.`;
-  }, [
-    market.metric.current,
-    market.metric.kind,
-    market.metric.label,
-    marks,
-    range,
-    traded,
-    lastTrade,
-  ]);
+    const direction = delta > 0 ? "rose" : delta < 0 ? "fell" : "held";
+    const magnitude = formatMetricPrice(Math.abs(delta), kind);
+    const quiet =
+      marks.points.length === 0
+        ? `No fills in the ${range} range${lastTradeAt === null ? "" : `; the last was on ${formatDateTime(lastTradeAt)}`}. `
+        : "";
+    return delta === 0
+      ? `${quiet}${label} held at ${formatMetricPrice(last, kind)} through the ${range} range.`
+      : `${quiet}${label} ${direction} by ${magnitude} during the ${range} range, from ${formatMetricPrice(first, kind)} to ${formatMetricPrice(last, kind)}.`;
+  }, [kind, label, lastTradeAt, marks, range]);
 
   useEffect(() => {
     const container = chartNode.current;
-    if (container === null || marks === undefined || (marks.points.length === 0 && !traded)) return;
+    if (container === null || marks === undefined) return;
 
     let disposed = false;
     let observer: ResizeObserver | undefined;
@@ -186,7 +178,7 @@ export function MarketChart({
         });
 
         const priceFormat =
-          market.metric.kind === "yes_probability"
+          kind === "yes_probability"
             ? ({
                 type: "custom",
                 formatter: (value: number) => `${(value * 100).toFixed(1)}%`,
@@ -194,7 +186,7 @@ export function MarketChart({
               } as const)
             : ({
                 type: "custom",
-                formatter: (value: number) => formatMetricPrice(value, market.metric.kind),
+                formatter: (value: number) => formatMetricPrice(value, kind),
                 minMove: 1,
               } as const);
         // A held level is a flat line; autoscaled, its axis would repeat one
@@ -203,7 +195,7 @@ export function MarketChart({
         const currentSeries = chart.addSeries(LineSeries, {
           color: cssVar(tokens, "--color-ink"),
           lineWidth: 2,
-          title: market.metric.label,
+          title: label,
           priceFormat,
           ...(held === null
             ? {}
@@ -216,26 +208,8 @@ export function MarketChart({
                 }),
               }),
         });
-        // The 60-minute mark is one number for the hour that just ended, so it
-        // is only drawn on the 1h range, where the window is its own window.
-        // Stamped across a day or a week it would claim a flat mark that never was.
-        const markSeries =
-          range === "1h"
-            ? chart.addSeries(LineSeries, {
-                color: cssVar(tokens, "--color-primary"),
-                lineWidth: 1,
-                lineStyle: 2,
-                title: "60m mark",
-                // The mark's own axis label is redundant with the header's "60m
-                // mark" figure and collides with the metric label when they agree.
-                lastValueVisible: false,
-                priceFormat,
-              })
-            : null;
-
         const currentData = buildCurrentData(marks, range);
         currentSeries.setData(currentData);
-        markSeries?.setData(currentData.map(({ time }) => ({ time, value: marks.mark60Minutes })));
         chart.timeScale().fitContent();
 
         observer = new ResizeObserver(([entry]) => {
@@ -258,18 +232,17 @@ export function MarketChart({
       observer?.disconnect();
       cleanupChart?.();
     };
-  }, [market.metric.kind, market.metric.label, marks, range, traded]);
+  }, [kind, label, marks, range]);
 
   return (
     <section className={styles.section} aria-labelledby="market-chart-title">
       <header className={styles.header}>
         <div>
           <h2 id="market-chart-title" className={styles.tab}>
-            Market history
+            {label} history
           </h2>
           <p>
-            Instantaneous metric
-            {range === "1h" ? " and current 60-minute time-weighted mark" : ""} · chart by{" "}
+            Model mid at listing and at each fill, ending at the live mid · chart by{" "}
             <a
               href="https://www.tradingview.com/lightweight-charts/"
               rel="noopener noreferrer"
@@ -320,9 +293,6 @@ export function MarketChart({
               Retry
             </button>
           </div>
-        ) : null}
-        {!loading && !error && marks?.points.length === 0 && !traded ? (
-          <div className={styles.message}>The first trade will begin this history.</div>
         ) : null}
         {renderFailed ? (
           <div className={styles.message} role="alert">

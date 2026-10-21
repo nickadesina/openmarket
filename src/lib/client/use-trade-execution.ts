@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 
+import type { ForwardExecutionResult } from "../services/dealer/execute-forward-trade.js";
 import type { ExecutionResult } from "../services/execute-trade.js";
 import { ApiClientError, apiRequest } from "./api.js";
 
-/** The authoritative requote the server attaches to a PRICE_MOVED rejection. */
+/** The authoritative LMSR requote the server attaches to a binary's PRICE_MOVED rejection. */
 export interface MovedPrice {
   readonly cashAmountCents: string;
   readonly shares: number;
@@ -18,15 +19,32 @@ export interface MovedPrice {
   readonly quotedAt: string;
 }
 
+/** The dealer's live quote a forward's PRICE_MOVED rejection carries. */
+export interface ForwardRequote {
+  readonly entryLn: number;
+  readonly entryUsd: number;
+  readonly collateralCents: string;
+  readonly bidLn: number;
+  readonly askLn: number;
+  readonly quotedAt: string;
+}
+
 export type TradeFields = Readonly<Record<string, unknown>>;
 
-export type TradeOutcome =
-  | { readonly status: "executed"; readonly result: ExecutionResult }
+/** The two order routes: an LMSR binary trade and a forward open. */
+export type TradeRoute = "/api/trade" | "/api/forward/trade";
+type ResultOf<Route extends TradeRoute> = Route extends "/api/trade"
+  ? ExecutionResult
+  : ForwardExecutionResult;
+
+export type TradeOutcome<Result = ExecutionResult> =
+  | { readonly status: "executed"; readonly result: Result }
   /** The server deterministically rejected the trade; it did not execute and inputs may be changed. */
   | {
       readonly status: "rejected";
       readonly error: ApiClientError;
       readonly movedPrice: MovedPrice | null;
+      readonly forwardRequote: ForwardRequote | null;
     }
   /** Execution state is unknown (network failure, 5xx, unreadable response, or idempotency conflict); the request is kept so a retry cannot duplicate the trade. */
   | { readonly status: "unknown" };
@@ -55,6 +73,10 @@ function isOutcomeUnknown(error: unknown): boolean {
   );
 }
 
+function finiteNumbers(values: readonly unknown[]): values is number[] {
+  return values.every((value) => typeof value === "number" && Number.isFinite(value));
+}
+
 function movedPriceDetails(error: ApiClientError): MovedPrice | null {
   if (error.code !== "PRICE_MOVED") return null;
   const details = error.details;
@@ -73,7 +95,7 @@ function movedPriceDetails(error: ApiClientError): MovedPrice | null {
     typeof cashAmountCents !== "string" ||
     typeof expectedRedemptionCents !== "string" ||
     typeof quotedAt !== "string" ||
-    !numbers.every((value) => typeof value === "number" && Number.isFinite(value))
+    !finiteNumbers(numbers)
   ) {
     return null;
   }
@@ -84,7 +106,7 @@ function movedPriceDetails(error: ApiClientError): MovedPrice | null {
     currentMetricAfter,
     expectedRedemptionQuantity,
     sellableQuantity,
-  ] = numbers as number[];
+  ] = numbers;
   return {
     cashAmountCents,
     shares: shares!,
@@ -98,9 +120,34 @@ function movedPriceDetails(error: ApiClientError): MovedPrice | null {
   };
 }
 
-async function submit(order: PendingOrder): Promise<TradeOutcome> {
+function forwardRequoteDetails(error: ApiClientError): ForwardRequote | null {
+  if (error.code !== "PRICE_MOVED") return null;
+  const details = error.details;
+  const numbers = [details.entry_ln, details.entry_usd, details.bid_ln, details.ask_ln];
+  if (
+    typeof details.collateral_cents !== "string" ||
+    typeof details.quoted_at !== "string" ||
+    !finiteNumbers(numbers)
+  ) {
+    return null;
+  }
+  const [entryLn, entryUsd, bidLn, askLn] = numbers;
+  return {
+    entryLn: entryLn!,
+    entryUsd: entryUsd!,
+    collateralCents: details.collateral_cents,
+    bidLn: bidLn!,
+    askLn: askLn!,
+    quotedAt: details.quoted_at,
+  };
+}
+
+async function submit<Route extends TradeRoute>(
+  route: Route,
+  order: PendingOrder,
+): Promise<TradeOutcome<ResultOf<Route>>> {
   try {
-    const result = await apiRequest<ExecutionResult>("/api/trade", {
+    const result = await apiRequest<ResultOf<Route>>(route, {
       method: "POST",
       body: JSON.stringify({ ...order.fields, idempotency_key: order.key }),
     });
@@ -108,34 +155,42 @@ async function submit(order: PendingOrder): Promise<TradeOutcome> {
   } catch (error) {
     if (isOutcomeUnknown(error)) return { status: "unknown" };
     const rejection = error as ApiClientError;
-    return { status: "rejected", error: rejection, movedPrice: movedPriceDetails(rejection) };
+    return {
+      status: "rejected",
+      error: rejection,
+      movedPrice: route === "/api/trade" ? movedPriceDetails(rejection) : null,
+      forwardRequote: route === "/api/forward/trade" ? forwardRequoteDetails(rejection) : null,
+    };
   }
 }
 
 /**
- * Owns the idempotency-key lifecycle for POST /api/trade. Each `execute` sends a fresh key.
- * While an attempt's outcome is unknown the exact request (key and fields) is held as the
- * pending order; `retry` replays it byte-for-byte so a resend can only ever replay the fill.
- * The pending order is released once the server executes or deterministically rejects it,
- * or when the caller explicitly discards it.
+ * Owns the idempotency-key lifecycle for an order route (POST /api/trade or
+ * /api/forward/trade). Each `execute` sends a fresh key. While an attempt's
+ * outcome is unknown the exact request (key and fields) is held as the
+ * pending order; `retry` replays it byte-for-byte so a resend can only ever
+ * replay the fill. The pending order is released once the server executes or
+ * deterministically rejects it, or when the caller explicitly discards it.
  */
-export function useTradeExecution() {
+export function useTradeExecution<Route extends TradeRoute = "/api/trade">(
+  route: Route = "/api/trade" as Route,
+) {
   const [pending, setPending] = useState<PendingOrder | null>(null);
 
-  async function settle(order: PendingOrder): Promise<TradeOutcome> {
-    const outcome = await submit(order);
+  async function settle(order: PendingOrder): Promise<TradeOutcome<ResultOf<Route>>> {
+    const outcome = await submit(route, order);
     setPending(outcome.status === "unknown" ? order : null);
     return outcome;
   }
 
   /** Sends a new order. Refused while a previous order is still unresolved. */
-  function execute(fields: TradeFields): Promise<TradeOutcome> {
+  function execute(fields: TradeFields): Promise<TradeOutcome<ResultOf<Route>>> {
     if (pending !== null) return retry();
     return settle({ key: crypto.randomUUID(), fields });
   }
 
   /** Resends the unresolved order with its original key and fields. */
-  function retry(): Promise<TradeOutcome> {
+  function retry(): Promise<TradeOutcome<ResultOf<Route>>> {
     if (pending === null) return Promise.reject(new Error("No pending order to retry."));
     return settle(pending);
   }

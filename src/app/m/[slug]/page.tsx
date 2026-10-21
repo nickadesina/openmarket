@@ -1,6 +1,7 @@
 import { MarketWorkspace } from "../../../components/market-workspace/market-workspace.js";
 import { getRuntimeDatabase } from "../../../lib/db/runtime.js";
-import { getMarket, type MarketDetail } from "../../../lib/services/get-market.js";
+import { type ActivityPage, getActivity } from "../../../lib/services/get-activity.js";
+import { getMarket, type ListingDetail } from "../../../lib/services/get-market.js";
 import { getMarks, type MarkHistory } from "../../../lib/services/get-marks.js";
 
 export const runtime = "nodejs";
@@ -11,20 +12,27 @@ interface MarketPageProps {
 }
 
 interface InitialMarketData {
-  readonly market: MarketDetail | null;
+  readonly listing: ListingDetail | null;
   readonly marks: MarkHistory | null;
+  readonly activity: ActivityPage | null;
 }
+
+const INITIAL_RANGE = "1w";
 
 async function loadInitialMarket(slug: string): Promise<InitialMarketData> {
   try {
     const database = getRuntimeDatabase();
-    const [market, marks] = await Promise.all([
+    const [listing, activity] = await Promise.all([
       getMarket(database, slug),
-      getMarks(database, slug, "1d"),
+      getActivity(database, { slug, limit: 25 }),
     ]);
-    return { market, marks };
+    const marks =
+      listing.forward === null
+        ? null
+        : await getMarks(database, listing.forward.market_id, INITIAL_RANGE);
+    return { listing, marks, activity };
   } catch {
-    return { market: null, marks: null };
+    return { listing: null, marks: null, activity: null };
   }
 }
 
@@ -33,6 +41,11 @@ export default async function MarketPage({ params }: MarketPageProps) {
   const initial = await loadInitialMarket(slug);
 
   return (
-    <MarketWorkspace slug={slug} initialMarket={initial.market} initialMarks={initial.marks} />
+    <MarketWorkspace
+      slug={slug}
+      initialListing={initial.listing}
+      initialMarks={initial.marks}
+      initialActivity={initial.activity}
+    />
   );
 }

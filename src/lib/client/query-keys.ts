@@ -4,8 +4,10 @@ export const queryKeys = {
   all: ["openmarket"] as const,
   markets: ["openmarket", "markets"] as const,
   market: (slug: string) => ["openmarket", "market", slug] as const,
-  marks: (slug: string, range: MarkRange) =>
-    ["openmarket", "market", slug, "marks", range] as const,
+  marks: (marketId: string, range: MarkRange) =>
+    ["openmarket", "book", marketId, "marks", range] as const,
+  instrumentQuote: (instrumentId: string, side: string, notionalUsd: string | null) =>
+    ["openmarket", "instrument", instrumentId, "quote", side, notionalUsd ?? "none"] as const,
   activity: (slug?: string) => ["openmarket", "activity", slug ?? "global"] as const,
   comments: (marketId: string) => ["openmarket", "comments", marketId] as const,
   commentThread: (marketId: string, parentId: string | null) =>

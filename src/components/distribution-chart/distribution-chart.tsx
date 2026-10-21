@@ -5,18 +5,21 @@ import { scaleBand, scaleLinear } from "@visx/scale";
 import { Bar } from "@visx/shape";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { formatProbability, formatValuation } from "../../lib/client/format.js";
-import type { MarketDetail } from "../market-workspace/types.js";
+import { formatPrice, formatProbability, formatValuation } from "../../lib/client/format.js";
+import type { ImpliedDistribution } from "../market-workspace/types.js";
 import styles from "./distribution-chart.module.css";
 
 interface DistributionChartProps {
-  readonly market: MarketDetail;
+  readonly distribution: ImpliedDistribution;
 }
 
 const HEIGHT = 220;
 const MARGIN = { top: 12, right: 8, bottom: 34, left: 44 } as const;
+const LABELLED_STRIKES = [9, 19, 29] as const;
 
-export function DistributionChart({ market }: DistributionChartProps) {
+/** The 41 bucket masses of the API's implied distribution, read-only. */
+export function DistributionChart({ distribution }: DistributionChartProps) {
+  const { pmf, strikes } = distribution;
   const frame = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(640);
 
@@ -32,48 +35,46 @@ export function DistributionChart({ market }: DistributionChartProps) {
 
   const labels = useMemo(
     () =>
-      market.pmf.map((_probability, index) => {
-        if (market.metric.kind === "yes_probability") return index === 0 ? "NO" : "YES";
-        if (index === 0) return `< ${formatValuation(market.contracts[0]!.strikeValueUsd!)}`;
-        if (index === market.pmf.length - 1)
-          return `> ${formatValuation(market.contracts.at(-1)!.strikeValueUsd!)}`;
-        return `${formatValuation(market.contracts[index - 1]!.strikeValueUsd!)} to ${formatValuation(market.contracts[index]!.strikeValueUsd!)}`;
+      pmf.map((_probability, index) => {
+        if (index === 0) return `< ${formatValuation(strikes[0]!.strikeValueUsd)}`;
+        if (index === pmf.length - 1) return `> ${formatValuation(strikes.at(-1)!.strikeValueUsd)}`;
+        return `${formatValuation(strikes[index - 1]!.strikeValueUsd)} to ${formatValuation(strikes[index]!.strikeValueUsd)}`;
       }),
-    [market],
+    [pmf, strikes],
   );
 
   const topBuckets = useMemo(
     () =>
-      market.pmf
+      pmf
         .map((probability, index) => ({ probability, label: labels[index]! }))
         .sort((left, right) => right.probability - left.probability)
         .slice(0, 3),
-    [labels, market.pmf],
+    [labels, pmf],
   );
-
-  const winningLabel =
-    market.settlement === null ? null : (labels[market.settlement.winningBucket] ?? null);
 
   const innerWidth = width - MARGIN.left - MARGIN.right;
   const innerHeight = HEIGHT - MARGIN.top - MARGIN.bottom;
   const xScale = scaleBand<number>({
-    domain: market.pmf.map((_value, index) => index),
+    domain: pmf.map((_value, index) => index),
     range: [0, innerWidth],
-    padding: market.pmf.length > 2 ? 0.12 : 0.35,
+    padding: 0.12,
   });
   const yScale = scaleLinear<number>({
-    domain: [0, Math.max(...market.pmf, 0.01)],
+    domain: [0, Math.max(...pmf, 0.01)],
     range: [innerHeight, 0],
     nice: true,
   });
 
   return (
-    // Open from first paint: the distribution is the product's central idea.
+    // Open from first paint: the distribution is how the forward mid reads as a range.
     <details className={styles.section} open>
       <summary>
         <span>
           <strong className={styles.tab}>Implied distribution</strong>
-          <small>Probability mass across possible outcomes</small>
+          <small>
+            Lognormal at the forward mid {formatPrice(distribution.centerUsd)}, σ{" "}
+            {distribution.sigma.toFixed(2)}
+          </small>
         </span>
         <span aria-hidden="true">
           <span className={styles.whenOpen}>Collapse</span>
@@ -85,7 +86,8 @@ export function DistributionChart({ market }: DistributionChartProps) {
         {topBuckets
           .map((bucket) => `${bucket.label} at ${formatProbability(bucket.probability)}`)
           .join(", ")}
-        .{winningLabel === null ? "" : ` Settled winning outcome (★): ${winningLabel}.`}
+        . 80% of the mass lies between {formatPrice(distribution.band.p10)} and{" "}
+        {formatPrice(distribution.band.p90)}.
       </p>
       <div ref={frame} className={styles.chart}>
         <svg
@@ -99,7 +101,6 @@ export function DistributionChart({ market }: DistributionChartProps) {
             {topBuckets
               .map((bucket) => `${bucket.label}, ${formatProbability(bucket.probability)}`)
               .join("; ")}
-            {winningLabel === null ? "" : `. Winning outcome: ${winningLabel}`}
           </desc>
           <Group left={MARGIN.left} top={MARGIN.top}>
             {yScale.ticks(3).map((tick) => (
@@ -122,91 +123,55 @@ export function DistributionChart({ market }: DistributionChartProps) {
                 </text>
               </g>
             ))}
-            {market.pmf.map((probability, index) => {
-              const barX = xScale(index) ?? 0;
+            {pmf.map((probability, index) => {
               const barY = yScale(probability);
-              const barWidth = xScale.bandwidth();
-              const barHeight = innerHeight - barY;
-              const isWinning = market.settlement?.winningBucket === index;
               return (
                 // biome-ignore lint/suspicious/noArrayIndexKey: the index is the bucket's identity.
                 <g key={index}>
                   <title>{`${labels[index]!}: ${formatProbability(probability)}`}</title>
                   <Bar
-                    x={barX}
+                    x={xScale(index) ?? 0}
                     y={barY}
-                    width={barWidth}
-                    height={barHeight}
-                    rx={2}
-                    className={(isWinning ? styles.winningBar : styles.bar)!}
+                    width={xScale.bandwidth()}
+                    height={innerHeight - barY}
+                    className={styles.bar!}
                   />
-                  {isWinning ? (
-                    <text
-                      x={barX + barWidth / 2}
-                      y={Math.max(barY - 4, 10)}
-                      textAnchor="middle"
-                      className={styles.winnerMarker}
-                    >
-                      <title>Winning bucket</title>★
-                    </text>
-                  ) : null}
                 </g>
               );
             })}
-            {market.pmf.length === 2 ? (
-              market.pmf.map((probability, index) => (
-                <text
-                  key={index === 0 ? "no" : "yes"}
-                  x={(xScale(index) ?? 0) + xScale.bandwidth() / 2}
-                  y={innerHeight + 22}
-                  textAnchor="middle"
-                  className={styles.axisLabel}
-                >
-                  {index === 0 ? "NO" : "YES"} {formatProbability(probability)}
-                </text>
-              ))
-            ) : (
-              <>
-                {[9, 19, 29].map((strikeIndex) => {
-                  const strike = market.contracts[strikeIndex]?.strikeValueUsd;
-                  if (strike == null) return null;
-                  const boundaryX =
-                    (xScale(strikeIndex) ?? 0) +
-                    xScale.bandwidth() +
-                    (xScale.step() - xScale.bandwidth()) / 2;
-                  return (
-                    <g key={`strike-${strikeIndex}`}>
-                      <line
-                        x1={boundaryX}
-                        x2={boundaryX}
-                        y1={innerHeight}
-                        y2={innerHeight + 5}
-                        className={styles.tickLine}
-                      />
-                      <text
-                        x={boundaryX}
-                        y={innerHeight + 22}
-                        textAnchor="middle"
-                        className={styles.axisLabel}
-                      >
-                        {formatValuation(strike)}
-                      </text>
-                    </g>
-                  );
-                })}
-                <text x="0" y={innerHeight + 22} className={styles.axisLabel}>
-                  Lower valuation
-                </text>
-                <text
-                  x={innerWidth}
-                  y={innerHeight + 22}
-                  textAnchor="end"
-                  className={styles.axisLabel}
-                >
-                  Higher valuation
-                </text>
-              </>
-            )}
+            {LABELLED_STRIKES.map((strikeIndex) => {
+              const strike = strikes[strikeIndex];
+              if (strike === undefined) return null;
+              const boundaryX =
+                (xScale(strikeIndex) ?? 0) +
+                xScale.bandwidth() +
+                (xScale.step() - xScale.bandwidth()) / 2;
+              return (
+                <g key={`strike-${strikeIndex}`}>
+                  <line
+                    x1={boundaryX}
+                    x2={boundaryX}
+                    y1={innerHeight}
+                    y2={innerHeight + 5}
+                    className={styles.tickLine}
+                  />
+                  <text
+                    x={boundaryX}
+                    y={innerHeight + 22}
+                    textAnchor="middle"
+                    className={styles.axisLabel}
+                  >
+                    {formatValuation(strike.strikeValueUsd)}
+                  </text>
+                </g>
+              );
+            })}
+            <text x="0" y={innerHeight + 22} className={styles.axisLabel}>
+              Lower valuation
+            </text>
+            <text x={innerWidth} y={innerHeight + 22} textAnchor="end" className={styles.axisLabel}>
+              Higher valuation
+            </text>
           </Group>
         </svg>
       </div>
