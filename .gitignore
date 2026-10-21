@@ -9,3 +9,4 @@ playwright-report/
 !.env.example
 .vercel
 .env*.local
+__pycache__/

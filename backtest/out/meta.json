@@ -1,0 +1,23 @@
+{
+ "bound_fwd": 25000.0,
+ "bound_bin_uniform": 1386.2943611198905,
+ "bound_bin_floor": 5991.464547107982,
+ "listed": [
+  "OpenAI",
+  "Anthropic",
+  "Anduril",
+  "Modal",
+  "Instinct"
+ ],
+ "analogs": [
+  "Cognition",
+  "Cursor",
+  "Greptile",
+  "Harvey",
+  "Mercor",
+  "Perplexity",
+  "Safe Superintelligence",
+  "Valar Atomics",
+  "xAI"
+ ]
+}
