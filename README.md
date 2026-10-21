@@ -500,7 +500,7 @@ See `PART5.md` for the environment contract.
 | Tournament is in `master` | Fixed | Merged in #2 (`a60d971`, 2026-10-21); milestone 1 is done. |
 | `shelved/timing-strips` branch exists | False | Not on the remote as of 2026-10-21; the "by date" market is reinstated as D11's binary. |
 | Loss bound on a binary is b·ln 2 | False | Only from a 50/50 start; against a hazard prior it is b·ln(1/p_floor). D12 states the correct figure. |
-| `events.csv` carries source URLs | False | Sources are free text in `notes`; there is no URL column. `seed:listings` joins each anchor to `backtest/data/sources.csv` and refuses until that file gives every anchor a URL. |
+| `events.csv` carries source URLs | Fixed alongside | `events.csv` keeps no URL column (its digest is pinned); `backtest/data/sources.csv` gives 20 of the 21 listed-name prints a located source (Instinct's Seed has none), every listing anchor at rank 1. `seed:listings` joins on company, round and date and refuses an anchor without a URL. |
 | One open market per company (`markets_one_open_per_company`) | Replaced | `007_dealer` relaxes it to one open market per company and `metric_kind`, so a name's binary (`yes_probability`) and forward (`forward_ln`) books stand together. `seedMarket` never touches a row with an `instrument_id`. |
 | `events.csv` has 56 priced rounds | Partly | 59 `priced_round` rows; 56 fall in Jan 2024–Oct 2026, three are earlier (Anduril Dec 2022, Anthropic May 2023, Modal Oct 2023) and seed the prior. |
 | σ_tier is 0.35 / 0.62 | Rounded | The backtest's figures are 0.3455 / 0.6204 (`params.json` → `sigma_tier`); the config carries those for the quoter (milestone 6); `CONTRACTS.md` keeps the rounded ones as prose. |
