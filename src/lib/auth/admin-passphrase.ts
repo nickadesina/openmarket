@@ -1,4 +1,4 @@
-import { scrypt, timingSafeEqual } from "node:crypto";
+import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 
 export const ADMIN_SCRYPT_N = 16_384;
 export const ADMIN_SCRYPT_R = 8;
@@ -72,15 +72,11 @@ export function getAdminPassphraseHash(environment: PassphraseEnvironment = proc
   return encodedHash;
 }
 
-export async function verifyAdminPassphrase(
-  passphrase: string,
-  encodedHash: string,
-): Promise<boolean> {
-  const parsed = parseAdminPassphraseHash(encodedHash);
-  const candidate = await new Promise<Buffer>((resolve, reject) => {
+function deriveKey(passphrase: string, salt: Buffer): Promise<Buffer> {
+  return new Promise<Buffer>((resolve, reject) => {
     scrypt(
       passphrase,
-      parsed.salt,
+      salt,
       ADMIN_SCRYPT_KEY_BYTES,
       {
         N: ADMIN_SCRYPT_N,
@@ -97,6 +93,27 @@ export async function verifyAdminPassphrase(
       },
     );
   });
+}
 
+/** Produces the value `ADMIN_PASSPHRASE_HASH` expects, with a fresh random salt. */
+export async function hashAdminPassphrase(passphrase: string): Promise<string> {
+  const salt = randomBytes(ADMIN_SCRYPT_SALT_BYTES);
+  const derivedKey = await deriveKey(passphrase, salt);
+  return [
+    "scrypt",
+    String(ADMIN_SCRYPT_N),
+    String(ADMIN_SCRYPT_R),
+    String(ADMIN_SCRYPT_P),
+    salt.toString("base64url"),
+    derivedKey.toString("base64url"),
+  ].join("$");
+}
+
+export async function verifyAdminPassphrase(
+  passphrase: string,
+  encodedHash: string,
+): Promise<boolean> {
+  const parsed = parseAdminPassphraseHash(encodedHash);
+  const candidate = await deriveKey(passphrase, parsed.salt);
   return timingSafeEqual(candidate, parsed.derivedKey);
 }

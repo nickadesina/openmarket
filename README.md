@@ -292,6 +292,8 @@ npm run dev              # http://localhost:3000, never 127.0.0.1
 - `.env.local` needs `DATABASE_URL`, `DATABASE_URL_UNPOOLED`,
   `USER_COOKIE_SECRET`, `ADMIN_COOKIE_SECRET`, and
   `ADMIN_PASSPHRASE_HASH`. Escape `$` as `\$` in that file.
+  `npm run admin:hash` prompts for the admin passphrase without echoing it
+  and prints the hash in both forms (escaped for `.env.local`, raw for Vercel).
 - Local Playwright trap: `next dev` re-expands any variable present in
   both `.env.local` and the process environment, which strips the `$`
   fields from the admin hash Playwright injects and makes admin login

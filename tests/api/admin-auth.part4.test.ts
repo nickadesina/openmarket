@@ -12,6 +12,8 @@ import {
   ADMIN_SCRYPT_N,
   ADMIN_SCRYPT_P,
   ADMIN_SCRYPT_R,
+  assertAdminPassphraseHash,
+  hashAdminPassphrase,
   verifyAdminPassphrase,
 } from "../../src/lib/auth/admin-passphrase.js";
 import { requireCurrentAdmin } from "../../src/lib/auth/current-admin.js";
@@ -76,6 +78,16 @@ describe("Part 4 admin passphrase hash", () => {
     );
     await expect(verifyAdminPassphrase(PASSPHRASE, paddedKey)).rejects.toThrow("base64url");
     await expect(verifyAdminPassphrase(PASSPHRASE, shortSalt)).rejects.toThrow("16 bytes");
+  });
+
+  it("hashes into the same format it verifies, salting each hash freshly", async () => {
+    const first = await hashAdminPassphrase(PASSPHRASE);
+    const second = await hashAdminPassphrase(PASSPHRASE);
+
+    expect(() => assertAdminPassphraseHash(first)).not.toThrow();
+    expect(first).not.toBe(second);
+    await expect(verifyAdminPassphrase(PASSPHRASE, first)).resolves.toBe(true);
+    await expect(verifyAdminPassphrase("incorrect passphrase", first)).resolves.toBe(false);
   });
 });
 
