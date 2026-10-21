@@ -12,9 +12,7 @@ skipWithoutDatabase();
 
 const OPENING_BALANCE = formatCents("10000000");
 
-test("signed out, the header and the portfolio send sign-in back to the page", async ({
-  page,
-}) => {
+test("signed out, the header and the portfolio send sign-in back to the page", async ({ page }) => {
   await page.goto("/portfolio");
   const main = page.getByRole("main");
   await expect(main.getByRole("heading", { name: "Sign in to see your portfolio" })).toBeVisible();
@@ -50,7 +48,9 @@ test("the first portfolio view opens a $100,000 paper account for the tournament
 
   if (!mobile) {
     await banner.getByRole("button", { name: "Sign out" }).click();
-    await expect(page.getByRole("heading", { name: "Sign in to see your portfolio" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Sign in to see your portfolio" }),
+    ).toBeVisible();
   }
 });
 
