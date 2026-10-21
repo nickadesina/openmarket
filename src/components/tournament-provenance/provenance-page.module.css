@@ -28,8 +28,9 @@
 }
 
 .tab {
-  composes: moduleTab from "../../styles/shared.module.css";
+  composes: sectionHead from "../../styles/shared.module.css";
   justify-self: start;
+  margin-bottom: var(--space-3);
 }
 
 .spec {

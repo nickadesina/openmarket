@@ -195,6 +195,7 @@ export function MarketWorkspace({ slug, initialMarket, initialMarks }: MarketWor
             onRetry={() => void marksQuery.refetch()}
           />
           <StrikeLadder market={market} selection={activeSelection} onSelect={selectContract} />
+          <DistributionChart market={market} />
         </div>
 
         {market.status === "open" ? (
@@ -212,7 +213,6 @@ export function MarketWorkspace({ slug, initialMarket, initialMarks }: MarketWor
         ) : null}
       </div>
 
-      <DistributionChart market={market} />
       <MarketComments key={market.marketId} marketId={market.marketId} />
       <MarketActivity
         market={market}

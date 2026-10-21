@@ -29,7 +29,7 @@
 }
 
 .tab {
-  composes: moduleTab from "../../styles/shared.module.css";
+  composes: sectionHead from "../../styles/shared.module.css";
   align-self: start;
 }
 
@@ -89,4 +89,9 @@
 
 .tickLine {
   stroke: var(--color-border);
+}
+
+.section:not([open]) .whenOpen,
+.section[open] .whenClosed {
+  display: none;
 }

@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { apiRequest, POLL_INTERVAL_MS } from "../../lib/client/api.js";
 import {
+  formatCompactUsd,
   formatDate,
   formatDateTime,
   formatPrice,
@@ -26,15 +27,6 @@ import styles from "./market-board.module.css";
 const SPARKLINE_WIDTH = 120;
 const SPARKLINE_HEIGHT = 32;
 const SPARKLINE_PADDING = 2;
-
-const compactNumberFormatter = new Intl.NumberFormat("en-US", {
-  notation: "compact",
-  maximumFractionDigits: 1,
-});
-
-function formatCompactUsd(value: number): string {
-  return `$${compactNumberFormatter.format(value)}`;
-}
 
 function formatMetric(market: MarketListItem, value = market.metric.current): string {
   return market.metric.format === "usd" ? formatPrice(value) : `${(value * 100).toFixed(1)}%`;
@@ -273,10 +265,8 @@ function MarketRow({
           </span>
         )}
       </td>
-      <td className={styles.claimsCell} data-label="Claims">
-        <span className={styles.tabular}>
-          {compactNumberFormatter.format(market.outstandingClaims)}
-        </span>
+      <td className={styles.openInterestCell} data-label="Open interest">
+        <span className={styles.tabular}>{formatCompactUsd(market.openInterest)}</span>
       </td>
       <td className={styles.statusCell} data-label="Status">
         <span className={styles.statusGroup}>
@@ -394,7 +384,8 @@ export function MarketBoard({
     <div className={styles.tableViewport}>
       <table className={styles.table}>
         <caption className={styles.visuallyHidden}>
-          Public markets with current metric, 24-hour movement, history, anchor, claims, and status
+          Public markets with current metric, 24-hour movement, history, anchor, open interest, and
+          status
         </caption>
         <thead>
           <tr>
@@ -406,7 +397,7 @@ export function MarketBoard({
             <th scope="col">24h</th>
             <th scope="col">History</th>
             <th scope="col">Public anchor</th>
-            <th scope="col">Claims</th>
+            <th scope="col">Open interest</th>
             <th scope="col">Status</th>
           </tr>
         </thead>

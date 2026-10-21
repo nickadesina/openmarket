@@ -15,8 +15,9 @@
   gap: var(--space-3);
 }
 
+/* Cash is ink: red stays with prices and actions, not every tape line. */
 .amount {
-  color: var(--color-primary);
+  color: var(--color-ink);
   font-family: var(--font-num);
   font-size: var(--font-size-sm);
   font-weight: 700;
@@ -47,11 +48,11 @@
 }
 
 .buy {
-  color: var(--color-primary);
+  color: var(--color-ink);
 }
 
 .sell {
-  color: var(--color-negative);
+  color: var(--color-ink-muted);
 }
 
 .muted,

@@ -2,6 +2,7 @@ import { type Kysely, sql } from "kysely";
 
 import { ServiceError } from "../api/errors.js";
 import type { Database, MarketStatus, MetricKind } from "../db/schema.js";
+import { openInterestSql } from "./open-interest.js";
 
 export interface MarketListOptions {
   readonly now?: Date;
@@ -35,7 +36,8 @@ export interface MarketListItem {
     readonly description: string;
   } | null;
   readonly history: MarketListHistoryPoint[];
-  readonly outstandingClaims: number;
+  /** Open interest in dollars (D4): the largest summed holding over any one bucket. */
+  readonly openInterest: number;
   readonly sequence: string;
   readonly createdAt: string;
   readonly settledAt: string | null;
@@ -125,9 +127,7 @@ export async function listMarkets(
             "companies.name as company_name",
             "companies.slug as company_slug",
             "companies.logo_path as company_logo_path",
-            sql<number>`coalesce((select sum(bucket_quantity) from holdings as claim_holding cross join lateral unnest(claim_holding.h) as bucket(bucket_quantity) where claim_holding.market_id = markets.id), 0)`.as(
-              "outstanding_claims",
-            ),
+            openInterestSql(sql.ref("markets.id")).as("open_interest"),
             sql<number>`coalesce(
               (select value from marks as prior_mark where prior_mark.market_id = markets.id and prior_mark.ts <= ${changeCutoff} order by prior_mark.ts desc, prior_mark.market_sequence desc limit 1),
               (select value from marks as first_mark where first_mark.market_id = markets.id and first_mark.ts <= ${now} order by first_mark.ts asc, first_mark.market_sequence asc limit 1),
@@ -169,8 +169,8 @@ export async function listMarkets(
 
       const markets = marketRows.map((row): MarketListItem => {
         if (
-          !Number.isFinite(row.outstanding_claims) ||
-          row.outstanding_claims < 0 ||
+          !Number.isFinite(row.open_interest) ||
+          row.open_interest < 0 ||
           !Number.isFinite(row.change_baseline)
         ) {
           throw new ServiceError("INVALID_INPUT", "Stored market summary is invalid.");
@@ -204,7 +204,7 @@ export async function listMarkets(
             marketSequence: point.market_sequence,
             value: point.value,
           })),
-          outstandingClaims: row.outstanding_claims,
+          openInterest: row.open_interest,
           sequence: row.last_market_sequence,
           createdAt: row.created_at.toISOString(),
           settledAt: row.settled_at?.toISOString() ?? null,
@@ -216,9 +216,9 @@ export async function listMarkets(
           return left.status === "open" ? -1 : 1;
         }
         if (left.status === "open") {
-          const claimOrder = right.outstandingClaims - left.outstandingClaims;
-          if (claimOrder !== 0) {
-            return claimOrder;
+          const interestOrder = right.openInterest - left.openInterest;
+          if (interestOrder !== 0) {
+            return interestOrder;
           }
         } else {
           const settledOrder =

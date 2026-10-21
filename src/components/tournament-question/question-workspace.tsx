@@ -422,7 +422,7 @@ export function QuestionWorkspace({
 
         {question.acceptingForecasts ? (
           <section className={styles.module} aria-labelledby="editor-title">
-            <h2 className={styles.tab} id="editor-title">
+            <h2 className={styles.actionTab} id="editor-title">
               Your forecast
             </h2>
             <ForecastEditor question={question} />

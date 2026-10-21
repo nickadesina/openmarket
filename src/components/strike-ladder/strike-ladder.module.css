@@ -12,7 +12,7 @@
 }
 
 .tab {
-  composes: moduleTab from "../../styles/shared.module.css";
+  composes: sectionHead from "../../styles/shared.module.css";
 }
 
 .header p,
@@ -87,9 +87,10 @@
   text-transform: uppercase;
 }
 
+/* No vertical scroller: the folded book is short enough to read whole, and
+   an inner scroll box would catch the wheel while the page scrolls past. */
 .tableScroller {
-  max-height: 27rem;
-  overflow: auto;
+  overflow-x: auto;
   border-top: 1px solid var(--color-border);
   border-bottom: 1px solid var(--color-border);
 }
@@ -101,9 +102,6 @@
 }
 
 .table thead {
-  position: sticky;
-  top: 0;
-  z-index: var(--z-header);
   background: var(--color-surface-elevated);
 }
 
@@ -299,10 +297,6 @@
     flex-direction: column;
     gap: var(--space-2);
     padding: var(--space-4);
-  }
-
-  .tableScroller {
-    max-height: 24rem;
   }
 
   .noCell,

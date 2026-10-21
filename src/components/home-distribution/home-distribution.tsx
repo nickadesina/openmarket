@@ -18,7 +18,7 @@ const LOWER_QUANTILE = 0.1;
 const UPPER_QUANTILE = 0.9;
 const AXIS_MARGIN = Math.sqrt(10);
 
-interface Band {
+export interface Band {
   readonly axisMin: number;
   readonly axisMax: number;
   readonly lower: number;
@@ -32,7 +32,7 @@ interface Band {
   };
 }
 
-function computeBand(market: MarketDetail): Band | null {
+export function computeBand(market: MarketDetail): Band | null {
   if (market.metric.kind !== "valuation_median" || market.contracts.length < 2) return null;
   const boundaries = market.contracts.map((contract) => Number(contract.strikeValueUsd));
   if (

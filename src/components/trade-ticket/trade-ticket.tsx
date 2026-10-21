@@ -355,7 +355,7 @@ export function TradeTicket({
           <h2 id="trade-ticket-title" className={styles.tab}>
             Trade ticket
           </h2>
-          <p>
+          <p className={styles.contract}>
             {selection.side.toUpperCase()} · {strikeLabel(market, selection.strikeIndex)}
           </p>
         </div>
@@ -372,25 +372,6 @@ export function TradeTicket({
       </header>
 
       <div className={styles.body}>
-        <ol className={styles.approvals} aria-label="Order progress">
-          {stages.map(([stage, done]) => (
-            <li key={stage} className={styles.approval} aria-current={done ? "step" : undefined}>
-              <span className={styles.approvalBox}>
-                {done ? (
-                  <span className={styles.approvalSeal}>
-                    {stage === "Filled" ? "Filled" : "OK"}
-                  </span>
-                ) : stage === "Filled" && orderPending ? (
-                  <span className={styles.approvalUnknown} role="img" aria-label="Unknown">
-                    ?
-                  </span>
-                ) : null}
-              </span>
-              <span className={styles.approvalLabel}>{stage}</span>
-            </li>
-          ))}
-        </ol>
-
         <div className={styles.sideToggle} role="group" aria-label="Contract side">
           {(["yes", "no"] as const).map((side) => {
             const probability = side === "yes" ? contract.yesProbability : contract.noProbability;
@@ -683,6 +664,27 @@ export function TradeTicket({
             </button>
           )
         ) : null}
+
+        {/* The stages read after the action that drives them: a fresh ticket
+            opens on the contract and its price, not on an order not yet placed. */}
+        <ol className={styles.approvals} aria-label="Order progress">
+          {stages.map(([stage, done]) => (
+            <li key={stage} className={styles.approval} aria-current={done ? "step" : undefined}>
+              <span className={styles.approvalBox}>
+                {done ? (
+                  <span className={styles.approvalSeal}>
+                    {stage === "Filled" ? "Filled" : "OK"}
+                  </span>
+                ) : stage === "Filled" && orderPending ? (
+                  <span className={styles.approvalUnknown} role="img" aria-label="Unknown">
+                    ?
+                  </span>
+                ) : null}
+              </span>
+              <span className={styles.approvalLabel}>{stage}</span>
+            </li>
+          ))}
+        </ol>
       </div>
     </section>
   );

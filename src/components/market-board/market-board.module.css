@@ -308,7 +308,7 @@
   white-space: nowrap;
 }
 
-.claimsCell,
+.openInterestCell,
 .statusCell {
   font-size: var(--font-size-md);
 }

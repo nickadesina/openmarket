@@ -48,6 +48,13 @@
 }
 
 .tab {
+  composes: sectionHead from "../../styles/shared.module.css";
+  justify-self: start;
+  margin-bottom: var(--space-3);
+}
+
+/* The one solid plate on the page: the forecast editor is the module you act in. */
+.actionTab {
   composes: moduleTab from "../../styles/shared.module.css";
   justify-self: start;
 }

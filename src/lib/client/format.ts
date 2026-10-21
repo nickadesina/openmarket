@@ -47,6 +47,11 @@ export function formatUsd(value: number): string {
   return usdFormatter.format(value);
 }
 
+/** Cash at board density ($48.3K); open interest and other dollar totals in strips and tables. */
+export function formatCompactUsd(value: number): string {
+  return Number.isFinite(value) ? compactValuationFormatter.format(value) : "Unavailable";
+}
+
 export function formatCents(value: string): string {
   const cents = Number(value);
   return Number.isFinite(cents) ? usdFormatter.format(cents / 100) : "Unavailable";
@@ -71,6 +76,24 @@ export function formatProbability(value: number): string {
  */
 export function formatContractPrice(value: number): string {
   return probabilityFormatter.format(value);
+}
+
+/** A relative change magnitude (0.157 → "15.7%"); direction is carried by an arrow and a word. */
+export function formatPercent(value: number): string {
+  return probabilityFormatter.format(value);
+}
+
+/** The level against the last public round: never empty, unlike a quiet day's 24h change. */
+export function roundChange(
+  current: number,
+  anchorUsd: string | number,
+): { readonly direction: "up" | "down" | "flat"; readonly label: string } {
+  const change = current / Number(anchorUsd) - 1;
+  if (!Number.isFinite(change) || change === 0) return { direction: "flat", label: "Level" };
+  return {
+    direction: change > 0 ? "up" : "down",
+    label: `${change > 0 ? "Up" : "Down"} ${formatPercent(Math.abs(change))}`,
+  };
 }
 
 export function formatValuation(value: number | string): string {

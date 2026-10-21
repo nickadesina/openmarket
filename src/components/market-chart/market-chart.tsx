@@ -3,7 +3,7 @@
 import type { UTCTimestamp } from "lightweight-charts";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { formatMetricPrice } from "../../lib/client/format.js";
+import { formatDateTime, formatMetricPrice } from "../../lib/client/format.js";
 import type { MarketDetail, MarkHistory, MarkRange } from "../market-workspace/types.js";
 import styles from "./market-chart.module.css";
 
@@ -51,6 +51,9 @@ type ChartPoint = { time: UTCTimestamp } | { time: UTCTimestamp; value: number }
 /** Line data for the metric series: deduped prints, a whitespace anchor at
  *  the window start, and a pinned current point so the endpoint agrees with
  *  the text summary when the latest print predates the live metric. */
+// Half-width of the price band framing a level held through a quiet range.
+const HELD_BAND = 0.03;
+
 function buildCurrentData(marks: MarkHistory, range: MarkRange): ChartPoint[] {
   const pointsBySecond = new Map<number, number>();
   for (const point of marks.points)
@@ -101,7 +104,15 @@ export function MarketChart({
   const chartNode = useRef<HTMLDivElement>(null);
   const [renderFailed, setRenderFailed] = useState(false);
 
+  // A quiet range on a market that has traded still has a level: the one in
+  // force at the window start, held flat to now. Only an untraded market is empty.
+  const traded = Number(market.sequence) > 0;
+  const lastTrade = market.recentActivity[0]?.createdAt;
+
   const summary = useMemo(() => {
+    if (marks !== undefined && marks.points.length === 0 && traded) {
+      return `No trades in the ${range} range. ${market.metric.label} has held at ${formatMetricPrice(marks.currentMetric, market.metric.kind)}${lastTrade === undefined ? "" : ` since the last trade on ${formatDateTime(lastTrade)}`}.`;
+    }
     if (marks === undefined || marks.points.length === 0) {
       return `Current ${market.metric.label.toLowerCase()} is ${formatMetricPrice(market.metric.current, market.metric.kind)}. No historical changes are available for this range.`;
     }
@@ -113,11 +124,19 @@ export function MarketChart({
     const direction = delta > 0 ? "increased" : delta < 0 ? "decreased" : "was unchanged";
     const magnitude = formatMetricPrice(Math.abs(delta), market.metric.kind);
     return `${market.metric.label} ${direction}${delta === 0 ? "" : ` by ${magnitude}`} during the ${range} range, from ${formatMetricPrice(first, market.metric.kind)} to ${formatMetricPrice(last, market.metric.kind)}. The current 60-minute mark is ${formatMetricPrice(marks.mark60Minutes, market.metric.kind)}.`;
-  }, [market.metric.current, market.metric.kind, market.metric.label, marks, range]);
+  }, [
+    market.metric.current,
+    market.metric.kind,
+    market.metric.label,
+    marks,
+    range,
+    traded,
+    lastTrade,
+  ]);
 
   useEffect(() => {
     const container = chartNode.current;
-    if (container === null || marks === undefined || marks.points.length === 0) return;
+    if (container === null || marks === undefined || (marks.points.length === 0 && !traded)) return;
 
     let disposed = false;
     let observer: ResizeObserver | undefined;
@@ -178,11 +197,24 @@ export function MarketChart({
                 formatter: (value: number) => formatMetricPrice(value, market.metric.kind),
                 minMove: 1,
               } as const);
+        // A held level is a flat line; autoscaled, its axis would repeat one
+        // label at every tick. Frame it with a band either side instead.
+        const held = marks.points.length === 0 ? marks.currentMetric : null;
         const currentSeries = chart.addSeries(LineSeries, {
           color: cssVar(tokens, "--color-ink"),
           lineWidth: 2,
           title: market.metric.label,
           priceFormat,
+          ...(held === null
+            ? {}
+            : {
+                autoscaleInfoProvider: () => ({
+                  priceRange: {
+                    minValue: held * (1 - HELD_BAND),
+                    maxValue: held * (1 + HELD_BAND),
+                  },
+                }),
+              }),
         });
         // The 60-minute mark is one number for the hour that just ended, so it
         // is only drawn on the 1h range, where the window is its own window.
@@ -226,7 +258,7 @@ export function MarketChart({
       observer?.disconnect();
       cleanupChart?.();
     };
-  }, [market.metric.kind, market.metric.label, marks, range]);
+  }, [market.metric.kind, market.metric.label, marks, range, traded]);
 
   return (
     <section className={styles.section} aria-labelledby="market-chart-title">
@@ -260,7 +292,10 @@ export function MarketChart({
           ))}
         </div>
       </header>
-      <p className={styles.summary}>{summary}</p>
+      {/* ICU date output differs between Node and the browser; the client value wins. */}
+      <p className={styles.summary} suppressHydrationWarning>
+        {summary}
+      </p>
       {error && marks !== undefined ? (
         <div className={styles.stale} role="status">
           History refresh paused.
@@ -286,7 +321,7 @@ export function MarketChart({
             </button>
           </div>
         ) : null}
-        {!loading && !error && marks?.points.length === 0 ? (
+        {!loading && !error && marks?.points.length === 0 && !traded ? (
           <div className={styles.message}>The first trade will begin this history.</div>
         ) : null}
         {renderFailed ? (

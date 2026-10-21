@@ -68,13 +68,17 @@ export function DistributionChart({ market }: DistributionChartProps) {
   });
 
   return (
-    <details className={styles.section}>
+    // Open from first paint: the distribution is the product's central idea.
+    <details className={styles.section} open>
       <summary>
         <span>
           <strong className={styles.tab}>Implied distribution</strong>
           <small>Probability mass across possible outcomes</small>
         </span>
-        <span aria-hidden="true">Expand</span>
+        <span aria-hidden="true">
+          <span className={styles.whenOpen}>Collapse</span>
+          <span className={styles.whenClosed}>Expand</span>
+        </span>
       </summary>
       <p className={styles.textSummary}>
         Highest-probability outcomes:{" "}
