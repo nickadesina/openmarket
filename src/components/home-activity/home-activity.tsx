@@ -5,11 +5,12 @@ import Link from "next/link";
 
 import { apiRequest, POLL_INTERVAL_MS } from "../../lib/client/api.js";
 import {
-  contractLabel,
+  formatCents,
   formatDateTime,
+  formatPrice,
   formatQuantityShort,
   formatUsd,
-  formatValuation,
+  sideLabel,
 } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
 import type { ActivityItem, ActivityPage } from "../../lib/services/get-activity.js";
@@ -18,26 +19,34 @@ import styles from "./home-activity.module.css";
 
 const ACTIVITY_LIMIT = 12;
 
-function itemLabel(item: ActivityItem): string {
-  return contractLabel(
-    item.side,
-    item.strikeValueUsd === null ? null : formatValuation(item.strikeValueUsd),
-  );
-}
-
+/** A forward fill reads as its side, notional and entry; a binary fill as shares bought or sold. */
 function ActivityRow({ item }: { readonly item: ActivityItem }) {
-  const action = item.action === "buy" ? "Bought" : "Sold";
-  const cash = formatUsd((item.action === "buy" ? -1 : 1) * (Number(item.cashAmountCents) / 100));
+  const forward = item.metricKind === "forward_ln";
+  const cash = forward
+    ? formatCents(item.cashAmountCents)
+    : formatUsd((item.action === "buy" ? -1 : 1) * (Number(item.cashAmountCents) / 100));
 
   return (
     <li className={styles.item}>
       <CompanyLogo name={item.company.name} logoPath={item.company.logoPath} size="sm" />
       <div className={styles.event}>
-        <p>
-          <span className={item.action === "buy" ? styles.buy : styles.sell}>{action}</span>{" "}
-          <strong>{formatQuantityShort(item.quantity)}</strong>{" "}
-          <span className={styles.muted}>shares of</span> <strong>{itemLabel(item)}</strong>
-        </p>
+        {forward ? (
+          <p>
+            <span className={styles.buy}>{sideLabel(item.side)}</span>{" "}
+            <strong>{formatCents(String(Math.round(item.quantity * 100)))}</strong>{" "}
+            <span className={styles.muted}>forward at</span>{" "}
+            <strong>{item.entryUsd === null ? "—" : formatPrice(item.entryUsd)}</strong>
+          </p>
+        ) : (
+          <p>
+            <span className={item.action === "buy" ? styles.buy : styles.sell}>
+              {item.action === "buy" ? "Bought" : "Sold"}
+            </span>{" "}
+            <strong>{formatQuantityShort(item.quantity)}</strong>{" "}
+            <span className={styles.muted}>shares of</span>{" "}
+            <strong>{sideLabel(item.side)}</strong>
+          </p>
+        )}
         <p className={styles.meta}>
           <Link href={`/m/${item.company.slug}`}>{item.company.name}</Link>
           <span aria-hidden="true">·</span>
@@ -113,7 +122,7 @@ export function HomeActivity({ initialData }: { readonly initialData?: ActivityP
   return (
     <ol className={styles.list} aria-label="Recent public trades">
       {activityQuery.data.items.map((item) => (
-        <ActivityRow key={`${item.company.slug}-${item.marketSequence}`} item={item} />
+        <ActivityRow key={`${item.marketId}-${item.marketSequence}`} item={item} />
       ))}
     </ol>
   );
