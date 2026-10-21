@@ -352,7 +352,13 @@ not caught by a test, only by review. `src/lib/engine/dealer/prior.ts`
 ports sim.py's prior (tier, binary p, forward mid with leak re-centring);
 `tests/engine/dealer/prior.test.ts` agrees with
 `backtest/out/prior_golden.json`, which `backtest/golden.py` writes from
-sim.py, to 1e-9. No quoting code exists yet.
+sim.py, to 1e-9. `GET /api/cron/dealer` (`dealer.yml`, every 15 min at
+:05) runs its steps in one transaction per `X-Run-Id` (a rerun reports
+"already ran"); the only step so far, `services/dealer/compute-mids.ts`,
+appends a `model_mids` row per live instrument from the listing's anchor,
+params.json and the scoops and releases since the anchor, only when the
+mid or its inputs moved, and `verify:replay` recomputes every row from its
+`inputs_json` to 1e-12. No quoting code exists yet.
 
 ### D13. Rulebook and settlement — Adopted
 
@@ -456,7 +462,9 @@ npm run dev              # http://localhost:3000, never 127.0.0.1
   Actions secret; the workflow skips itself without it, and
   `vars.PROVENANCE_URL` overrides the target. A GitHub schedule rather
   than Vercel Cron keeps hourly runs plan-independent; missed runs catch
-  up. `npm run provenance:batch` runs the same job by hand. `SOLANA_PROVENANCE_SECRET_KEY` is the fee wallet (the
+  up. `.github/workflows/dealer.yml` calls `/api/cron/dealer` the same
+  way with the same secret (`vars.DEALER_URL` overrides the target).
+  `npm run provenance:batch` runs the provenance job by hand. `SOLANA_PROVENANCE_SECRET_KEY` is the fee wallet (the
   64-byte `solana-keygen` JSON array, or its base58), `SOLANA_CLUSTER`
   is `mainnet-beta` (default) or `devnet`, and `SOLANA_RPC_URL`
   overrides the public endpoint. Without the key, roots are committed
