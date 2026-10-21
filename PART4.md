@@ -11,8 +11,8 @@ Institutional, analytical, restrained. Probability and execution evidence lead. 
 - `/`: server-rendered market board plus global activity.
 - `/m/[slug]`: server-rendered market detail, chart, strike ladder, trade rail, activity, distribution, and resolution criteria.
 - `/portfolio`: authenticated cash, account value, decomposed positions, residual exposure, sell actions, and paginated history.
-- `/admin`: admin login, seed, and irreversible settlement operations.
-- Mutation APIs: `/api/user`, `/api/quote`, `/api/trade`, `/api/admin/login`, `/api/admin/seed`, `/api/admin/settle`.
+- `/admin`: comment moderation, for the tournament admin allowlist (README D1).
+- Mutation APIs: `/api/quote`, `/api/trade`, `/api/admin/comments/[commentId]/remove`; sign-in is the tournament's (`/t/signin`).
 
 ## Interaction contracts
 
@@ -36,4 +36,4 @@ Institutional, analytical, restrained. Probability and execution evidence lead. 
 
 ## Completion gate
 
-The critical browser flow covers anonymous quote, username creation, buy, idempotent replay, authoritative refresh, partial sell, sell-spend rejection, price movement recovery, and admin settlement. Desktop and mobile surfaces are visually inspected in the actual browser.
+Desktop and mobile surfaces are visually inspected in the actual browser. The ladder's browser flows (quote, buy, replay, sell, price movement, settlement) were deleted with the ladder markets they seeded (milestone 6); the remaining specs cover sign-in, the paper account's opening balance, admin gating and the tournament.

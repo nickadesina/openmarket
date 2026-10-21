@@ -1,6 +1,6 @@
 # Part 3 — Read APIs
 
-Part 3 consumes the verified mathematical and transaction layers in `PART1.md` and `PART2.md`. It adds a minimal Next.js App Router shell and public/authenticated read APIs. It intentionally excludes product UI, polling, quote/trade routes, admin routes, deployment, and production seeds.
+Part 3 consumes the verified mathematical and transaction layers in `PART1.md` and `PART2.md`. It adds a minimal Next.js App Router shell and public/authenticated read APIs. It intentionally excludes product UI, polling, quote/trade routes, admin routes, and deployment.
 
 ## Shared rules
 
@@ -29,18 +29,18 @@ Part 3 consumes the verified mathematical and transaction layers in `PART1.md` a
 - `GET /api/activity?slug=&cursor=&limit=`
 - `GET /api/portfolio?offset=&limit=`
 
-Portfolio identity comes only from the signed `openmarket_user` cookie, verified through Part 2 helpers and resolved by normalized username. Never accept user identity from query/body/headers.
+Portfolio identity comes only from the tournament session cookie, resolved to its paper account by `requireCurrentUserId` (README D1). Never accept user identity from query/body/headers.
 
 ## Response infrastructure
 
 - `jsonSuccess(data, init?)` and `jsonError(error, requestId)` return `Response` objects with JSON content type, request ID, and no-store.
 - `withReadRoute(request, handler)` or an equally small wrapper creates a request context, lazy database handle, duration log, and stable error mapping.
-- Missing market -> `MARKET_NOT_FOUND`; missing/invalid portfolio cookie -> `USER_REQUIRED`; malformed query/cursor/range -> `INVALID_INPUT`.
+- Missing market -> `MARKET_NOT_FOUND`; missing/invalid session -> `USER_REQUIRED`; malformed query/cursor/range -> `INVALID_INPUT`.
 
 ## Completion gate
 
 - Part 1 and Part 2 tests remain green.
 - Strict TypeScript and `next build` pass without a database URL.
-- Read service and route tests cover valuation/binary/settled states, ordering, claims, TWAP, tied timestamps, downsampling, activity privacy/pagination, portfolio cookie auth, JSON serialization, and error envelopes.
+- Read service and route tests cover valuation/binary/settled states, ordering, claims, TWAP, tied timestamps, downsampling, activity privacy/pagination, portfolio session auth, JSON serialization, and error envelopes.
 - PostgreSQL integration coverage extends the existing optional `DATABASE_URL_TEST` suite.
 - The actual Next server is launched and database-independent routes/errors are exercised.

@@ -168,7 +168,7 @@ Recalculate these relationships and contrast on all three surfaces if the red ch
 ### Neutral
 - **Paper White** (`--color-bg` / `--color-surface`, #ffffff): the universal ground. Modules are white boxes on white, separated only by rules.
 - **Paper Raised** (`--color-surface-elevated`, #fafafa): logo-chip fill, skeleton header bands — a whisper of tone, not an elevation system.
-- **Press Ink** (`--color-ink`, #131315): all text, strong borders (header bottom rule, SETTLED stamp, secondary-button border), and downward movement. Filled ink is also the destructive-action color (admin settle button, hover #2c2c30).
+- **Press Ink** (`--color-ink`, #131315): all text, strong borders (header bottom rule, SETTLED stamp, secondary-button border), and downward movement. Filled ink is also the destructive-action color (admin comment removal, hover #2c2c30).
 - **Ink Muted** (`--color-ink-muted`, #55555a): secondary text, metric sublabels, timestamps, placeholders.
 - **Rule Gray** (`--color-border`, #c5c5c5): the outer hairline that boxes every module.
 - **Rule Faint** (`--color-border-subtle`, #e4e4e6): interior hairlines — row separators, column dividers, sparkline baselines.
@@ -263,7 +263,7 @@ third-party glyph sets.
 - **Shape:** hard rectangle (0 radius), uniform 2.25rem min-height, bold condensed caps at 0.8125rem with 0.05em tracking (composed from `src/styles/shared.module.css` `.buttonBase`).
 - **Primary:** Utility Red fill, white text, 1px matching border (#d70909 → #b40707 on hover). Used for trade submission and the top-level primary action.
 - **Secondary / Retry:** white fill, 1px Press Ink border, ink caps text; hover swaps to Red Wash fill with red border.
-- **Destructive (admin settle):** Press Ink fill, white text, hover #2c2c30 — irreversible actions speak in ink, not red.
+- **Destructive (admin comment removal):** Press Ink fill, white text, hover #2c2c30 — irreversible actions speak in ink, not red.
 - **States:** `:active` nudges down 1px; disabled drops to 48% opacity with `not-allowed`; `:focus-visible` gets the pale-red halo ring.
 
 ### Module Header Tabs
@@ -328,10 +328,10 @@ A ruled list of 4rem entries separated by faint hairlines: caps BUY (ink) / SELL
 
 ### Market Comments
 A ruled white module between Distribution and Market Activity, labeled with the
-shared COMMENTS tab. Flat rows show the stored @username, muted exact timestamp,
+shared COMMENTS tab. Flat rows show the author's tournament name, muted exact timestamp,
 and plain body text capped at 80ch; line breaks remain visible. Replies indent one
 level only. No avatars, badges, likes, rich text, or decorative colors. The composer
-discloses shared, unverified account identities and holds drafts through account
+says which tournament name a post carries and holds drafts through account
 changes and failed submissions. New arrivals wait behind a reveal button; removed
 content leaves a neutral tombstone. Open markets have no red OPEN badge.
 

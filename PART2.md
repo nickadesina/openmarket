@@ -18,10 +18,9 @@ Part 2 consumes the verified mathematical core in `PART1.md`. It adds PostgreSQL
 
 ## Service contracts
 
-- `createOrResumeUser(db, username)` normalizes identity and atomically returns a user with a $100,000 initial balance.
+- `ensurePaperAccount(db, tournamentUserId)` opens, race-safely, or returns the tournament user's paper account with a $100,000 initial balance (README D1).
 - `quoteMarket(db, input, userId?)` is read-only. Anonymous buys are allowed; sells require a user. Buy accepts exactly one of quantity or spend cents; sell accepts quantity only.
 - `executeTrade(db, userId, input)` returns `{ result, replayed }`. It owns idempotency locking, market/user/holdings locking, execution, cash and vector updates, immutable trade insertion, and one matching mark.
-- `seedMarket(db, input)` idempotently creates company metadata and a sequence-0 market/mark; it refuses to replace a traded market.
 - `settleMarket(db, input)` is irreversible and credits users exactly once in stable user-ID order.
 - `getPortfolio(db, userId, options?)` returns cash, marked account value, decomposed positions, residual exposure, sellable quantities, and paginated trades.
 - `verifyReplay(db)` is read-only and reports vector drift, PMF normalization, negative holdings, cash/MM-flow reconciliation, sequence gaps, and trade/mark disagreement.
@@ -41,5 +40,5 @@ Part 2 consumes the verified mathematical core in `PART1.md`. It adds PostgreSQL
 
 - Part 1 tests remain green.
 - Strict TypeScript passes.
-- Unit tests cover quote, user, seed, settlement math adapters, portfolio decomposition, and replay analysis.
+- Unit tests cover quote, user, settlement math adapters, portfolio decomposition, and replay analysis.
 - PostgreSQL integration tests cover serialization, idempotency, rollback, sequence/mark pairing, settlement, and replay when a disposable database URL is available.

@@ -13,7 +13,7 @@ disagree; a Claude Doc that has an in-repo copy is listed with it.
 | `TECHNICAL_DESIGN.md` | How the dealer design is built inside this codebase: schema, jobs, state machine, API, bridge, backtest CI, 8-week plan, open decisions | before starting any milestone in §12 |
 | `AGENTS.md` / `CLAUDE.md` | Operating rules for agents: gates, layout, conventions, what is not open | every session |
 | `PRODUCT.md`, `DESIGN.md` | Product voice and the visual system | before changing a screen |
-| `PART1.md`–`PART5.md` | The original build parts (engine, persistence, read APIs, UI, deployment) for the LMSR ladder; still accurate as engine/persistence/API reference, superseded on product decisions by `README.md` §2 | when working in `src/lib/engine`, `src/lib/services`, `src/app/api` |
+| `PART1.md`–`PART5.md` | The original build parts (engine, persistence, read APIs, UI, deployment) for the LMSR ladder; still accurate as engine/persistence/API reference, superseded on product decisions by `README.md` §2. Milestone 6 trimmed the username account, passphrase admin, ladder seeding and their browser flows from them | when working in `src/lib/engine`, `src/lib/services`, `src/app/api` |
 | `docs/prompts/implement-dealer.md` | The implementation brief for the agent that builds the dealer design | when starting that work |
 | `docs/decisions/NNNN-*.md` | Agreed changes that supplement the design (first: `event_flags` shape and the ingest hand-off) | before any milestone a decision names |
 | `tests/fixtures/event-flags.json` | 161 fixture flags (scoop / release / print) derived from `backtest/events.csv`; what settlement and mid-model tests read until ingest exists | writing any test that needs a flag |
