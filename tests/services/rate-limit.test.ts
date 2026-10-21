@@ -103,7 +103,7 @@ describe("consumeRateLimit", () => {
       { window_started_at: new Date("2026-01-01T00:00:00.000Z"), request_count: 1 },
       now,
     );
-    await assertRateLimitAvailable(available.db, "admin_login", "net", {
+    await assertRateLimitAvailable(available.db, "tournament_login", "net", {
       limit: 3,
       windowMs: MINUTE,
     });
@@ -114,7 +114,7 @@ describe("consumeRateLimit", () => {
       now,
     );
     await expect(
-      assertRateLimitAvailable(exhausted.db, "admin_login", "net", {
+      assertRateLimitAvailable(exhausted.db, "tournament_login", "net", {
         limit: 3,
         windowMs: MINUTE,
       }),
@@ -141,7 +141,7 @@ describe("consumeNetworkRateLimit", () => {
       throw new Error("database must not be touched for loopback callers");
     });
     const db = { transaction } as unknown as Kysely<Database>;
-    await consumeNetworkRateLimit(db, "user_create", new Request("https://example.test/"));
+    await consumeNetworkRateLimit(db, "tournament_register", new Request("https://example.test/"));
     expect(transaction).not.toHaveBeenCalled();
   });
 
@@ -156,7 +156,7 @@ describe("consumeNetworkRateLimit", () => {
       );
       await consumeNetworkRateLimit(
         db,
-        "user_create",
+        "tournament_register",
         new Request("https://example.test/", {
           headers: { "x-vercel-forwarded-for": "192.0.2.1" },
         }),

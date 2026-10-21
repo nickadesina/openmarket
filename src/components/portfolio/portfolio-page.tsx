@@ -11,11 +11,13 @@ import {
   formatCents,
   formatContractPrice,
   formatDateTime,
+  formatForecasterName,
   formatQuantity,
   formatUsd,
   formatValuation,
 } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
+import { signInHref } from "../../lib/client/tournament.js";
 import { type TradeOutcome, useTradeExecution } from "../../lib/client/use-trade-execution.js";
 import type { ExecutionResult } from "../../lib/services/execute-trade.js";
 import type {
@@ -25,7 +27,6 @@ import type {
   PortfolioTrade,
 } from "../../lib/services/portfolio.js";
 import type { QuoteResult } from "../../lib/services/quote.js";
-import { OPEN_ACCOUNT_EDITOR_EVENT } from "../app-shell/account-control.js";
 import { QuoteReview } from "../quote-review/quote-review.js";
 import styles from "./portfolio-page.module.css";
 
@@ -465,11 +466,11 @@ export function PortfolioPage() {
     queryKey: [...queryKeys.portfolio, offset, HISTORY_LIMIT],
     queryFn: () => apiRequest<Portfolio>(`/api/portfolio?offset=${offset}&limit=${HISTORY_LIMIT}`),
   });
-  // The header seeds this identity the instant an account switches; the page holds
-  // its skeleton until the positions below belong to that same user.
+  // The header reads the same account; after a sign-in change the page holds its
+  // skeleton until the positions below belong to the account the header shows.
   const identity = useQuery({
     queryKey: queryKeys.portfolio,
-    queryFn: () => apiRequest<Pick<Portfolio, "username">>("/api/portfolio?offset=0&limit=1"),
+    queryFn: () => apiRequest<Pick<Portfolio, "userId">>("/api/portfolio?offset=0&limit=1"),
   }).data;
 
   const portfolio = portfolioQuery.data;
@@ -481,7 +482,7 @@ export function PortfolioPage() {
 
   if (
     portfolioQuery.isLoading ||
-    (identity !== undefined && portfolio !== undefined && portfolio.username !== identity.username)
+    (identity !== undefined && portfolio !== undefined && portfolio.userId !== identity.userId)
   ) {
     return <PortfolioSkeleton />;
   }
@@ -493,15 +494,14 @@ export function PortfolioPage() {
     return (
       <section className={styles.statePanel}>
         <p className={styles.stateLabel}>Portfolio access</p>
-        <h1>Open your paper account</h1>
-        <p>Enter a username to open or resume a paper account in this browser.</p>
-        <button
-          type="button"
-          className={styles.primaryButton}
-          onClick={() => window.dispatchEvent(new Event(OPEN_ACCOUNT_EDITOR_EVENT))}
-        >
-          Enter username
-        </button>
+        <h1>Sign in to see your portfolio</h1>
+        <p>
+          The tournament account is the only account. Its first visit here opens a $100,000 paper
+          balance.
+        </p>
+        <Link className={styles.primaryButton} href={signInHref("/portfolio")}>
+          Sign in
+        </Link>
       </section>
     );
   }
@@ -527,7 +527,7 @@ export function PortfolioPage() {
     <div className={styles.page}>
       <header className={styles.pageHeader}>
         <div>
-          <p className={styles.stateLabel}>Account · @{portfolio.username}</p>
+          <p className={styles.stateLabel}>Account · {formatForecasterName(portfolio.identity)}</p>
           <h1>Portfolio</h1>
           <p>
             Marked values use the latest market distribution. Cost basis and P&amp;L are

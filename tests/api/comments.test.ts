@@ -4,9 +4,6 @@ import { parseMutationBody } from "../../src/lib/api/mutation-route.js";
 import { commentInputSchema } from "../../src/lib/api/schemas.js";
 import { commentNetworkKey } from "../../src/lib/security/comment-address.js";
 
-const SECRET = Buffer.from(Array.from({ length: 32 }, (_, index) => index + 1)).toString(
-  "base64url",
-);
 const ID = "00000000-0000-4000-8000-000000000001";
 const input = {
   body: " A plain <script> string\nwith lines ",
@@ -63,9 +60,9 @@ describe("comment input boundary", () => {
 });
 
 describe("comment network trust", () => {
-  const production = { NODE_ENV: "production", VERCEL: "1", USER_COOKIE_SECRET: SECRET };
+  const production = { NODE_ENV: "production", VERCEL: "1" };
 
-  it("uses only the provider header, canonicalizes IPv6 and hashes with the cookie secret", () => {
+  it("uses only the provider header, canonicalizes IPv6 and stores only a hash", () => {
     const first = commentNetworkKey(
       addressRequest({
         "x-vercel-forwarded-for": "2001:db8::1",
@@ -82,14 +79,9 @@ describe("comment network trust", () => {
     );
     expect(first).toBe(alternate);
     expect(first).toMatch(/^[0-9a-f]{64}$/);
-    const differentSecret = Buffer.from(
-      Array.from({ length: 32 }, (_, index) => index + 65),
-    ).toString("base64url");
+    expect(first).not.toContain("2001");
     expect(
-      commentNetworkKey(addressRequest({ "x-vercel-forwarded-for": "2001:db8::1" }), {
-        ...production,
-        USER_COOKIE_SECRET: differentSecret,
-      }),
+      commentNetworkKey(addressRequest({ "x-vercel-forwarded-for": "2001:db8::2" }), production),
     ).not.toBe(first);
   });
 
@@ -112,7 +104,7 @@ describe("comment network trust", () => {
   });
 
   it("uses one local bucket regardless of arbitrary forwarding headers", () => {
-    const environment = { NODE_ENV: "development", USER_COOKIE_SECRET: SECRET };
+    const environment = { NODE_ENV: "development" };
     const first = commentNetworkKey(addressRequest({}), environment);
     expect(
       commentNetworkKey(

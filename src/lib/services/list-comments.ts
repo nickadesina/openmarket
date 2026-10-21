@@ -3,15 +3,23 @@ import { type Kysely, sql } from "kysely";
 import { ServiceError } from "../api/errors.js";
 import { commentIdSchema } from "../api/schemas.js";
 import type { Database } from "../db/schema.js";
+import { identitiesFor } from "./tournament/identities.js";
+import type { PublicIdentity } from "./tournament/records.js";
 
 export const COMMENT_PAGE_SIZE = 20;
 const MAX_CURSOR_LENGTH = 512;
+
+/** The author as the tournament shows them: `@handle` for X, a bare name for a password account. */
+export type CommentAuthor = Pick<
+  PublicIdentity,
+  "handle" | "provider" | "profileSlug" | "affiliation" | "flagged"
+>;
 
 export interface MarketComment {
   readonly id: string;
   readonly marketId: string;
   readonly userId: string;
-  readonly username: string;
+  readonly author: CommentAuthor;
   readonly parentId: string | null;
   readonly body: string | null;
   readonly createdAt: string;
@@ -42,7 +50,7 @@ function commentQuery(db: Kysely<Database>) {
       "comment.id",
       "comment.market_id as marketId",
       "comment.user_id as userId",
-      "users.username",
+      "users.tournament_user_id as tournamentUserId",
       "comment.parent_id as parentId",
       "comment.body",
       "comment.created_at as createdAt",
@@ -54,17 +62,33 @@ function commentQuery(db: Kysely<Database>) {
     ]);
 }
 
-type CommentProjection = Omit<MarketComment, "createdAt" | "removedAt"> & {
+type CommentProjection = Omit<MarketComment, "author" | "createdAt" | "removedAt"> & {
+  readonly tournamentUserId: string;
   readonly createdAt: Date;
   readonly removedAt: Date | null;
 };
 
-function projectComment(row: CommentProjection): MarketComment {
-  return {
-    ...row,
-    createdAt: row.createdAt.toISOString(),
-    removedAt: row.removedAt?.toISOString() ?? null,
-  };
+async function projectComments(
+  db: Kysely<Database>,
+  rows: readonly CommentProjection[],
+): Promise<MarketComment[]> {
+  const identities = await identitiesFor(
+    db,
+    rows.map((row) => row.tournamentUserId),
+  );
+  return rows.map(({ tournamentUserId, ...row }) => {
+    const identity = identities.get(tournamentUserId);
+    if (identity === undefined) {
+      throw new Error(`Comment ${row.id} has an author with no tournament identity.`);
+    }
+    const { handle, provider, profileSlug, affiliation, flagged } = identity;
+    return {
+      ...row,
+      author: { handle, provider, profileSlug, affiliation, flagged },
+      createdAt: row.createdAt.toISOString(),
+      removedAt: row.removedAt?.toISOString() ?? null,
+    };
+  });
 }
 
 /** Shared projection for create, replay and moderation; never stores a stale response body. */
@@ -73,7 +97,8 @@ export async function getComment(db: Kysely<Database>, commentId: string): Promi
   if (row === undefined) {
     throw new ServiceError("COMMENT_NOT_FOUND", "Comment not found.");
   }
-  return projectComment(row);
+  const [comment] = await projectComments(db, [row]);
+  return comment!;
 }
 
 function decodeCursor(value: string, marketId: string, parentId: string | null): CommentCursor {
@@ -159,7 +184,7 @@ export async function listComments(
     .orderBy("comment.id", direction)
     .limit(COMMENT_PAGE_SIZE + 1)
     .execute();
-  const items = rows.slice(0, COMMENT_PAGE_SIZE).map(projectComment);
+  const items = await projectComments(db, rows.slice(0, COMMENT_PAGE_SIZE));
   const last = items.at(-1);
   const nextCursor =
     rows.length > COMMENT_PAGE_SIZE && last !== undefined

@@ -46,14 +46,14 @@ export interface MarketsTable {
   rounding_reserve_cents: Generated<string>;
   created_at: GeneratedImmutable<Date>;
   settled_at: Date | null;
-  /** Set when this row is a dealer instrument's book; null for the ladder markets. */
+  /** A dealer instrument's book; 008 removed every market without one. */
   instrument_id: GeneratedImmutable<string | null>;
 }
 
+/** A paper account: one per tournament user, opened on first use (README D1). */
 export interface UsersTable {
   id: GeneratedImmutable<string>;
-  username: string;
-  username_normalized: string;
+  tournament_user_id: Immutable<string>;
   cash_balance_cents: string;
   created_at: GeneratedImmutable<Date>;
 }
@@ -128,9 +128,7 @@ export interface CommentRateLimitsTable {
 }
 
 export interface RateLimitsTable {
-  scope: Immutable<
-    "admin_login" | "user_create" | "quote" | "trade" | "tournament_register" | "tournament_login"
-  >;
+  scope: Immutable<"quote" | "trade" | "tournament_register" | "tournament_login">;
   key: Immutable<string>;
   window_started_at: Date;
   request_count: number;

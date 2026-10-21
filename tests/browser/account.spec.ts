@@ -1,57 +1,102 @@
 import { expect, test } from "@playwright/test";
 
-import { createUser, isApiResponse, skipWithoutDatabase, uniqueNames } from "./helpers.js";
+import {
+  expectNoHorizontalOverflow,
+  formatCents,
+  signInDev,
+  skipWithoutDatabase,
+  uniqueHandle,
+} from "./helpers.js";
 
 skipWithoutDatabase();
 
-test("opening an account seeds the header identity without a reload", async ({
+const OPENING_BALANCE = formatCents("10000000");
+
+test("signed out, the header and the portfolio send sign-in back to the page", async ({
+  page,
+}) => {
+  await page.goto("/portfolio");
+  const main = page.getByRole("main");
+  await expect(main.getByRole("heading", { name: "Sign in to see your portfolio" })).toBeVisible();
+  await expect(main.getByRole("link", { name: "Sign in" })).toHaveAttribute(
+    "href",
+    "/t/signin?return=%2Fportfolio",
+  );
+  await expect(page.getByRole("banner").getByRole("link", { name: "Sign in" })).toHaveAttribute(
+    "href",
+    "/t/signin?return=%2Fportfolio",
+  );
+  await expect(page.getByText(/username/i)).toHaveCount(0);
+  await expectNoHorizontalOverflow(page);
+});
+
+test("the first portfolio view opens a $100,000 paper account for the tournament identity", async ({
+  page,
+  baseURL,
+}, testInfo) => {
+  const mobile = testInfo.project.name.includes("mobile");
+  const handle = uniqueHandle("paper", testInfo);
+  await signInDev(page, baseURL, handle);
+
+  await page.goto("/portfolio");
+  await expect(page.getByRole("heading", { name: "Portfolio" })).toBeVisible();
+  await expect(page.getByText(`Account · @${handle}`)).toBeVisible();
+  await expect(page.getByLabel("Portfolio summary")).toContainText(OPENING_BALANCE);
+
+  const banner = page.getByRole("banner");
+  await expect(banner.getByRole("link", { name: `@${handle}, your forecasts` })).toBeVisible();
+  if (!mobile) await expect(banner).toContainText(`${OPENING_BALANCE} cash`);
+  await expectNoHorizontalOverflow(page);
+
+  if (!mobile) {
+    await banner.getByRole("button", { name: "Sign out" }).click();
+    await expect(page.getByRole("heading", { name: "Sign in to see your portfolio" })).toBeVisible();
+  }
+});
+
+test("a username account created on the sign-in page returns to where it started", async ({
   page,
 }, testInfo) => {
-  const { username } = uniqueNames("acct-open", testInfo);
-  await page.goto("/");
-
-  const trigger = page.getByRole("button", { name: /Enter username/ });
-  await trigger.click();
-  await expect(page.getByRole("heading", { name: "Open your paper account" })).toBeVisible();
-
-  const userResponsePromise = page.waitForResponse((response) =>
-    isApiResponse(response, "POST", "/api/user"),
-  );
+  const username = uniqueHandle("pw", testInfo).slice(0, 20);
+  await page.goto("/t/signin?return=%2Fportfolio");
+  await page.getByRole("button", { name: "Create account" }).first().click();
   await page.getByLabel("Username").fill(username);
-  await page.getByRole("button", { name: "Open account" }).click();
-  expect((await userResponsePromise).status()).toBe(200);
+  await page.getByLabel("Password").fill("browser-test-password");
+  await page.getByRole("button", { name: "Create account" }).last().click();
 
-  const account = page.getByRole("button", { name: new RegExp(username) });
-  await expect(account).toBeVisible();
-  await expect(account).toContainText("$100,000.00 cash");
-  await expect(page.getByRole("heading", { name: "Open your paper account" })).toHaveCount(0);
+  await expect(page).toHaveURL(/\/portfolio$/);
+  await expect(page.getByText(`Account · ${username}`)).toBeVisible();
+  await expect(page.getByLabel("Portfolio summary")).toContainText(OPENING_BALANCE);
 });
 
-test("escape closes the editor and returns focus to the trigger", async ({ page }, testInfo) => {
-  const { username } = uniqueNames("acct-esc", testInfo);
-  await page.goto("/");
+test("admin moderation is gated by the tournament admin allowlist", async ({
+  page,
+  baseURL,
+}, testInfo) => {
+  await page.goto("/admin");
+  await expect(page.getByRole("heading", { name: "Market administration" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Admin only." })).toBeVisible();
+  await expect(page.getByRole("main").getByRole("link", { name: "Sign in" })).toBeVisible();
 
-  const trigger = page.getByRole("button", { name: /Enter username/ });
-  await trigger.click();
-  await page.getByLabel("Username").fill(username);
-  await page.keyboard.press("Escape");
-  await expect(page.getByRole("heading", { name: "Open your paper account" })).toHaveCount(0);
-  await expect(trigger).toBeFocused();
-});
-
-test("an existing account can be switched from the header", async ({ page, baseURL }, testInfo) => {
-  const first = uniqueNames("acct-a", testInfo).username;
-  const second = uniqueNames("acct-b", testInfo).username;
-  await page.goto("/");
-  await createUser(page, baseURL, first);
+  await signInDev(page, baseURL, uniqueHandle("visitor", testInfo));
   await page.reload();
+  await expect(page.getByRole("heading", { name: "Admin only." })).toBeVisible();
+  await expect(page.getByRole("main").getByRole("link", { name: "Sign in" })).toHaveCount(0);
 
-  const account = page.getByRole("button", { name: new RegExp(first) });
-  await expect(account).toBeVisible();
-  await account.click();
-  await expect(page.getByRole("heading", { name: "Change account" })).toBeVisible();
+  await signInDev(page, baseURL, "pw_admin");
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Market comments" })).toBeVisible();
+  await expect(page.getByLabel("Market")).toBeVisible();
+  await expect(page.getByText(/passphrase/i)).toHaveCount(0);
+  await expectNoHorizontalOverflow(page);
+});
 
-  await page.getByLabel("Username").fill(second);
-  await page.getByRole("button", { name: "Use account" }).click();
-  await expect(page.getByRole("button", { name: new RegExp(second) })).toBeVisible();
+test("the skip link jumps to main content", async ({ page }) => {
+  await page.goto("/");
+  await page.keyboard.press("Tab");
+  const skipLink = page.getByRole("link", { name: "Skip to content" });
+  await expect(skipLink).toBeFocused();
+  await page.keyboard.press("Enter");
+  expect(await page.evaluate(() => document.activeElement?.id)).toBe("main-content");
+  await expectNoHorizontalOverflow(page);
 });

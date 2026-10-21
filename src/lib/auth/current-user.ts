@@ -2,62 +2,30 @@ import type { Kysely } from "kysely";
 
 import { ServiceError } from "../api/errors.js";
 import type { Database } from "../db/schema.js";
-import { getUserCookieSecret, verifyUserCookie } from "./user-cookie.js";
-
-export const USER_COOKIE_NAME = "openmarket_user";
+import { ensurePaperAccount } from "../services/user.js";
+import {
+  readCookie,
+  resolveTournamentSession,
+  TOURNAMENT_SESSION_COOKIE,
+} from "./tournament-session.js";
 
 type DatabaseProvider = () => Kysely<Database>;
 
-function userRequired(): ServiceError {
-  return new ServiceError("USER_REQUIRED", "A valid signed user cookie is required.");
-}
-
-function readCookie(request: Request): string {
-  const cookieHeader = request.headers.get("cookie");
-  if (cookieHeader === null) {
-    throw userRequired();
-  }
-
-  let cookieValue: string | undefined;
-  for (const segment of cookieHeader.split(";")) {
-    const separator = segment.indexOf("=");
-    if (separator < 0) {
-      continue;
-    }
-    const name = segment.slice(0, separator).trim();
-    if (name !== USER_COOKIE_NAME) {
-      continue;
-    }
-    if (cookieValue !== undefined) {
-      throw userRequired();
-    }
-    cookieValue = segment.slice(separator + 1).trim();
-  }
-
-  if (cookieValue === undefined || cookieValue.length === 0) {
-    throw userRequired();
-  }
-  return cookieValue;
-}
-
+/**
+ * The paper account acting on this request. Tournament sign-in is the only
+ * identity; its first trade, quote, portfolio view or comment opens the
+ * account at the initial balance.
+ */
 export async function requireCurrentUserId(
   request: Request,
   getDatabase: DatabaseProvider,
 ): Promise<string> {
-  const cookieValue = readCookie(request);
-  const payload = verifyUserCookie(cookieValue, getUserCookieSecret());
-  if (payload === null) {
-    throw userRequired();
-  }
-
-  const user = await getDatabase()
-    .selectFrom("users")
-    .select("id")
-    .where("username_normalized", "=", payload.username)
-    .executeTakeFirst();
-
-  if (user === undefined) {
-    throw userRequired();
-  }
-  return user.id;
+  const userRequired = () =>
+    new ServiceError("USER_REQUIRED", "Sign in to trade, comment, or see a portfolio.");
+  // Without a session cookie there is nothing to look up, so the pool stays closed.
+  if (readCookie(request, TOURNAMENT_SESSION_COOKIE) === null) throw userRequired();
+  const db = getDatabase();
+  const session = await resolveTournamentSession(db, request);
+  if (session === null) throw userRequired();
+  return ensurePaperAccount(db, session.userId);
 }

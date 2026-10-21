@@ -13,6 +13,8 @@ import { contractMask, sellableQuantity } from "../engine/contracts.js";
 import { decomposeHoldings } from "../engine/decomposition.js";
 import { probabilities } from "../engine/lmsr.js";
 import { EPS } from "../engine/types.js";
+import { identitiesFor } from "./tournament/identities.js";
+import type { PublicIdentity } from "./tournament/records.js";
 
 export const PORTFOLIO_DEFAULT_TRADE_LIMIT = 25;
 export const PORTFOLIO_MAX_TRADE_LIMIT = 100;
@@ -106,7 +108,8 @@ export interface PortfolioTradePage {
 
 export interface Portfolio {
   readonly userId: string;
-  readonly username: string;
+  /** The tournament identity that owns this paper account. */
+  readonly identity: PublicIdentity;
   readonly cashBalanceCents: string;
   readonly holdingsMarkedValueUsd: number;
   readonly accountValueUsd: number;
@@ -205,11 +208,17 @@ export async function getPortfolio(
     .execute(async (transaction) => {
       const user = await transaction
         .selectFrom("users")
-        .select(["id", "username", "cash_balance_cents"])
+        .select(["id", "tournament_user_id", "cash_balance_cents"])
         .where("id", "=", userId)
         .executeTakeFirst();
 
       if (user === undefined) {
+        throw new ServiceError("USER_REQUIRED", "A valid user is required.");
+      }
+      const identity = (await identitiesFor(transaction, [user.tournament_user_id])).get(
+        user.tournament_user_id,
+      );
+      if (identity === undefined) {
         throw new ServiceError("USER_REQUIRED", "A valid user is required.");
       }
 
@@ -344,7 +353,7 @@ export async function getPortfolio(
 
       return {
         userId: user.id,
-        username: user.username,
+        identity,
         cashBalanceCents: user.cash_balance_cents,
         holdingsMarkedValueUsd,
         accountValueUsd: Number(user.cash_balance_cents) / 100 + holdingsMarkedValueUsd,

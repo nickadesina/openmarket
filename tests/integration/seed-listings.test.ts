@@ -5,7 +5,6 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { DEALER_PARAMS, MODEL_VERSION } from "../../src/lib/config/dealer.js";
 import { EVENTS_CSV_PATH, listingAnchors } from "../../src/lib/config/listing-anchors.js";
 import { seedListings } from "../../src/lib/services/dealer/seed-listings.js";
-import { seedMarket } from "../../src/lib/services/seed-market.js";
 import {
   createPostgresTestDatabase,
   type PostgresTestDatabase,
@@ -98,14 +97,13 @@ postgresDescribe(suiteName, () => {
   });
 
   it("reuses an existing company row by slug", async () => {
-    const existing = await seedMarket(postgres.db, {
-      name: "Anthropic",
-      slug: "anthropic",
-      logo_path: "/logos/anthropic.svg",
-      metric_kind: "yes_probability",
-      b: 100,
-      yes_probability: 0.5,
-    });
+    const existing = {
+      company: await postgres.db
+        .insertInto("companies")
+        .values({ name: "Anthropic", slug: "anthropic", logo_path: "/logos/anthropic.svg" })
+        .returningAll()
+        .executeTakeFirstOrThrow(),
+    };
     const results = await seedListings(postgres.db, {
       listedAt: LISTED_AT,
       relist: false,

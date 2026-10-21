@@ -98,6 +98,14 @@ button.link {
   color: var(--color-primary);
 }
 
+.accountCash {
+  color: var(--color-primary);
+  font-family: var(--font-num);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .signInButton {
   composes: primaryButton from "../../styles/shared.module.css";
 }

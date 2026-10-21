@@ -1,8 +1,7 @@
-import { createHmac } from "node:crypto";
+import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 
 import { ServiceError } from "../api/errors.js";
-import { requireCookieSecret } from "../auth/user-cookie.js";
 
 type Environment = Readonly<Record<string, string | undefined>>;
 
@@ -31,6 +30,11 @@ export function trustedClientAddress(
   return null;
 }
 
+/**
+ * The caller's posting bucket: a domain-separated SHA-256 of the trusted
+ * address, the same unkeyed form the request quotas use, so raw addresses
+ * are never stored.
+ */
 export function commentNetworkKey(
   request: Request,
   environment: Environment = process.env,
@@ -45,9 +49,8 @@ export function commentNetworkKey(
     );
   }
 
-  const secret = requireCookieSecret(environment.USER_COOKIE_SECRET ?? "", "USER_COOKIE_SECRET");
-  return createHmac("sha256", secret)
-    .update("openmarket.comments.network.v1\0")
+  return createHash("sha256")
+    .update("openmarket.comments.network.v2\0")
     .update(address)
     .digest("hex");
 }

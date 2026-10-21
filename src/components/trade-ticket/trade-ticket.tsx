@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { ApiClientError, apiRequest } from "../../lib/client/api.js";
@@ -12,6 +14,7 @@ import {
   formatQuantity,
   strikeLabel,
 } from "../../lib/client/format.js";
+import { signInHref } from "../../lib/client/tournament.js";
 import {
   type MovedPrice,
   type TradeOutcome,
@@ -53,7 +56,7 @@ const ERROR_TITLES: Readonly<Record<string, string>> = {
   PRICE_MOVED: "Price moved",
   INSUFFICIENT_CASH: "Insufficient cash",
   INSUFFICIENT_HOLDINGS: "Insufficient holdings",
-  USER_REQUIRED: "Username required",
+  USER_REQUIRED: "Sign-in required",
   RETRYABLE: "Outcome unknown",
 };
 
@@ -144,8 +147,8 @@ export function TradeTicket({
   const [result, setResult] = useState<ExecutionResult | null>(null);
   // Null while post-fill data is refreshing; the fill itself is settled either way.
   const [refreshStale, setRefreshStale] = useState<boolean | null>(false);
-  const [needsUsername, setNeedsUsername] = useState(false);
-  const [username, setUsername] = useState("");
+  const [needsSignIn, setNeedsSignIn] = useState(false);
+  const pathname = usePathname();
   const [movedPrice, setMovedPrice] = useState<MovedPrice | null>(null);
   const trade = useTradeExecution();
 
@@ -190,7 +193,7 @@ export function TradeTicket({
     setResult(null);
     setRefreshStale(false);
     setError(null);
-    setNeedsUsername(false);
+    setNeedsSignIn(false);
     setMovedPrice(null);
   }
 
@@ -252,7 +255,7 @@ export function TradeTicket({
     } catch (caught) {
       setQuote(null);
       if (caught instanceof ApiClientError) {
-        if (caught.code === "USER_REQUIRED") setNeedsUsername(true);
+        if (caught.code === "USER_REQUIRED") setNeedsSignIn(true);
         setError({ code: caught.code, message: caught.message });
       } else {
         setError({ code: "INTERNAL_ERROR", message: "The quote could not be loaded. Try again." });
@@ -283,7 +286,7 @@ export function TradeTicket({
     } else if (outcome.status === "unknown") {
       setError(RETRYABLE_ERROR);
     } else {
-      if (outcome.error.code === "USER_REQUIRED") setNeedsUsername(true);
+      if (outcome.error.code === "USER_REQUIRED") setNeedsSignIn(true);
       if (outcome.error.code === "PRICE_MOVED") setMovedPrice(outcome.movedPrice);
       setError({ code: outcome.error.code, message: outcome.error.message });
     }
@@ -304,37 +307,6 @@ export function TradeTicket({
   function abandonOrder() {
     trade.reset();
     setError(null);
-  }
-
-  async function createUsername() {
-    if (!/^[A-Za-z0-9_]{3,20}$/.test(username)) {
-      setError({ code: "INVALID_INPUT", message: "Use 3–20 letters, numbers, or underscores." });
-      return;
-    }
-    setPhase("executing");
-    setError(null);
-    try {
-      await apiRequest<unknown>("/api/user", {
-        method: "POST",
-        body: JSON.stringify({ username }),
-      });
-      try {
-        await onAuthoritativeRefresh();
-      } catch {
-        // The signed username cookie is authoritative; normal polling can recover the account display.
-      }
-      setNeedsUsername(false);
-      setPhase("idle");
-      if (quote === null) await requestQuote();
-      else await executeTrade();
-    } catch (caught) {
-      setError(
-        caught instanceof ApiClientError
-          ? { code: caught.code, message: caught.message }
-          : { code: "INTERNAL_ERROR", message: "The username could not be saved. Try again." },
-      );
-      setPhase("idle");
-    }
   }
 
   const errorTitle = (error === null ? undefined : ERROR_TITLES[error.code]) ?? "Trade unavailable";
@@ -564,34 +536,15 @@ export function TradeTicket({
           </div>
         ) : null}
 
-        {needsUsername ? (
-          <div className={styles.username}>
-            <label className={styles.field}>
-              <span>Username</span>
-              <span className={styles.inputFrame}>
-                <input
-                  autoFocus
-                  autoComplete="username"
-                  value={username}
-                  onChange={(event) => setUsername(event.target.value)}
-                  placeholder="market_reader"
-                />
-              </span>
-            </label>
+        {needsSignIn ? (
+          <div className={styles.signIn}>
             <p>
-              {quote === null
-                ? "A username is required to quote a sale."
-                : "Execution requires a username."}{" "}
-              This resumes the same paper-money account on this browser.
+              {quote === null ? "Quoting a sale" : "Trading"} needs a signed-in account. Your first
+              trade opens a $100,000 paper balance.
             </p>
-            <button
-              type="button"
-              className={styles.primary}
-              onClick={() => void createUsername()}
-              disabled={phase === "executing"}
-            >
-              {quote === null ? "Save username and preview" : "Save username and trade"}
-            </button>
+            <Link className={styles.primary} href={signInHref(pathname)}>
+              Sign in to trade
+            </Link>
           </div>
         ) : null}
 
@@ -633,7 +586,7 @@ export function TradeTicket({
               happened. Abandoning does not cancel a fill: check the portfolio.
             </small>
           </div>
-        ) : !needsUsername ? (
+        ) : !needsSignIn ? (
           quote === null ? (
             <button
               type="button"

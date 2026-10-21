@@ -10,6 +10,22 @@ import {
   PORTFOLIO_MAX_TRADE_LIMIT,
 } from "../../src/lib/services/portfolio.js";
 
+const IDENTITY = {
+  handle: "alice",
+  provider: "x" as const,
+  profileSlug: "alice",
+  affiliation: null,
+  displayName: "Alice",
+  avatarUrl: null,
+  verified: false,
+  flagged: false,
+};
+vi.mock("../../src/lib/services/tournament/identities.js", () => ({
+  identitiesFor: vi.fn(
+    async (_db: unknown, ids: readonly string[]) => new Map(ids.map((id) => [id, IDENTITY])),
+  ),
+}));
+
 function queryReturning(rows: readonly unknown[]): Record<string, Mock> {
   const query: Record<string, Mock> = {};
   for (const method of ["select", "where", "innerJoin", "orderBy", "offset", "limit"]) {
@@ -117,7 +133,7 @@ describe("calculatePortfolioExposure", () => {
 describe("getPortfolio", () => {
   it("returns an empty marked portfolio for a user with no holdings or trades", async () => {
     const userQuery = queryReturning([
-      { id: "user-1", username: "Alice", cash_balance_cents: "10000000" },
+      { id: "user-1", tournament_user_id: "tournament-1", cash_balance_cents: "10000000" },
     ]);
     const holdingsQuery = queryReturning([]);
     const basisQuery = queryReturning([]);
@@ -136,7 +152,7 @@ describe("getPortfolio", () => {
 
     expect(portfolio).toMatchObject({
       userId: "user-1",
-      username: "Alice",
+      identity: IDENTITY,
       cashBalanceCents: "10000000",
       holdingsMarkedValueUsd: 0,
       accountValueUsd: 100000,
@@ -157,7 +173,7 @@ describe("getPortfolio", () => {
 
   it("returns valuation positions, grouped basis, and a bounded newest-first page", async () => {
     const userQuery = queryReturning([
-      { id: "user-1", username: "Alice", cash_balance_cents: "12345" },
+      { id: "user-1", tournament_user_id: "tournament-1", cash_balance_cents: "12345" },
     ]);
     const q = Array.from({ length: VALUATION_BUCKET_COUNT }, () => 0);
     const h = Array.from({ length: VALUATION_BUCKET_COUNT }, (_, bucket) => (bucket > 20 ? 2 : 0));
@@ -258,7 +274,7 @@ describe("getPortfolio", () => {
 
   it("returns binary contracts only at strike zero", async () => {
     const userQuery = queryReturning([
-      { id: "user-1", username: "Alice", cash_balance_cents: "10000" },
+      { id: "user-1", tournament_user_id: "tournament-1", cash_balance_cents: "10000" },
     ]);
     const holdingsQuery = queryReturning([
       {

@@ -1,12 +1,13 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { apiRequest } from "../../lib/client/api.js";
-import { errorMessage, formatForecasterName } from "../../lib/client/format.js";
+import { errorMessage, formatCents, formatForecasterName } from "../../lib/client/format.js";
+import { queryKeys } from "../../lib/client/query-keys.js";
 import { forecasterHref, signInHref, useTournamentViewer } from "../../lib/client/tournament.js";
 import { UserIcon } from "../icons/icons.js";
 import styles from "./tournament-nav.module.css";
@@ -20,7 +21,8 @@ export function DevSignIn() {
         method: "POST",
         body: JSON.stringify({ handle }),
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["openmarket", "tournament"] }),
+    // A new identity changes the paper account too: refetch everything.
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.all }),
   });
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -51,14 +53,33 @@ export function DevSignIn() {
   );
 }
 
-/** The header's account control on tournament pages: an X identity, not a paper account. */
-export function TournamentAccount() {
+/** The signed-in viewer's paper cash; the first read opens the account at $100,000. */
+function PaperCash() {
+  const portfolio = useQuery({
+    queryKey: queryKeys.portfolio,
+    queryFn: () =>
+      apiRequest<{ readonly cashBalanceCents: string }>("/api/portfolio?offset=0&limit=1"),
+  });
+  // The comments module caches a signed-out read as null under the same key.
+  if (portfolio.data == null) return null;
+  return (
+    <span className={`${styles.accountCash} ${styles.wideOnly}`}>
+      {formatCents(portfolio.data.cashBalanceCents)} cash
+    </span>
+  );
+}
+
+/**
+ * The header's account control: the tournament identity, the only one. Market
+ * pages also show the identity's paper cash.
+ */
+export function TournamentAccount({ paperCash = false }: { readonly paperCash?: boolean }) {
   const pathname = usePathname();
   const queryClient = useQueryClient();
   const viewerQuery = useTournamentViewer();
   const signOut = useMutation({
     mutationFn: () => apiRequest("/api/t/auth/logout", { method: "POST", body: "{}" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["openmarket", "tournament"] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.all }),
   });
 
   if (viewerQuery.isPending) {
@@ -78,6 +99,7 @@ export function TournamentAccount() {
           <UserIcon />
           <span className={styles.wideOnly}>{formatForecasterName(viewer.identity)}</span>
         </Link>
+        {paperCash ? <PaperCash /> : null}
         <button
           className={`${styles.accountButton} ${styles.wideOnly}`}
           type="button"

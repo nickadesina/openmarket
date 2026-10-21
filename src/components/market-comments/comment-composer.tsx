@@ -1,16 +1,24 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { ApiClientError, apiRequest } from "../../lib/client/api.js";
-import type { MarketComment } from "../../lib/services/list-comments.js";
-import { OPEN_ACCOUNT_EDITOR_EVENT } from "../app-shell/account-control.js";
+import { formatForecasterName } from "../../lib/client/format.js";
+import { signInHref } from "../../lib/client/tournament.js";
+import type { CommentAuthor, MarketComment } from "../../lib/services/list-comments.js";
 import styles from "./market-comments.module.css";
 import { commentsPath } from "./use-comment-thread.js";
 
+/** The signed-in paper account and the tournament identity its comments carry. */
 export interface CommentIdentity {
   readonly userId: string;
-  readonly username: string;
+  readonly identity: CommentAuthor;
+}
+
+function nameOf(account: CommentIdentity): string {
+  return formatForecasterName(account.identity);
 }
 
 export interface CommentIdentityState {
@@ -43,6 +51,7 @@ export function CommentComposer({
   onCancel,
 }: CommentComposerProps) {
   const id = useId();
+  const pathname = usePathname();
   const inputId = `comment-draft-${id}`;
   const [body, setBody] = useState("");
   const [owner, setOwner] = useState<CommentIdentity | null>(null);
@@ -66,12 +75,6 @@ export function CommentComposer({
   useEffect(() => {
     if (body.length > 0 && owner?.userId !== identity?.userId) setMustAdopt(true);
   }, [body.length, owner?.userId, identity?.userId]);
-
-  function openAccountEditor() {
-    window.dispatchEvent(
-      new CustomEvent(OPEN_ACCOUNT_EDITOR_EVENT, { detail: { returnFocusId: inputId } }),
-    );
-  }
 
   async function refreshIdentity() {
     setRefreshingIdentity(true);
@@ -112,7 +115,7 @@ export function CommentComposer({
     }
     if (failure.code === "USER_REQUIRED") {
       setMustAdopt(true);
-      setError("Choose an account, then explicitly adopt and post your saved draft.");
+      setError("Sign in, then explicitly adopt and post your saved draft.");
       await refreshIdentity();
       return;
     }
@@ -185,11 +188,11 @@ export function CommentComposer({
     if (refreshingIdentity || account.checking)
       return "Checking the active account… Your draft is kept here.";
     if (identityBlocked) return "Account confirmation is unavailable. Your draft is kept here.";
-    if (identity === null) return "You can draft now. Choose a shared username before posting.";
-    if (!needsAdoption) return `Posting as @${identity.username}.`;
+    if (identity === null) return "You can draft now. Sign in before posting.";
+    if (!needsAdoption) return `Posting as ${nameOf(identity)}.`;
     return owner === null
-      ? `Your draft is not assigned to ${identity.username}. Adopt it explicitly before posting.`
-      : `This draft belongs to ${owner.username}. The active account is now ${identity.username}.`;
+      ? `Your draft is not assigned to ${nameOf(identity)}. Adopt it explicitly before posting.`
+      : `This draft belongs to ${nameOf(owner)}. The active account is now ${nameOf(identity)}.`;
   }
 
   function renderAccountAction() {
@@ -207,14 +210,9 @@ export function CommentComposer({
     }
     if (identity === null) {
       return (
-        <button
-          type="button"
-          className={styles.secondaryButton}
-          onClick={openAccountEditor}
-          disabled={posting}
-        >
-          Enter username to comment
-        </button>
+        <Link className={styles.secondaryButton} href={signInHref(pathname)}>
+          Sign in to comment
+        </Link>
       );
     }
     if (!needsAdoption || frozen) return null;
@@ -227,11 +225,11 @@ export function CommentComposer({
           setOwner(identity);
           setMustAdopt(false);
           setError(null);
-          setStatus(`Draft adopted by ${identity.username}. Review it, then press Post.`);
+          setStatus(`Draft adopted by ${nameOf(identity)}. Review it, then press Post.`);
           document.getElementById(inputId)?.focus();
         }}
       >
-        Use draft as {identity.username}
+        Use draft as {nameOf(identity)}
       </button>
     );
   }
@@ -316,7 +314,7 @@ export function CommentComposer({
       </p>
       {parentId === null ? (
         <p className={styles.disclosure}>
-          Usernames are shared paper-account identities, not verified accounts.
+          Comments show your tournament name: an @ handle from X, or a username without an @.
         </p>
       ) : null}
       {uncertain ? (

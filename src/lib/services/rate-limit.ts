@@ -6,13 +6,7 @@ import { ServiceError } from "../api/errors.js";
 import type { Database } from "../db/schema.js";
 import { trustedClientAddress } from "../security/comment-address.js";
 
-export type RateLimitScope =
-  | "admin_login"
-  | "user_create"
-  | "quote"
-  | "trade"
-  | "tournament_register"
-  | "tournament_login";
+export type RateLimitScope = "quote" | "trade" | "tournament_register" | "tournament_login";
 
 export interface RateLimitPolicy {
   readonly limit: number;
@@ -20,20 +14,17 @@ export interface RateLimitPolicy {
 }
 
 export const RATE_LIMIT_POLICIES: Readonly<Record<RateLimitScope, RateLimitPolicy>> = {
-  // Failed attempts only; the login route checks availability before
-  // verifying and consumes quota only when verification fails.
-  admin_login: { limit: 10, windowMs: 15 * 60_000 },
-  user_create: { limit: 20, windowMs: 60_000 },
   quote: { limit: 120, windowMs: 60_000 },
   trade: { limit: 30, windowMs: 60_000 },
   // Tournament password accounts: new accounts per network, and failed
-  // sign-ins only (per network and per username), like the admin login.
+  // sign-ins only (per network and per username); the login route checks
+  // availability before verifying and consumes quota only on a failure.
   tournament_register: { limit: 5, windowMs: 60 * 60_000 },
   tournament_login: { limit: 10, windowMs: 15 * 60_000 },
 };
 
-/** Per-network ceilings consumed alongside the per-user policy, so minting
- * fresh accounts cannot reset a caller's quote/trade quota. */
+/** Per-network ceilings consumed alongside the per-user policy, so signing
+ * in as fresh accounts cannot reset a caller's quote/trade quota. */
 export const RATE_LIMIT_NETWORK_POLICIES: Readonly<Record<"quote" | "trade", RateLimitPolicy>> = {
   quote: { limit: 600, windowMs: 60_000 },
   trade: { limit: 120, windowMs: 60_000 },

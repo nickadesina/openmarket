@@ -4,10 +4,8 @@ import { USD_MAX_LENGTH } from "../../src/lib/api/money.js";
 
 import {
   quoteInputSchema,
-  seedInputSchema,
   settlementInputSchema,
   tradeInputSchema,
-  usernameInputSchema,
 } from "../../src/lib/api/schemas.js";
 
 const quoteBase = {
@@ -19,25 +17,8 @@ const idempotencyKey = "6ba7b810-9dad-41d1-80b4-00c04fd430c8";
 const lineTerminators = ["\n", "\r\n", "\u2028", "\u2029"];
 
 describe("service input schemas", () => {
-  it("validates username boundaries and rejects unknown keys", () => {
-    expect(usernameInputSchema.parse({ username: "Ab_" })).toEqual({
-      username: "Ab_",
-    });
-    expect(usernameInputSchema.safeParse({ username: "a".repeat(20) }).success).toBe(true);
-
-    for (const input of [
-      { username: "ab" },
-      { username: "a".repeat(21) },
-      { username: "bad-name" },
-      { username: "valid_name", user_id: "injected" },
-    ]) {
-      expect(usernameInputSchema.safeParse(input).success).toBe(false);
-    }
-  });
-
   it("rejects trailing line terminators and overlong USD fields", () => {
     for (const terminator of lineTerminators) {
-      expect(usernameInputSchema.safeParse({ username: `Alice${terminator}` }).success).toBe(false);
       expect(
         quoteInputSchema.safeParse({
           ...quoteBase,
@@ -168,40 +149,6 @@ describe("service input schemas", () => {
     }
   });
 
-  it("validates valuation and binary seed inputs strictly", () => {
-    const common = {
-      name: "Anthropic",
-      slug: "anthropic",
-      logo_path: "/logos/anthropic.svg",
-      b: 25_000,
-    };
-
-    expect(
-      seedInputSchema.safeParse({
-        ...common,
-        metric_kind: "valuation_median",
-        anchor_valuation_usd: "60000000000.00",
-        anchor_date: "2026-08-30",
-        anchor_description: "Verified public reporting",
-        sigma: 0.5,
-      }).success,
-    ).toBe(true);
-    expect(
-      seedInputSchema.safeParse({
-        ...common,
-        metric_kind: "yes_probability",
-        yes_probability: 0.5,
-      }).success,
-    ).toBe(true);
-    expect(
-      seedInputSchema.safeParse({
-        ...common,
-        metric_kind: "yes_probability",
-        yes_probability: 1,
-      }).success,
-    ).toBe(false);
-  });
-
   it("requires exact settlement confirmation and an HTTP(S) source", () => {
     const valid = {
       slug: "anthropic",
@@ -216,7 +163,7 @@ describe("service input schemas", () => {
         settled_value_usd: "0.00",
       }).success,
     ).toBe(true);
-    expect(settlementInputSchema.safeParse({ ...valid, confirm_slug: "stripe" }).success).toBe(
+    expect(settlementInputSchema.safeParse({ ...valid, confirm_slug: "openai" }).success).toBe(
       false,
     );
     expect(settlementInputSchema.safeParse({ ...valid, source_url: "file:///tmp/x" }).success).toBe(

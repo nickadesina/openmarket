@@ -73,7 +73,7 @@ describe("listingAnchors", () => {
   });
 
   it("refuses a company with no priced round", () => {
-    expect(() => listingAnchors(EVENTS, SOURCES, ["Stripe Inc"])).toThrow(/no priced_round/);
+    expect(() => listingAnchors(EVENTS, SOURCES, ["Unlisted Labs"])).toThrow(/no priced_round/);
   });
 });
 

@@ -334,9 +334,14 @@ postgresDescribe(suiteName, () => {
   it("accepts long and short trades on the ledger", async () => {
     const forward = await insertInstrument({ kind: "forward", entry_ref_ln: 23.03 });
     const book = await insertMarket("forward_ln", { instrument_id: forward.id });
+    const tournamentUser = await postgres.db
+      .insertInto("tournament_users")
+      .defaultValues()
+      .returning("id")
+      .executeTakeFirstOrThrow();
     const user = await postgres.db
       .insertInto("users")
-      .values({ username: "Long", username_normalized: "long", cash_balance_cents: "100" })
+      .values({ tournament_user_id: tournamentUser.id, cash_balance_cents: "100" })
       .returning("id")
       .executeTakeFirstOrThrow();
     const trade = (side: string) =>
@@ -497,9 +502,12 @@ postgresDescribe(`${suiteName}: down`, () => {
 
   it("drops every dealer table and restores the ladder's constraints, then re-applies", async () => {
     const migrator = createMigrator(postgres.db, postgres.schema);
-    const down = await migrator.migrateDown();
+    const down = await migrator.migrateTo("006_tournament_accounts");
     expect(down.error).toBeUndefined();
-    expect(down.results?.map((result) => result.migrationName)).toEqual(["007_dealer"]);
+    expect(down.results?.map((result) => result.migrationName)).toEqual([
+      "008_retire_ladder_and_username_accounts",
+      "007_dealer",
+    ]);
 
     for (const table of ["listings", "instruments", "event_flags", "cron_runs", "quotes"]) {
       expect(await relationExists(table), table).toBe(false);

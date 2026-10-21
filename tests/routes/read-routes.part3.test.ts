@@ -1,8 +1,8 @@
 import type { Kysely } from "kysely";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ServiceError } from "../../src/lib/api/errors.js";
-import { signUserCookie } from "../../src/lib/auth/user-cookie.js";
+import { TOURNAMENT_SESSION_COOKIE } from "../../src/lib/auth/tournament-session.js";
 import type { Database } from "../../src/lib/db/schema.js";
 
 const mocks = vi.hoisted(() => ({
@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   getMarks: vi.fn(),
   getActivity: vi.fn(),
   getPortfolio: vi.fn(),
+  ensurePaperAccount: vi.fn(),
   logReadRequest: vi.fn(),
   logUnexpectedError: vi.fn(),
 }));
@@ -37,6 +38,9 @@ vi.mock("../../src/lib/services/get-activity.js", () => ({
   ACTIVITY_MAX_LIMIT: 100,
   getActivity: mocks.getActivity,
 }));
+vi.mock("../../src/lib/services/user.js", () => ({
+  ensurePaperAccount: mocks.ensurePaperAccount,
+}));
 vi.mock("../../src/lib/services/portfolio.js", () => ({
   PORTFOLIO_DEFAULT_TRADE_LIMIT: 25,
   PORTFOLIO_MAX_TRADE_LIMIT: 100,
@@ -50,19 +54,10 @@ import { GET as getMarketsRoute } from "../../src/app/api/markets/route.js";
 import { GET as getPortfolioRoute } from "../../src/app/api/portfolio/route.js";
 
 const fakeDatabase = {} as Kysely<Database>;
-const originalUserCookieSecret = process.env.USER_COOKIE_SECRET;
 
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.getRuntimeDatabase.mockReturnValue(fakeDatabase);
-});
-
-afterEach(() => {
-  if (originalUserCookieSecret === undefined) {
-    delete process.env.USER_COOKIE_SECRET;
-  } else {
-    process.env.USER_COOKIE_SECRET = originalUserCookieSecret;
-  }
 });
 
 describe("Part 3 public read routes", () => {
@@ -190,7 +185,7 @@ describe("Part 3 public read routes", () => {
 });
 
 describe("Part 3 portfolio route identity", () => {
-  it("requires the signed portfolio cookie and ignores client identity channels", async () => {
+  it("rejects client identity channels before any lookup", async () => {
     const response = await getPortfolioRoute(
       new Request("http://localhost/api/portfolio?user_id=attacker&offset=0&limit=25", {
         headers: { "x-user-id": "attacker" },
@@ -218,18 +213,16 @@ describe("Part 3 portfolio route identity", () => {
     });
   });
 
-  it("derives portfolio identity only from the verified cookie", async () => {
-    const secret = Buffer.from(Array.from({ length: 32 }, (_unused, index) => index + 33)).toString(
-      "base64url",
-    );
-    process.env.USER_COOKIE_SECRET = secret;
-    const cookie = signUserCookie("Alice_1", secret, Date.now());
+  it("derives the portfolio account only from the tournament session", async () => {
     const select = vi.fn();
     const where = vi.fn();
     const query = {
       select,
       where,
-      executeTakeFirst: vi.fn(async () => ({ id: "user-1" })),
+      executeTakeFirst: vi.fn(async () => ({
+        user_id: "tournament-user-1",
+        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      })),
     };
     select.mockReturnValue(query);
     where.mockReturnValue(query);
@@ -237,20 +230,22 @@ describe("Part 3 portfolio route identity", () => {
       selectFrom: vi.fn(() => query),
     } as unknown as Kysely<Database>;
     mocks.getRuntimeDatabase.mockReturnValue(database);
-    const portfolio = { userId: "user-1", username: "Alice_1" };
+    mocks.ensurePaperAccount.mockResolvedValue("user-1");
+    const portfolio = { userId: "user-1", identity: { handle: "alice", provider: "x" } };
     mocks.getPortfolio.mockResolvedValue(portfolio);
 
     const response = await getPortfolioRoute(
       new Request("http://localhost/api/portfolio?offset=5&limit=10", {
         headers: {
-          cookie: `openmarket_user=${cookie}`,
+          cookie: `${TOURNAMENT_SESSION_COOKIE}=${"t".repeat(43)}`,
           "x-user-id": "attacker",
         },
       }),
     );
 
     expect(response.status).toBe(200);
-    expect(where).toHaveBeenCalledWith("username_normalized", "=", "alice_1");
+    expect(database.selectFrom).toHaveBeenCalledWith("tournament_sessions");
+    expect(mocks.ensurePaperAccount).toHaveBeenCalledWith(database, "tournament-user-1");
     expect(mocks.getPortfolio).toHaveBeenCalledWith(database, "user-1", {
       offset: 5,
       limit: 10,

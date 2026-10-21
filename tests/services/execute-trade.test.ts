@@ -123,8 +123,7 @@ function createTransactionHarness(options?: {
   };
   const user: UserRow = {
     id: USER_ID,
-    username: "Trader",
-    username_normalized: "trader",
+    tournament_user_id: "00000000-0000-4000-8000-0000000000aa",
     cash_balance_cents: "10000",
     created_at: new Date("2026-01-01T00:00:00.000Z"),
   };

@@ -84,7 +84,7 @@ export function HomeStats({
         </ul>
       )}
       <dl className={styles.facts}>
-        {identityQuery.data === undefined ? null : (
+        {identityQuery.data == null ? null : (
           <div className={styles.cell}>
             <dt>Paper cash</dt>
             <dd className={styles.cash}>{formatCents(identityQuery.data.cashBalanceCents)}</dd>

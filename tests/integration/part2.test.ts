@@ -12,12 +12,12 @@ import {
   executeTrade,
 } from "../../src/lib/services/execute-trade.js";
 import { quoteMarket } from "../../src/lib/services/quote.js";
-import { seedMarket } from "../../src/lib/services/seed-market.js";
 import { settleMarket } from "../../src/lib/services/settle-market.js";
-import { createOrResumeUser } from "../../src/lib/services/user.js";
 import { verifyReplay } from "../../src/lib/services/verify-replay.js";
 import {
+  createBinaryBook,
   createPostgresTestDatabase,
+  createTrader,
   holdAdvisoryLock,
   type PostgresTestDatabase,
   resetPostgresTestDatabase,
@@ -53,14 +53,7 @@ postgresDescribe(suiteName, () => {
   }, 30_000);
 
   async function seedBinary(slug = "integration-market") {
-    return seedMarket(postgres.db, {
-      name: "Integration Market",
-      slug,
-      logo_path: "/integration.svg",
-      metric_kind: "yes_probability",
-      b: 100,
-      yes_probability: 0.5,
-    });
+    return createBinaryBook(postgres.db, { slug, name: "Integration Market" });
   }
 
   function buyInput(
@@ -147,8 +140,8 @@ postgresDescribe(suiteName, () => {
 
   it("serializes simultaneous same-market trades with contiguous state and mark sequences", async () => {
     const seeded = await seedBinary();
-    const firstUser = await createOrResumeUser(postgres.db, "SerialOne");
-    const secondUser = await createOrResumeUser(postgres.db, "SerialTwo");
+    const firstUser = await createTrader(postgres.db, "SerialOne");
+    const secondUser = await createTrader(postgres.db, "SerialTwo");
 
     const executions = await Promise.all([
       executeTrade(postgres.db, firstUser.id, buyInput(seeded.company.slug, 2)),
@@ -202,8 +195,8 @@ postgresDescribe(suiteName, () => {
 
   it("allocates sequence by market serialization even when transaction start order is reversed", async () => {
     const seeded = await seedBinary("reverse-start");
-    const olderUser = await createOrResumeUser(postgres.db, "OlderTxn");
-    const newerUser = await createOrResumeUser(postgres.db, "NewerTxn");
+    const olderUser = await createTrader(postgres.db, "OlderTxn");
+    const newerUser = await createTrader(postgres.db, "NewerTxn");
     const olderInput = buyInput(seeded.company.slug, 1);
     const blocker = await holdAdvisoryLock(
       postgres,
@@ -244,7 +237,7 @@ postgresDescribe(suiteName, () => {
 
   it("orders tied mark timestamps by authoritative market sequence", async () => {
     const seeded = await seedBinary("tied-marks");
-    const user = await createOrResumeUser(postgres.db, "TiedMarks");
+    const user = await createTrader(postgres.db, "TiedMarks");
     await executeTrade(postgres.db, user.id, buyInput(seeded.company.slug, 1));
     await executeTrade(postgres.db, user.id, buyInput(seeded.company.slug, 1));
 
@@ -273,7 +266,7 @@ postgresDescribe(suiteName, () => {
 
   it("serializes simultaneous duplicate idempotency keys into one stored body", async () => {
     const seeded = await seedBinary("idempotency");
-    const user = await createOrResumeUser(postgres.db, "Idempotent");
+    const user = await createTrader(postgres.db, "Idempotent");
     const input = buyInput(seeded.company.slug, 2);
 
     const executions = await Promise.all([
@@ -307,8 +300,8 @@ postgresDescribe(suiteName, () => {
 
   it("rejects cross-user reuse of an existing idempotency key without exposing or mutating the original execution", async () => {
     const seeded = await seedBinary("cross-user-idempotency");
-    const originalUser = await createOrResumeUser(postgres.db, "KeyOwner");
-    const otherUser = await createOrResumeUser(postgres.db, "KeyIntruder");
+    const originalUser = await createTrader(postgres.db, "KeyOwner");
+    const otherUser = await createTrader(postgres.db, "KeyIntruder");
     const input = buyInput(seeded.company.slug, 2);
     await executeTrade(postgres.db, originalUser.id, input);
     const before = await ledgerSnapshot(seeded.market.id, otherUser.id);
@@ -326,7 +319,7 @@ postgresDescribe(suiteName, () => {
 
   it("rejects changed-request reuse of an existing idempotency key without writes", async () => {
     const seeded = await seedBinary("changed-request-idempotency");
-    const user = await createOrResumeUser(postgres.db, "ChangedRequest");
+    const user = await createTrader(postgres.db, "ChangedRequest");
     const input = buyInput(seeded.company.slug, 2);
     await executeTrade(postgres.db, user.id, input);
     const before = await ledgerSnapshot(seeded.market.id, user.id);
@@ -345,8 +338,8 @@ postgresDescribe(suiteName, () => {
 
   it("rolls back every write when a stale quote fails slippage", async () => {
     const seeded = await seedBinary("slippage");
-    const user = await createOrResumeUser(postgres.db, "SlippageUser");
-    const mover = await createOrResumeUser(postgres.db, "SlippageMover");
+    const user = await createTrader(postgres.db, "SlippageUser");
+    const mover = await createTrader(postgres.db, "SlippageMover");
     const staleQuote = await quoteMarket(postgres.db, {
       slug: seeded.company.slug,
       action: "buy",
@@ -370,7 +363,7 @@ postgresDescribe(suiteName, () => {
 
   it("rolls back cash, holdings, market, trades, and marks on overdraw", async () => {
     const seeded = await seedBinary("overdraw");
-    const user = await createOrResumeUser(postgres.db, "OverdrawUser");
+    const user = await createTrader(postgres.db, "OverdrawUser");
     const before = await ledgerSnapshot(seeded.market.id, user.id);
 
     await expect(
@@ -382,7 +375,7 @@ postgresDescribe(suiteName, () => {
 
   it("rolls back an oversell without leaving the provisional holdings row", async () => {
     const seeded = await seedBinary("oversell");
-    const user = await createOrResumeUser(postgres.db, "OversellUser");
+    const user = await createTrader(postgres.db, "OversellUser");
     const before = await ledgerSnapshot(seeded.market.id, user.id);
 
     await expect(
@@ -394,8 +387,8 @@ postgresDescribe(suiteName, () => {
 
   it("credits EPS-low settlement entitlements exactly once and freezes the market", async () => {
     const seeded = await seedBinary("settlement");
-    const epsLowUser = await createOrResumeUser(postgres.db, "EpsLowUser");
-    const otherUser = await createOrResumeUser(postgres.db, "OtherHolder");
+    const epsLowUser = await createTrader(postgres.db, "EpsLowUser");
+    const otherUser = await createTrader(postgres.db, "OtherHolder");
     await executeTrade(postgres.db, epsLowUser.id, buyInput(seeded.company.slug, 1 - 5e-10));
     await executeTrade(postgres.db, otherUser.id, buyInput(seeded.company.slug, 2));
 
@@ -472,8 +465,8 @@ postgresDescribe(suiteName, () => {
 
   it("reports clean replay state with contiguous trade and mark sequences", async () => {
     const seeded = await seedBinary("replay");
-    const firstUser = await createOrResumeUser(postgres.db, "ReplayOne");
-    const secondUser = await createOrResumeUser(postgres.db, "ReplayTwo");
+    const firstUser = await createTrader(postgres.db, "ReplayOne");
+    const secondUser = await createTrader(postgres.db, "ReplayTwo");
     await executeTrade(postgres.db, firstUser.id, buyInput(seeded.company.slug, 2));
     await executeTrade(postgres.db, secondUser.id, buyInput(seeded.company.slug, 3));
     await executeTrade(postgres.db, firstUser.id, sellInput(seeded.company.slug, 0.5));

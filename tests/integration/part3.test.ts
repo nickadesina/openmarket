@@ -8,11 +8,11 @@ import { getActivity } from "../../src/lib/services/get-activity.js";
 import { getMarket } from "../../src/lib/services/get-market.js";
 import { getMarks } from "../../src/lib/services/get-marks.js";
 import { listMarkets } from "../../src/lib/services/list-markets.js";
-import { seedMarket } from "../../src/lib/services/seed-market.js";
 import { settleMarket } from "../../src/lib/services/settle-market.js";
-import { createOrResumeUser } from "../../src/lib/services/user.js";
 import {
+  createBinaryBook,
   createPostgresTestDatabase,
+  createTrader,
   type PostgresTestDatabase,
   resetPostgresTestDatabase,
   TEST_DATABASE_SKIP_REASON,
@@ -42,14 +42,7 @@ postgresDescribe(suiteName, () => {
   }, 30_000);
 
   async function seedBinary(slug: string) {
-    return seedMarket(postgres.db, {
-      name: "Part Three Integration",
-      slug,
-      logo_path: "/integration.svg",
-      metric_kind: "yes_probability",
-      b: 100,
-      yes_probability: 0.5,
-    });
+    return createBinaryBook(postgres.db, { slug, name: "Part Three Integration" });
   }
 
   function buyInput(
@@ -69,7 +62,7 @@ postgresDescribe(suiteName, () => {
 
   it("reads one coherent traded market through list, detail, and marks services", async () => {
     const seeded = await seedBinary("part-three-read");
-    const user = await createOrResumeUser(postgres.db, "PartThreeReader");
+    const user = await createTrader(postgres.db, "PartThreeReader");
     await executeTrade(postgres.db, user.id, buyInput(seeded.company.slug, 3));
     const now = new Date(Date.now() + 1_000);
 
@@ -101,7 +94,7 @@ postgresDescribe(suiteName, () => {
 
   it("paginates public activity without exposing private trade state", async () => {
     const seeded = await seedBinary("part-three-activity");
-    const user = await createOrResumeUser(postgres.db, "ActivityReader");
+    const user = await createTrader(postgres.db, "ActivityReader");
     await executeTrade(postgres.db, user.id, buyInput(seeded.company.slug, 1));
     await executeTrade(postgres.db, user.id, buyInput(seeded.company.slug, 2));
 
@@ -117,7 +110,7 @@ postgresDescribe(suiteName, () => {
     expect(second.items[0]?.marketSequence).not.toBe(first.items[0]?.marketSequence);
     for (const item of [...first.items, ...second.items]) {
       expect(item).not.toHaveProperty("userId");
-      expect(item).not.toHaveProperty("username");
+      expect(item).not.toHaveProperty("tournamentUserId");
       expect(item).not.toHaveProperty("idempotencyKey");
       expect(item).not.toHaveProperty("requestFingerprint");
       expect(item).not.toHaveProperty("cashBalanceCents");
