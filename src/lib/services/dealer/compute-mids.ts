@@ -22,7 +22,11 @@ import {
   type HazardParams,
   type Tier,
 } from "../../engine/dealer/prior.js";
-import { RULEBOOK_VERSION } from "../../engine/dealer/rulebook.js";
+import {
+  type FlagTerms,
+  postMoneyUsd,
+  RULEBOOK_VERSION,
+} from "../../engine/dealer/rulebook.js";
 
 /**
  * The mid step of /api/cron/dealer (TECHNICAL_DESIGN.md §5): one model mid
@@ -33,6 +37,11 @@ import { RULEBOOK_VERSION } from "../../engine/dealer/rulebook.js";
  * instrument's latest row (the forward's `as_of` aside), so the tape moves
  * when the model does and not every fifteen minutes; a binary's p is its
  * seed price and only a version change rewrites it.
+ *
+ * The anchor is the name's last print as of the instrument's listing: the
+ * listing's anchor round, or a later `print` flag with a post-money, so a
+ * successor rolled from a settlement prices off the print that settled its
+ * predecessor (CONTRACTS.md → Contract B).
  */
 
 const LIVE_STATES: readonly InstrumentState[] = ["quoting", "widened"];
@@ -48,6 +57,8 @@ export interface MidAnchor {
   readonly date: string;
   readonly post_money_usd: number;
   readonly source_url: string;
+  /** The `print` flag the anchor is, when it is not the listing's anchor round. */
+  readonly flag_id?: string;
 }
 
 export interface BinaryMidInputs {
@@ -110,6 +121,18 @@ export interface LiveInstrument {
   readonly anchor_date: string;
   readonly anchor_post_money_usd: string;
   readonly anchor_source_url: string;
+  /** Set when the anchor is a later `print` flag rather than the listing's round. */
+  readonly anchor_flag_id?: string | null;
+}
+
+/** A `print` flag as the anchor lookup reads it; `at` is published_at, else observed_at. */
+export interface AnchorPrint {
+  readonly id: string;
+  readonly company_id: string;
+  readonly at: Date;
+  readonly observed_at: Date;
+  readonly source_url: string | null;
+  readonly terms_json: JsonObject;
 }
 
 /** An event flag as the step reads it; `at` is published_at, else observed_at. */
@@ -163,7 +186,68 @@ function anchorOf(instrument: LiveInstrument): MidAnchor {
     date: instrument.anchor_date,
     post_money_usd: Number(instrument.anchor_post_money_usd),
     source_url: instrument.anchor_source_url,
+    ...(instrument.anchor_flag_id ? { flag_id: instrument.anchor_flag_id } : {}),
   };
+}
+
+function isoDay(at: Date): string {
+  return at.toISOString().slice(0, 10);
+}
+
+/**
+ * The instrument with its anchor moved to the latest print seen and dated by
+ * its listing time, on a later day than the listing's anchor round, with a
+ * post-money. Without one the listing's anchor stands. Pure.
+ */
+export function withPrintAnchor<T extends LiveInstrument>(
+  instrument: T,
+  prints: readonly AnchorPrint[],
+): T {
+  const anchorDay = day(instrument.anchor_date);
+  let found: { readonly print: AnchorPrint; readonly postMoney: number } | null = null;
+  for (const print of prints) {
+    if (print.company_id !== instrument.company_id) continue;
+    if (print.observed_at > instrument.opens_at || print.at > instrument.opens_at) continue;
+    if (daysBetween(anchorDay, print.at) <= 0) continue;
+    const postMoney = postMoneyUsd(print.terms_json as unknown as FlagTerms);
+    if (postMoney === null) continue;
+    const later =
+      found === null ||
+      print.at > found.print.at ||
+      (print.at.getTime() === found.print.at.getTime() && print.id > found.print.id);
+    if (later) found = { print, postMoney };
+  }
+  if (found === null) return instrument;
+  return {
+    ...instrument,
+    anchor_round: `print of ${isoDay(found.print.at)}`,
+    anchor_date: isoDay(found.print.at),
+    anchor_post_money_usd: String(found.postMoney),
+    anchor_source_url: found.print.source_url ?? instrument.anchor_source_url,
+    anchor_flag_id: found.print.id,
+  };
+}
+
+/** Every `print` flag of these companies, for withPrintAnchor. */
+export async function loadAnchorPrints(
+  db: Kysely<Database>,
+  companyIds: readonly string[],
+): Promise<AnchorPrint[]> {
+  if (companyIds.length === 0) return [];
+  const rows = await db
+    .selectFrom("event_flags")
+    .select(["id", "company_id", "observed_at", "published_at", "source_url", "terms_json"])
+    .where("company_id", "in", companyIds)
+    .where("kind", "=", "print")
+    .execute();
+  return rows.map((row) => ({
+    id: row.id,
+    company_id: row.company_id,
+    at: row.published_at ?? row.observed_at,
+    observed_at: row.observed_at,
+    source_url: row.source_url,
+    terms_json: row.terms_json,
+  }));
 }
 
 /**
@@ -335,7 +419,7 @@ export interface ComputeMidsSummary {
 }
 
 async function liveInstruments(db: Kysely<Database>): Promise<LiveInstrument[]> {
-  return db
+  const rows = await db
     .selectFrom("instruments")
     .innerJoin("listings", "listings.id", "instruments.listing_id")
     .innerJoin("companies", "companies.id", "listings.company_id")
@@ -358,9 +442,11 @@ async function liveInstruments(db: Kysely<Database>): Promise<LiveInstrument[]> 
     .orderBy("companies.name")
     .orderBy("instruments.kind")
     .execute();
+  const prints = await loadAnchorPrints(db, [...new Set(rows.map((row) => row.company_id))]);
+  return rows.map((row) => withPrintAnchor(row, prints));
 }
 
-async function flagsByCompany(
+export async function flagsByCompany(
   db: Kysely<Database>,
   companyIds: readonly string[],
   now: Date,
