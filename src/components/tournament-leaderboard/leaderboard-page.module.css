@@ -1,0 +1,145 @@
+.page {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.header h1 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-xl);
+}
+
+.header p {
+  max-width: 72ch;
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+}
+
+.periodField {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.periodField span {
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.periodField select {
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+}
+
+.table {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.caption {
+  padding-bottom: var(--space-2);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+  caption-side: top;
+}
+
+.table th {
+  height: var(--row-compact);
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-hover);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.table td {
+  height: var(--row-table);
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.rank,
+.figure,
+.score {
+  font-family: var(--font-num);
+  font-weight: 700;
+  text-align: right;
+}
+
+.score {
+  color: var(--color-primary);
+  font-size: var(--font-size-md);
+}
+
+.forecaster {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
+}
+
+.avatar,
+.avatarFallback {
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid var(--color-border);
+}
+
+.avatarFallback {
+  display: inline-block;
+  background: var(--color-surface-elevated);
+}
+
+.statePanel {
+  display: grid;
+  max-width: 60ch;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+}
+
+.statePanel p {
+  margin: 0;
+  color: var(--color-ink-muted);
+}
+
+.retry {
+  composes: buttonBase from "../../styles/shared.module.css";
+  justify-self: start;
+  border: 1px solid var(--color-ink);
+  background: var(--color-surface);
+}
+
+.skeleton {
+  composes: skeletonBlock from "../../styles/shared.module.css";
+  height: 16rem;
+}
+
+@media (max-width: 42rem) {
+  .table th:nth-child(4),
+  .table td:nth-child(4) {
+    display: none;
+  }
+
+  .table th,
+  .table td {
+    padding: 0 var(--space-2);
+  }
+}

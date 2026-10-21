@@ -194,14 +194,93 @@ script safely once anything has traded.
   `parentId` and `cursor` on reads. Removal: `POST /api/admin/comments/[commentId]/remove`.
   Comment refreshes are independent of trading and pause in background tabs.
 
-### D9. Forecasting tournament — Implemented on branch
+### D9. Forecasting tournament — Implemented
 
-The log-scored forecasting tournament under `/t` (its own users,
-sessions, questions and append-only forecast ledger; X OAuth or
-username sign-in; hourly Merkle roots posted to Solana) lives on
-`claude/kind-bohr-nf4w3p` and is ahead of `master` by ~155 files.
-Merging it is milestone 1 of `TECHNICAL_DESIGN.md` §12. Its README
-section D9 becomes this one on merge.
+A log-scored forecasting tournament under `/t`, separate from the paper
+markets: its own users, sessions, questions, and ledger
+(`tournament_*` tables, migration `004_tournament`). No money, trading,
+LMSR, or tokens. Paper accounts and tournament identities never mix.
+
+- Identity: X OAuth 2.0 with PKCE (`users.read tweet.read`, no write
+  scopes, no `offline.access`; the token is dropped after the profile
+  fetch), or a username and password (scrypt, the admin passphrase's
+  format; no email, no recovery). The numeric X id is an X account's
+  identity; handle, name, avatar, `verified`, and account creation date
+  are refreshed on every sign-in. Usernames live in their own namespace:
+  shown without an "@", never linked to X, at `/t/u/~username`, so a
+  username can never pass for an X handle. Username accounts have no
+  external account age, so `min_account_age_days` applies to X accounts
+  only. Registration is limited per network (5 an hour); failed sign-ins
+  per network and per username (10 per 15 minutes). Sessions are
+  server-side rows keyed by the SHA-256 of an opaque cookie token,
+  30-day sliding expiry. Admin is an allowlist (`TOURNAMENT_ADMIN_X_IDS`:
+  X ids, or `password:<username>`).
+- Affiliation: any forecaster may state one (lab, school, firm; up to 60
+  characters, free text with a suggested list in
+  `src/lib/config/tournament-affiliations.ts`). It is self-reported,
+  never verified, shown in gray beside the name everywhere, and an admin
+  can override or clear it.
+- Questions: a discrete distribution over buckets that tile the line
+  (lower inclusive, upper exclusive) plus one floor bucket ("nothing by
+  expiry") on numeric ladders; binaries are Yes/No. Drafts are editable;
+  opening pins the record. Close is automatic at `closes_at`, or manual
+  and back-dated to a resolution document's public time (later events
+  stay in the log and are never counted).
+- Forecasts: append-only events, renormalized to ten decimals, hashed
+  (`event_hash`, phase-2 provenance input), one per user and question
+  per 10 seconds, refused for X accounts younger than the question's
+  `min_account_age_days` (default 90).
+- Aggregate: geometric mean of odds over each non-flagged forecaster's
+  latest vector, clamped at ε = 0.001, extremized (a = 1.5, stored per
+  question and per row with weighting `equal-v1`), recomputed on every
+  write. Published only from five forecasters; derived median (floor
+  excluded, log-linear inside the crossing bucket, open ends report
+  their edge), P(floor), P(yes).
+- Scoring: time-averaged log score relative to uniform, 100 / ln n ×
+  mean of ln(n · max(p, ε)) on the winning bucket over the open window;
+  uniform before a first forecast; coverage recorded, not ranked. Written
+  once per resolution as immutable rows. A correction inside the 72-hour
+  dispute window supersedes the live resolution and rescoring writes a
+  new set; afterwards nothing changes. Voided questions write no scores.
+- Leaderboard: sum of scores over live resolutions in the period (all
+  time, or a calendar month in America/Los_Angeles); ties break on mean
+  coverage. Flagged accounts are scored and shown, marked, and excluded
+  from the aggregate.
+- Database triggers keep `tournament_forecast_events` and
+  `tournament_scores` append-only and let a resolution change only by
+  being superseded. `npm run verify:replay` also recomputes every stored
+  score and every open question's live aggregate from the event log.
+
+Pages: `/t` (questions and implied EV/ARR), `/t/signin`, `/t/q/[slug]`,
+`/t/u/[handle]`, `/t/leaderboard`, `/t/admin`. Public JSON, cacheable
+for 10 seconds: `GET /api/t/questions`, `/api/t/questions/[slug]`,
+`/api/t/questions/[slug]/forecasts`,
+`/api/t/questions/[slug]/aggregate/history`,
+`/api/t/leaderboard?period=all|YYYY-MM`, `/api/t/users/[handle]`,
+`/api/t/derived`. Session: `GET /api/t/me`,
+`POST /api/t/questions/[slug]/forecasts`, `POST /api/t/me/affiliation`,
+`POST /api/t/auth/logout`; username accounts:
+`POST /api/t/auth/password/register` and `/login`;
+X sign-in starts at `GET /api/t/auth/x/start?return=/t/...`. Admin:
+`POST /api/t/admin/questions` (save draft), and
+`/api/t/admin/questions/[slug]/{open,close,resolve,void,notes}`,
+`/api/t/admin/users/flag`, `/api/t/admin/users/affiliation`.
+
+Provenance (phase 2): an hourly job commits each completed hour's event
+hashes to one SHA-256 Merkle root (leaf = sha256(0x00 ‖ event_hash),
+node = sha256(0x01 ‖ left ‖ right), odd nodes promoted) five minutes
+after the hour ends, stores every event's path, and posts
+`openmarket.tournament.v1 <hour> <root> <leaf count>` as an SPL Memo
+transaction from a system wallet. The transaction is built and signed
+without a Solana SDK (Node's ed25519), and a post that never lands is
+re-sent after three minutes. `/t/provenance/[eventId]` (JSON at
+`/api/t/provenance/[eventId]`) shows the hash inputs, batch, path, and
+transaction, and re-verifies the hash chain in the visitor's browser.
+Leaves are append-only and batch commitments immutable; `verify:replay`
+rebuilds every root.
+
+Not built yet: CSV export, track-record weighting, password change and
+recovery, prize payment (off-platform by design).
 
 ### D10. Launch universe: five names, two prices each — Adopted
 
@@ -339,7 +418,7 @@ job reads it yet.
 
 Current code: only `GET /api/ref/rulebook` exists, served `no-store`
 like every read route; the 60 s cache arrives with the reference API
-(milestone 8), using the tournament branch's `cacheSeconds` option.
+(milestone 8), using `withReadRoute`'s `cacheSeconds` option.
 
 ## 3. Non-goals for v0
 
@@ -384,6 +463,31 @@ npm run dev              # http://localhost:3000, never 127.0.0.1
   by clients are not used in local development, where requests share one bucket.
   Network keys are HMAC-hashed; raw addresses are not stored. Limits return HTTP 429
   with `Retry-After`. Apply migration `002_market_comments` before serving this version.
+- Tournament: `X_CLIENT_ID` (and `X_CLIENT_SECRET` for a confidential
+  client) enable X sign-in; the callback is
+  `${APP_ORIGIN}/api/t/auth/x/callback` unless `X_REDIRECT_URI` is set,
+  and must be registered in the X developer portal. Without them the
+  tournament is read-only. `TOURNAMENT_ADMIN_X_IDS` lists admin X ids
+  (comma separated). For local work without X, `TOURNAMENT_DEV_SIGN_IN=1`
+  under `next dev` adds a handle-only sign-in (allowlist it as
+  `dev:<handle>`); it is off in every other mode. Launch questions:
+  `npm run seed:tournament` writes the three drafts, `-- --open`
+  (optionally `--opens-at=<ISO>`) opens them.
+- Provenance: `.github/workflows/provenance.yml` calls
+  `/api/t/cron/provenance` hourly with `Authorization: Bearer
+  $CRON_SECRET`; the route refuses anything else. Set the same
+  `CRON_SECRET` (at least 16 characters) in Vercel and as a GitHub
+  Actions secret; the workflow skips itself without it, and
+  `vars.PROVENANCE_URL` overrides the target. A GitHub schedule rather
+  than Vercel Cron keeps hourly runs plan-independent; missed runs catch
+  up. `npm run provenance:batch` runs the same job by hand. `SOLANA_PROVENANCE_SECRET_KEY` is the fee wallet (the
+  64-byte `solana-keygen` JSON array, or its base58), `SOLANA_CLUSTER`
+  is `mainnet-beta` (default) or `devnet`, and `SOLANA_RPC_URL`
+  overrides the public endpoint. Without the key, roots are committed
+  and shown but not posted; posting resumes from the oldest pending hour
+  once it is set. Fund the wallet with fee SOL only. Apply migration
+  `005_tournament_provenance` before serving this version, and
+  `006_tournament_accounts` for affiliations and username accounts.
 
 ### Backtest
 
@@ -424,7 +528,7 @@ See `PART5.md` for the environment contract.
 | Grid and floor impose artificial tails | True | Universal grid in `buckets.ts`; 0.001 floor in `seed.ts`. Decision open. |
 | Deployment deadlocks after 30 days | Overstated | Builds do not seed. Re-running the seed script after 30 days fails against traded markets; deployments continue. |
 | Trading surface is the 41-bucket ladder | True, superseded | D11 adopts a binary + forward per name; the ladder becomes a display. No dealer code exists yet; `TECHNICAL_DESIGN.md` §12 is the plan. |
-| Tournament is in `master` | False | It is on `claude/kind-bohr-nf4w3p`; merge is milestone 1. |
+| Tournament is in `master` | Fixed | Merged in #2 (`a60d971`, 2026-10-21); milestone 1 is done. |
 | `shelved/timing-strips` branch exists | False | Not on the remote as of 2026-10-21; the "by date" market is reinstated as D11's binary. |
 | Loss bound on a binary is b·ln 2 | False | Only from a 50/50 start; against a hazard prior it is b·ln(1/p_floor). D12 states the correct figure. |
 | `events.csv` carries source URLs | False | Sources are free text in `notes`; there is no URL column. Listing anchors need one before `seed:listings` (milestone 3). |

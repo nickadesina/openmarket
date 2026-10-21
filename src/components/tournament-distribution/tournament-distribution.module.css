@@ -1,0 +1,192 @@
+.chart {
+  --plot-height: 10rem;
+  display: grid;
+  margin: 0;
+  gap: var(--space-2);
+}
+
+.compact {
+  --plot-height: 3rem;
+  gap: var(--space-1);
+}
+
+.legend {
+  display: flex;
+  gap: var(--space-4);
+  color: var(--color-ink-muted);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.swatch {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.primarySwatch {
+  background: var(--color-primary);
+}
+
+.overlaySwatch {
+  border: 1px solid var(--color-ink);
+  background: var(--color-surface);
+}
+
+.plot {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+}
+
+.ranges {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  flex: 1 1 auto;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+.floor {
+  display: grid;
+  width: calc(100% / 9);
+  min-width: 3rem;
+  flex: 0 0 auto;
+  padding-left: var(--space-2);
+  border-bottom: 1px solid var(--color-border-strong);
+  border-left: 1px solid var(--color-border);
+}
+
+.column {
+  display: grid;
+  min-width: 0;
+  grid-template-rows: var(--plot-height) auto auto;
+  /* Bars share one baseline even when a label wraps to an extra line. */
+  align-content: start;
+  padding: 0 1px;
+}
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 1px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.bar {
+  display: block;
+  width: 100%;
+  max-width: 2.5rem;
+  min-height: 1px;
+}
+
+.primaryBar {
+  background: var(--color-primary);
+}
+
+.floorBar {
+  background: var(--color-ink-muted);
+}
+
+.overlayBar {
+  border: 1px solid var(--color-ink);
+  border-bottom: 0;
+  background: var(--color-surface);
+}
+
+.value {
+  padding-top: var(--space-1);
+  font-family: var(--font-num);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-align: center;
+}
+
+.label {
+  display: grid;
+  padding-top: var(--space-1);
+  color: var(--color-ink-muted);
+  font-family: var(--font-num);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.compact .label {
+  display: none;
+}
+
+/* Two columns leave room to say which is Yes even in a strip. */
+.compact.binary .label {
+  display: grid;
+}
+
+.winning .label {
+  color: var(--color-ink);
+  font-weight: 700;
+}
+
+.wonMark {
+  font-family: var(--font-caps);
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.median {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--color-primary);
+  pointer-events: none;
+}
+
+.medianLabel {
+  position: absolute;
+  top: 0;
+  left: var(--space-1);
+  padding: 0 var(--space-1);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-family: var(--font-num);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.visuallyHidden {
+  composes: visuallyHidden from "../../styles/shared.module.css";
+}
+
+.summary {
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+}
+
+@media (max-width: 42rem) {
+  .chart {
+    --plot-height: 7rem;
+  }
+
+  .compact {
+    --plot-height: 2.5rem;
+  }
+
+  .value {
+    display: none;
+  }
+}

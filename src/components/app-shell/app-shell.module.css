@@ -157,13 +157,24 @@
     font-size: var(--font-size-xl);
   }
 
+  /* Three sections do not fit beside the wordmark and account at phone
+     width; the links become a strip that scrolls sideways. */
   .nav {
+    min-width: 0;
+    flex: 1 1 auto;
     gap: var(--space-1);
+    overflow-x: auto;
+    scrollbar-width: none;
   }
 
   .navLink {
+    flex: 0 0 auto;
     padding: var(--space-1) var(--space-2);
     font-size: var(--font-size-sm);
+  }
+
+  .accountSlot {
+    flex: 0 0 auto;
   }
 
   .main {

@@ -1,0 +1,26 @@
+name: Tournament provenance
+
+# Hourly: commit the last completed hour's forecast hashes and post the
+# Merkle root as a Solana memo. The job catches up on any hours it missed,
+# so a late or skipped run only delays posting.
+on:
+  schedule:
+    - cron: "7 * * * *"
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call the provenance job
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          PROVENANCE_URL: ${{ vars.PROVENANCE_URL || 'https://openmkt.vercel.app/api/t/cron/provenance' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "CRON_SECRET is not set for this repository; skipping."
+            exit 0
+          fi
+          curl --fail-with-body --silent --show-error --max-time 120 \
+            -H "Authorization: Bearer $CRON_SECRET" "$PROVENANCE_URL"

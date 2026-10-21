@@ -124,6 +124,9 @@ export default defineConfig({
             USER_COOKIE_SECRET: userCookieSecret,
             ADMIN_COOKIE_SECRET: adminCookieSecret,
             ADMIN_PASSPHRASE_HASH: forNextEnv("ADMIN_PASSPHRASE_HASH", adminPassphraseHash),
+            // Tournament specs sign in without X; `next dev` is the only place this works.
+            TOURNAMENT_DEV_SIGN_IN: "1",
+            TOURNAMENT_ADMIN_X_IDS: "dev:pw_admin",
           },
         },
       }

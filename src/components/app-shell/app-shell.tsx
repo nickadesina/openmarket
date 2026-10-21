@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { AccountControl } from "./account-control.js";
+import { AccountSlot } from "./account-slot.js";
 import styles from "./app-shell.module.css";
 import { NavLinks } from "./nav-links.js";
 
@@ -18,7 +18,7 @@ export function AppShell({ children }: { readonly children: ReactNode }) {
           </Link>
           <NavLinks />
           <div className={styles.accountSlot}>
-            <AccountControl />
+            <AccountSlot />
           </div>
         </div>
       </header>

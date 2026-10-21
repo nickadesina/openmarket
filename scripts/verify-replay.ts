@@ -1,4 +1,5 @@
 import { createDirectDatabase, destroyDatabase } from "../src/lib/db/client.js";
+import { verifyTournament } from "../src/lib/services/tournament/verify-tournament.js";
 import { verifyReplay } from "../src/lib/services/verify-replay.js";
 
 async function main(): Promise<void> {
@@ -7,7 +8,9 @@ async function main(): Promise<void> {
   try {
     const report = await verifyReplay(db);
     console.log(JSON.stringify(report, null, 2));
-    if (!report.passed) {
+    const tournament = await verifyTournament(db);
+    console.log(JSON.stringify({ tournament }, null, 2));
+    if (!report.passed || !tournament.passed) {
       process.exitCode = 1;
     }
   } finally {

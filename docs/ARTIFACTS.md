@@ -52,7 +52,7 @@ is dated by pickups (Jul 25–26, 2025), not the FT page itself.
 | --- | --- | --- |
 | OpenMarket Technical Design | https://claude.ai/artifact/SneDWGMo7tB7QisN521brb | in-repo copy: `TECHNICAL_DESIGN.md` (2026-10-21) |
 | OpenMarket Contract Specification — Agent & Dependency-Graph Guide | https://claude.ai/artifact/4iJtm24xcQ6w3WRcWLLLZA | in-repo copy: `CONTRACTS.md`; the doc also carries the backtest results section and Nick's inline edits (Oct 19) |
-| OpenMarket Tournament: Design Doc | https://claude.ai/artifact/L6oXCYtHUXoopLCkyGActG | implemented on branch `claude/kind-bohr-nf4w3p`; README D9 |
+| OpenMarket Tournament: Design Doc | https://claude.ai/artifact/L6oXCYtHUXoopLCkyGActG | implemented, merged to `master` in #2; README D9 |
 | OpenMarket Dependency Graph (v2) | https://claude.ai/artifact/AeMtaUQev3Xq42uD3NKUfm | superseded by `TECHNICAL_DESIGN.md` §12 for build order; still the pre-seed critical path |
 | OpenMarket — Timing/Survival Strip Design Doc | https://claude.ai/artifact/DnvuLuE3unH7pjWyQ857Wv | the "by date" markets that became D11's quarterly binary |
 | OpenMarket Product Design Doc | https://claude.ai/artifact/19dP1XaJVaZsYc9kMWyaKM | product-side companion to `PRODUCT.md` |

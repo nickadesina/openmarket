@@ -188,7 +188,7 @@ gain/loss, expiry. The binary is today's YES/NO ticket.
 
 ## 7. Tournament bridge
 
-The `/t` tournament (branch `claude/kind-bohr-nf4w3p`) already has
+The `/t` tournament (merged to `master` in #2) already has
 numeric ladders with a floor bucket, binaries, append-only forecast
 events, log scoring, leaderboard, X sign-in and Merkle commitments.
 The bridge is a mapping, not a mechanism:
@@ -292,7 +292,7 @@ Anthropic Series D has no dated close.
 
 | # | Milestone | Gate | Depends on |
 | --- | --- | --- | --- |
-| 1 | Merge tournament branch to `master` | existing CI green | — |
+| 1 | Merge tournament branch to `master` (done, #2) | existing CI green | — |
 | 2 | Rulebook + fixtures + `backtest.yml` | fixtures resolve; summary posted on PR | — |
 | 3 | `007_dealer` + `seed:listings` | migrate + replay in build | 1 |
 | 4 | Ingest + flags + admin queue (owned by Nick; the dealer reads `event_flags` and tests will use `tests/fixtures/event-flags.json`, which Nick generates from `events.csv`) | seeded scoop → flag in < 15 min | 2, 3 |
@@ -320,8 +320,7 @@ binary bleeds as much as the forward and leaks 89% of the time (b is
 the first thing to cut); dealer/administrator conflict (blend,
 inventory sign and forecast log are the v1 mitigations); legal surface
 of a cash-settled forward (play money carries none; design is
-rails-agnostic); tournament branch 155 files ahead of `master` (merge
-is milestone 1).
+rails-agnostic).
 
 Not open: two contracts per name; void-and-refund; log units; the
 dealer always quotes; parameters from the backtest; versions on every

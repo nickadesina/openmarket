@@ -1,0 +1,129 @@
+.page {
+  display: grid;
+  max-width: 56rem;
+  gap: var(--space-5);
+}
+
+.header h1 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-xl);
+}
+
+.header p {
+  max-width: 64ch;
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+}
+
+.options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 1px solid var(--color-border);
+}
+
+.option {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  padding: var(--space-5);
+}
+
+.option + .option {
+  border-left: 1px solid var(--color-border);
+}
+
+.option p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.optionTitle {
+  margin: 0;
+  font-family: var(--font-caps);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.modes {
+  display: inline-flex;
+  justify-self: start;
+  border: 1px solid var(--color-border);
+}
+
+.mode {
+  min-height: var(--control-height-sm);
+  padding: 0 var(--space-3);
+  background: var(--color-surface);
+  color: var(--color-ink-muted);
+  cursor: pointer;
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.mode[aria-pressed="true"] {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.form {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.field span {
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.field input {
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+}
+
+.primaryButton {
+  composes: primaryButton from "../../styles/shared.module.css";
+  justify-self: start;
+}
+
+/* Outranks the option's paragraph size for quiet notes. */
+.option .muted {
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+}
+
+.error {
+  margin: 0;
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+}
+
+@media (max-width: 42rem) {
+  .options {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .option {
+    padding: var(--space-4);
+  }
+
+  .option + .option {
+    border-top: 1px solid var(--color-border);
+    border-left: 0;
+  }
+}
