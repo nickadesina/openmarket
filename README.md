@@ -358,7 +358,10 @@ sim.py, to 1e-9. `GET /api/cron/dealer` (`dealer.yml`, every 15 min at
 appends a `model_mids` row per live instrument from the listing's anchor,
 params.json and the scoops and releases since the anchor, only when the
 mid or its inputs moved, and `verify:replay` recomputes every row from its
-`inputs_json` to 1e-12. No quoting code exists yet.
+`inputs_json` to 1e-12. `src/lib/engine/dealer/forward.ts`
+(quote, fill, collateral, settlement credit), `binary.ts` (two-outcome
+seed, price clamp, loss bounds) and `lifecycle.ts` (`instruments.state`
+transitions) are pure and not yet wired to a service or route.
 
 ### D13. Rulebook and settlement — Adopted
 
