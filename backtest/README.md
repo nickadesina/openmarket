@@ -24,6 +24,10 @@ python3 analyze.py other.csv  # another events file with the same columns
   `src/lib/config/dealer.ts`.
   `.github/workflows/backtest.yml` fails if a rerun does not reproduce
   `out/` (charts excluded) and posts `summary.csv` on the PR.
+- `golden.py` — writes `out/prior_golden.json`, sim.py's prior on the
+  calibration run with its inputs; the app's port
+  (`src/lib/engine/dealer/prior.ts`) is tested against it. Run it after
+  `analyze.py`.
 
 Results and what they mean: `RESULTS.md`.
 

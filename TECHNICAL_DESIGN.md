@@ -99,8 +99,9 @@ released at settlement or void.
 ## 4. Ingestion
 
 `/api/cron/ingest`, every 15 minutes from a GitHub Actions workflow
-with `Authorization: Bearer $CRON_SECRET` (the `provenance.yml`
-pattern). Five names only.
+with `Authorization: Bearer $CRON_SECRET` and `X-Run-Id` (the
+`dealer.yml` pattern: `requireCronSecret` in `src/lib/auth/cron.ts`,
+`runCronJob` in `src/lib/services/dealer/cron-run.ts`). Five names only.
 
 | Source | Method | Flags |
 | --- | --- | --- |

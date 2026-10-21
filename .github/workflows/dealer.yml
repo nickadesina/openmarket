@@ -1,0 +1,27 @@
+name: Dealer
+
+# Every 15 minutes, five past the ingest: compute model mids (and, from
+# milestone 6, requote and move instrument state). X-Run-Id names the firing,
+# so re-running a workflow attempt is reported by the route, not repeated.
+on:
+  schedule:
+    - cron: "5,20,35,50 * * * *"
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call the dealer job
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          DEALER_URL: ${{ vars.DEALER_URL || 'https://openmkt.vercel.app/api/cron/dealer' }}
+          RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "CRON_SECRET is not set for this repository; skipping."
+            exit 0
+          fi
+          curl --fail-with-body --silent --show-error --max-time 120 \
+            -H "Authorization: Bearer $CRON_SECRET" -H "X-Run-Id: $RUN_ID" "$DEALER_URL"

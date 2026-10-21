@@ -27,11 +27,12 @@ disagree; a Claude Doc that has an in-repo copy is listed with it.
 | --- | --- |
 | `backtest/sim.py` | Prior (leave-one-out tier step-up, Weibull hazard, leak overrides), dealer (LMSR binary, clipped forward with cap, event-flag widening), four trader scenarios |
 | `backtest/analyze.py` | Runs the scenarios on an events file; writes `out/summary.csv`, `out/calibration.csv`, `out/losses_T12.csv`, `out/meta.json`, four PNG charts |
+| `backtest/golden.py` | Reruns the calibration run (T = 12, no trader, leave-one-out, from 2024) and records sim.py's prior for the listed names with its inputs; writes `out/prior_golden.json` |
 | `backtest/events.csv` | Merged events: 64 rows, 56 priced rounds, 14 companies, Jan 2024–Oct 19 2026; tenders/secondaries recorded but excluded as prints |
 | `backtest/data/labs.csv` | OpenAI and Anthropic rounds with leak dates and notes on conflicts |
 | `backtest/data/anduril_modal_instinct.csv` | The three red-hot names |
 | `backtest/data/analogs.csv` | Cursor, SSI, xAI, Mercor, Harvey, Cognition, Perplexity, Valar Atomics, Greptile |
-| `backtest/out/*` | Committed results of the last run — four charts and four CSV/JSON tables, each read in `backtest/RESULTS.md`, plus `params.json` (every parameter the app reads, with the SHA-256 of the inputs that produced it; imported by `src/lib/config/dealer.ts`) |
+| `backtest/out/*` | Committed results of the last run — four charts and four CSV/JSON tables, each read in `backtest/RESULTS.md`, plus `params.json` (every parameter the app reads, with the SHA-256 of the inputs that produced it; imported by `src/lib/config/dealer.ts`) and `prior_golden.json` (sim.py's binary p, forward opening mid and weekly mid for the five names, with inputs; `tests/engine/dealer/prior.test.ts` holds `src/lib/engine/dealer/prior.ts` to it at 1e-9) |
 | `backtest/requirements.txt` | Pinned pandas, numpy, matplotlib for `backtest.yml` |
 | `tests/fixtures/rulebook-events.json` | How rulebook v1 resolves every row of `events.csv` and each listed name's forward lives and binary quarters; a rule change re-baselines it |
 
