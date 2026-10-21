@@ -4,6 +4,7 @@ import type { Database } from "../../db/schema.js";
 import { computeMids } from "./compute-mids.js";
 import { type CronRunOutcome, runCronJob } from "./cron-run.js";
 import { type DealerHealth, getDealerHealth } from "./get-dealer-health.js";
+import { listInstruments } from "./list-instruments.js";
 
 export interface DealerStepContext {
   /** The run's transaction, under the dealer job's advisory lock. */
@@ -13,11 +14,13 @@ export interface DealerStepContext {
 }
 
 /**
- * The dealer job's steps, run in this order inside one transaction. Each
- * step's result is reported under its key. Milestone 6 appends its requote,
- * list and state steps here; the mid comes first so they read this run's mids.
+ * The dealer job's steps, run in this order inside one transaction, each
+ * result reported under its key: `list` gives every active listing a live
+ * binary and forward, and `mids` then writes the model mid of every live
+ * instrument (a just-listed one already has its first).
  */
 export const DEALER_STEPS = {
+  list: (context: DealerStepContext) => listInstruments(context.db, context.runId, context.now),
   mids: (context: DealerStepContext) => computeMids(context.db, context.runId, context.now),
 } as const;
 

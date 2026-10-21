@@ -27,7 +27,8 @@ import { GET as dealerRoute } from "../../src/app/api/cron/dealer/route.js";
  * the seed service with tests/fixtures/listing-sources.csv; Anthropic's
  * anchor is its Series G (events.csv without the Series H row), so the
  * fixture's Series H scoop and release are flags since the anchor.
- * Instruments are inserted by hand until milestone 6 lists them.
+ * Instruments are inserted by hand; tests/integration/dealer-instruments.test.ts
+ * covers the list step.
  */
 const databaseUrl = testDatabaseUrl();
 const postgresDescribe = databaseUrl === undefined ? describe.skip : describe;
@@ -40,7 +41,9 @@ const SECRET = "a-long-enough-cron-secret";
 const NAMES = Object.keys(DEALER_PARAMS.forward_t_days);
 const EVENTS = readFileSync(EVENTS_CSV_PATH, "utf8");
 const SOURCES = readFileSync("tests/fixtures/listing-sources.csv", "utf8");
-const LISTED_AT = new Date("2026-10-22T00:00:00.000Z");
+// After the wall clock, so the dealer job's list step (listings listed by now) leaves this
+// test's hand-made instruments the only live ones.
+const LISTED_AT = new Date("2030-01-01T00:00:00.000Z");
 const WITHOUT_SERIES_H = EVENTS.split("\n")
   .filter((line) => !line.startsWith("Anthropic,priced_round,Series H,"))
   .join("\n");
@@ -79,7 +82,7 @@ postgresDescribe(suiteName, () => {
         listing_id: anthropic.listing.id,
         kind: "binary",
         epoch: 1,
-        question: "Does Anthropic publicly file an S-1 by 2026-12-31?",
+        question: "Will Anthropic publicly file an S-1 by 2030-03-31?",
         opens_at: LISTED_AT,
         expires_at: binaryExpiry(LISTED_AT),
         state: "quoting",

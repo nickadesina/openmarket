@@ -11,7 +11,6 @@ import type {
   Database,
   EventFlagKind,
   InstrumentKind,
-  InstrumentState,
   JsonObject,
   JsonValue,
 } from "../../db/schema.js";
@@ -22,11 +21,8 @@ import {
   type HazardParams,
   type Tier,
 } from "../../engine/dealer/prior.js";
-import {
-  type FlagTerms,
-  postMoneyUsd,
-  RULEBOOK_VERSION,
-} from "../../engine/dealer/rulebook.js";
+import { type FlagTerms, postMoneyUsd, RULEBOOK_VERSION } from "../../engine/dealer/rulebook.js";
+import { LIVE_STATES } from "./dealer-books.js";
 
 /**
  * The mid step of /api/cron/dealer (TECHNICAL_DESIGN.md §5): one model mid
@@ -44,7 +40,6 @@ import {
  * predecessor (CONTRACTS.md → Contract B).
  */
 
-const LIVE_STATES: readonly InstrumentState[] = ["quoting", "widened"];
 /** Flags that can carry news of the next round: the leak sim.py reads off it. */
 const LEAK_KINDS: readonly EventFlagKind[] = ["scoop", "release"];
 
@@ -195,9 +190,13 @@ function isoDay(at: Date): string {
 }
 
 /**
- * The instrument with its anchor moved to the latest print seen and dated by
+ * The instrument with its anchor moved to the latest print dated at or before
  * its listing time, on a later day than the listing's anchor round, with a
- * post-money. Without one the listing's anchor stands. Pure.
+ * post-money. Without one the listing's anchor stands. Pure: `prints` are the
+ * ones observed by the caller's clock (loadAnchorPrints). A successor listed
+ * by the settle job is dated by the announcement that resolved its
+ * predecessor, before that print was promoted, so the print's own date, not
+ * its observation, is what must precede the listing.
  */
 export function withPrintAnchor<T extends LiveInstrument>(
   instrument: T,
@@ -207,7 +206,7 @@ export function withPrintAnchor<T extends LiveInstrument>(
   let found: { readonly print: AnchorPrint; readonly postMoney: number } | null = null;
   for (const print of prints) {
     if (print.company_id !== instrument.company_id) continue;
-    if (print.observed_at > instrument.opens_at || print.at > instrument.opens_at) continue;
+    if (print.at > instrument.opens_at) continue;
     if (daysBetween(anchorDay, print.at) <= 0) continue;
     const postMoney = postMoneyUsd(print.terms_json as unknown as FlagTerms);
     if (postMoney === null) continue;
@@ -228,10 +227,11 @@ export function withPrintAnchor<T extends LiveInstrument>(
   };
 }
 
-/** Every `print` flag of these companies, for withPrintAnchor. */
+/** Every `print` flag of these companies observed by `now`, for withPrintAnchor. */
 export async function loadAnchorPrints(
   db: Kysely<Database>,
   companyIds: readonly string[],
+  now: Date,
 ): Promise<AnchorPrint[]> {
   if (companyIds.length === 0) return [];
   const rows = await db
@@ -239,6 +239,7 @@ export async function loadAnchorPrints(
     .select(["id", "company_id", "observed_at", "published_at", "source_url", "terms_json"])
     .where("company_id", "in", companyIds)
     .where("kind", "=", "print")
+    .where("observed_at", "<=", now)
     .execute();
   return rows.map((row) => ({
     id: row.id,
@@ -418,8 +419,14 @@ export interface ComputeMidsSummary {
   }[];
 }
 
-async function liveInstruments(db: Kysely<Database>): Promise<LiveInstrument[]> {
-  const rows = await db
+/** Instruments (live ones by default) with their listing, anchored on the last print by `now`. */
+export async function instrumentsForMid(
+  db: Kysely<Database>,
+  now: Date,
+  instrumentIds?: readonly string[],
+): Promise<LiveInstrument[]> {
+  if (instrumentIds !== undefined && instrumentIds.length === 0) return [];
+  let query = db
     .selectFrom("instruments")
     .innerJoin("listings", "listings.id", "instruments.listing_id")
     .innerJoin("companies", "companies.id", "listings.company_id")
@@ -438,11 +445,14 @@ async function liveInstruments(db: Kysely<Database>): Promise<LiveInstrument[]> 
       "listings.anchor_post_money_usd",
       "listings.anchor_source_url",
     ])
-    .where("instruments.state", "in", LIVE_STATES)
     .orderBy("companies.name")
-    .orderBy("instruments.kind")
-    .execute();
-  const prints = await loadAnchorPrints(db, [...new Set(rows.map((row) => row.company_id))]);
+    .orderBy("instruments.kind");
+  query =
+    instrumentIds === undefined
+      ? query.where("instruments.state", "in", LIVE_STATES)
+      : query.where("instruments.id", "in", instrumentIds);
+  const rows = await query.execute();
+  const prints = await loadAnchorPrints(db, [...new Set(rows.map((row) => row.company_id))], now);
   return rows.map((row) => withPrintAnchor(row, prints));
 }
 
@@ -510,7 +520,7 @@ export async function computeMids(
   runId: string | null,
   now: Date = new Date(),
 ): Promise<ComputeMidsSummary> {
-  const instruments = await liveInstruments(db);
+  const instruments = await instrumentsForMid(db, now);
   const flags = await flagsByCompany(db, [...new Set(instruments.map((i) => i.company_id))], now);
   const stored = await latestStoredMids(
     db,
