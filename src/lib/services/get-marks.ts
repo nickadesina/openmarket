@@ -2,9 +2,15 @@ import type { Kysely } from "kysely";
 
 import { ServiceError } from "../api/errors.js";
 import type { Database, MetricKind } from "../db/schema.js";
-import { calculateTimeWeightedAverage } from "../engine/twap.js";
-import type { OrderedMark } from "../engine/types.js";
+import { latestMid } from "./dealer/dealer-books.js";
 import { type DownsampleMarkPoint, downsampleMarks } from "./downsample-marks.js";
+
+/**
+ * `GET /api/markets/by-id/[marketId]/marks`: one book's marks over a range,
+ * any epoch, live or settled. A forward book's marks are its mid in USD at
+ * listing and at each fill; its current level is the latest model mid, so the
+ * chart ends where the quote is.
+ */
 
 export type MarkRange = "1h" | "1d" | "1w" | "all";
 
@@ -17,24 +23,16 @@ export interface GetMarksOptions {
 
 export interface MarkHistory {
   readonly marketId: string;
-  readonly slug: string;
   readonly range: MarkRange;
   readonly metricKind: MetricKind;
+  /** The book's level now: a forward's latest model mid in USD, a binary's YES price. */
   readonly currentMetric: number;
-  /** Metric level in force at windowStart: the latest mark at or before it,
-   *  else the first mark, else the current metric. The same baseline rule
-   *  list-markets uses for the 24-hour change. */
+  /** Level in force at windowStart: the latest mark at or before it, else the
+   *  first mark, else the current metric (DESIGN.md → The Baseline Rule). */
   readonly openValue: number;
-  readonly mark60Minutes: number;
   readonly windowStart: string;
   readonly windowEnd: string;
   readonly points: MarkPoint[];
-}
-
-interface MarkRow {
-  readonly market_sequence: string;
-  readonly ts: Date;
-  readonly value: number;
 }
 
 const RANGE_MS: Record<Exclude<MarkRange, "all">, number> = {
@@ -44,7 +42,6 @@ const RANGE_MS: Record<Exclude<MarkRange, "all">, number> = {
 };
 const DEFAULT_MAX_POINTS = 1_000;
 const MAX_MAX_POINTS = 10_000;
-const TWAP_WINDOW_MS = 60 * 60 * 1_000;
 
 function normalizeRange(range: MarkRange): MarkRange {
   if (range !== "1h" && range !== "1d" && range !== "1w" && range !== "all") {
@@ -71,42 +68,9 @@ function normalizeOptions(options: GetMarksOptions): {
   return { now, maxPoints };
 }
 
-function sequenceNumber(sequence: string): number {
-  if (!/^\d+$/.test(sequence)) {
-    throw new ServiceError("INVALID_INPUT", "Stored mark sequence is invalid.");
-  }
-  const parsed = Number(sequence);
-  if (!Number.isSafeInteger(parsed)) {
-    throw new ServiceError("INVALID_INPUT", "Stored mark sequence is too large.");
-  }
-  return parsed;
-}
-
-function orderedMark(row: MarkRow): OrderedMark {
-  return {
-    marketSequence: sequenceNumber(row.market_sequence),
-    timestamp: new Date(row.ts.getTime()),
-    value: row.value,
-  };
-}
-
-function laterMark(left: MarkRow | null, right: MarkRow): MarkRow {
-  if (left === null) {
-    return right;
-  }
-  const timestampDifference = right.ts.getTime() - left.ts.getTime();
-  if (timestampDifference > 0) {
-    return right;
-  }
-  if (timestampDifference === 0 && BigInt(right.market_sequence) > BigInt(left.market_sequence)) {
-    return right;
-  }
-  return left;
-}
-
 export async function getMarks(
   db: Kysely<Database>,
-  slug: string,
+  marketId: string,
   rangeInput: MarkRange,
   options: GetMarksOptions = {},
 ): Promise<MarkHistory> {
@@ -120,34 +84,36 @@ export async function getMarks(
     .execute(async (transaction) => {
       const market = await transaction
         .selectFrom("markets")
-        .innerJoin("companies", "companies.id", "markets.company_id")
-        .select([
-          "markets.id as market_id",
-          "markets.metric_kind as metric_kind",
-          "markets.current_metric as current_metric",
-          "markets.created_at as created_at",
-          "companies.slug as slug",
-        ])
-        .where("companies.slug", "=", slug)
-        .orderBy("markets.created_at", "desc")
-        .orderBy("markets.id", "desc")
+        .select(["id", "metric_kind", "current_metric", "created_at", "instrument_id"])
+        .where("id", "=", marketId)
         .executeTakeFirst();
-
       if (market === undefined) {
         throw new ServiceError("MARKET_NOT_FOUND", "Market was not found.");
       }
 
-      const requestedWindowMs = range === "all" ? null : RANGE_MS[range];
+      // "All" opens at the book's first mark (its listing), never after the read clock.
+      const firstMark =
+        range === "all"
+          ? await transaction
+              .selectFrom("marks")
+              .select("ts")
+              .where("market_id", "=", market.id)
+              .orderBy("ts", "asc")
+              .orderBy("market_sequence", "asc")
+              .executeTakeFirst()
+          : undefined;
       const windowStart =
-        requestedWindowMs === null
-          ? new Date(market.created_at.getTime())
-          : new Date(now.getTime() - requestedWindowMs);
+        range === "all"
+          ? new Date(
+              Math.min(firstMark?.ts.getTime() ?? market.created_at.getTime(), now.getTime()),
+            )
+          : new Date(now.getTime() - RANGE_MS[range]);
 
-      const [priorRow, rows] = await Promise.all([
+      const [priorRow, rows, mid] = await Promise.all([
         transaction
           .selectFrom("marks")
           .select(["market_sequence", "ts", "value"])
-          .where("market_id", "=", market.market_id)
+          .where("market_id", "=", market.id)
           .where("ts", "<=", windowStart)
           .orderBy("ts", "desc")
           .orderBy("market_sequence", "desc")
@@ -155,33 +121,21 @@ export async function getMarks(
         transaction
           .selectFrom("marks")
           .select(["market_sequence", "ts", "value"])
-          .where("market_id", "=", market.market_id)
+          .where("market_id", "=", market.id)
           .where("ts", ">=", windowStart)
           .where("ts", "<=", now)
           .orderBy("ts", "asc")
           .orderBy("market_sequence", "asc")
           .execute(),
+        market.metric_kind === "forward_ln" && market.instrument_id !== null
+          ? latestMid(transaction, market.instrument_id, now)
+          : undefined,
       ]);
 
-      const twapStart = now.getTime() - TWAP_WINDOW_MS;
-      let twapPrior: MarkRow | null =
-        priorRow !== undefined && priorRow.ts.getTime() <= twapStart ? priorRow : null;
-      const twapRows: MarkRow[] = [];
-      for (const row of rows) {
-        const timestamp = row.ts.getTime();
-        if (timestamp <= twapStart) {
-          twapPrior = laterMark(twapPrior, row);
-        } else if (timestamp <= now.getTime()) {
-          twapRows.push(row);
-        }
-      }
-
-      const mark60Minutes = calculateTimeWeightedAverage({
-        priorMark: twapPrior === null ? null : orderedMark(twapPrior),
-        marks: twapRows.map(orderedMark),
-        currentMetric: market.current_metric,
-        now,
-      });
+      const currentMetric =
+        mid?.mid_ln === null || mid?.mid_ln === undefined
+          ? market.current_metric
+          : Math.exp(mid.mid_ln);
       const rawPoints: MarkPoint[] = rows.map((row) => ({
         timestamp: row.ts.toISOString(),
         marketSequence: row.market_sequence,
@@ -196,13 +150,11 @@ export async function getMarks(
           : rawPoints;
 
       return {
-        marketId: market.market_id,
-        slug: market.slug,
+        marketId: market.id,
         range,
         metricKind: market.metric_kind,
-        currentMetric: market.current_metric,
-        openValue: priorRow?.value ?? rows[0]?.value ?? market.current_metric,
-        mark60Minutes,
+        currentMetric,
+        openValue: priorRow?.value ?? rows[0]?.value ?? currentMetric,
         windowStart: windowStart.toISOString(),
         windowEnd: now.toISOString(),
         points,

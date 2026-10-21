@@ -35,15 +35,15 @@ function readDatabase(selectFrom: Mock): {
 }
 
 describe("getMarks", () => {
-  it("returns tied raw points in sequence order and calculates the 60-minute TWAP", async () => {
+  it("returns tied raw points in sequence order from the window-start baseline", async () => {
     const now = new Date("2026-01-01T12:00:00.000Z");
     const marketQuery = queryReturning([
       {
-        market_id: "market-1",
-        metric_kind: "valuation_median",
-        current_metric: 40,
+        id: "market-1",
+        metric_kind: "yes_probability",
+        current_metric: 0.4,
         created_at: new Date("2025-01-01T00:00:00.000Z"),
-        slug: "acme",
+        instrument_id: null,
       },
     ]);
     const priorQuery = queryReturning([
@@ -78,24 +78,24 @@ describe("getMarks", () => {
     });
     const { db, setIsolationLevel, setAccessMode } = readDatabase(selectFrom);
 
-    const history = await getMarks(db, "acme", "1h", { now });
+    const history = await getMarks(db, "market-1", "1h", { now });
 
     expect(history.points.map((point) => point.marketSequence)).toEqual(["1", "2", "3"]);
-    expect(history.mark60Minutes).toBeCloseTo(27.5);
+    expect(history.currentMetric).toBe(0.4);
     expect(history.openValue).toBe(10);
     expect(history.windowStart).toBe("2026-01-01T11:00:00.000Z");
     expect(setIsolationLevel).toHaveBeenCalledWith("repeatable read");
     expect(setAccessMode).toHaveBeenCalledWith("read only");
   });
 
-  it("uses current metric when no observation occurs in the TWAP window", async () => {
+  it("opens at the current metric when the book has no marks in range", async () => {
     const marketQuery = queryReturning([
       {
-        market_id: "market-1",
+        id: "market-2",
         metric_kind: "yes_probability",
         current_metric: 0.72,
         created_at: new Date("2025-01-01T00:00:00.000Z"),
-        slug: "binary",
+        instrument_id: null,
       },
     ]);
     const selectFrom = vi
@@ -105,11 +105,11 @@ describe("getMarks", () => {
       .mockReturnValueOnce(queryReturning([]));
     const { db } = readDatabase(selectFrom);
 
-    const history = await getMarks(db, "binary", "1d", {
+    const history = await getMarks(db, "market-2", "1d", {
       now: new Date("2026-01-01T12:00:00.000Z"),
     });
 
-    expect(history.mark60Minutes).toBe(0.72);
+    expect(history.openValue).toBe(0.72);
     expect(history.points).toEqual([]);
   });
 
@@ -117,7 +117,7 @@ describe("getMarks", () => {
     const transaction = vi.fn();
     const db = { transaction } as unknown as Kysely<Database>;
 
-    await expect(getMarks(db, "acme", "month" as never)).rejects.toMatchObject({
+    await expect(getMarks(db, "market-1", "month" as never)).rejects.toMatchObject({
       code: "INVALID_INPUT",
     });
     expect(transaction).not.toHaveBeenCalled();

@@ -152,6 +152,7 @@ export const tradeInputSchema = z
 
 /** A dealer book or instrument id: a UUID, compared lower-case. */
 const bookIdSchema = idempotencyKeySchema;
+export const marketIdSchema = bookIdSchema;
 const entryLnSchema = z.number().finite();
 
 /** `GET /api/instruments/[instrumentId]/quote`: a side and notional preview a fill, or neither. */
