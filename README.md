@@ -7,7 +7,10 @@ surface with two contracts per listed name — a quarterly timing binary
 and a next-print forward — quoted by the venue as dealer, with a
 published model mid and a reference-price API. `CONTRACTS.md` is
 normative for the instruments; `TECHNICAL_DESIGN.md` says how they are
-built; `backtest/` holds the evidence.
+built; `backtest/` holds the evidence (`backtest/RESULTS.md` explains
+it); `docs/ARTIFACTS.md` indexes every artifact, in the repo or not;
+`docs/prompts/implement-dealer.md` is the brief for the agent that
+builds it.
 
 This file is the canonical MVP contract. Where it conflicts with
 `TECHNICAL_DESIGN.md`, `CONTRACTS.md` or `PART1.md` to `PART5.md`,

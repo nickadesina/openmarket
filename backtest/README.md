@@ -17,7 +17,7 @@ python3 analyze.py other.csv  # another events file with the same columns
   announcement_date, post_money_usd, amount_raised_usd, lead,
   leak_date, leak_post_money_usd, notes`. Tenders and secondaries are
   recorded but excluded as prints.
-- `out/` — committed results from the last run.
+- `out/` — committed results from the last run; `RESULTS.md` explains what each file and number means.
 
 Headline (five listed names, Q = $25k, κ = 1, b = $2k, p_floor = 0.05,
 T = 12 months): insider who knows every print pre-leak ≈ $53k/yr,
