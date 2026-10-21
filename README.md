@@ -303,30 +303,15 @@ Anthropic. Supersedes the D2 flagship line.
 
 ### D11. Two contracts per name — Adopted
 
-- **Quarterly timing binary**: "priced round announced by quarter-end"
-  (labs: "public S-1 filed by quarter-end"). YES/NO, resolves every
-  quarter without fail, early-resolves YES and rolls the same day.
-  Prices *when*.
-- **Next-print forward**: cash-settled in log step-up of the next
-  post-money against each position's entry price, clipped at ±κ
-  (default 1.0), **voided with full refund if no print by expiry**.
-  Prices *how big*, conditional on a round. Expiry is **per name**
-  (`listings.forward_t_days`; launch 270/180/270/120/90 days for
-  OpenAI/Anthropic/Anduril/Modal/Instinct).
-- One binary, not a two-expiry strip; the forward stays separate from
-  the binary rather than blended, so the API publishes a hazard and a
-  conditional valuation as two numbers.
-- The 41-bucket ladder survives as a read-only implied distribution
-  drawn from the forward mid and the prior width. It is no longer a
-  trading surface. D5 (grid scaling) is moot for trading and stays
-  open only for the display.
-- A forward position's entry price F₀ is the side of the quote it
-  filled at (ask for a long, bid for a short), not the mid; the spread
-  is what the dealer earns (decided 2026-10-21; `CONTRACTS.md` fixed).
-- Closing a forward before settlement: not decided. Until it is, a
-  position is held to settlement or void, and the ticket says so.
+A quarterly timing binary (prices *when*) and a next-print forward
+that voids with refund if no print by its per-name expiry (prices *how
+big*). One binary, not a strip; the forward separate, not blended. The
+41-bucket ladder is a read-only display, no longer a trading surface
+(D5 stays open for the display only). Semantics, edge cases and
+lifecycle: `CONTRACTS.md`.
 
-Full semantics, edge cases and lifecycle: `CONTRACTS.md`.
+Closing a forward before settlement is not decided; until it is, a
+position is held to settlement or void, and the ticket says so.
 
 Current code: trades YES/NO threshold claims against the ladder. The
 launch T per name is carried in `backtest/out/params.json` as a
@@ -335,33 +320,18 @@ backtest does not compute it yet (`per_name_t` is still to run).
 
 ### D12. The venue is the dealer — Adopted
 
-- The house always quotes both contracts, so a price exists before any
-  trader does. Binary: the existing LMSR with `n_buckets = 2`, b per
-  listing (default $2,000), price clamped to [0.05, 0.95]. Forward:
-  an inventory-skewed two-way quote around a published model mid, with
-  a hard position cap Q per side per name (default $25,000).
-- Hard loss bound per name: Q·κ per forward settlement plus
-  b·ln(1/p_floor) per binary quarter (≈ $6,000 at defaults — the
-  b·ln 2 figure only holds from 50/50). Five names at defaults ≈
-  $370k/yr worst case; the backtest's realised insider loss is ~20% of
-  the bound carried.
-- Event flags (Tier-1 scoop, Form D, charter amendment, "closing"
-  statement) widen the forward's spread ×3 and halve its Q for new
-  positions for 72 hours or until the model re-prices. The binary is
-  seeded once per quarter at the model p with a fixed b and is not
-  re-centred or re-scaled mid-quarter, which keeps its bound at
-  b·ln(1/p_floor) and matches the backtest (decided 2026-10-21; the
-  earlier "halve b" is dropped).
-- The labs' binary ("public S-1 by quarter-end") uses the backtest's
-  round-hazard prior as-is (decided 2026-10-21); `inputs_json` will say so.
-- Informed traders are supply, not risk: the bound is the price paid
-  to turn leaked term sheets into a public price.
-- Restricted persons (employees, directors, investors of a listed
-  name) may not trade it. Attestation and hiding in play money;
-  KYC-backed later.
-- Parameters (μ, λ, k, σ per tier, T proposals) are owned by
-  `backtest/`, written to `backtest/out/params.json` and read at build
-  time. A hand-edited parameter is a failing test.
+The house always quotes both contracts: the existing LMSR with
+`n_buckets = 2` on the binary, an inventory-skewed two-way quote around
+a published model mid with a hard position cap on the forward; spread
+widens and cap halves on event flags. Worst case per name is Q·κ per
+forward settlement plus b·ln(1/p_floor) per binary quarter (not b·ln 2,
+which only holds from 50/50). Parameters are owned by `backtest/`
+(`out/params.json`) and read at build time; a hand-edited parameter is
+a failing test. Formulas and defaults: `CONTRACTS.md` → The dealer;
+evidence: `backtest/RESULTS.md`.
+
+The labs' binary ("public S-1 by quarter-end") uses the backtest's
+round-hazard prior as-is (decided 2026-10-21).
 
 Current code: `backtest/analyze.py` writes `backtest/out/params.json`
 with the SHA-256 of its inputs; `src/lib/config/dealer.ts` imports and
@@ -375,23 +345,17 @@ not caught by a test, only by review. No quoting code exists yet.
 
 ### D13. Rulebook and settlement — Adopted
 
-- A print is the post-money of a priced primary equity round (labs:
-  also IPO first-day-close market cap). Not SAFEs, notes, same-price
-  extensions, secondaries, tenders or debt.
-- Source ranks: 1 company/lead release; 2 SEC filing; 3 two
-  independent Tier-1 outlets citing closed terms; 4 one Tier-1 outlet.
-  State charter price-per-share re-centres the mid and never settles.
-- Undisclosed valuation: the binary resolves YES; the forward waits up
-  to T, then voids. A higher-ranked revision within 7 days supersedes.
-- The rulebook is code (`src/lib/engine/dealer/rulebook.ts`),
-  versioned, exported at `/api/ref/rulebook`, with `backtest/events.csv`
-  as the fixture every change must still resolve.
-- OpenMarket does not own the hierarchy; it publishes it. The reason
-  not to list on Kalshi is network effects on one vertical, not that
-  they cannot list a curve.
-- Both instruments allow a day after their deadline for an
-  announcement dated on or before it to be observed: the binary
-  resolves NO, and the forward voids, one day after T.
+A print is the post-money of a priced primary round (IPO first-day
+close for the labs). Source ranks 1–4, 7-day revision window, void on
+no print. The rulebook is code (`src/lib/engine/dealer/rulebook.ts`),
+versioned, exported at `/api/ref/rulebook`, with `backtest/events.csv`
+as its fixture. OpenMarket publishes the hierarchy, it does not own it;
+the argument against Kalshi is network effects on one vertical. Rules
+as data: `CONTRACTS.md` → Definitions.
+
+Both instruments allow a day after their deadline for an announcement
+dated on or before it to be observed: the binary resolves NO, and the
+forward voids, one day after T.
 
 Current code: `src/lib/engine/dealer/rulebook.ts` (v1.0.0) states the
 rules as data and resolves a binary or a forward from the events it is
@@ -496,11 +460,8 @@ npm run dev              # http://localhost:3000, never 127.0.0.1
 python3 backtest/analyze.py          # tables to backtest/out, four charts
 ```
 
-`backtest/events.csv` is 56 priced rounds across 14 names (the five
-listed names plus Cursor, SSI, xAI, Mercor, Harvey, Cognition,
-Perplexity, Valar Atomics, Greptile), Jan 2024–Oct 2026, each row
-sourced in `backtest/data/`. Scenarios and results are in
-`TECHNICAL_DESIGN.md` §10. Requires pandas, numpy, matplotlib.
+What it is and what the numbers mean: `backtest/README.md` and
+`backtest/RESULTS.md`.
 
 ## 5. CI and deployment
 
