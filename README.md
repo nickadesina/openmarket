@@ -294,11 +294,17 @@ lifecycle: `CONTRACTS.md`.
 Closing a forward before settlement is not decided; until it is, a
 position is held to settlement or void, and the ticket says so.
 
-Current code: no ladder market remains (migration `008`); the ladder's
+Current code: the dealer job lists both instruments per active listing,
+each on its own `markets` book (binary `yes_probability`, forward
+`forward_ln`). `GET /api/instruments/[id]/quote` quotes either;
+`POST /api/forward/trade` opens a position at the ask or bid with N·κ
+collateral; `/api/quote` and `/api/trade` trade a dealer binary by
+`market_id`. No ladder market remains (migration `008`); the ladder's
 quote and trade routes and its ticket stay until the dealer ticket
-replaces them. The launch T per name is carried in `backtest/out/params.json` as a
-declared proposal (`FORWARD_T_DAYS` in `backtest/analyze.py`); the
-backtest does not compute it yet (`per_name_t` is still to run).
+replaces them. No route closes a forward early. The launch T per name is carried in
+`backtest/out/params.json` as a declared proposal (`FORWARD_T_DAYS` in
+`backtest/analyze.py`); the backtest does not compute it yet
+(`per_name_t` is still to run).
 
 ### D12. The venue is the dealer — Adopted
 
@@ -329,11 +335,21 @@ ports sim.py's prior (tier, binary p, forward mid with leak re-centring);
 `backtest/out/prior_golden.json`, which `backtest/golden.py` writes from
 sim.py, to 1e-9. `GET /api/cron/dealer` (`dealer.yml`, every 15 min at
 :05) runs its steps in one transaction per `X-Run-Id` (a rerun reports
-"already ran"); the only step so far, `services/dealer/compute-mids.ts`,
+"already ran"); its mids step, `services/dealer/compute-mids.ts`,
 appends a `model_mids` row per live instrument from the listing's anchor,
 params.json and the scoops and releases since the anchor, only when the
 mid or its inputs moved, and `verify:replay` recomputes every row from its
-`inputs_json` to 1e-12. No quoting code exists yet.
+`inputs_json` to 1e-12. `src/lib/engine/dealer/forward.ts`
+(quote, fill, collateral, settlement credit), `binary.ts` (two-outcome
+seed, price clamp, loss bounds) and `lifecycle.ts` (`instruments.state`
+transitions) are pure. The dealer job's steps run state (widen/restore a
+forward on flags observed since its last change; s ×3, Q ÷2 until a newer
+mid or 72 h), list, mids and requote, posting a `quotes` row only when a
+quote moved; a binary is seeded once at the model p, never widened, and
+refuses a trade past [p_floor, 1 − p_floor]. `dealer_pnl` (migration
+`009_dealer_pnl`) reports realised, open collateral, unrealised and bound
+per instrument; `verify:replay` replays forward books by forward rules and
+recomputes every quote.
 
 ### D13. Rulebook and settlement — Adopted
 
@@ -357,8 +373,16 @@ voids at once on an undisclosed one) and a higher-ranked revision
 dated past expiry; `GET /api/ref/rulebook` publishes it with `rulebook_version`,
 `model_version` and `as_of`. `tests/fixtures/rulebook-events.json`
 records how it resolves every row of `backtest/events.csv` (each row
-entering as rank 1, since the file carries no source rank). No settle
-job reads it yet.
+entering as rank 1, since the file carries no source rank).
+`GET /api/cron/settle` (`settle.yml`, hourly at :41) settles each live
+instrument in its own transaction: promotes high-confidence rank 1–2
+releases and S-1s with a post-money to prints (rank 3–4 is reported
+pending; no admin queue yet), resolves through the rulebook, pays a
+binary $1 a share or settles forward positions at
+`settlementCreditCents` (a void refunds collateral), and lists the
+successor (a binary from the announcement that resolved it). A forward
+settled while a higher rank could still supersede it is recorded with
+`final: false`; the correcting settlement is not built.
 
 ### D14. Reference price API — Adopted
 
@@ -480,7 +504,7 @@ See `PART5.md` for the environment contract.
 | Outstanding claims varies with mask width | Fixed | Both services read `openInterestSql`, the largest per-bucket total. |
 | Grid and floor impose artificial tails | True, display only | Universal grid in `buckets.ts`; 0.001 floor in `seed.ts`. Decision open (D5). |
 | Deployment deadlocks after 30 days | Fixed | Builds never seeded; the production seed and its freshness rule are deleted (D6). |
-| Trading surface is the 41-bucket ladder | Partly | `008` removed every ladder market; the ladder's quote and trade routes and ticket remain until the dealer ticket (`TECHNICAL_DESIGN.md` §12, milestone 6). |
+| Trading surface is the 41-bucket ladder | Partly fixed | D11 adopts a binary + forward per name. The dealer's backend quotes, trades, settles and rolls both (milestone 6); the ticket UI and the ladder's removal are separate milestone-6 work. |
 | Tournament is in `master` | Fixed | Merged in #2 (`a60d971`, 2026-10-21); milestone 1 is done. |
 | `shelved/timing-strips` branch exists | False | Not on the remote as of 2026-10-21; the "by date" market is reinstated as D11's binary. |
 | Loss bound on a binary is b·ln 2 | False | Only from a 50/50 start; against a hazard prior it is b·ln(1/p_floor). D12 states the correct figure. |

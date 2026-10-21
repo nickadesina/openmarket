@@ -67,11 +67,28 @@ const httpUrlSchema = z
     return protocol === "http:" || protocol === "https:";
   }, "Must be an HTTP(S) URL");
 
+/**
+ * A book is addressed by `market_id` (a dealer binary) or by `slug` (a
+ * company's ladder market, which has no instrument); exactly one of them.
+ */
 const quoteFields = {
-  slug: slugSchema,
+  slug: slugSchema.optional(),
+  market_id: z
+    .string()
+    .uuid()
+    .transform((value) => value.toLowerCase())
+    .optional(),
   side: z.enum(["yes", "no"]),
   strike_index: strikeIndexSchema,
 } as const;
+
+function oneBook(input: {
+  readonly slug?: string | undefined;
+  readonly market_id?: string | undefined;
+}): boolean {
+  return (input.slug === undefined) !== (input.market_id === undefined);
+}
+const ONE_BOOK = { message: "Give exactly one of slug or market_id" } as const;
 
 const buyQuantityQuoteSchema = z
   .object({
@@ -95,11 +112,9 @@ const sellQuoteSchema = z
   })
   .strict();
 
-export const quoteInputSchema = z.union([
-  buyQuantityQuoteSchema,
-  buySpendQuoteSchema,
-  sellQuoteSchema,
-]);
+export const quoteInputSchema = z
+  .union([buyQuantityQuoteSchema, buySpendQuoteSchema, sellQuoteSchema])
+  .refine(oneBook, ONE_BOOK);
 
 const tradeFields = {
   ...quoteFields,
@@ -131,10 +146,42 @@ const sellTradeSchema = z
   })
   .strict();
 
-export const tradeInputSchema = z.union([
-  buyQuantityTradeSchema,
-  buySpendTradeSchema,
-  sellTradeSchema,
+export const tradeInputSchema = z
+  .union([buyQuantityTradeSchema, buySpendTradeSchema, sellTradeSchema])
+  .refine(oneBook, ONE_BOOK);
+
+/** A dealer book or instrument id: a UUID, compared lower-case. */
+const bookIdSchema = idempotencyKeySchema;
+const entryLnSchema = z.number().finite();
+
+/** `GET /api/instruments/[instrumentId]/quote`: a side and notional preview a fill, or neither. */
+export const forwardQuoteQuerySchema = z
+  .object({
+    side: z.enum(["long", "short"]).optional(),
+    notional_usd: positiveTradeUsdSchema.optional(),
+  })
+  .strict()
+  .refine((input) => (input.side === undefined) === (input.notional_usd === undefined), {
+    message: "side and notional_usd go together",
+  });
+
+const forwardTradeFields = {
+  idempotency_key: idempotencyKeySchema,
+  instrument_id: bookIdSchema,
+  notional_usd: positiveTradeUsdSchema,
+} as const;
+
+/**
+ * `POST /api/forward/trade`. The guard is the worst entry the caller accepts:
+ * the highest ask for a long, the lowest bid for a short, in ln USD.
+ */
+export const forwardTradeInputSchema = z.discriminatedUnion("side", [
+  z
+    .object({ ...forwardTradeFields, side: z.literal("long"), max_entry_ln: entryLnSchema })
+    .strict(),
+  z
+    .object({ ...forwardTradeFields, side: z.literal("short"), min_entry_ln: entryLnSchema })
+    .strict(),
 ]);
 
 export const settlementInputSchema = z
@@ -174,3 +221,5 @@ export type CommentInput = z.infer<typeof commentInputSchema>;
 export type QuoteInput = z.infer<typeof quoteInputSchema>;
 export type TradeInput = z.infer<typeof tradeInputSchema>;
 export type SettlementInput = z.infer<typeof settlementInputSchema>;
+export type ForwardQuoteQuery = z.infer<typeof forwardQuoteQuerySchema>;
+export type ForwardTradeInput = z.infer<typeof forwardTradeInputSchema>;

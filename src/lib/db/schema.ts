@@ -392,6 +392,8 @@ export interface QuotesTable {
   trade_id: Immutable<string | null>;
   model_version: Immutable<string>;
   rulebook_version: Immutable<string>;
+  /** Tape order: quotes posted at one instant are ordered by this (migration 009). */
+  sequence: ColumnType<string, never, never>;
 }
 
 export interface ForwardPositionsTable {
@@ -438,6 +440,25 @@ export interface SourceHealthTable {
   last_error: string | null;
 }
 
+/** The `dealer_pnl` view (migration 009): cents, from the dealer's side. */
+export interface DealerPnlView {
+  listing_id: ColumnType<string, never, never>;
+  company: ColumnType<string, never, never>;
+  instrument_id: ColumnType<string, never, never>;
+  kind: ColumnType<InstrumentKind, never, never>;
+  epoch: ColumnType<number, never, never>;
+  state: ColumnType<InstrumentState, never, never>;
+  market_id: ColumnType<string, never, never>;
+  market_status: ColumnType<MarketStatus, never, never>;
+  /** bigint; pg returns strings. */
+  realised_cents: ColumnType<string, never, never>;
+  open_collateral_cents: ColumnType<string, never, never>;
+  unrealised_cents: ColumnType<number, never, never>;
+  bound_cents: ColumnType<number, never, never>;
+  latest_mid_ln: ColumnType<number | null, never, never>;
+  current_metric: ColumnType<number, never, never>;
+}
+
 export interface Database {
   companies: CompaniesTable;
   markets: MarketsTable;
@@ -472,6 +493,7 @@ export interface Database {
   reference_prices: ReferencePricesTable;
   tournament_instrument_links: TournamentInstrumentLinksTable;
   source_health: SourceHealthTable;
+  dealer_pnl: DealerPnlView;
 }
 
 export type CompanyRow = Selectable<CompaniesTable>;

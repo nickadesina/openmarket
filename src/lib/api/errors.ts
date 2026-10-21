@@ -21,6 +21,9 @@ export const ERROR_CODES = [
   "FORECAST_NOT_FOUND",
   "USERNAME_TAKEN",
   "SIGN_IN_FAILED",
+  "CAP_EXCEEDED",
+  "PRICE_CLAMPED",
+  "INSTRUMENT_CLOSED",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

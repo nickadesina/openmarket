@@ -295,7 +295,7 @@ async function insertDealerBook(db: Kysely<Database>, slug: string) {
       anchor_post_money_usd: "183000000000.00",
       anchor_source_url: "https://example.test/round",
       anchor_source_rank: 1,
-      listed_at: new Date("2026-10-22T00:00:00.000Z"),
+      listed_at: new Date("2026-10-01T00:00:00.000Z"),
     })
     .returning("id")
     .executeTakeFirstOrThrow();
@@ -306,7 +306,7 @@ async function insertDealerBook(db: Kysely<Database>, slug: string) {
       kind: "binary",
       epoch: 1,
       question: `Does ${slug} announce a priced round by 2026-12-31?`,
-      opens_at: new Date("2026-10-22T00:00:00.000Z"),
+      opens_at: new Date("2026-10-01T00:00:00.000Z"),
       expires_at: new Date("2026-12-31T23:59:59.000Z"),
       state: "quoting",
     })
@@ -438,6 +438,7 @@ postgresDescribe(`${suiteName}: 008 on a populated 007 database`, () => {
     expect(migration.error).toBeUndefined();
     expect(migration.results?.map((result) => result.migrationName)).toEqual([
       "008_retire_ladder_and_username_accounts",
+      "009_dealer_pnl",
     ]);
 
     for (const table of [
@@ -520,9 +521,10 @@ postgresDescribe(`${suiteName}: 008 after dealer trading`, () => {
 
   it("refuses to run once a dealer book has trades, changing nothing", async () => {
     const db = postgres.db;
-    await insertDealerBook(db, "modal");
+    const { bookId } = await insertDealerBook(db, "modal");
     const trader = await insertUsernameAccount(db, "EarlyDealer");
-    await executeTrade(db, trader, buy("modal", "10.00", 0, "yes"));
+    const { slug: _slug, ...order } = buy("modal", "10.00", 0, "yes");
+    await executeTrade(db, trader, { ...order, market_id: bookId });
 
     const migration = await createMigrator(db, postgres.schema).migrateToLatest();
     expect(String(migration.error)).toMatch(/008 runs before dealer trading/);

@@ -34,6 +34,7 @@ function queryReturning(result: unknown): Record<string, Mock> {
   const query: Record<string, Mock> = {};
   query.innerJoin = vi.fn(() => query);
   query.select = vi.fn(() => query);
+  query.selectAll = vi.fn(() => query);
   query.where = vi.fn(() => query);
   query.orderBy = vi.fn(() => query);
   query.executeTakeFirst = vi.fn(async () => result);
@@ -50,11 +51,12 @@ function mockDatabase(options: MockDatabaseOptions): {
 } {
   let companyQueryCount = 0;
   const selectFrom = vi.fn((table: string) => {
-    if (table === "companies") {
+    // A slug resolves the company's open ladder book, then (when none) its latest status.
+    if (table === "markets") {
       companyQueryCount += 1;
       return queryReturning(
         companyQueryCount === 1
-          ? options.market
+          ? options.market && { ...options.market, id: options.market.market_id }
           : options.latestStatus === undefined
             ? undefined
             : { status: options.latestStatus },
@@ -236,7 +238,7 @@ describe("quoteMarket", () => {
     await expect(quoteMarket(anonymous.db, input)).rejects.toMatchObject({
       code: "USER_REQUIRED",
     });
-    expect(anonymous.selectFrom).toHaveBeenCalledWith("companies");
+    expect(anonymous.selectFrom).toHaveBeenCalledWith("markets");
     expect(anonymous.selectFrom).not.toHaveBeenCalledWith("holdings");
 
     const authenticated = mockDatabase({

@@ -274,7 +274,7 @@ Anthropic Series D has no dated close.
 
 | Concern | Choice |
 | --- | --- |
-| Scheduling | Actions workflows `ingest.yml` (15 min), `dealer.yml` (15 min, offset 5), `settle.yml` (hourly) → `/api/cron/*`; Vercel Cron as fallback |
+| Scheduling | Actions workflows `ingest.yml` (15 min), `dealer.yml` (15 min at :05/:20/:35/:50: state, list, mids, requote), `settle.yml` (hourly at :41: promote, resolve, settle or void, roll) → `/api/cron/*` with `CRON_SECRET` and `X-Run-Id`; Vercel Cron as fallback |
 | Idempotency | `cron_runs.run_id` unique (the `event_flags.run_id` FK needs it); reruns exit early |
 | LLM extraction | one provider behind `src/lib/services/ingest/extract.ts`; `EXTRACT_API_KEY`; prompts and schema versioned; daily cost cap in `rate_limits` |
 | Secrets | `CRON_SECRET`, `EXTRACT_API_KEY`, `EDGAR_USER_AGENT`, the tournament's X OAuth credentials; sign-in and admin are the tournament's (README D1) |

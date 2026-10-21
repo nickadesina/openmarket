@@ -1,4 +1,4 @@
-import { type Kysely, sql } from "kysely";
+import { type Kysely, sql, type Transaction } from "kysely";
 
 import { ServiceError } from "../api/errors.js";
 import { parseUsdToCents } from "../api/money.js";
@@ -44,6 +44,128 @@ function winningBucket(metricKind: MetricKind, settledValueUsd: string): number 
   return valuationBucketIndex(settledValueCents / 100);
 }
 
+export interface LmsrBookSettlement {
+  /** The book, already locked for update by the caller. */
+  readonly market: {
+    readonly market_id: string;
+    readonly n_buckets: number;
+    readonly mm_cash_flow_cents: string;
+    readonly rounding_reserve_cents: string;
+  };
+  readonly winningBucket: number;
+  /** Decimal USD, as `settlements.settled_value` stores it. */
+  readonly settledValue: string;
+  readonly sourceUrl: string;
+  readonly sourceDescription: string | null;
+  readonly ts: Date;
+}
+
+export interface LmsrBookCredit {
+  readonly creditedUsers: number;
+  readonly totalPayoutCents: bigint;
+  readonly roundingReserveDeltaCents: bigint;
+}
+
+/**
+ * Pays $1 per share in the winning bucket to every holder, zeroes holdings,
+ * writes the `settlements` row and closes the book, in the caller's
+ * transaction. The ladder's admin settlement and the dealer's settle job
+ * (a binary's YES or NO) both settle through this.
+ */
+export async function settleLmsrBook(
+  transaction: Transaction<Database>,
+  book: LmsrBookSettlement,
+): Promise<LmsrBookCredit> {
+  const market = book.market;
+  const holdings = await transaction
+    .selectFrom("holdings")
+    .innerJoin("users", "users.id", "holdings.user_id")
+    .select(["holdings.user_id", "holdings.h", "users.cash_balance_cents"])
+    .where("holdings.market_id", "=", market.market_id)
+    .orderBy("users.id", "asc")
+    .forUpdate(["holdings", "users"])
+    .execute();
+
+  let totalEntitlementUsd = 0;
+  let totalPayoutCents = 0n;
+  let creditedUsers = 0;
+  const zeroHoldings = new Array<number>(market.n_buckets).fill(0);
+
+  for (const holding of holdings) {
+    if (holding.h.length !== market.n_buckets) {
+      throw new ServiceError(
+        "INVALID_INPUT",
+        "Stored holdings do not match the market bucket count.",
+      );
+    }
+
+    const entitlementUsd = holding.h[book.winningBucket]!;
+    let payoutCents: number;
+    try {
+      payoutCents = quantizeEntitlementCents(entitlementUsd);
+    } catch {
+      throw new ServiceError("INVALID_INPUT", "Stored settlement entitlement is invalid.");
+    }
+
+    totalEntitlementUsd += entitlementUsd;
+    totalPayoutCents += BigInt(payoutCents);
+    if (payoutCents > 0) creditedUsers += 1;
+
+    await transaction
+      .updateTable("users")
+      .set({
+        cash_balance_cents: (BigInt(holding.cash_balance_cents) + BigInt(payoutCents)).toString(),
+      })
+      .where("id", "=", holding.user_id)
+      .executeTakeFirstOrThrow();
+
+    await transaction
+      .updateTable("holdings")
+      .set({ h: zeroHoldings, updated_at: book.ts })
+      .where("user_id", "=", holding.user_id)
+      .where("market_id", "=", market.market_id)
+      .executeTakeFirstOrThrow();
+  }
+
+  let aggregatePayoutCents: number;
+  try {
+    aggregatePayoutCents = quantizeEntitlementCents(totalEntitlementUsd);
+  } catch {
+    throw new ServiceError("INVALID_INPUT", "Aggregate settlement entitlement is invalid.");
+  }
+  const rawRoundingReserveDeltaCents = BigInt(aggregatePayoutCents) - totalPayoutCents;
+  const roundingReserveDeltaCents =
+    rawRoundingReserveDeltaCents < 0n ? 0n : rawRoundingReserveDeltaCents;
+
+  await transaction
+    .insertInto("settlements")
+    .values({
+      market_id: market.market_id,
+      settled_value: book.settledValue,
+      winning_bucket: book.winningBucket,
+      source_url: book.sourceUrl,
+      source_description: book.sourceDescription,
+      ts: book.ts,
+    })
+    .executeTakeFirstOrThrow();
+
+  await transaction
+    .updateTable("markets")
+    .set({
+      status: "settled",
+      settled_at: book.ts,
+      mm_cash_flow_cents: (BigInt(market.mm_cash_flow_cents) - totalPayoutCents).toString(),
+      rounding_reserve_cents: (
+        BigInt(market.rounding_reserve_cents) + roundingReserveDeltaCents
+      ).toString(),
+    })
+    .where("id", "=", market.market_id)
+    .where("status", "=", "open")
+    .executeTakeFirstOrThrow();
+
+  return { creditedUsers, totalPayoutCents, roundingReserveDeltaCents };
+}
+
 export async function settleMarket(
   db: Kysely<Database>,
   input: SettlementInput,
@@ -62,6 +184,8 @@ export async function settleMarket(
       ])
       .where("companies.slug", "=", input.slug)
       .where("markets.status", "=", "open")
+      // A dealer book settles through the settle job, never by slug.
+      .where("markets.instrument_id", "is", null)
       // Lock only markets: settlement never writes companies, and taking that
       // lock here inverts seedMarket's companies-then-markets order.
       .forUpdate("markets")
@@ -73,6 +197,7 @@ export async function settleMarket(
         .innerJoin("companies", "companies.id", "markets.company_id")
         .select("markets.id")
         .where("companies.slug", "=", input.slug)
+        .where("markets.instrument_id", "is", null)
         .limit(1)
         .executeTakeFirst();
 
@@ -93,101 +218,23 @@ export async function settleMarket(
     const { settlement_ts: settlementTs } = await transaction
       .selectNoFrom(sql<Date>`clock_timestamp()`.as("settlement_ts"))
       .executeTakeFirstOrThrow();
-
-    const holdings = await transaction
-      .selectFrom("holdings")
-      .innerJoin("users", "users.id", "holdings.user_id")
-      .select(["holdings.user_id", "holdings.h", "users.cash_balance_cents"])
-      .where("holdings.market_id", "=", market.market_id)
-      .orderBy("users.id", "asc")
-      .forUpdate(["holdings", "users"])
-      .execute();
-
-    let totalEntitlementUsd = 0;
-    let totalPayoutCents = 0n;
-    let creditedUsers = 0;
-    const zeroHoldings = new Array<number>(market.n_buckets).fill(0);
-
-    for (const holding of holdings) {
-      if (holding.h.length !== market.n_buckets) {
-        throw new ServiceError(
-          "INVALID_INPUT",
-          "Stored holdings do not match the market bucket count.",
-        );
-      }
-
-      const entitlementUsd = holding.h[winningBucketIndex]!;
-      let payoutCents: number;
-      try {
-        payoutCents = quantizeEntitlementCents(entitlementUsd);
-      } catch {
-        throw new ServiceError("INVALID_INPUT", "Stored settlement entitlement is invalid.");
-      }
-
-      totalEntitlementUsd += entitlementUsd;
-      totalPayoutCents += BigInt(payoutCents);
-      if (payoutCents > 0) creditedUsers += 1;
-
-      await transaction
-        .updateTable("users")
-        .set({
-          cash_balance_cents: (BigInt(holding.cash_balance_cents) + BigInt(payoutCents)).toString(),
-        })
-        .where("id", "=", holding.user_id)
-        .executeTakeFirstOrThrow();
-
-      await transaction
-        .updateTable("holdings")
-        .set({ h: zeroHoldings, updated_at: settlementTs })
-        .where("user_id", "=", holding.user_id)
-        .where("market_id", "=", market.market_id)
-        .executeTakeFirstOrThrow();
-    }
-
-    let aggregatePayoutCents: number;
-    try {
-      aggregatePayoutCents = quantizeEntitlementCents(totalEntitlementUsd);
-    } catch {
-      throw new ServiceError("INVALID_INPUT", "Aggregate settlement entitlement is invalid.");
-    }
-    const rawRoundingReserveDeltaCents = BigInt(aggregatePayoutCents) - totalPayoutCents;
-    const roundingReserveDeltaCents =
-      rawRoundingReserveDeltaCents < 0n ? 0n : rawRoundingReserveDeltaCents;
-
-    await transaction
-      .insertInto("settlements")
-      .values({
-        market_id: market.market_id,
-        settled_value: input.settled_value_usd,
-        winning_bucket: winningBucketIndex,
-        source_url: input.source_url,
-        source_description: input.source_description ?? null,
-        ts: settlementTs,
-      })
-      .executeTakeFirstOrThrow();
-
-    await transaction
-      .updateTable("markets")
-      .set({
-        status: "settled",
-        settled_at: settlementTs,
-        mm_cash_flow_cents: (BigInt(market.mm_cash_flow_cents) - totalPayoutCents).toString(),
-        rounding_reserve_cents: (
-          BigInt(market.rounding_reserve_cents) + roundingReserveDeltaCents
-        ).toString(),
-      })
-      .where("id", "=", market.market_id)
-      .where("status", "=", "open")
-      .executeTakeFirstOrThrow();
+    const credited = await settleLmsrBook(transaction, {
+      market,
+      winningBucket: winningBucketIndex,
+      settledValue: input.settled_value_usd,
+      sourceUrl: input.source_url,
+      sourceDescription: input.source_description ?? null,
+      ts: settlementTs,
+    });
 
     return {
       market_id: market.market_id,
       slug: input.slug,
       settled_value_usd: input.settled_value_usd,
       winning_bucket: winningBucketIndex,
-      credited_users: creditedUsers,
-      total_payout_cents: totalPayoutCents.toString(),
-      rounding_reserve_delta_cents: roundingReserveDeltaCents.toString(),
+      credited_users: credited.creditedUsers,
+      total_payout_cents: credited.totalPayoutCents.toString(),
+      rounding_reserve_delta_cents: credited.roundingReserveDeltaCents.toString(),
       settled_at: settlementTs.toISOString(),
     };
   });

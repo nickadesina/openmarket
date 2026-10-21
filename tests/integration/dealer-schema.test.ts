@@ -502,12 +502,10 @@ postgresDescribe(`${suiteName}: down`, () => {
 
   it("drops every dealer table and restores the ladder's constraints, then re-applies", async () => {
     const migrator = createMigrator(postgres.db, postgres.schema);
+    // Down past every later migration to the one before 007.
     const down = await migrator.migrateTo("006_tournament_accounts");
     expect(down.error).toBeUndefined();
-    expect(down.results?.map((result) => result.migrationName)).toEqual([
-      "008_retire_ladder_and_username_accounts",
-      "007_dealer",
-    ]);
+    expect(down.results?.map((result) => result.migrationName).at(-1)).toBe("007_dealer");
 
     for (const table of ["listings", "instruments", "event_flags", "cron_runs", "quotes"]) {
       expect(await relationExists(table), table).toBe(false);
