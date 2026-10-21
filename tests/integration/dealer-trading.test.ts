@@ -212,6 +212,25 @@ postgresDescribe(suiteName, () => {
     );
     expect(short.result).toMatchObject({ entry_ln: after.bid_ln, inventory_after_cents: "-60000" });
 
+    // dealer_pnl marks the open positions at the mid, from the dealer's side.
+    const pnl = await db
+      .selectFrom("dealer_pnl")
+      .selectAll()
+      .where("instrument_id", "=", forwardId)
+      .executeTakeFirstOrThrow();
+    const clip = (move: number) => Math.max(-1, Math.min(1, move));
+    expect(pnl).toMatchObject({
+      kind: "forward",
+      market_status: "open",
+      realised_cents: "0",
+      open_collateral_cents: "140000",
+      bound_cents: 2_500_000,
+    });
+    expect(pnl.unrealised_cents).toBeCloseTo(
+      -100_000 * clip(quote.mid_ln - quote.ask_ln) + 40_000 * clip(quote.mid_ln - after.bid_ln),
+      6,
+    );
+
     // The dealer job requotes the moved inventory.
     const run = await runDealerJob(postgres.db, "trading-2", new Date("2026-10-20T01:05:00Z"));
     expect(run.status === "succeeded" && run.result.steps.requote.requoted).toEqual([

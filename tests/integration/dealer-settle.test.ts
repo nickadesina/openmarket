@@ -248,6 +248,22 @@ postgresDescribe(suiteName, () => {
       expect(position.settled_at).toEqual(now);
     }
 
+    // dealer_pnl: the settled forward's realised P&L is the collateral it kept.
+    const pnl = await postgres.db
+      .selectFrom("dealer_pnl")
+      .selectAll()
+      .where("instrument_id", "in", [binary!.id, forward!.id])
+      .orderBy("kind")
+      .execute();
+    expect(pnl[1]).toMatchObject({
+      market_status: "settled",
+      open_collateral_cents: "0",
+      unrealised_cents: 0,
+      realised_cents: String(140_000 - longCredit - shortCredit),
+      bound_cents: 2_500_000,
+    });
+    expect(pnl[0]!.bound_cents).toBeCloseTo(200_000 * Math.log(20), 6);
+
     // (d) Successors: the binary from the announcement, the forward from the print.
     expect(nextBinary).toMatchObject({ epoch: 2, state: "quoting", market_status: "open" });
     expect(nextBinary!.opens_at).toEqual(new Date("2026-09-28T00:00:00Z"));
