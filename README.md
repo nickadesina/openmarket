@@ -393,6 +393,11 @@ settled while a higher rank could still supersede it is recorded with
   30-day traded price and the tournament crowd, with weights that move
   on a published schedule (`TECHNICAL_DESIGN.md` §8). With no flow and
   no crowd the reference *is* the model mid and says so.
+- The blend constants (V₀, n₀, N_min, the weight caps, the 30-day
+  window) are policy, not backtest parameters: they live in
+  `src/lib/engine/dealer/blend.ts` as the published schedule under
+  `BLEND_VERSION`, every reference payload carries them, and changing
+  one is a new blend version, never an edit to a published one.
 - The model's forecast log (`model_mids`) is public and unredacted.
 - A keyed tier exists from day one so the first desk that asks gets a
   key the same day; nothing is gated at launch.
