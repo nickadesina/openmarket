@@ -3,6 +3,7 @@ import type { Kysely } from "kysely";
 import { ServiceError } from "../../api/errors.js";
 import { bearerApiKey, hashApiKey } from "../../auth/api-key.js";
 import type { Database } from "../../db/schema.js";
+import { trustedClientAddress } from "../../security/comment-address.js";
 import { consumeNetworkRateLimit, consumeRateLimit, RATE_LIMIT_POLICIES } from "../rate-limit.js";
 
 const MINUTE_MS = 60_000;
@@ -16,14 +17,21 @@ export type RefCaller =
  * its network's `ref` bucket (60 a minute); a request with a live key draws
  * from that key's own quota instead. A revoked or unknown key is refused.
  * Like the other network buckets, local development and tests share one
- * loopback caller that is not limited.
+ * loopback caller that is not limited, and that caller opens no database
+ * connection here (`dbOf` is only called when a bucket is counted).
  */
-export async function consumeRefQuota(db: Kysely<Database>, request: Request): Promise<RefCaller> {
+export async function consumeRefQuota(
+  dbOf: () => Kysely<Database>,
+  request: Request,
+): Promise<RefCaller> {
   const key = bearerApiKey(request);
   if (key === null) {
-    await consumeNetworkRateLimit(db, "ref", request, RATE_LIMIT_POLICIES.ref, "network:");
+    if (trustedClientAddress(request) !== "loopback") {
+      await consumeNetworkRateLimit(dbOf(), "ref", request, RATE_LIMIT_POLICIES.ref, "network:");
+    }
     return { tier: "public" };
   }
+  const db = dbOf();
   const row = await db
     .selectFrom("api_keys")
     .select(["id", "quota_per_minute", "revoked_at"])
