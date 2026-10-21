@@ -196,6 +196,8 @@ export async function seedMarket(
       .selectAll()
       .where("company_id", "=", company.id)
       .where("status", "=", "open")
+      // A dealer instrument's book is the dealer's to list and roll, never this seed's.
+      .where("instrument_id", "is", null)
       .forUpdate()
       .executeTakeFirst();
 

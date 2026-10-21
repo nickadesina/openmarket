@@ -131,9 +131,13 @@ export function movementGlyph(direction: "up" | "down" | "flat"): string {
   return direction === "up" ? "↑" : direction === "down" ? "↓" : "→";
 }
 
-export function contractLabel(side: "yes" | "no", strikeLabel: string | null): string {
+/** A forward side (long/short) has no strike; it labels as the side alone. */
+export function contractLabel(
+  side: "yes" | "no" | "long" | "short",
+  strikeLabel: string | null,
+): string {
   const sideLabel = side.toUpperCase();
-  if (strikeLabel === null) return sideLabel;
+  if (strikeLabel === null || side === "long" || side === "short") return sideLabel;
   return side === "yes"
     ? `${sideLabel} above ${strikeLabel}`
     : `${sideLabel} at or below ${strikeLabel}`;

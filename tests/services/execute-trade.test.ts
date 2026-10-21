@@ -119,6 +119,7 @@ function createTransactionHarness(options?: {
     rounding_reserve_cents: "7",
     created_at: new Date("2026-01-01T00:00:00.000Z"),
     settled_at: null,
+    instrument_id: null,
   };
   const user: UserRow = {
     id: USER_ID,
