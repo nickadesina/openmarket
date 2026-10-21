@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { DEALER_PARAMS } from "../../../src/lib/config/dealer.js";
+import { parseCsv } from "../../../src/lib/config/listing-anchors.js";
 import {
   type BinaryEvent,
   type BinaryResolution,
@@ -39,35 +40,6 @@ interface EventRow {
   readonly round_name: string;
   readonly announcement_date: string;
   readonly post_money_usd: string;
-}
-
-function parseCsv(text: string): Record<string, string>[] {
-  const records: string[][] = [];
-  let field = "";
-  let record: string[] = [];
-  let quoted = false;
-  for (let index = 0; index < text.length; index += 1) {
-    const char = text[index]!;
-    if (quoted) {
-      if (char === '"' && text[index + 1] === '"') {
-        field += '"';
-        index += 1;
-      } else if (char === '"') quoted = false;
-      else field += char;
-    } else if (char === '"') quoted = true;
-    else if (char === ",") {
-      record.push(field);
-      field = "";
-    } else if (char === "\n") {
-      record.push(field);
-      records.push(record);
-      record = [];
-      field = "";
-    } else if (char !== "\r") field += char;
-  }
-  if (field !== "" || record.length > 0) records.push([...record, field]);
-  const [header, ...rows] = records;
-  return rows.map((row) => Object.fromEntries(header!.map((name, i) => [name, row[i] ?? ""])));
 }
 
 const rows = parseCsv(readFileSync("backtest/events.csv", "utf8")) as unknown as EventRow[];

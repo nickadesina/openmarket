@@ -6,7 +6,7 @@ import { ServiceError } from "../api/errors.js";
 import { formatCentsAsUsd, parseUsdToCents } from "../api/money.js";
 import type { TradeInput } from "../api/schemas.js";
 import type {
-  ContractSide,
+  ClaimSide,
   Database,
   JsonObject,
   JsonValue,
@@ -21,7 +21,7 @@ export interface ExecutionResult extends JsonObject {
   readonly idempotency_key: string;
   readonly market_sequence: string;
   readonly action: TradeAction;
-  readonly side: ContractSide;
+  readonly side: ClaimSide;
   readonly strike_index: number;
   readonly shares: number;
   readonly engine_cost_usd: number;

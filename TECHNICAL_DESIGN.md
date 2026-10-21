@@ -52,13 +52,16 @@ log).
 ## 3. Data model
 
 Migration `007_dealer`, Kysely-typed in `src/lib/db/schema.ts`.
-Existing tables kept; `markets` gains `instrument_id` (nullable FK).
-Log tables are append-only via the trigger pattern the tournament
-branch uses.
+Existing tables kept. Each instrument's book is one `markets` row,
+linked by `markets.instrument_id` (nullable, unique): the binary in the
+`yes_probability` shape, the forward as `forward_ln` (`n_buckets = 2`,
+q = open long and short notional in USD from [0, 0], b = κ,
+`current_metric` = mid in USD). Log tables are append-only via the
+trigger pattern the tournament branch uses.
 
 | Table | Purpose | Key columns |
 | --- | --- | --- |
-| `listings` | one row per listed name, versioned parameters | `company_id`, `tier`, `kappa`, `cap_cents`, `b_cents`, `spread_floor`, `forward_t_days`, `p_floor`, `version`, `valid_from` |
+| `listings` | one row per listed name, versioned parameters | `company_id`, `tier`, `kappa`, `cap_cents`, `b_cents`, `spread_floor`, `forward_t_days`, `p_floor`, `model_version`, anchor and source, `listed_at`, `delisted_at` |
 | `instruments` | one row per live or past contract | `listing_id`, `kind` (binary/forward), `epoch`, `question`, `expiry`, `entry_ref_ln`, `state`, `opened_at`, `closed_at` |
 | `event_flags` | ingested public evidence (append-only) | `company_id`, `kind`, `source_url`, `source_rank`, `observed_at`, `published_at`, `terms_json`, `confidence`, `dedupe_key`, `promoted_from`, `run_id` |
 | `model_mids` | every mid the model produced (append-only) | `instrument_id`, `model_version`, `rulebook_version`, `computed_at`, `mid_ln` or `p`, `inputs_json` |
