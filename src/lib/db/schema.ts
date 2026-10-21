@@ -394,6 +394,8 @@ export interface QuotesTable {
   trade_id: Immutable<string | null>;
   model_version: Immutable<string>;
   rulebook_version: Immutable<string>;
+  /** Tape order: quotes posted at one instant are ordered by this (migration 009). */
+  sequence: ColumnType<string, never, never>;
 }
 
 export interface ForwardPositionsTable {

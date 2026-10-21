@@ -5,7 +5,7 @@ import { RULEBOOK_VERSION } from "../../src/lib/engine/dealer/rulebook.js";
 import { runDealerJob } from "../../src/lib/services/dealer/run-dealer-job.js";
 import { verifyDealer } from "../../src/lib/services/dealer/verify-dealer.js";
 import { verifyReplay } from "../../src/lib/services/verify-replay.js";
-import { NAMES, seedFixtureListings } from "./dealer-fixture.js";
+import { insertFixtureFlags, NAMES, seedFixtureListings } from "./dealer-fixture.js";
 import {
   createPostgresTestDatabase,
   type PostgresTestDatabase,
@@ -130,5 +130,81 @@ postgresDescribe(suiteName, () => {
 
     expect((await verifyReplay(db)).passed).toBe(true);
     expect(await verifyDealer(db)).toMatchObject({ passed: true, findings: [] });
+  });
+
+  async function forwardOf(slug: string) {
+    return postgres.db
+      .selectFrom("instruments")
+      .innerJoin("listings", "listings.id", "instruments.listing_id")
+      .innerJoin("companies", "companies.id", "listings.company_id")
+      .selectAll("instruments")
+      .where("companies.slug", "=", slug)
+      .where("instruments.kind", "=", "forward")
+      .orderBy("instruments.epoch", "desc")
+      .executeTakeFirstOrThrow();
+  }
+
+  async function quotesOf(instrumentId: string) {
+    return postgres.db
+      .selectFrom("quotes")
+      .selectAll()
+      .where("instrument_id", "=", instrumentId)
+      .orderBy("posted_at")
+      .orderBy("sequence")
+      .execute();
+  }
+
+  it("widens a forward on a flag, restores it on a re-price or after 72 h", async () => {
+    // Instinct listed on its Series B, so the Series C scoop and release come after.
+    await seedFixtureListings(postgres.db, new Date("2026-09-01T00:00:00Z"));
+    await runDealerJob(postgres.db, "s-1", new Date("2026-09-01T00:05:00Z"));
+    await insertFixtureFlags(
+      postgres.db,
+      "instinct",
+      ["scoop", "release"],
+      (flag) => flag.published_at > "2026-09-01",
+    );
+    const forward = await forwardOf("instinct");
+    const s = DEALER_PARAMS.dealer.s_floor;
+
+    // The Sep 15 scoop widens; the mid re-centres on its $10B in the same run.
+    const scoopRun = await runDealerJob(postgres.db, "s-2", new Date("2026-09-15T00:05:00Z"));
+    expect(scoopRun.status === "succeeded" && scoopRun.result.steps.state.changes).toEqual([
+      expect.objectContaining({ instrument_id: forward.id, from: "quoting", to: "widened" }),
+    ]);
+    expect(await forwardOf("instinct")).toMatchObject({
+      state: "widened",
+      widened_until: new Date("2026-09-18T00:00:00Z"),
+    });
+    let quotes = await quotesOf(forward.id);
+    expect(quotes.map((quote) => quote.reason)).toEqual(["list", "widen", "requote"]);
+    expect(quotes[1]).toMatchObject({ flag_state: "widened", cap_cents_effective: "1250000" });
+    expect(quotes[1]!.half_spread).toBeCloseTo(3 * s, 12);
+    expect(quotes[2]!.mid_ln).toBe(Math.log(10_000_000_000));
+
+    // The next run sees a mid newer than the flag: the model has re-priced, so restore.
+    await runDealerJob(postgres.db, "s-3", new Date("2026-09-15T00:20:00Z"));
+    expect(await forwardOf("instinct")).toMatchObject({ state: "quoting", widened_until: null });
+    quotes = await quotesOf(forward.id);
+    expect(quotes.at(-1)).toMatchObject({ reason: "restore", flag_state: "normal" });
+    expect(quotes.at(-1)!.half_spread).toBe(s);
+
+    // The Sep 28 release widens and moves no forward mid, so only the 72 h hold restores it.
+    await runDealerJob(postgres.db, "s-4", new Date("2026-09-28T00:05:00Z"));
+    await runDealerJob(postgres.db, "s-5", new Date("2026-09-30T23:55:00Z"));
+    expect(await forwardOf("instinct")).toMatchObject({ state: "widened" });
+    await runDealerJob(postgres.db, "s-6", new Date("2026-10-01T00:05:00Z"));
+    expect(await forwardOf("instinct")).toMatchObject({ state: "quoting" });
+    quotes = await quotesOf(forward.id);
+    expect(quotes.slice(-2).map((quote) => quote.reason)).toEqual(["widen", "restore"]);
+
+    // A binary never widens.
+    const binaries = await postgres.db
+      .selectFrom("instruments")
+      .select("state")
+      .where("kind", "=", "binary")
+      .execute();
+    expect(new Set(binaries.map((row) => row.state))).toEqual(new Set(["quoting"]));
+    expect(await verifyDealer(postgres.db)).toMatchObject({ passed: true });
   });
 });

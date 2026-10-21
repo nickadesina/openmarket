@@ -131,7 +131,7 @@ export async function latestQuote(
     .selectAll()
     .where("instrument_id", "=", instrumentId)
     .orderBy("posted_at", "desc")
-    .orderBy("id", "desc")
+    .orderBy("sequence", "desc")
     .executeTakeFirst();
 }
 

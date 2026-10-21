@@ -1,10 +1,12 @@
 import type { Kysely, Transaction } from "kysely";
 
 import type { Database } from "../../db/schema.js";
+import { applyFlags } from "./apply-flags.js";
 import { computeMids } from "./compute-mids.js";
 import { type CronRunOutcome, runCronJob } from "./cron-run.js";
 import { type DealerHealth, getDealerHealth } from "./get-dealer-health.js";
 import { listInstruments } from "./list-instruments.js";
+import { requote } from "./requote.js";
 
 export interface DealerStepContext {
   /** The run's transaction, under the dealer job's advisory lock. */
@@ -15,13 +17,17 @@ export interface DealerStepContext {
 
 /**
  * The dealer job's steps, run in this order inside one transaction, each
- * result reported under its key: `list` gives every active listing a live
- * binary and forward, and `mids` then writes the model mid of every live
- * instrument (a just-listed one already has its first).
+ * result reported under its key: `state` widens and restores forwards on the
+ * flags and mids seen since their last change; `list` gives every active
+ * listing a live binary and forward; `mids` writes the model mid of every
+ * live instrument (a just-listed one already has its first); `requote` posts
+ * each quote that moved.
  */
 export const DEALER_STEPS = {
+  state: (context: DealerStepContext) => applyFlags(context.db, context.now),
   list: (context: DealerStepContext) => listInstruments(context.db, context.runId, context.now),
   mids: (context: DealerStepContext) => computeMids(context.db, context.runId, context.now),
+  requote: (context: DealerStepContext) => requote(context.db, context.now),
 } as const;
 
 type DealerSteps = typeof DEALER_STEPS;
