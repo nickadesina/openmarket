@@ -259,7 +259,7 @@ summary table as a PR comment.
 | Scenario | Measures | Status |
 | --- | --- | --- |
 | `none` | prior calibration, void rate, resolution count | run |
-| `at_listing` | insider knows the print, hits the cap pre-leak | run: $53k/yr on five names, 20% of bound |
+| `at_listing` | insider knows the print, hits the cap pre-leak | run: $53k/yr on five names, 20% of the ~$260k/yr bound |
 | `at_leak` | lawful scoop-reader, perfect direction (upper bound) | run: $2.3k/yr |
 | `down_round` | 20% of prints flat, 10% at −0.5 log, insider | to run — the sample has no down rounds |
 | `heat_scaled_q` | Q $50k red-hot / $10k mega, same total | to run |

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  binaryExpiry,
   isPrint,
   postMoneyUsd,
   pressRank,
@@ -87,6 +88,17 @@ describe("quarterEndCutoff", () => {
     );
     expect(quarterEndCutoff(at("2026-02-01T00:00:00Z")).toISOString()).toBe(
       "2026-03-31T23:59:59.999Z",
+    );
+  });
+});
+
+describe("binaryExpiry", () => {
+  it("is this quarter-end with at least 21 days left, otherwise the next (decision 0002)", () => {
+    expect(binaryExpiry(at("2026-12-10T15:00:00Z")).toISOString()).toBe("2026-12-31T23:59:59.999Z");
+    expect(binaryExpiry(at("2026-12-11T00:00:00Z")).toISOString()).toBe("2027-03-31T23:59:59.999Z");
+    // A successor listed at a predecessor's expiry rolls to the next quarter.
+    expect(binaryExpiry(at("2026-09-30T23:59:59.999Z")).toISOString()).toBe(
+      "2026-12-31T23:59:59.999Z",
     );
   });
 });

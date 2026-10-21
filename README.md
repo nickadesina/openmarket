@@ -395,7 +395,8 @@ not caught by a test, only by review. No quoting code exists yet.
 
 Current code: `src/lib/engine/dealer/rulebook.ts` (v1.0.0) states the
 rules as data and resolves a binary or a forward from the events it is
-given, including an acquisition (settles at a disclosed equity value,
+given, including the binary's expiry with the 21-day floor (decision
+0002), an acquisition (settles at a disclosed equity value,
 voids at once on an undisclosed one) and a higher-ranked revision
 dated past expiry; `GET /api/ref/rulebook` publishes it with `rulebook_version`,
 `model_version` and `as_of`. `tests/fixtures/rulebook-events.json`
@@ -540,4 +541,4 @@ See `PART5.md` for the environment contract.
 | Three cron routes | Fixed | `TECHNICAL_DESIGN.md` §5 named a fourth, `/api/cron/mid`; the mid step now runs inside `/api/cron/dealer`, so there are three routes (ingest, dealer, settle). |
 | `outcome = void` is a tournament schema change | False | The tournament already has `status = 'voided'` and `voidQuestion`, which writes no scores. The bridge uses it. |
 | Launch T settles most forward lives | False for some | On `events.csv` with roll-on-void, Modal (120 d) settles 3 of 10 resolved lives (an 11th is open) and Anduril (270 d) 3 of 7 (an 8th is open); `tests/fixtures/rulebook-events.json` lists each. |
-| Early YES rolls into next quarter's binary | Open | Read literally, a second round in the same quarter resolves the next quarter's binary YES early: Instinct's Q4 2026 and Q1 2027 binaries resolve on its Aug 26 and Sep 28 2026 rounds. Nick to confirm or restrict the next binary to its own quarter. |
+| Early YES rolls into next quarter's binary | Decided | `docs/decisions/0002-binary-event-window-and-expiry.md`: any announcement strictly after listing counts, and expiry is this quarter-end with ≥ 21 days left, else the next. Instinct's Series A, B and C now resolve three Q3 2026 binaries; `binaryExpiry` in the rulebook, `binary_expiry` in `sim.py`, and `params.json` → `contract.binary_min_days` agree, and a test checks it. |

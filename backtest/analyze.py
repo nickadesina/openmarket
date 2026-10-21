@@ -6,7 +6,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 sys.path.insert(0, __import__("os").path.dirname(__file__))
-from sim import DATA_THROUGH, Params, load_events, run
+from sim import DATA_THROUGH, MIN_BINARY_DAYS, Params, load_events, run
 
 HERE = __import__("os").path.dirname(__import__("os").path.abspath(__file__))
 EVENTS = sys.argv[1] if len(sys.argv) > 1 else f"{HERE}/events.csv"
@@ -197,6 +197,8 @@ if os.path.abspath(EVENTS) == os.path.abspath(f"{HERE}/events.csv"):
             "flag_hours": p0.flag_days * 24,
         },
         "forward_t_days": FORWARD_T_DAYS,
+        # Contract terms the simulation assumed; the rulebook must state the same.
+        "contract": {"binary_min_days": MIN_BINARY_DAYS},
     }
     with open(f"{OUT}/params.json", "w") as f:
         json.dump(params, f, indent=1, sort_keys=True)

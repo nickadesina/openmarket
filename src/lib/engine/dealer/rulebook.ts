@@ -120,7 +120,12 @@ export const RULEBOOK = {
     resolves_no: "One day after quarter-end, if nothing qualified.",
     undisclosed_valuation: "A priced round with an undisclosed valuation still resolves YES.",
     labs: "A confidential S-1 resolves only once it is public before quarter-end.",
-    roll: "An early YES lists the next quarter's binary the same day.",
+    window:
+      "Any qualifying announcement strictly after the binary's listing time and at or before its expiry counts, including a second round in the same calendar quarter (decision 0002).",
+    expiry_floor_days: 21,
+    expiry:
+      "The current calendar quarter-end if at least 21 days remain at listing, otherwise the next quarter-end.",
+    roll: "Each successor lists the same day its predecessor resolves or expires.",
   },
   forward: {
     settles:
@@ -187,6 +192,21 @@ export interface RulebookEvent {
 export function quarterEndCutoff(at: Date): Date {
   const quarter = Math.floor(at.getUTCMonth() / 3);
   return new Date(Date.UTC(at.getUTCFullYear(), quarter * 3 + 3, 0, 23, 59, 59, 999));
+}
+
+/**
+ * A binary's expiry for a listing at `listedAt`: the current quarter's cutoff
+ * when at least expiry_floor_days whole days remain, otherwise the next one.
+ */
+export function binaryExpiry(listedAt: Date): Date {
+  const cutoff = quarterEndCutoff(listedAt);
+  const daysLeft = Math.floor((utcMidnight(cutoff) - utcMidnight(listedAt)) / DAY_MS);
+  if (daysLeft >= RULEBOOK.binary.expiry_floor_days) return cutoff;
+  return quarterEndCutoff(new Date(cutoff.getTime() + 1));
+}
+
+function utcMidnight(at: Date): number {
+  return Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate());
 }
 
 export type BinaryResolution =

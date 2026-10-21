@@ -5,11 +5,12 @@ import { DEALER_PARAMS } from "../../../src/lib/config/dealer.js";
 import {
   type BinaryEvent,
   type BinaryResolution,
+  binaryExpiry,
   EVENT_TYPES,
   type EventType,
   type ForwardResolution,
   isPrint,
-  quarterEndCutoff,
+  RULEBOOK,
   RULEBOOK_VERSION,
   type RulebookEvent,
   resolveBinary,
@@ -129,7 +130,7 @@ function binaryQuarters(company: string, events: readonly RulebookEvent[]) {
   const binaryEvent = binaryEventOf(company);
   const quarters = [];
   let opensAt = BINARY_START;
-  let cutoff = quarterEndCutoff(opensAt);
+  let cutoff = binaryExpiry(opensAt);
   while (opensAt <= DATA_THROUGH) {
     const resolution = resolveBinary({ binaryEvent, opensAt, cutoff }, events, DATA_THROUGH);
     quarters.push({
@@ -137,14 +138,19 @@ function binaryQuarters(company: string, events: readonly RulebookEvent[]) {
       ...describeBinary(resolution),
     });
     if (resolution.status === "open") break;
-    // An early YES lists the next quarter's binary the same day.
+    // A successor lists the same day its predecessor resolves or expires
+    // and takes the 21-day expiry floor (decision 0002).
     opensAt = resolution.status === "yes" ? resolution.at : cutoff;
-    cutoff = quarterEndCutoff(new Date(cutoff.getTime() + DAY_MS));
+    cutoff = binaryExpiry(opensAt);
   }
   return quarters;
 }
 
 describe("rulebook against backtest/events.csv", () => {
+  it("states the binary expiry floor the backtest simulated", () => {
+    expect(RULEBOOK.binary.expiry_floor_days).toBe(DEALER_PARAMS.contract.binary_min_days);
+  });
+
   it("classifies every row", () => {
     expect(rows.length).toBeGreaterThan(0);
     for (const row of rows) {

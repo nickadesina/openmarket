@@ -14,7 +14,7 @@ import params from "../../../backtest/out/params.json";
  * stored mid names the parameters that produced it.
  */
 export const PARAMS_SHA256_BY_MODEL_VERSION: Readonly<Record<string, string>> = {
-  "1.0.0": "29f4805eecb3758592abf28cd1418b54ecd1566843a123e23e0f2f2c458005de",
+  "1.0.0": "594d29a5a7bcfa216d7acd18ebdf0dd777bb667bd835f7383928252873c23074",
 };
 export const MODEL_VERSION = Object.keys(PARAMS_SHA256_BY_MODEL_VERSION).at(-1)!;
 
@@ -53,6 +53,7 @@ const paramsSchema = z
       })
       .strict(),
     forward_t_days: z.record(z.string(), z.number().int().positive()),
+    contract: z.object({ binary_min_days: z.number().int().positive() }).strict(),
   })
   .strict()
   .refine(

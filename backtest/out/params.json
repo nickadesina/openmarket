@@ -1,4 +1,7 @@
 {
+ "contract": {
+  "binary_min_days": 21
+ },
  "data_through": "2026-10-19",
  "dealer": {
   "b_usd": 2000.0,
@@ -19,9 +22,9 @@
   "OpenAI": 270
  },
  "inputs_sha256": {
-  "analyze.py": "29cae1693729ab5f412c027c00a22dc081ced040a77a144a6cad71abfa065edd",
+  "analyze.py": "ec81d8b48b1a8556cc556cc1db5297f5ac13aeeab150425971f4ac7f9f1d09e4",
   "events.csv": "257c8789fa80ec234d653f2e86b4d8ef05362b4e97cb80a4aa171376239f6849",
-  "sim.py": "bdda5fd5a09f5e1546282023d55883d07fe903bd3d43572da14432e6b6726de7"
+  "sim.py": "0a035d9e8b2d5c11514a29cc362e9608eb36cf16463462bf13aa16f5206627bc"
  },
  "prior": {
   "cadence_months": {

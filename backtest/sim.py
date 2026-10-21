@@ -85,6 +85,16 @@ def quarter_end(d: date) -> date:
     return date(y, m + 1, 1) - timedelta(days=1)
 
 
+MIN_BINARY_DAYS = 21  # decision 0002: a binary listed within 21 days of quarter-end expires at the next quarter-end
+
+
+def binary_expiry(listed: date) -> date:
+    qe = quarter_end(listed)
+    if (qe - listed).days < MIN_BINARY_DAYS:
+        qe = quarter_end(qe + timedelta(days=1))
+    return qe
+
+
 def months_between(a: date, b: date, days_per_month: float) -> float:
     return (b - a).days / days_per_month
 
@@ -190,7 +200,7 @@ def simulate_company(df: pd.DataFrame, company: str, p: Params, scenario: str,
         # ---- binaries: one per quarter between listing and print
         qd = t_list
         while qd <= min(t_print, end):
-            qe = quarter_end(qd)
+            qe = binary_expiry(qd)
             t_now = months_between(last.announcement_date.date(), qd, p.days_per_month)
             t_qe = months_between(last.announcement_date.date(), qe, p.days_per_month)
             p_model = p_round_by(t_now, t_qe, p.weibull_k, lam)
@@ -234,8 +244,8 @@ def simulate_company(df: pd.DataFrame, company: str, p: Params, scenario: str,
                             "ln_last": math.log(last_v), "ln_print": None, "prior_err": None, "loss_fwd": 0.0})
         t_roll = T_end + timedelta(days=1)
     qd = t_list
-    while quarter_end(qd) <= end:
-        qe = quarter_end(qd)
+    while binary_expiry(qd) <= end:
+        qe = binary_expiry(qd)
         t_now = months_between(last.announcement_date.date(), qd, p.days_per_month)
         t_qe = months_between(last.announcement_date.date(), qe, p.days_per_month)
         p_model = min(max(p_round_by(t_now, t_qe, p.weibull_k, lam), p.p_floor), 1 - p.p_floor)
