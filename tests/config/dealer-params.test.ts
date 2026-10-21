@@ -5,8 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEALER_PARAMS,
   MODEL_VERSION,
-  PARAMS_SHA256,
-  PARAMS_SOURCE,
+  PARAMS_SHA256_BY_MODEL_VERSION,
 } from "../../src/lib/config/dealer.js";
 
 /**
@@ -39,16 +38,29 @@ describe("dealer parameters", () => {
   });
 
   it("are pinned to the model version that publishes them", () => {
-    // A rerun that changes any number must bump MODEL_VERSION and re-pin the
-    // digest in the same commit, so every published mid names its parameters.
+    // A rerun that changes any number adds a model version with the new
+    // digest, so every published mid names its parameters.
     expect(
       sha256(PARAMS_PATH),
-      `params.json changed; bump MODEL_VERSION (now ${MODEL_VERSION}) and re-pin PARAMS_SHA256`,
-    ).toBe(PARAMS_SHA256);
+      `params.json changed; add a model version after ${MODEL_VERSION} with its digest`,
+    ).toBe(PARAMS_SHA256_BY_MODEL_VERSION[MODEL_VERSION]);
+  });
+
+  it("never reuse a digest or a version out of order", () => {
+    const versions = Object.keys(PARAMS_SHA256_BY_MODEL_VERSION);
+    const digests = Object.values(PARAMS_SHA256_BY_MODEL_VERSION);
+    expect(new Set(digests).size).toBe(digests.length);
+    const parsed = versions.map((version) => version.split(".").map(Number));
+    for (const parts of parsed) expect(parts).toHaveLength(3);
+    for (let index = 1; index < parsed.length; index += 1) {
+      const [a, b] = [parsed[index - 1]!, parsed[index]!];
+      const order = a[0]! - b[0]! || a[1]! - b[1]! || a[2]! - b[2]!;
+      expect(order, `${versions[index]} must follow ${versions[index - 1]}`).toBeLessThan(0);
+    }
+    expect(MODEL_VERSION).toBe(versions.at(-1));
   });
 
   it("are read from the file, never overridden in code", () => {
     expect(DEALER_PARAMS).toEqual(JSON.parse(readFileSync(PARAMS_PATH, "utf8")));
-    expect(PARAMS_SOURCE).toBe(PARAMS_PATH);
   });
 });

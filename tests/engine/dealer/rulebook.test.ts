@@ -46,6 +46,19 @@ describe("postMoneyUsd", () => {
     expect(postMoneyUsd({ valuation_usd: 10e9, valuation_basis: "unknown" })).toBeNull();
     expect(postMoneyUsd({ amount_usd: 2e9, valuation_basis: "post" })).toBeNull();
   });
+
+  it("refuses non-finite figures rather than settling at infinity", () => {
+    expect(
+      postMoneyUsd({
+        valuation_usd: 1e9,
+        amount_usd: Number.POSITIVE_INFINITY,
+        valuation_basis: "pre",
+      }),
+    ).toBeNull();
+    expect(
+      postMoneyUsd({ valuation_usd: 1e308, amount_usd: 1e308, valuation_basis: "pre" }),
+    ).toBeNull();
+  });
 });
 
 describe("pressRank", () => {
@@ -53,6 +66,7 @@ describe("pressRank", () => {
     expect(pressRank(["Bloomberg", "Bloomberg News"])).toBe(4);
     expect(pressRank(["WSJ", "The Information"])).toBe(3);
     expect(pressRank(["Some Blog"])).toBeNull();
+    expect(pressRank([" the  Financial Times ", "Wall St. Journal"])).toBe(3);
   });
 });
 
@@ -67,12 +81,12 @@ describe("what counts as a print", () => {
 });
 
 describe("quarterEndCutoff", () => {
-  it("is 23:59:59 UTC on the quarter's last day", () => {
+  it("is the last millisecond of the quarter's last day, UTC", () => {
     expect(quarterEndCutoff(at("2026-10-21T08:00:00Z")).toISOString()).toBe(
-      "2026-12-31T23:59:59.000Z",
+      "2026-12-31T23:59:59.999Z",
     );
     expect(quarterEndCutoff(at("2026-02-01T00:00:00Z")).toISOString()).toBe(
-      "2026-03-31T23:59:59.000Z",
+      "2026-03-31T23:59:59.999Z",
     );
   });
 });
@@ -132,6 +146,40 @@ describe("resolveForward", () => {
     expect(resolveForward(forward, [scoop, late], at("2026-11-30T00:00:00Z"))).toMatchObject({
       eventId: "press",
     });
+  });
+
+  it("is final at once on a rank-1 source, and otherwise only after window and grace", () => {
+    const release = event({ id: "release", rank: 1 });
+    expect(resolveForward(forward, [release], at("2026-11-11T00:00:00Z"))).toMatchObject({
+      final: true,
+    });
+    const press = event({ id: "press", rank: 4 });
+    // First print 11-10 12:00: the window closes 11-17 12:00, the grace a day later.
+    expect(resolveForward(forward, [press], at("2026-11-18T00:00:00Z"))).toMatchObject({
+      final: false,
+    });
+    expect(resolveForward(forward, [press], at("2026-11-18T12:00:01Z"))).toMatchObject({
+      final: true,
+    });
+  });
+
+  it("accepts a higher-ranked revision dated after expiry", () => {
+    const press = event({ id: "press", rank: 4, announcedAt: at("2027-01-28T00:00:00Z") });
+    const release = event({ id: "release", rank: 1, announcedAt: at("2027-01-30T00:00:00Z") });
+    expect(resolveForward(forward, [press, release], at("2027-02-10T00:00:00Z"))).toMatchObject({
+      status: "settled",
+      eventId: "release",
+    });
+  });
+
+  it("settles on an acquisition's disclosed equity value and voids on an undisclosed one", () => {
+    const disclosed = event({ id: "acq", eventType: "acquisition", postMoneyUsd: 30e9 });
+    expect(resolveForward(forward, [disclosed], at("2026-11-11T00:00:00Z"))).toMatchObject({
+      status: "settled",
+      eventId: "acq",
+    });
+    const blind = event({ id: "acq", eventType: "acquisition", postMoneyUsd: null });
+    expect(resolveForward(forward, [blind], at("2026-11-11T00:00:00Z")).status).toBe("void");
   });
 
   it("never settles on the print it was anchored on", () => {

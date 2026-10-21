@@ -9,11 +9,14 @@ import params from "../../../backtest/out/params.json";
  * or overridden here.
  *
  * MODEL_VERSION is semver for the prior's formulas and these parameters
- * together; bump it whenever either changes, and re-pin PARAMS_SHA256.
+ * together. A rerun that changes params.json adds a new version here with the
+ * file's digest; published versions keep theirs, so model_version on any
+ * stored mid names the parameters that produced it.
  */
-export const MODEL_VERSION = "1.0.0";
-export const PARAMS_SHA256 = "7a6184140713f3f2fe0dc5668c205864d1060acffb2619fe216805946b4b8657";
-export const PARAMS_SOURCE = "backtest/out/params.json";
+export const PARAMS_SHA256_BY_MODEL_VERSION: Readonly<Record<string, string>> = {
+  "1.0.0": "29f4805eecb3758592abf28cd1418b54ecd1566843a123e23e0f2f2c458005de",
+};
+export const MODEL_VERSION = Object.keys(PARAMS_SHA256_BY_MODEL_VERSION).at(-1)!;
 
 const tierSchema = z.object({ mega: z.number().finite(), redhot: z.number().finite() }).strict();
 const positive = z.number().finite().positive();
@@ -51,7 +54,17 @@ const paramsSchema = z
       .strict(),
     forward_t_days: z.record(z.string(), z.number().int().positive()),
   })
-  .strict();
+  .strict()
+  .refine(
+    (value) => sameKeys(value.forward_t_days, value.prior.mu_stepup),
+    "forward_t_days and prior.mu_stepup must name the same listed companies",
+  );
+
+function sameKeys(left: object, right: object): boolean {
+  const a = Object.keys(left).sort();
+  const b = Object.keys(right).sort();
+  return a.length === b.length && a.every((key, index) => key === b[index]);
+}
 
 export type DealerParams = z.infer<typeof paramsSchema>;
 

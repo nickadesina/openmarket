@@ -28,5 +28,6 @@ describe("GET /api/ref/rulebook", () => {
   it("refuses unknown query parameters", async () => {
     const response = await GET(new Request("http://localhost:3000/api/ref/rulebook?v=2"));
     expect(response.status).toBe(400);
+    expect((await response.json()).error.code).toBe("INVALID_INPUT");
   });
 });

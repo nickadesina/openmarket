@@ -286,11 +286,13 @@ backtest does not compute it yet (`per_name_t` is still to run).
 
 Current code: `backtest/analyze.py` writes `backtest/out/params.json`
 with the SHA-256 of its inputs; `src/lib/config/dealer.ts` imports and
-validates it and pins its digest to `MODEL_VERSION`.
-`tests/config/dealer-params.test.ts` fails when the file is stale
-against the backtest, edited without a version bump, or overridden in
-code, and `.github/workflows/backtest.yml` fails when a rerun does not
-reproduce it. No quoting code exists yet.
+validates it, and maps each `MODEL_VERSION` to the digest of the
+file it published. `tests/config/dealer-params.test.ts` fails when the
+file is stale against the backtest, changed without a version entry
+for its new digest, or overridden in code;
+`.github/workflows/backtest.yml` fails when a rerun does not reproduce
+it. Rewriting a published version's digest instead of adding one is
+not caught by a test, only by review. No quoting code exists yet.
 
 ### D13. Rulebook and settlement — Adopted
 
@@ -314,7 +316,9 @@ reproduce it. No quoting code exists yet.
 
 Current code: `src/lib/engine/dealer/rulebook.ts` (v1.0.0) states the
 rules as data and resolves a binary or a forward from the events it is
-given; `GET /api/ref/rulebook` publishes it with `rulebook_version`,
+given, including an acquisition (settles at a disclosed equity value,
+voids at once on an undisclosed one) and a higher-ranked revision
+dated past expiry; `GET /api/ref/rulebook` publishes it with `rulebook_version`,
 `model_version` and `as_of`. `tests/fixtures/rulebook-events.json`
 records how it resolves every row of `backtest/events.csv` (each row
 entering as rank 1, since the file carries no source rank). No settle
@@ -412,7 +416,7 @@ See `PART5.md` for the environment contract.
 | --- | --- | --- |
 | CI blocked by a table-order assertion | Stale | Fixed before the current head; 15 integration tests pass locally and in the last pushed run. |
 | CI never reaches browser tests | True, different cause | The last pushed run passed build and was cancelled at 25 minutes inside Playwright: every trade-ticket test and the critical flow waited 90 s for a `YES` button whose accessible name changed in the redesign. |
-| Shared username account with $100,000 opening balance | Intentional | D1 retains the existing username flow; anonymous accounts are no longer the target. |
+| Shared username paper account with $100,000 opening balance | Superseded | D1 is retired with every trace in milestone 6 (decided 2026-10-21); tournament sign-in becomes the only identity. |
 | Any known username resumes that account | True | Upsert on `username_normalized`, cookie issued without any secret. |
 | Production requires exactly Stripe and Anthropic | True | `scripts/production-seed.ts`. |
 | Epochs half-modeled | True | No epoch number, slug-only URLs, slug-scoped activity, board lists every market row. |
@@ -425,11 +429,11 @@ See `PART5.md` for the environment contract.
 | Loss bound on a binary is b·ln 2 | False | Only from a 50/50 start; against a hazard prior it is b·ln(1/p_floor). D12 states the correct figure. |
 | `events.csv` carries source URLs | False | Sources are free text in `notes`; there is no URL column. Listing anchors need one before `seed:listings` (milestone 3). |
 | `events.csv` has 56 priced rounds | Partly | 59 `priced_round` rows; 56 fall in Jan 2024–Oct 2026, three are earlier (Anduril Dec 2022, Anthropic May 2023, Modal Oct 2023) and seed the prior. |
-| σ_tier is 0.35 / 0.62 | Rounded | The backtest's figures are 0.3455 / 0.6204 (`params.json` → `sigma_tier`); the code uses those, `CONTRACTS.md` keeps the rounded ones as prose. |
+| σ_tier is 0.35 / 0.62 | Rounded | The backtest's figures are 0.3455 / 0.6204 (`params.json` → `sigma_tier`); the config carries those for the quoter (milestone 6); `CONTRACTS.md` keeps the rounded ones as prose. |
 | The backtest owns every dealer parameter | Partly | μ, σ_tier are computed; λ, k, κ, Q, b, s_floor, γ, p_floor, the flag multipliers and the launch T are declared in `sim.py`/`analyze.py` and published through `params.json`. γ is unused by the simulation. |
 | Entry price F₀ is the quoted mid | Fixed | It contradicted the quote formula and the backtest, which fill at bid/ask. `CONTRACTS.md` now says the filled side. |
 | Flags halve the binary's b | Dropped | Never simulated, and it needs a mutable b with an adjustment log in replay. Flags act on the forward only (D12). |
-| Three cron routes | Conflict | `TECHNICAL_DESIGN.md` names four jobs (ingest, mid, dealer, settle). The mid step runs inside `/api/cron/dealer`, so there are three routes. |
+| Three cron routes | Fixed | `TECHNICAL_DESIGN.md` §5 named a fourth, `/api/cron/mid`; the mid step now runs inside `/api/cron/dealer`, so there are three routes (ingest, dealer, settle). |
 | `outcome = void` is a tournament schema change | False | The tournament already has `status = 'voided'` and `voidQuestion`, which writes no scores. The bridge uses it. |
-| Launch T settles most forward lives | False for some | On `events.csv` with roll-on-void, Modal (120 d) settles 3 of 10 lives and Anduril (270 d) 3 of 7; `tests/fixtures/rulebook-events.json` lists each. |
+| Launch T settles most forward lives | False for some | On `events.csv` with roll-on-void, Modal (120 d) settles 3 of 10 resolved lives (an 11th is open) and Anduril (270 d) 3 of 7 (an 8th is open); `tests/fixtures/rulebook-events.json` lists each. |
 | Early YES rolls into next quarter's binary | Open | Read literally, a second round in the same quarter resolves the next quarter's binary YES early: Instinct's Q4 2026 and Q1 2027 binaries resolve on its Aug 26 and Sep 28 2026 rounds. Nick to confirm or restrict the next binary to its own quarter. |

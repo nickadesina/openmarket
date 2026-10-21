@@ -107,7 +107,7 @@ pattern). Five names only.
 | EDGAR S-1 / F-1 | filer-name watch | `s1_public` |
 
 Extraction schema `{company, kind, amount_usd?, valuation_usd?,
-valuation_basis: pre|post|unknown, lead?, published_at, outlet, url,
+valuation_basis: pre|post|unknown, lead?, published_at?, outlet, url,
 quote, confidence}`; a `release` below high confidence waits for admin
 confirmation before it can become a `print`. `dedupe_key =
 sha256(company, kind, outlet-or-filer, published_at::date,
@@ -281,9 +281,9 @@ Anthropic Series D has no dated close.
 | Concern | Choice |
 | --- | --- |
 | Scheduling | Actions workflows `ingest.yml` (15 min), `dealer.yml` (15 min, offset 5), `settle.yml` (hourly) → `/api/cron/*`; Vercel Cron as fallback |
-| Idempotency | `cron_runs` unique on `(job, run_id)`; reruns exit early |
+| Idempotency | `cron_runs.run_id` unique (the `event_flags.run_id` FK needs it); reruns exit early |
 | LLM extraction | one provider behind `src/lib/services/ingest/extract.ts`; `EXTRACT_API_KEY`; prompts and schema versioned; daily cost cap in `rate_limits` |
-| Secrets | `CRON_SECRET`, `EXTRACT_API_KEY`, `EDGAR_USER_AGENT`, existing cookie/admin secrets |
+| Secrets | `CRON_SECRET`, `EXTRACT_API_KEY`, `EDGAR_USER_AGENT`, the tournament's cookie and OAuth secrets (the paper-account cookie and passphrase-admin secrets go in milestone 6) |
 | Observability | `/admin/dealer`: `dealer_pnl`, per-source last success, widened instruments, resolution queue; daily Actions job fails if any source is silent 24 h or any instrument widened > 72 h |
 | Replay | `verify:replay` rebuilds quotes-derived state, forward payouts and `reference_prices` |
 | Migration | `007_dealer` is additive; old LMSR markets keep working until delisted by operator action; `npm run seed:listings` idempotent on `(company, listed_at)` |
@@ -295,9 +295,9 @@ Anthropic Series D has no dated close.
 | 1 | Merge tournament branch to `master` | existing CI green | — |
 | 2 | Rulebook + fixtures + `backtest.yml` | fixtures resolve; summary posted on PR | — |
 | 3 | `007_dealer` + `seed:listings` | migrate + replay in build | 1 |
-| 4 | Ingest + flags + admin queue (owned by Nick; the dealer reads `event_flags` and tests use `tests/fixtures/event-flags.json`) | seeded scoop → flag in < 15 min | 2, 3 |
+| 4 | Ingest + flags + admin queue (owned by Nick; the dealer reads `event_flags` and tests will use `tests/fixtures/event-flags.json`, which Nick generates from `events.csv`) | seeded scoop → flag in < 15 min | 2, 3 |
 | 5 | Mid model (TS port) | agrees with `sim.py` to 1e-9 | 2, 3 |
-| 6 | Dealer + settlement + ticket UI | five names quoting; a fixture print settles both instruments and rolls, in an integration test against CI Postgres (no staging gate, 2026-10-21) | 3, 5 |
+| 6 | Dealer + settlement + ticket UI; delete the Anthropic/Stripe ladder markets with their rows, Stripe, 41-bucket seeding and ladder trading, the username paper account and the passphrase admin (decided 2026-10-21) | five names quoting; a fixture print settles both instruments and rolls, in an integration test against CI Postgres (no staging gate, 2026-10-21) | 3, 5 |
 | 7 | Tournament bridge | crowd weight appears with ≥ 10 forecasters | 1, 6 |
 | 8 | Reference API + `/admin/dealer` + alerts | public endpoints cached, versions in every payload | 6, 7 |
 
@@ -309,9 +309,10 @@ names; wk 8 the public tape and the linked tournament questions.
 
 Decisions: per-name T launch values; Q per name (flat $25k until
 `heat_scaled_q`); κ per name (labs may warrant 0.7); b and p_floor;
-blend constants; extraction provider; whether the Anthropic/Stripe
-LMSR markets stay listed after wk 5; play-money restricted-person
-enforcement.
+blend constants; extraction provider (Nick's, with ingest);
+play-money restricted-person enforcement; closing a forward before
+settlement. Decided 2026-10-21: the Anthropic/Stripe LMSR markets are
+delisted and removed in milestone 6.
 
 Risks: the down-round blind spot (sample has none; first one costs the
 cap); ingestion silence (alerts make it visible, not impossible); the

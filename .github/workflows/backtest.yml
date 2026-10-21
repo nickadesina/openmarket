@@ -34,21 +34,26 @@ jobs:
         run: pip install -r backtest/requirements.txt
 
       - name: Run the backtest
+        id: backtest
         run: python backtest/analyze.py
 
       - name: Committed outputs match a fresh run
         # Charts are excluded: their bytes depend on the runner's fonts.
+        # Intent-to-add makes a newly written output show up in the diff.
         run: |
+          git add --intent-to-add backtest/out
           if ! git diff --exit-code -- backtest/out ':(exclude)backtest/out/*.png'; then
             echo "::error::backtest/out is stale or hand-edited; run python3 backtest/analyze.py and commit its output."
             exit 1
           fi
 
       - name: Post the summary on the pull request
-        if: ${{ always() && github.event.pull_request.head.repo.full_name == github.repository }}
+        # Only a summary the backtest just produced; a crash posts nothing.
+        if: ${{ !cancelled() && steps.backtest.outcome == 'success' && github.event.pull_request.head.repo.full_name == github.repository }}
         env:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           python - > summary.md <<'PY'
           import csv
@@ -66,6 +71,6 @@ jobs:
           print("|" + "---|" * len(cols))
           for r in rows:
               print("| " + " | ".join(cell(r[c]) for c in cols) + " |")
-          print(f"\nCommit `{__import__('os').environ.get('GITHUB_SHA', '')[:7]}`. Parameters: `backtest/out/params.json`.")
+          print(f"\nCommit `{__import__('os').environ['HEAD_SHA'][:7]}`. Parameters: `backtest/out/params.json`.")
           PY
-          gh pr comment "$PR" --body-file summary.md --edit-last || gh pr comment "$PR" --body-file summary.md
+          gh pr comment "$PR" --body-file summary.md --edit-last --create-if-none

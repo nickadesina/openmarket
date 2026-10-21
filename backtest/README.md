@@ -20,9 +20,10 @@ python3 analyze.py other.csv  # another events file with the same columns
 - `out/` — committed results from the last run; `RESULTS.md` explains what each file and number means.
 - `out/params.json` — every parameter the app reads (`src/lib/config/dealer.ts`),
   with the SHA-256 of `events.csv`, `sim.py` and `analyze.py`. Never edit
-  it by hand: rerun, bump `MODEL_VERSION`, re-pin `PARAMS_SHA256`.
+  it by hand: rerun, then add a model version with its digest in
+  `src/lib/config/dealer.ts`.
   `.github/workflows/backtest.yml` fails if a rerun does not reproduce
-  `out/` and posts `summary.csv` on the PR.
+  `out/` (charts excluded) and posts `summary.csv` on the PR.
 
 Headline (five listed names, Q = $25k, κ = 1, b = $2k, p_floor = 0.05,
 T = 12 months): insider who knows every print pre-leak ≈ $53k/yr,

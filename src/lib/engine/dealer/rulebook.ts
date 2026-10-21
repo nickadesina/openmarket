@@ -14,22 +14,12 @@ const DAY_MS = 86_400_000;
 
 export type SourceRank = 1 | 2 | 3 | 4;
 
-/** Kinds of public evidence the ingest records (`event_flags.kind`). */
-export const FLAG_KINDS = [
-  "form_d",
-  "form_d_amend",
-  "charter",
-  "scoop",
-  "release",
-  "s1_public",
-  "print",
-  "user_submitted",
-] as const;
-export type FlagKind = (typeof FLAG_KINDS)[number];
-
 export type ValuationBasis = "pre" | "post" | "unknown";
 
-/** `event_flags.terms_json`. Only valuation_usd and valuation_basis are load-bearing. */
+/**
+ * `event_flags.terms_json`. Only valuation_usd and valuation_basis are
+ * load-bearing; the ingest records a reported range as its midpoint.
+ */
 export interface FlagTerms {
   readonly amount_usd?: number;
   readonly valuation_usd?: number;
@@ -49,13 +39,14 @@ export const EVENT_TYPES = [
   "same_price_extension",
   "safe_or_note",
   "debt",
+  "acquisition",
 ] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
 /** Which event resolves a name's binary: labs file an S-1, everyone else raises. */
 export type BinaryEvent = "priced_round" | "public_s1";
 
-export const TIER1_OUTLETS = [
+const TIER1_OUTLETS = [
   "Bloomberg",
   "Reuters",
   "The Wall Street Journal",
@@ -73,14 +64,17 @@ const OUTLET_ALIASES: Readonly<Record<string, (typeof TIER1_OUTLETS)[number]>> =
   wsj: "The Wall Street Journal",
   "wall street journal": "The Wall Street Journal",
   "the wall street journal": "The Wall Street Journal",
+  "wall st. journal": "The Wall Street Journal",
   ft: "Financial Times",
   "financial times": "Financial Times",
+  "the financial times": "Financial Times",
   "the information": "The Information",
   techcrunch: "TechCrunch",
   axios: "Axios",
   nyt: "The New York Times",
   "new york times": "The New York Times",
   "the new york times": "The New York Times",
+  nytimes: "The New York Times",
 };
 
 export const RULEBOOK = {
@@ -96,7 +90,7 @@ export const RULEBOOK = {
     ],
     conversions: [
       "A pre-money valuation plus the amount raised is the post-money.",
-      "A reported range settles at its midpoint.",
+      "A reported range settles at its midpoint (the ingest records the midpoint).",
       "Price per share alone does not settle.",
     ],
   },
@@ -109,10 +103,12 @@ export const RULEBOOK = {
     { rank: 4, source: "One Tier-1 outlet citing closed terms" },
   ],
   tier1_outlets: TIER1_OUTLETS,
-  syndication: "Syndicated copies of one report count as one outlet.",
+  syndication:
+    "Syndicated copies of one report count as one outlet: a reprint counts under the outlet that originated it.",
   charter: "A state charter's price per share re-centres the model mid and never settles.",
   revision_window_days: 7,
-  revision: "A higher-ranked source within the revision window supersedes the settling source.",
+  revision:
+    "A higher-ranked source dated within the revision window of the first print supersedes it, even when dated after expiry. A settlement is final once nothing can outrank it or the window and the observation grace have passed.",
   observation_grace_days: 1,
   review: {
     auto_resolve_max_rank: 2,
@@ -120,7 +116,7 @@ export const RULEBOOK = {
   },
   binary: {
     resolves_yes:
-      "On the first qualifying announcement at or before quarter-end 23:59:59 UTC: a priced round (labs: a public S-1).",
+      "On the first qualifying announcement at or before quarter-end 23:59:59.999 UTC: a priced round (labs: a public S-1).",
     resolves_no: "One day after quarter-end, if nothing qualified.",
     undisclosed_valuation: "A priced round with an undisclosed valuation still resolves YES.",
     labs: "A confidential S-1 resolves only once it is public before quarter-end.",
@@ -134,7 +130,7 @@ export const RULEBOOK = {
     void: "No print by expiry voids every position with full refund of collateral.",
     down_rounds: "Settle normally; shorts are paid.",
     acquisition:
-      "Settles only if a cash-equivalent equity value is disclosed; otherwise the forward voids.",
+      "An acquisition before a print settles at a disclosed cash-equivalent equity value; with none disclosed the forward voids when it is announced.",
     roll: "On settlement the successor opens anchored on the print; on void, at the current mid.",
   },
 } as const;
@@ -142,19 +138,23 @@ export const RULEBOOK = {
 /** Post-money in USD from extracted terms, or null when the valuation is undisclosed. */
 export function postMoneyUsd(terms: FlagTerms): number | null {
   const valuation = terms.valuation_usd;
-  if (valuation === undefined || !Number.isFinite(valuation) || valuation <= 0) return null;
+  if (!isPositiveFinite(valuation)) return null;
   if (terms.valuation_basis === "post") return valuation;
-  if (terms.valuation_basis === "pre" && terms.amount_usd !== undefined && terms.amount_usd > 0) {
-    return valuation + terms.amount_usd;
+  if (terms.valuation_basis === "pre" && isPositiveFinite(terms.amount_usd)) {
+    const post = valuation + terms.amount_usd;
+    return Number.isFinite(post) ? post : null;
   }
   return null;
 }
 
-export function tier1Outlet(outlet: string): (typeof TIER1_OUTLETS)[number] | null {
+function tier1Outlet(outlet: string): (typeof TIER1_OUTLETS)[number] | null {
   return OUTLET_ALIASES[outlet.trim().toLowerCase().replace(/\s+/g, " ")] ?? null;
 }
 
-/** Rank of press evidence: distinct Tier-1 outlets, syndications counted once. */
+/**
+ * Rank of press evidence: distinct Tier-1 outlets. Pass each report's
+ * originating outlet, so a syndicated reprint counts under its originator.
+ */
 export function pressRank(outlets: readonly string[]): 3 | 4 | null {
   const distinct = new Set(outlets.map(tier1Outlet).filter((outlet) => outlet !== null));
   if (distinct.size >= 2) return 3;
@@ -179,14 +179,14 @@ export interface RulebookEvent {
   /** published_at when known, otherwise observed_at. */
   readonly announcedAt: Date;
   readonly rank: SourceRank;
-  /** Null when the valuation is undisclosed. */
+  /** Null when the valuation is undisclosed; an acquisition's equity value otherwise. */
   readonly postMoneyUsd: number | null;
 }
 
-/** 23:59:59 UTC on the last day of the calendar quarter containing `at`. */
+/** The last millisecond of the calendar quarter containing `at`, UTC. */
 export function quarterEndCutoff(at: Date): Date {
   const quarter = Math.floor(at.getUTCMonth() / 3);
-  return new Date(Date.UTC(at.getUTCFullYear(), quarter * 3 + 3, 0, 23, 59, 59));
+  return new Date(Date.UTC(at.getUTCFullYear(), quarter * 3 + 3, 0, 23, 59, 59, 999));
 }
 
 export type BinaryResolution =
@@ -242,33 +242,56 @@ export function resolveForward(
   events: readonly RulebookEvent[],
   asOf: Date,
 ): ForwardResolution {
-  const prints = events.filter(
-    (event) =>
-      isPrint(event.eventType, terms.binaryEvent) &&
-      event.postMoneyUsd !== null &&
-      event.announcedAt > terms.opensAt &&
-      event.announcedAt <= terms.expiresAt &&
-      event.announcedAt <= asOf,
+  const observed = events.filter(
+    (event) => event.announcedAt > terms.opensAt && event.announcedAt <= asOf,
   );
-  const first = earliest(prints);
+  const settling = observed.filter((event) => settlesForward(event, terms.binaryEvent));
+  const first = earliest(settling.filter((event) => event.announcedAt <= terms.expiresAt));
+  const blindAcquisition = earliest(
+    observed.filter(
+      (event) =>
+        event.eventType === "acquisition" &&
+        event.postMoneyUsd === null &&
+        event.announcedAt <= terms.expiresAt,
+    ),
+  );
+  if (
+    blindAcquisition !== undefined &&
+    (first === undefined || blindAcquisition.announcedAt < first.announcedAt)
+  ) {
+    return { status: "void" };
+  }
   if (first === undefined) {
     return afterGrace(terms.expiresAt, asOf) ? { status: "void" } : { status: "open" };
   }
 
-  // A higher-ranked source inside the revision window supersedes the first
-  // print; among equally ranked sources the first one stands.
+  // A higher-ranked source dated inside the revision window supersedes the
+  // first print, even past expiry; among equally ranked sources the first
+  // one stands. Nothing outranks rank 1, so a rank-1 settlement is final at once.
   const windowEnd = first.announcedAt.getTime() + RULEBOOK.revision_window_days * DAY_MS;
-  const inWindow = prints.filter((event) => event.announcedAt.getTime() <= windowEnd);
+  const inWindow = settling.filter((event) => event.announcedAt.getTime() <= windowEnd);
   const bestRank = Math.min(...inWindow.map((event) => event.rank));
-  const settling = earliest(inWindow.filter((event) => event.rank === bestRank))!;
+  const settled = earliest(inWindow.filter((event) => event.rank === bestRank))!;
   return {
     status: "settled",
-    eventId: settling.id,
-    at: settling.announcedAt,
-    rank: settling.rank,
-    settleLn: Math.log(settling.postMoneyUsd!),
-    final: asOf.getTime() > windowEnd,
+    eventId: settled.id,
+    at: settled.announcedAt,
+    rank: settled.rank,
+    settleLn: Math.log(settled.postMoneyUsd!),
+    final: bestRank === 1 || afterGrace(new Date(windowEnd), asOf),
   };
+}
+
+/** A print, or an acquisition at a disclosed equity value; either needs a figure. */
+function settlesForward(event: RulebookEvent, binaryEvent: BinaryEvent): boolean {
+  return (
+    event.postMoneyUsd !== null &&
+    (isPrint(event.eventType, binaryEvent) || event.eventType === "acquisition")
+  );
+}
+
+function isPositiveFinite(value: number | undefined): value is number {
+  return value !== undefined && Number.isFinite(value) && value > 0;
 }
 
 function afterGrace(deadline: Date, asOf: Date): boolean {

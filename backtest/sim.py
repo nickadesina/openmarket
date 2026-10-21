@@ -85,8 +85,8 @@ def quarter_end(d: date) -> date:
     return date(y, m + 1, 1) - timedelta(days=1)
 
 
-def months_between(a: date, b: date) -> float:
-    return (b - a).days / Params.days_per_month
+def months_between(a: date, b: date, days_per_month: float) -> float:
+    return (b - a).days / days_per_month
 
 
 # ---------------------------------------------------------------- data
@@ -159,7 +159,7 @@ def simulate_company(df: pd.DataFrame, company: str, p: Params, scenario: str,
         while d <= min(t_print, end):
             mid, s, Q, flagged = dealer_state(d)
             weeks.append({"company": company, "date": d, "mid": mid, "s": s, "flagged": flagged,
-                          "ln_print": ln_next, "months_since": months_between(last.announcement_date.date(), d)})
+                          "ln_print": ln_next, "months_since": months_between(last.announcement_date.date(), d, p.days_per_month)})
             d += timedelta(days=7)
 
         # ---- informed trader: re-enters on every roll; only the settling life pays out
@@ -191,8 +191,8 @@ def simulate_company(df: pd.DataFrame, company: str, p: Params, scenario: str,
         qd = t_list
         while qd <= min(t_print, end):
             qe = quarter_end(qd)
-            t_now = months_between(last.announcement_date.date(), qd)
-            t_qe = months_between(last.announcement_date.date(), qe)
+            t_now = months_between(last.announcement_date.date(), qd, p.days_per_month)
+            t_qe = months_between(last.announcement_date.date(), qe, p.days_per_month)
             p_model = p_round_by(t_now, t_qe, p.weibull_k, lam)
             # leak before quarter start? then hazard jumps
             if leak is not None and leak <= qd:
@@ -236,8 +236,8 @@ def simulate_company(df: pd.DataFrame, company: str, p: Params, scenario: str,
     qd = t_list
     while quarter_end(qd) <= end:
         qe = quarter_end(qd)
-        t_now = months_between(last.announcement_date.date(), qd)
-        t_qe = months_between(last.announcement_date.date(), qe)
+        t_now = months_between(last.announcement_date.date(), qd, p.days_per_month)
+        t_qe = months_between(last.announcement_date.date(), qe, p.days_per_month)
         p_model = min(max(p_round_by(t_now, t_qe, p.weibull_k, lam), p.p_floor), 1 - p.p_floor)
         loss_bin = 0.0 if scenario in ("none", "at_leak") else p.b * math.log(1.0 / (1 - p_model))
         binaries.append({"company": company, "tier": tier, "quarter_end": qe, "listed": qd,
