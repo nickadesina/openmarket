@@ -12,29 +12,36 @@ import {
   roundChange,
 } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
-import type { MarketListItem, MarketListResult } from "../../lib/services/list-markets.js";
+import type { ListingView } from "../../lib/services/get-market.js";
+import type { MarketListResult } from "../../lib/services/list-markets.js";
 import { CompanyLogo } from "../company-logo/company-logo.js";
 import { MovementArrow } from "../icons/icons.js";
 import styles from "./home-stats.module.css";
 
-function latestTrade(markets: readonly MarketListItem[]): string | undefined {
+function latestTrade(listings: readonly ListingView[]): string | undefined {
   let latest: string | undefined;
-  for (const market of markets) {
-    const last = market.history.at(-1)?.timestamp;
-    if (last !== undefined && (latest === undefined || last > latest)) latest = last;
+  for (const listing of listings) {
+    const last = listing.lastTradeAt;
+    if (last !== null && (latest === undefined || last > latest)) latest = last;
   }
   return latest;
 }
 
-function IndexCell({ market }: { readonly market: MarketListItem }) {
-  const movement = roundChange(market.metric.current, market.anchor?.valuationUsd ?? Number.NaN);
+function IndexCell({
+  listing,
+  midUsd,
+}: {
+  readonly listing: ListingView;
+  readonly midUsd: number;
+}) {
+  const movement = roundChange(listing.vsLastRound);
   return (
     <li className={styles.cell}>
-      <CompanyLogo name={market.company.name} logoPath={market.company.logoPath} size="sm" />
-      <Link className={styles.name} href={`/m/${market.company.slug}`}>
-        {market.company.name}
+      <CompanyLogo name={listing.company.name} logoPath={listing.company.logoPath} size="sm" />
+      <Link className={styles.name} href={`/m/${listing.company.slug}`}>
+        {listing.company.name}
       </Link>
-      <strong className={styles.level}>{formatPrice(market.metric.current)}</strong>
+      <strong className={styles.level}>{formatPrice(midUsd)}</strong>
       <span className={styles[movement.direction]}>
         <MovementArrow direction={movement.direction} /> {movement.label} vs last round
       </span>
@@ -42,7 +49,7 @@ function IndexCell({ market }: { readonly market: MarketListItem }) {
   );
 }
 
-/** Gray index strip under the top bar: each open market's level, then the live facts. */
+/** Gray index strip under the top bar: each listed name's forward mid, then the live facts. */
 export function HomeStats({
   initialData,
 }: {
@@ -63,13 +70,12 @@ export function HomeStats({
   });
 
   const marketsUnavailable = marketsQuery.isError && marketsQuery.data === undefined;
-  const markets = marketsQuery.data?.markets ?? [];
-  const open = markets.filter((market) => market.status === "open");
-  const indexed = open.filter(
-    (market) => market.metric.kind === "valuation_median" && market.anchor !== null,
+  const listings = marketsQuery.data?.listings ?? [];
+  const openInterest = listings.reduce(
+    (total, listing) => total + listing.openInterest.totalUsd,
+    0,
   );
-  const openInterest = open.reduce((total, market) => total + market.openInterest, 0);
-  const lastTrade = latestTrade(markets);
+  const lastTrade = latestTrade(listings);
 
   return (
     <div className={styles.strip}>
@@ -78,13 +84,19 @@ export function HomeStats({
         <p className={styles.cell}>Market levels are unavailable.</p>
       ) : (
         <ul className={styles.index} aria-label="Market levels">
-          {indexed.map((market) => (
-            <IndexCell key={market.marketId} market={market} />
-          ))}
+          {listings.map((listing) =>
+            listing.forward === null ? null : (
+              <IndexCell
+                key={listing.listingId}
+                listing={listing}
+                midUsd={listing.forward.mid_usd}
+              />
+            ),
+          )}
         </ul>
       )}
       <dl className={styles.facts}>
-        {identityQuery.data === undefined ? null : (
+        {identityQuery.data == null ? null : (
           <div className={styles.cell}>
             <dt>Paper cash</dt>
             <dd className={styles.cash}>{formatCents(identityQuery.data.cashBalanceCents)}</dd>

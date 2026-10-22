@@ -7,6 +7,7 @@ import { type FormEvent, useEffect, useId, useState } from "react";
 import { safeReturnPath } from "../../lib/auth/return-path.js";
 import { ApiClientError, apiRequest } from "../../lib/client/api.js";
 import { errorMessage } from "../../lib/client/format.js";
+import { queryKeys } from "../../lib/client/query-keys.js";
 import { useTournamentViewer, xSignInHref } from "../../lib/client/tournament.js";
 import styles from "./signin-page.module.css";
 
@@ -43,7 +44,8 @@ export function SignInPage({ returnTo: rawReturn }: { readonly returnTo: string 
       ),
     onSuccess: async () => {
       setPassword("");
-      await queryClient.invalidateQueries({ queryKey: ["openmarket", "tournament"] });
+      // The identity owns the paper account too, so every cached read is stale.
+      await queryClient.invalidateQueries({ queryKey: queryKeys.all });
       router.push(returnTo);
     },
   });
@@ -61,10 +63,10 @@ export function SignInPage({ returnTo: rawReturn }: { readonly returnTo: string 
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <h1>Sign in to forecast</h1>
+        <h1>Sign in</h1>
         <p>
-          Your name appears on every forecast you make and on the leaderboard. Forecasts are public
-          either way.
+          One account forecasts in the tournament and trades a $100,000 paper balance. Your name
+          appears on every forecast and comment you make and on the leaderboard.
         </p>
       </header>
 

@@ -10,7 +10,7 @@ import {
 import { useRef, useState } from "react";
 
 import { ApiClientError, apiRequest } from "../../lib/client/api.js";
-import { errorMessage, formatDateTime } from "../../lib/client/format.js";
+import { errorMessage, formatDateTime, formatForecasterName } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
 import type { CommentPage, MarketComment } from "../../lib/services/list-comments.js";
 import type { MarketListResult } from "../../lib/services/list-markets.js";
@@ -35,6 +35,7 @@ function ModerationComment({
   const queryClient = useQueryClient();
   const [repliesExpanded, setRepliesExpanded] = useState(false);
   const articleRef = useRef<HTMLElement>(null);
+  const author = formatForecasterName(comment.author);
   const removeMutation = useMutation({
     mutationFn: () =>
       apiRequest<MarketComment>(`/api/admin/comments/${comment.id}/remove`, {
@@ -75,7 +76,7 @@ function ModerationComment({
   function removeComment(): void {
     if (
       window.confirm(
-        `Remove this comment by ${comment.username}? Its replies will remain visible. This cannot be undone.`,
+        `Remove this comment by ${author}? Its replies will remain visible. This cannot be undone.`,
       )
     ) {
       removeMutation.mutate();
@@ -85,7 +86,7 @@ function ModerationComment({
   return (
     <article className={styles.comment} ref={articleRef} tabIndex={-1}>
       <header className={styles.commentMeta}>
-        <strong>{comment.username}</strong>
+        <strong>{author}</strong>
         <time dateTime={comment.createdAt}>{formatDateTime(comment.createdAt)}</time>
       </header>
       {comment.removedAt === null ? (
@@ -100,7 +101,7 @@ function ModerationComment({
             className={styles.dangerButton}
             onClick={removeComment}
             disabled={removeMutation.isPending}
-            aria-label={`Remove comment by ${comment.username}`}
+            aria-label={`Remove comment by ${author}`}
           >
             {removeMutation.isPending ? "Removing…" : "Remove comment"}
           </button>
@@ -222,6 +223,12 @@ export function AdminComments({ onAdminRequired }: { readonly onAdminRequired: (
     queryKey: queryKeys.markets,
     queryFn: () => apiRequest<MarketListResult>("/api/markets"),
   });
+  const threads = (marketsQuery.data?.listings ?? []).flatMap((listing) => {
+    const marketId = listing.forward?.market_id ?? listing.binary?.market_id;
+    return marketId === undefined
+      ? []
+      : [{ marketId, name: listing.company.name, slug: listing.company.slug }];
+  });
 
   return (
     <section className={styles.operation} aria-labelledby="moderation-heading">
@@ -242,9 +249,10 @@ export function AdminComments({ onAdminRequired }: { readonly onAdminRequired: (
             disabled={marketsQuery.isPending}
           >
             <option value="">Choose a market</option>
-            {marketsQuery.data?.markets.map((market) => (
-              <option key={market.marketId} value={market.marketId}>
-                {market.company.name} ({market.company.slug}) — {market.status}
+            {/* A name's discussion lives on its live forward's book, as the market page shows it. */}
+            {threads.map((thread) => (
+              <option key={thread.marketId} value={thread.marketId}>
+                {thread.name} ({thread.slug})
               </option>
             ))}
           </select>
@@ -265,7 +273,7 @@ export function AdminComments({ onAdminRequired }: { readonly onAdminRequired: (
             </button>
           </div>
         ) : null}
-        {marketsQuery.data?.markets.length === 0 ? (
+        {marketsQuery.data !== undefined && threads.length === 0 ? (
           <p className={styles.commentHelp}>No markets are available for moderation.</p>
         ) : null}
         {marketId !== "" ? (

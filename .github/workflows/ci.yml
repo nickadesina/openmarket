@@ -57,21 +57,6 @@ jobs:
         if: ${{ hashFiles('playwright.config.*') != '' && hashFiles('tests/browser/**') != '' }}
         run: npm exec -- playwright install --with-deps chromium
 
-      - name: Configure ephemeral browser credentials
-        if: ${{ hashFiles('playwright.config.*') != '' && hashFiles('tests/browser/**') != '' }}
-        run: >-
-          node --input-type=module -e "import { appendFileSync } from 'node:fs';
-          import { randomBytes, scryptSync } from 'node:crypto';
-          const passphrase = randomBytes(24).toString('base64url');
-          const salt = randomBytes(16);
-          const key = scryptSync(passphrase, salt, 64, { N: 16384, r: 8, p: 1 });
-          appendFileSync(process.env.GITHUB_ENV,
-          'USER_COOKIE_SECRET=' + randomBytes(32).toString('base64url') + '\n' +
-          'ADMIN_COOKIE_SECRET=' + randomBytes(32).toString('base64url') + '\n' +
-          'ADMIN_PASSPHRASE_HASH=' +
-          ['scrypt', '16384', '8', '1', salt.toString('base64url'), key.toString('base64url')].join(String.fromCharCode(36)) + '\n' +
-          'PLAYWRIGHT_ADMIN_PASSPHRASE=' + passphrase + '\n');"
-
       - name: Prepare disposable browser database
         if: ${{ hashFiles('playwright.config.*') != '' && hashFiles('tests/browser/**') != '' }}
         run: npm run db:migrate

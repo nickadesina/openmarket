@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { impliedValuationMedian, impliedValuationQuantile } from "../../src/lib/engine/median.js";
+import { impliedValuationQuantile } from "../../src/lib/engine/median.js";
 
-describe("impliedValuationMedian", () => {
+const impliedValuationMedian = (probabilities: readonly number[], boundaries: readonly number[]) =>
+  impliedValuationQuantile(probabilities, boundaries, 0.5);
+
+describe("impliedValuationQuantile at the median", () => {
   it("interpolates logarithmically inside the median bucket", () => {
     const probabilities = [0.25, 0.5, 0.25];
     const boundaries = [100, 200];

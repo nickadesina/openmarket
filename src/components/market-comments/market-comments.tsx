@@ -4,9 +4,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { ApiClientError, apiRequest } from "../../lib/client/api.js";
-import { formatDateTime } from "../../lib/client/format.js";
+import { formatDateTime, formatForecasterName } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
 import type { MarketComment } from "../../lib/services/list-comments.js";
+import { ForecasterName } from "../tournament-forecaster-name/forecaster-name.js";
 import {
   CommentComposer,
   type CommentIdentity,
@@ -30,7 +31,9 @@ function CommentText({ comment }: { readonly comment: MarketComment }) {
   return (
     <>
       <div className={styles.byline}>
-        <strong>@{comment.username}</strong>
+        <strong>
+          <ForecasterName identity={comment.author} />
+        </strong>
         <time dateTime={comment.createdAt} title={comment.createdAt} suppressHydrationWarning>
           {formatDateTime(comment.createdAt)}
         </time>
@@ -156,7 +159,7 @@ function CommentRow({
       <article
         id={`comment-${comment.id}`}
         tabIndex={-1}
-        aria-label={`Comment by ${comment.username}`}
+        aria-label={`Comment by ${formatForecasterName(comment.author)}`}
       >
         <CommentText comment={comment} />
         <div className={styles.rowActions}>
@@ -203,13 +206,16 @@ function CommentRow({
         </div>
         <div id={`${id}-replies`} className={styles.replies} hidden={!expanded}>
           {expanded ? <ThreadState thread={thread} name="replies" /> : null}
-          <ol className={styles.list} aria-label={`Replies to ${comment.username}, oldest first`}>
+          <ol
+            className={styles.list}
+            aria-label={`Replies to ${formatForecasterName(comment.author)}, oldest first`}
+          >
             {thread.query.data?.items.map((reply) => (
               <li key={reply.id} className={styles.reply}>
                 <article
                   id={`comment-${reply.id}`}
                   tabIndex={-1}
-                  aria-label={`Reply by ${reply.username}`}
+                  aria-label={`Reply by ${formatForecasterName(reply.author)}`}
                 >
                   <CommentText comment={reply} />
                 </article>

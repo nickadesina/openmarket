@@ -1,8 +1,5 @@
 import { pathToFileURL } from "node:url";
 
-import { assertAdminPassphraseHash } from "../src/lib/auth/admin-passphrase.js";
-import { requireCookieSecret } from "../src/lib/auth/user-cookie.js";
-
 export type DeploymentTarget = "preview" | "production";
 
 type Environment = Readonly<Record<string, string | undefined>>;
@@ -109,17 +106,6 @@ function validateAppOrigin(environment: Environment): void {
   }
 }
 
-function validateSecurity(environment: Environment): void {
-  const userSecret = required(environment, "USER_COOKIE_SECRET");
-  const adminSecret = required(environment, "ADMIN_COOKIE_SECRET");
-  requireCookieSecret(userSecret, "USER_COOKIE_SECRET");
-  requireCookieSecret(adminSecret, "ADMIN_COOKIE_SECRET");
-  if (userSecret === adminSecret) {
-    fail("USER_COOKIE_SECRET and ADMIN_COOKIE_SECRET must be distinct");
-  }
-  assertAdminPassphraseHash(required(environment, "ADMIN_PASSPHRASE_HASH"));
-}
-
 function validateBranchAssignment(
   environment: Environment,
   target: DeploymentTarget,
@@ -167,7 +153,6 @@ export function validateDeploymentConfig(
 
   const directHostname = validateDatabaseUrls(environment);
   validateAppOrigin(environment);
-  validateSecurity(environment);
   validateBranchAssignment(environment, target, directHostname);
 }
 

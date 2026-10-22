@@ -18,7 +18,7 @@
 }
 
 .pageHeader p,
-.loginPanel p,
+.gatePanel p,
 .operationHeader p {
   margin: 0;
   color: var(--color-ink-muted);
@@ -29,32 +29,25 @@
   composes: sectionHead from "../../styles/shared.module.css";
 }
 
-.loginPanel,
+.gatePanel,
 .operation {
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
   background: var(--color-surface);
 }
 
-.loginPanel {
+.gatePanel {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(17rem, 0.8fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: var(--space-6);
   align-items: end;
   padding: var(--space-5);
 }
 
-.loginPanel h2,
+.gatePanel h2,
 .operationHeader h2 {
   margin: var(--space-1) 0 var(--space-2);
   font-size: var(--font-size-lg);
-}
-
-.loginForm {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: var(--space-3);
-  align-items: end;
 }
 
 .operations {
@@ -77,34 +70,11 @@
   border-bottom: 1px solid var(--color-border);
 }
 
-.cautionNote {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-3) var(--space-4);
-  margin-top: var(--space-4);
-  border: 1px solid var(--color-warning);
-  border-radius: var(--radius-sm);
-  color: var(--color-ink);
-  font-size: var(--font-size-sm);
-  line-height: 1.5;
-}
-
-.cautionNote span {
-  color: var(--color-ink-muted);
-}
-
 .form {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   margin-top: var(--space-5);
-}
-
-.twoColumns {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-4);
 }
 
 .field {
@@ -155,64 +125,6 @@
   line-height: 1.4;
 }
 
-.segmentedField {
-  padding: 0;
-  margin: 0;
-  border: 0;
-}
-
-.segmentedField legend {
-  margin-bottom: var(--space-2);
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-}
-
-.segmentedField > div {
-  display: inline-flex;
-  padding: var(--space-1);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--color-bg);
-}
-
-.segmentedField label {
-  position: relative;
-  cursor: pointer;
-}
-
-.segmentedField input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-}
-
-.segmentedField span {
-  display: flex;
-  min-height: calc(var(--control-height) - var(--space-1) - var(--space-1));
-  align-items: center;
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-sm);
-  color: var(--color-ink-muted);
-  font-size: var(--font-size-sm);
-}
-
-.segmentedField input:checked + span {
-  background: var(--color-surface-elevated);
-  color: var(--color-ink);
-}
-
-.segmentedField input:focus-visible + span {
-  box-shadow: var(--focus-ring);
-}
-
-.formActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-3);
-  padding-top: var(--space-2);
-}
-
 .primaryButton {
   composes: primaryButton from "../../styles/shared.module.css";
 }
@@ -242,108 +154,15 @@
 
 .field input:focus-visible,
 .field textarea:focus-visible,
-.field select:focus-visible,
-.reviewPanel a:focus-visible {
+.field select:focus-visible {
   box-shadow: var(--focus-ring);
 }
 
-.irreversibleBadge {
-  padding: var(--space-1) var(--space-2);
-  border: 1.5px solid var(--color-ink);
-  color: var(--color-ink);
-  font-family: var(--font-caps);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.reviewPanel {
-  padding-top: var(--space-5);
-}
-
-.reviewPanel h3 {
-  margin: 0 0 var(--space-4);
-  font-size: var(--font-size-md);
-}
-
-.reviewPanel dl {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-3) var(--space-5);
-  padding: var(--space-4);
-  margin: 0 0 var(--space-4);
-  border-radius: var(--radius-sm);
-  background: var(--color-bg);
-}
-
-.reviewPanel dl > div {
-  min-width: 0;
-}
-
-.reviewPanel dt {
-  color: var(--color-ink-muted);
-  font-size: var(--font-size-xs);
-}
-
-.reviewPanel dd {
-  margin: var(--space-1) 0 0;
-  overflow-wrap: anywhere;
-  font-size: var(--font-size-md);
-  font-variant-numeric: tabular-nums;
-}
-
-.reviewPanel a {
-  color: var(--color-accent);
-}
-
-.irreversibleCopy {
-  max-width: 65ch;
-  padding: var(--space-3) var(--space-4);
-  margin: 0 0 var(--space-4);
-  border: 1px solid var(--color-negative);
-  border-radius: var(--radius-sm);
-  color: var(--color-ink);
-  font-size: var(--font-size-sm);
-  line-height: 1.5;
-}
-
-.inlineError,
-.authRequired {
+.inlineError {
   margin: var(--space-3) 0 0;
   color: var(--color-primary);
   font-size: var(--font-size-sm);
   line-height: 1.5;
-}
-
-.authRequired {
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--color-primary);
-}
-.gatedExplanation {
-  max-width: 65ch;
-  margin: var(--space-3) 0 0;
-  color: var(--color-ink-muted);
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-normal);
-}
-
-.successNotice,
-.sessionNotice {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-4);
-  padding: var(--space-3) var(--space-4);
-  margin-top: var(--space-4);
-  border: 1px solid var(--color-primary);
-  border-radius: var(--radius-sm);
-  color: var(--color-ink);
-  font-size: var(--font-size-sm);
-}
-
-.successNotice span,
-.sessionNotice span:last-child {
-  color: var(--color-ink-muted);
 }
 
 .commentListPanel {
@@ -422,39 +241,11 @@
     padding-top: var(--space-5);
   }
 
-  .loginPanel,
-  .loginForm,
-  .twoColumns {
+  .gatePanel {
     grid-template-columns: 1fr;
   }
 
   .operationHeader {
     flex-direction: column;
-  }
-
-  .segmentedField > div {
-    display: flex;
-    width: 100%;
-  }
-
-  .segmentedField label,
-  .segmentedField span {
-    flex: 1;
-    justify-content: center;
-  }
-
-  .reviewPanel dl {
-    grid-template-columns: 1fr;
-  }
-
-  .formActions,
-  .successNotice,
-  .sessionNotice {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .formActions button {
-    width: 100%;
   }
 }

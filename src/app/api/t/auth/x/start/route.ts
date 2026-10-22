@@ -16,7 +16,7 @@ function redirect(location: string, cookie?: string): Response {
   return new Response(null, { status: 302, headers });
 }
 
-/** Starts X sign-in: a signed PKCE state cookie, then the X consent screen. */
+/** Starts X sign-in: a PKCE state cookie, then the X consent screen. */
 export function GET(request: Request): Response {
   const returnTo = safeReturnPath(new URL(request.url).searchParams.get("return"));
   const config = xClientConfig();

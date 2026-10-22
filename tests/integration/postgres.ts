@@ -4,9 +4,17 @@ import { setTimeout as delay } from "node:timers/promises";
 import { type Kysely, sql } from "kysely";
 import { Client } from "pg";
 
+import {
+  createTournamentSession,
+  TOURNAMENT_SESSION_COOKIE,
+} from "../../src/lib/auth/tournament-session.js";
 import { createPooledDatabase, destroyDatabase } from "../../src/lib/db/client.js";
 import { createMigrator } from "../../src/lib/db/migrator.js";
-import type { Database } from "../../src/lib/db/schema.js";
+import type { CompanyRow, Database, MarketRow } from "../../src/lib/db/schema.js";
+import { seedBinaryMarket } from "../../src/lib/engine/seed.js";
+import { settleLmsrBook } from "../../src/lib/services/dealer/settle-lmsr-book.js";
+import { upsertIdentity } from "../../src/lib/services/tournament/sign-in.js";
+import { ensurePaperAccount } from "../../src/lib/services/user.js";
 
 export const TEST_DATABASE_SKIP_REASON =
   "DATABASE_URL_TEST is not set; PostgreSQL integration tests require a disposable database.";
@@ -57,12 +65,50 @@ async function executeAdminStatement(connectionString: string, statement: string
   }
 }
 
-async function dropSchema(connectionString: string, schema: string): Promise<void> {
-  await executeAdminStatement(connectionString, `drop schema if exists "${schema}" cascade`);
+/**
+ * Suites run in parallel, each in its own schema, but Kysely's migrator
+ * introspects tables across every schema: a suite dropping its schema while
+ * another migrates fails the migration with "schema … does not exist". One
+ * session-level advisory lock serializes schema migration and teardown.
+ */
+const SCHEMA_DDL_LOCK = 7_340_211;
+
+async function withSchemaDdlLock<T>(connectionString: string, work: () => Promise<T>): Promise<T> {
+  const client = new Client({ connectionString });
+  await client.connect();
+  try {
+    await client.query("select pg_advisory_lock($1)", [SCHEMA_DDL_LOCK]);
+    try {
+      return await work();
+    } finally {
+      await client.query("select pg_advisory_unlock($1)", [SCHEMA_DDL_LOCK]);
+    }
+  } finally {
+    await client.end();
+  }
 }
 
+async function dropSchema(connectionString: string, schema: string): Promise<void> {
+  await withSchemaDdlLock(connectionString, () =>
+    executeAdminStatement(connectionString, `drop schema if exists "${schema}" cascade`),
+  );
+}
+
+/** Migrates a test schema up or down under the schema DDL lock. */
+export function migrateTestDatabase(
+  postgres: PostgresTestDatabase,
+  target: "latest" | string,
+): ReturnType<ReturnType<typeof createMigrator>["migrateToLatest"]> {
+  const migrator = createMigrator(postgres.db, postgres.schema);
+  return withSchemaDdlLock(postgres.connectionString, () =>
+    target === "latest" ? migrator.migrateToLatest() : migrator.migrateTo(target),
+  );
+}
+
+/** A fresh schema migrated to latest, or to `migrateTo` to test a later migration on old data. */
 export async function createPostgresTestDatabase(
   connectionString: string,
+  migrateTo?: string,
 ): Promise<PostgresTestDatabase> {
   const schema = schemaIdentifier();
   const applicationName = schema;
@@ -73,7 +119,10 @@ export async function createPostgresTestDatabase(
 
   try {
     // Kysely otherwise treats a migration table in any test schema as its own.
-    const migration = await createMigrator(db, schema).migrateToLatest();
+    const migrator = createMigrator(db, schema);
+    const migration = await withSchemaDdlLock(connectionString, () =>
+      migrateTo === undefined ? migrator.migrateToLatest() : migrator.migrateTo(migrateTo),
+    );
     if (migration.error !== undefined) throw migration.error;
 
     const results = migration.results ?? [];
@@ -197,4 +246,118 @@ export async function holdAdvisoryLock(
       }
     },
   };
+}
+
+/**
+ * A two-outcome LMSR book, the shape a dealer binary trades on, with its
+ * sequence-0 mark. Fixture only: the dealer lists real books itself.
+ */
+export async function createBinaryBook(
+  db: Kysely<Database>,
+  input: {
+    readonly slug: string;
+    readonly name?: string;
+    readonly b?: number;
+    readonly yesProbability?: number;
+  },
+): Promise<{ readonly company: CompanyRow; readonly market: MarketRow }> {
+  const b = input.b ?? 100;
+  const seeded = seedBinaryMarket(input.yesProbability ?? 0.5, b);
+  return db.transaction().execute(async (transaction) => {
+    const name = input.name ?? "Integration Market";
+    const company = await transaction
+      .insertInto("companies")
+      .values({ name, slug: input.slug, logo_path: "/integration.svg" })
+      .onConflict((conflict) => conflict.column("slug").doUpdateSet({ name }))
+      .returningAll()
+      .executeTakeFirstOrThrow();
+    const market = await transaction
+      .insertInto("markets")
+      .values({
+        company_id: company.id,
+        status: "open",
+        n_buckets: 2,
+        bucket_grid_version: "binary-v1",
+        metric_kind: "yes_probability",
+        anchor_valuation: null,
+        anchor_date: null,
+        anchor_description: null,
+        b,
+        sigma: null,
+        initial_q: [...seeded.q],
+        q: [...seeded.q],
+        current_metric: seeded.currentMetric,
+        settled_at: null,
+      })
+      .returningAll()
+      .executeTakeFirstOrThrow();
+    await transaction
+      .insertInto("marks")
+      .values({
+        market_id: market.id,
+        market_sequence: "0",
+        trade_id: null,
+        ts: sql<Date>`clock_timestamp()`,
+        value: market.current_metric,
+      })
+      .execute();
+    return { company, market };
+  });
+}
+
+/** Settles a fixture binary book YES or NO through the settle job's LMSR payout. */
+export async function settleBinaryBook(
+  db: Kysely<Database>,
+  marketId: string,
+  outcome: "yes" | "no",
+  sourceUrl = "https://example.test/settlement",
+): Promise<void> {
+  await db.transaction().execute(async (transaction) => {
+    const market = await transaction
+      .selectFrom("markets")
+      .select(["id as market_id", "n_buckets", "mm_cash_flow_cents", "rounding_reserve_cents"])
+      .where("id", "=", marketId)
+      .forUpdate()
+      .executeTakeFirstOrThrow();
+    const { ts } = await transaction
+      .selectNoFrom(sql<Date>`clock_timestamp()`.as("ts"))
+      .executeTakeFirstOrThrow();
+    await settleLmsrBook(transaction, {
+      market,
+      winningBucket: outcome === "yes" ? 1 : 0,
+      settledValue: outcome === "yes" ? "1.00" : "0.00",
+      sourceUrl,
+      sourceDescription: null,
+      ts,
+    });
+  });
+}
+
+export interface TestTrader {
+  /** The paper account (`users.id`). */
+  readonly id: string;
+  readonly tournamentUserId: string;
+  readonly handle: string;
+}
+
+/** A development-provider tournament identity with its paper account open. */
+export async function createTrader(db: Kysely<Database>, handle: string): Promise<TestTrader> {
+  const tournamentUserId = await upsertIdentity(db, {
+    provider: "dev",
+    providerUserId: handle.toLowerCase(),
+    handle,
+    displayName: handle,
+    avatarUrl: null,
+    verified: false,
+    providerCreatedAt: null,
+  });
+  return { id: await ensurePaperAccount(db, tournamentUserId), tournamentUserId, handle };
+}
+
+/** A `Cookie` header value carrying a fresh session for the tournament user. */
+export async function sessionCookie(
+  db: Kysely<Database>,
+  tournamentUserId: string,
+): Promise<string> {
+  return `${TOURNAMENT_SESSION_COOKIE}=${await createTournamentSession(db, tournamentUserId)}`;
 }

@@ -22,14 +22,17 @@ export interface ActivityItem {
     readonly slug: string;
     readonly logoPath: string;
   };
+  readonly marketId: string;
   readonly metricKind: MetricKind;
   readonly marketSequence: string;
   readonly action: TradeAction;
   readonly side: ContractSide;
-  readonly strikeIndex: number;
-  readonly strikeValueUsd: string | null;
+  /** A binary share count, or a forward's notional in dollars. */
   readonly quantity: number;
+  /** A binary's cost or proceeds; a forward's collateral posted. */
   readonly cashAmountCents: string;
+  /** A forward's entry F₀ in USD (the ask for a long, the bid for a short); null for a binary. */
+  readonly entryUsd: number | null;
   readonly metricBefore: number;
   readonly metricAfter: number;
   readonly createdAt: string;
@@ -51,11 +54,11 @@ interface ActivityCursor {
 
 interface ActivityRow {
   readonly id: string;
+  readonly market_id: string;
   readonly market_sequence: string;
   readonly action: TradeAction;
   readonly contract_side: ContractSide;
-  readonly strike_index: number;
-  readonly strike_value: string | null;
+  readonly entry_usd: number | null;
   readonly quantity: number;
   readonly cash_amount_cents: string;
   readonly metric_before: number;
@@ -164,14 +167,14 @@ function publicItem(row: ActivityRow): ActivityItem {
       slug: row.company_slug,
       logoPath: row.company_logo_path,
     },
+    marketId: row.market_id,
     metricKind: row.metric_kind,
     marketSequence: row.market_sequence,
     action: row.action,
     side: row.contract_side,
-    strikeIndex: row.strike_index,
-    strikeValueUsd: row.strike_value,
     quantity: row.quantity,
     cashAmountCents: row.cash_amount_cents,
+    entryUsd: row.entry_usd,
     metricBefore: row.metric_before,
     metricAfter: row.metric_after,
     createdAt: row.created_at.toISOString(),
@@ -206,11 +209,15 @@ export async function getActivity(
         .innerJoin("companies", "companies.id", "markets.company_id")
         .select([
           "trades.id as id",
+          "trades.market_id as market_id",
           "trades.market_sequence as market_sequence",
           "trades.action as action",
           "trades.contract_side as contract_side",
-          "trades.strike_index as strike_index",
-          "trades.strike_value as strike_value",
+          sql<
+            number | null
+          >`case when markets.metric_kind = 'forward_ln' then (trades.execution_result->>'entry_usd')::double precision end`.as(
+            "entry_usd",
+          ),
           "trades.quantity as quantity",
           "trades.cash_amount_cents as cash_amount_cents",
           "trades.metric_before as metric_before",

@@ -123,8 +123,7 @@ function createTransactionHarness(options?: {
   };
   const user: UserRow = {
     id: USER_ID,
-    username: "Trader",
-    username_normalized: "trader",
+    tournament_user_id: "00000000-0000-4000-8000-0000000000aa",
     cash_balance_cents: "10000",
     created_at: new Date("2026-01-01T00:00:00.000Z"),
   };
@@ -212,7 +211,7 @@ describe("deriveAdvisoryLockKey", () => {
 describe("executeTrade", () => {
   const buy: TradeInput = {
     idempotency_key: IDEMPOTENCY_KEY,
-    slug: "binary-company",
+    market_id: MARKET_ID,
     action: "buy",
     side: "yes",
     strike_index: 0,
@@ -363,9 +362,11 @@ describe("executeTrade", () => {
     expect(executed.result.price_before).toBeCloseTo(0.5, 12);
     expect(executed.result.price_after).toBeCloseTo(0.5024999791, 8);
 
-    expect(harness.events.slice(0, 7)).toEqual([
+    // A book by id: its instrument reference is read, then the book is locked.
+    expect(harness.events.slice(0, 8)).toEqual([
       "advisory lock",
       "replay lookup",
+      "market lock",
       "market lock",
       "execution timestamp",
       "user lock",
@@ -457,7 +458,7 @@ describe("executeTrade", () => {
     const harness = createTransactionHarness();
     const sell: TradeInput = {
       idempotency_key: IDEMPOTENCY_KEY,
-      slug: "binary-company",
+      market_id: MARKET_ID,
       action: "sell",
       side: "yes",
       strike_index: 0,

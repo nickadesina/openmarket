@@ -4,19 +4,19 @@ import { sql } from "kysely";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { CommentInput } from "../../src/lib/api/schemas.js";
-import { signAdminCookie } from "../../src/lib/auth/admin-cookie.js";
-import { signUserCookie } from "../../src/lib/auth/user-cookie.js";
 import { createComment } from "../../src/lib/services/create-comment.js";
 import { listComments } from "../../src/lib/services/list-comments.js";
 import { removeComment } from "../../src/lib/services/remove-comment.js";
-import { seedMarket } from "../../src/lib/services/seed-market.js";
-import { settleMarket } from "../../src/lib/services/settle-market.js";
-import { createOrResumeUser } from "../../src/lib/services/user.js";
 import {
+  createBinaryBook,
   createPostgresTestDatabase,
+  createTrader,
   type PostgresTestDatabase,
   resetPostgresTestDatabase,
+  sessionCookie,
+  settleBinaryBook,
   TEST_DATABASE_SKIP_REASON,
+  type TestTrader,
   testDatabaseUrl,
 } from "./postgres.js";
 
@@ -30,12 +30,6 @@ import {
 } from "../../src/app/api/markets/by-id/[marketId]/comments/route.js";
 
 const APP_ORIGIN = "https://comments.openmarket.test";
-const SECRET = Buffer.from(Array.from({ length: 32 }, (_, index) => index + 1)).toString(
-  "base64url",
-);
-const ADMIN_SECRET = Buffer.from(Array.from({ length: 32 }, (_, index) => index + 65)).toString(
-  "base64url",
-);
 const NETWORK = createHash("sha256").update("comments-test-network").digest("hex");
 const databaseUrl = testDatabaseUrl();
 const postgresDescribe = databaseUrl === undefined ? describe.skip : describe;
@@ -47,7 +41,7 @@ const suiteName =
 postgresDescribe(suiteName, () => {
   let postgres: PostgresTestDatabase;
   let marketId: string;
-  let user: { id: string; username: string };
+  let user: TestTrader;
 
   beforeAll(async () => {
     postgres = await createPostgresTestDatabase(databaseUrl!);
@@ -55,22 +49,17 @@ postgresDescribe(suiteName, () => {
 
   beforeEach(async () => {
     await resetPostgresTestDatabase(postgres.db);
-    const seeded = await seedMarket(postgres.db, {
-      name: "Comment Market",
+    const seeded = await createBinaryBook(postgres.db, {
       slug: "comment-market",
-      logo_path: "/test.svg",
-      metric_kind: "yes_probability",
-      b: 100,
-      yes_probability: 0.5,
+      name: "Comment Market",
     });
     marketId = seeded.market.id;
-    user = await createOrResumeUser(postgres.db, "CommentAuthor");
+    user = await createTrader(postgres.db, "CommentAuthor");
     runtime.getRuntimeDatabase.mockReturnValue(postgres.db);
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("VERCEL", "1");
     vi.stubEnv("APP_ORIGIN", APP_ORIGIN);
-    vi.stubEnv("USER_COOKIE_SECRET", SECRET);
-    vi.stubEnv("ADMIN_COOKIE_SECRET", ADMIN_SECRET);
+    vi.stubEnv("TOURNAMENT_ADMIN_X_IDS", "dev:comment_admin");
   });
 
   afterEach(() => {
@@ -90,13 +79,9 @@ postgresDescribe(suiteName, () => {
   }
 
   async function secondMarket() {
-    const result = await seedMarket(postgres.db, {
-      name: "Another Market",
+    const result = await createBinaryBook(postgres.db, {
       slug: "another-market",
-      logo_path: "/test.svg",
-      metric_kind: "yes_probability",
-      b: 100,
-      yes_probability: 0.5,
+      name: "Another Market",
     });
     return result.market.id;
   }
@@ -153,7 +138,7 @@ postgresDescribe(suiteName, () => {
     expect(losers[0]).toMatchObject({ reason: { code: "IDEMPOTENCY_CONFLICT" } });
     const winner = winners[0]!;
     const bound = { ...submission, body: winner.value.body! };
-    const anotherUser = await createOrResumeUser(postgres.db, "AnotherAuthor");
+    const anotherUser = await createTrader(postgres.db, "AnotherAuthor");
     await expect(
       createComment(
         postgres.db,
@@ -195,7 +180,7 @@ postgresDescribe(suiteName, () => {
   });
 
   it("checks expected identity before inserting and permits an explicit new submission by the current account", async () => {
-    const other = await createOrResumeUser(postgres.db, "CurrentAuthor");
+    const other = await createTrader(postgres.db, "CurrentAuthor");
     const submission = input();
     await expect(
       createComment(postgres.db, other.id, marketId, submission, NETWORK),
@@ -391,9 +376,7 @@ postgresDescribe(suiteName, () => {
 
   it("caps a shared network atomically without charging a rejected user's quota", async () => {
     const authors = await Promise.all(
-      Array.from({ length: 21 }, (_, index) =>
-        createOrResumeUser(postgres.db, `NetworkAuthor${index}`),
-      ),
+      Array.from({ length: 21 }, (_, index) => createTrader(postgres.db, `NetworkAuthor${index}`)),
     );
     const results = await Promise.allSettled(
       authors.map((author) =>
@@ -431,32 +414,8 @@ postgresDescribe(suiteName, () => {
     ).rejects.toMatchObject({ code: "RATE_LIMITED" });
   });
 
-  it("preserves a discussed market on unchanged seed and rejects changing its seed", async () => {
-    const comment = await createComment(postgres.db, user.id, marketId, input(), NETWORK);
-    const seed = {
-      name: "Comment Market",
-      slug: "comment-market",
-      logo_path: "/test.svg",
-      metric_kind: "yes_probability" as const,
-      b: 100,
-      yes_probability: 0.5,
-    };
-    const unchanged = await seedMarket(postgres.db, seed);
-    expect(unchanged.outcome).toBe("unchanged");
-    expect(unchanged.market.id).toBe(marketId);
-    await expect(seedMarket(postgres.db, { ...seed, yes_probability: 0.7 })).rejects.toMatchObject({
-      code: "INVALID_INPUT",
-    });
-    expect((await listComments(postgres.db, marketId)).items).toEqual([comment]);
-  });
-
   it("posts after settlement without modifying market, cash, holdings, ledger or marks", async () => {
-    await settleMarket(postgres.db, {
-      slug: "comment-market",
-      confirm_slug: "comment-market",
-      settled_value_usd: "1.00",
-      source_url: "https://example.com/result",
-    });
+    await settleBinaryBook(postgres.db, marketId, "yes", "https://example.com/result");
     const snapshot = async () => ({
       market: await postgres.db
         .selectFrom("markets")
@@ -485,7 +444,7 @@ postgresDescribe(suiteName, () => {
     const anonymous = await createRoute(request(path, input()), context);
     expect(anonymous.status).toBe(401);
     expect(await anonymous.json()).toMatchObject({ error: { code: "USER_REQUIRED" } });
-    const cookie = `openmarket_user=${signUserCookie(user.username, SECRET)}`;
+    const cookie = await sessionCookie(postgres.db, user.tournamentUserId);
     const changed = await createRoute(
       request(path, input({ expectedUserId: randomUUID() }), cookie),
       context,
@@ -499,23 +458,28 @@ postgresDescribe(suiteName, () => {
     expect(injected.status).toBe(400);
     const accepted = await createRoute(request(path, input(), cookie), context);
     expect(accepted.status).toBe(200);
-    expect(await accepted.json()).toMatchObject({ userId: user.id, marketId });
+    expect(await accepted.json()).toMatchObject({
+      userId: user.id,
+      marketId,
+      author: { handle: "CommentAuthor", provider: "dev", profileSlug: "CommentAuthor" },
+    });
     expect((await listRoute(new Request(`${APP_ORIGIN}${path}?limit=100`), context)).status).toBe(
       400,
     );
   });
 
-  it("requires separate admin authorization and returns the current tombstone on repeated removal", async () => {
+  it("requires a tournament admin and returns the current tombstone on repeated removal", async () => {
     const comment = await createComment(postgres.db, user.id, marketId, input(), NETWORK);
     const path = `/api/admin/comments/${comment.id}/remove`;
     const context = { params: Promise.resolve({ commentId: comment.id }) };
     const ordinary = await removeRoute(
-      request(path, {}, `openmarket_user=${signUserCookie(user.username, SECRET)}`),
+      request(path, {}, await sessionCookie(postgres.db, user.tournamentUserId)),
       context,
     );
     expect(ordinary.status).toBe(401);
     expect(await ordinary.json()).toMatchObject({ error: { code: "ADMIN_REQUIRED" } });
-    const adminCookie = `openmarket_admin=${signAdminCookie(ADMIN_SECRET)}`;
+    const admin = await createTrader(postgres.db, "comment_admin");
+    const adminCookie = await sessionCookie(postgres.db, admin.tournamentUserId);
     const first = await removeRoute(request(path, {}, adminCookie), context);
     const firstBody = await first.json();
     expect(first.status).toBe(200);

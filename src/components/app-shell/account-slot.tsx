@@ -3,11 +3,10 @@
 import { usePathname } from "next/navigation";
 
 import { TournamentAccount } from "../tournament-nav/tournament-account.js";
-import { AccountControl } from "./account-control.js";
 
-/** Tournament pages sign in with X; everything else keeps the paper account. */
+/** One identity everywhere; outside the tournament the control also shows paper cash. */
 export function AccountSlot() {
   const pathname = usePathname();
   const tournament = pathname === "/t" || pathname.startsWith("/t/");
-  return tournament ? <TournamentAccount /> : <AccountControl />;
+  return <TournamentAccount paperCash={!tournament} />;
 }

@@ -43,7 +43,6 @@
 .emptyState p,
 .statePanel p,
 .sellFlowHeader p,
-.residual p,
 .quoteTime {
   margin: 0;
   color: var(--color-ink-muted);
@@ -66,7 +65,7 @@
    home page's market strip. */
 .summaryBand {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   margin: 0 0 var(--space-7);
   border: 1px solid var(--color-border);
   background: var(--color-surface-hover);
@@ -343,8 +342,7 @@
 
 .textButton:focus-visible,
 .marketHeader a:focus-visible,
-.field input:focus-visible,
-.residual summary:focus-visible {
+.field input:focus-visible {
   box-shadow: var(--focus-ring);
 }
 
@@ -362,43 +360,6 @@
   border-radius: var(--radius-sm);
   color: var(--color-ink);
   font-size: var(--font-size-md);
-}
-
-.residual {
-  padding: var(--space-3) 0 0;
-  border-top: 1px solid var(--color-border);
-}
-
-.residual summary {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-4);
-  color: var(--color-ink);
-  font-size: var(--font-size-md);
-  cursor: pointer;
-}
-
-.residual p {
-  max-width: 65ch;
-  margin-top: var(--space-3);
-  font-size: var(--font-size-sm);
-}
-
-.residual ol {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-  gap: var(--space-2) var(--space-5);
-  padding: var(--space-3) 0 0;
-  margin: 0;
-  list-style: none;
-}
-
-.residual li {
-  display: flex;
-  justify-content: space-between;
-  color: var(--color-ink-muted);
-  font-size: var(--font-size-xs);
-  font-variant-numeric: tabular-nums;
 }
 
 .historyList {
@@ -488,6 +449,28 @@
 }
 
 @media (max-width: 900px) {
+  /* Five figures do not fit one row here; the band stacks a cell per row. */
+  .summaryBand {
+    grid-template-columns: 1fr;
+  }
+
+  .summaryBand > div,
+  .summaryBand > div:last-child {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .summaryBand > div:last-child {
+    border-bottom: 0;
+  }
+
+  .summaryBand dd {
+    margin: 0;
+  }
+
   .positionMain {
     grid-template-columns: 1fr auto;
   }

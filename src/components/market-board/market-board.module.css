@@ -68,131 +68,6 @@
   text-align: left;
 }
 
-/* Scoped to outrank the `.table thead th` and `.marketRow td` cell padding. */
-.table .expandHeader,
-.marketRow .expandCell {
-  width: 2.75rem;
-  padding-right: 0;
-}
-
-.expandButton {
-  display: grid;
-  width: var(--control-height-sm);
-  height: var(--control-height-sm);
-  border: 1px solid var(--color-border);
-  background: var(--color-bg);
-  color: var(--color-ink-muted);
-  cursor: pointer;
-  place-items: center;
-  transition:
-    background-color var(--duration-fast) var(--ease-out),
-    border-color var(--duration-fast) var(--ease-out),
-    color var(--duration-fast) var(--ease-out);
-}
-
-.expandButton:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-.expandButton[aria-expanded="true"] {
-  border-color: var(--color-primary);
-  background: var(--color-primary);
-  color: #ffffff;
-}
-
-.expandGlyph {
-  width: 0.75rem;
-  height: 0.75rem;
-  transition: transform var(--duration-fast) var(--ease-out);
-}
-
-.expandButton[aria-expanded="true"] .expandGlyph {
-  transform: rotate(90deg);
-}
-
-.ladderRow > td {
-  padding: 0 var(--space-4) var(--space-4) 2.75rem;
-  border-bottom: 1px solid var(--color-border-subtle);
-}
-
-.ladderWrap {
-  display: grid;
-  gap: var(--space-3);
-  justify-items: start;
-}
-
-.ladderColumns {
-  display: grid;
-  width: 100%;
-  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
-  column-gap: var(--space-6);
-  align-items: start;
-}
-
-.ladderTable {
-  width: 100%;
-  border-collapse: collapse;
-  font-variant-numeric: tabular-nums;
-}
-
-.ladderPivotRow th,
-.ladderPivotRow td {
-  background: var(--color-primary-subtle);
-}
-
-.ladderTable thead th {
-  padding: var(--space-2);
-  border-bottom: 1px solid var(--color-border);
-  color: var(--color-ink);
-  font-family: var(--font-caps);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--caps-tracking);
-  text-align: left;
-  text-transform: uppercase;
-}
-
-.ladderTable tbody th,
-.ladderTable tbody td {
-  padding: var(--space-2);
-  border-bottom: 1px solid var(--color-border-subtle);
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  text-align: left;
-}
-
-/* Scoped under .ladderTable to outrank the left-aligned cell defaults above. */
-.ladderTable .ladderPct {
-  width: 6.5rem;
-  text-align: right;
-}
-
-.ladderYes {
-  color: var(--color-primary);
-  font-weight: 700;
-}
-
-.ladderState {
-  padding: var(--space-3) 0;
-  color: var(--color-ink-muted);
-  font-size: var(--font-size-sm);
-}
-
-.ladderLink {
-  color: var(--color-primary);
-  font-family: var(--font-caps);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--caps-tracking);
-  text-transform: uppercase;
-}
-
-.ladderLink:hover {
-  text-decoration: underline;
-  text-underline-offset: 0.1875rem;
-}
-
 .identity {
   display: flex;
   align-items: center;
@@ -256,53 +131,40 @@
 }
 
 .flat,
-.unavailable,
-.noHistory {
+.unavailable {
   color: var(--color-ink-muted);
 }
 
-.historyCell {
-  width: 9.5rem;
-}
-
-.sparkline {
-  width: 8rem;
-  height: 2.5rem;
-  overflow: visible;
-}
-
-.sparklineBaseline {
-  fill: none;
-  stroke: var(--color-border-subtle);
-  stroke-width: 1;
-  vector-effect: non-scaling-stroke;
-}
-
-.sparklineLine {
-  fill: none;
-  stroke: var(--color-primary);
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.5;
-  vector-effect: non-scaling-stroke;
-}
-
-.noHistory,
 .unavailable {
   font-size: var(--font-size-xs);
 }
 
-.anchor {
+.quoteCell,
+.binaryCell {
+  min-width: 8rem;
+}
+
+.twoWay {
+  font-family: var(--font-num);
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.binary {
   display: grid;
   gap: var(--space-1);
 }
 
-.anchor strong {
-  font-size: var(--font-size-md);
+.binary strong {
+  color: var(--color-primary);
+  font-family: var(--font-num);
+  font-size: var(--font-size-lg);
   font-weight: 700;
+  line-height: 1;
 }
 
-.anchor time {
+.binary time {
   color: var(--color-ink-muted);
   font-size: var(--font-size-xs);
   white-space: nowrap;
@@ -321,22 +183,6 @@
 
 .tabular {
   font-variant-numeric: tabular-nums;
-}
-
-.statusGroup {
-  display: grid;
-  justify-items: start;
-  gap: var(--space-1);
-}
-
-.settledDate {
-  color: var(--color-ink-muted);
-  font-size: var(--font-size-xs);
-}
-
-.statusSettled {
-  composes: seal from "../../styles/shared.module.css";
-  --seal-color: var(--color-ink);
 }
 
 .visuallyHidden {
@@ -495,11 +341,6 @@
     padding-left: 0;
   }
 
-  .marketRow .expandCell,
-  .table .ladderRow {
-    display: none;
-  }
-
   .identityCell .identity {
     text-align: left;
   }
@@ -516,16 +357,7 @@
     text-align: left;
   }
 
-  .historyCell,
-  .anchorCell {
-    grid-column: 1 / -1;
-  }
-
-  .anchor {
-    text-align: right;
-  }
-
-  .statusGroup {
+  .binary {
     justify-items: end;
   }
 }
@@ -535,9 +367,7 @@
     grid-template-columns: 1fr;
   }
 
-  .identityCell,
-  .historyCell,
-  .anchorCell {
+  .identityCell {
     grid-column: auto;
   }
 

@@ -1,10 +1,14 @@
 import type { ColumnType, Generated, Insertable, Selectable, Updateable } from "kysely";
 
 export type MarketStatus = "open" | "settled";
-/** `forward_ln` is a dealer forward's book: q = [open long, open short] notional in USD. */
-export type MetricKind = "valuation_median" | "yes_probability" | "forward_ln";
+/**
+ * A dealer book: `yes_probability` a binary's two-outcome LMSR, `forward_ln` a
+ * forward's (q = [open long, open short] notional in USD). The ladder's
+ * `valuation_median` books went with migration 008; the column still admits it.
+ */
+export type MetricKind = "yes_probability" | "forward_ln";
 export type TradeAction = "buy" | "sell";
-/** An LMSR claim side; the ladder and the binary trade these. */
+/** An LMSR claim side: a binary trades these. */
 export type ClaimSide = "yes" | "no";
 export type ForwardSide = "long" | "short";
 export type ContractSide = ClaimSide | ForwardSide;
@@ -46,14 +50,14 @@ export interface MarketsTable {
   rounding_reserve_cents: Generated<string>;
   created_at: GeneratedImmutable<Date>;
   settled_at: Date | null;
-  /** Set when this row is a dealer instrument's book; null for the ladder markets. */
+  /** A dealer instrument's book; 008 removed every market without one. */
   instrument_id: GeneratedImmutable<string | null>;
 }
 
+/** A paper account: one per tournament user, opened on first use (README D1). */
 export interface UsersTable {
   id: GeneratedImmutable<string>;
-  username: string;
-  username_normalized: string;
+  tournament_user_id: Immutable<string>;
   cash_balance_cents: string;
   created_at: GeneratedImmutable<Date>;
 }
@@ -128,9 +132,7 @@ export interface CommentRateLimitsTable {
 }
 
 export interface RateLimitsTable {
-  scope: Immutable<
-    "admin_login" | "user_create" | "quote" | "trade" | "tournament_register" | "tournament_login"
-  >;
+  scope: Immutable<"quote" | "trade" | "tournament_register" | "tournament_login">;
   key: Immutable<string>;
   window_started_at: Date;
   request_count: number;
@@ -394,6 +396,8 @@ export interface QuotesTable {
   trade_id: Immutable<string | null>;
   model_version: Immutable<string>;
   rulebook_version: Immutable<string>;
+  /** Tape order: quotes posted at one instant are ordered by this (migration 009). */
+  sequence: ColumnType<string, never, never>;
 }
 
 export interface ForwardPositionsTable {
@@ -440,6 +444,25 @@ export interface SourceHealthTable {
   last_error: string | null;
 }
 
+/** The `dealer_pnl` view (migration 009): cents, from the dealer's side. */
+export interface DealerPnlView {
+  listing_id: ColumnType<string, never, never>;
+  company: ColumnType<string, never, never>;
+  instrument_id: ColumnType<string, never, never>;
+  kind: ColumnType<InstrumentKind, never, never>;
+  epoch: ColumnType<number, never, never>;
+  state: ColumnType<InstrumentState, never, never>;
+  market_id: ColumnType<string, never, never>;
+  market_status: ColumnType<MarketStatus, never, never>;
+  /** bigint; pg returns strings. */
+  realised_cents: ColumnType<string, never, never>;
+  open_collateral_cents: ColumnType<string, never, never>;
+  unrealised_cents: ColumnType<number, never, never>;
+  bound_cents: ColumnType<number, never, never>;
+  latest_mid_ln: ColumnType<number | null, never, never>;
+  current_metric: ColumnType<number, never, never>;
+}
+
 export interface Database {
   companies: CompaniesTable;
   markets: MarketsTable;
@@ -474,6 +497,7 @@ export interface Database {
   reference_prices: ReferencePricesTable;
   tournament_instrument_links: TournamentInstrumentLinksTable;
   source_health: SourceHealthTable;
+  dealer_pnl: DealerPnlView;
 }
 
 export type CompanyRow = Selectable<CompaniesTable>;

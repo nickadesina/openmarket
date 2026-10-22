@@ -1,21 +1,18 @@
 "use client";
 
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 import { apiRequest, POLL_INTERVAL_MS } from "../../lib/client/api.js";
 import { formatPrice, formatProbability, formatValuation } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
-import { impliedValuationQuantile } from "../../lib/engine/median.js";
-import type { MarketDetail } from "../../lib/services/get-market.js";
-import type { MarketListItem, MarketListResult } from "../../lib/services/list-markets.js";
+import type { ListingView } from "../../lib/services/get-market.js";
+import type { MarketListResult } from "../../lib/services/list-markets.js";
 import { CompanyLogo } from "../company-logo/company-logo.js";
 import styles from "./home-distribution.module.css";
 
-// Band edges are the market's own 10th and 90th percentiles from the same
-// engine rule that produces the implied median; the axis is the band with
-// half a decade of room on each side, widened to admit the round.
-const LOWER_QUANTILE = 0.1;
-const UPPER_QUANTILE = 0.9;
+// Band edges are the API's 10th and 90th percentiles of the implied
+// distribution; the axis is the band with half a decade of room on each
+// side, widened to admit the round.
 const AXIS_MARGIN = Math.sqrt(10);
 
 export interface Band {
@@ -32,41 +29,26 @@ export interface Band {
   };
 }
 
-export function computeBand(market: MarketDetail): Band | null {
-  if (market.metric.kind !== "valuation_median" || market.contracts.length < 2) return null;
-  const boundaries = market.contracts.map((contract) => Number(contract.strikeValueUsd));
-  if (
-    boundaries.some((value) => !Number.isFinite(value)) ||
-    market.pmf.length !== boundaries.length + 1
-  )
-    return null;
-  const lower = impliedValuationQuantile(market.pmf, boundaries, LOWER_QUANTILE);
-  const upper = impliedValuationQuantile(market.pmf, boundaries, UPPER_QUANTILE);
+export function computeBand(listing: ListingView): Band | null {
+  const distribution = listing.distribution;
+  if (distribution === null) return null;
+  const { p10: lower, p50: median, p90: upper } = distribution.band;
   if (!(upper > lower)) return null;
-  const anchorValue = market.anchor === null ? null : Number(market.anchor.valuationUsd);
-  const axisMin =
-    Math.min(lower / AXIS_MARGIN, anchorValue ?? Number.POSITIVE_INFINITY, market.metric.current) /
-    1.05;
-  const axisMax = Math.max(upper * AXIS_MARGIN, anchorValue ?? 0, market.metric.current) * 1.05;
-
-  // pmf[i] is the bucket whose upper edge is strike i; bucket 0 lies below
-  // the first strike and the last bucket above the last strike.
-  let modeIndex = 0;
-  market.pmf.forEach((mass, index) => {
-    if (mass > (market.pmf[modeIndex] ?? 0)) modeIndex = index;
-  });
-
+  const anchorValue = Number(listing.anchor.postMoneyUsd);
+  const anchor = Number.isFinite(anchorValue) && anchorValue > 0 ? anchorValue : null;
+  const axisMin = Math.min(lower / AXIS_MARGIN, anchor ?? Number.POSITIVE_INFINITY) / 1.05;
+  const axisMax = Math.max(upper * AXIS_MARGIN, anchor ?? 0) * 1.05;
   return {
     axisMin,
     axisMax,
     lower,
     upper,
-    median: market.metric.current,
-    anchor: anchorValue,
+    median,
+    anchor,
     mode: {
-      from: boundaries[modeIndex - 1] ?? null,
-      to: boundaries[modeIndex] ?? null,
-      mass: market.pmf[modeIndex] ?? 0,
+      from: distribution.mode.fromUsd === null ? null : Number(distribution.mode.fromUsd),
+      to: distribution.mode.toUsd === null ? null : Number(distribution.mode.toUsd),
+      mass: distribution.mode.mass,
     },
   };
 }
@@ -78,14 +60,9 @@ function position(band: Band, value: number): number {
   return Math.min(100, Math.max(0, t * 100));
 }
 
-function DistributionRow({
-  market,
-  detail,
-}: {
-  readonly market: MarketListItem;
-  readonly detail: MarketDetail | undefined;
-}) {
-  const band = detail === undefined ? null : computeBand(detail);
+function DistributionRow({ listing }: { readonly listing: ListingView }) {
+  const market = listing;
+  const band = computeBand(listing);
   return (
     <div className={styles.row}>
       <div className={styles.identity}>
@@ -95,9 +72,7 @@ function DistributionRow({
 
       {band === null ? (
         <p className={styles.unavailable}>
-          {detail === undefined
-            ? "Loading distribution…"
-            : "No valuation distribution for this contract."}
+          No live forward: the implied distribution returns when the next one lists.
         </p>
       ) : (
         <>
@@ -178,7 +153,7 @@ function DistributionRow({
   );
 }
 
-/** Where each market thinks the valuation lands: the 10–90 band, median, and last round on one log axis. */
+/** Where each forward puts the next print: the implied 10–90 band, median, and last round on one log axis. */
 export function HomeDistribution({
   initialData,
 }: {
@@ -192,24 +167,14 @@ export function HomeDistribution({
       ? {}
       : { initialData, initialDataUpdatedAt: Date.parse(initialData.asOf) }),
   });
-  const markets = (marketsQuery.data?.markets ?? []).filter(
-    (market) => market.metric.kind === "valuation_median",
-  );
-  const details = useQueries({
-    queries: markets.map((market) => ({
-      queryKey: queryKeys.market(market.company.slug),
-      queryFn: () =>
-        apiRequest<MarketDetail>(`/api/markets/${encodeURIComponent(market.company.slug)}`),
-      refetchInterval: POLL_INTERVAL_MS,
-    })),
-  });
+  const listings = marketsQuery.data?.listings ?? [];
 
-  if (markets.length === 0) return null;
+  if (listings.length === 0) return null;
 
   return (
     <div className={styles.list}>
-      {markets.map((market, index) => (
-        <DistributionRow key={market.marketId} market={market} detail={details[index]?.data} />
+      {listings.map((listing) => (
+        <DistributionRow key={listing.listingId} listing={listing} />
       ))}
     </div>
   );

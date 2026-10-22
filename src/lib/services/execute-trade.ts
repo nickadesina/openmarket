@@ -14,7 +14,9 @@ import type {
   TradeAction,
 } from "../db/schema.js";
 import { EPS } from "../engine/types.js";
+import { binaryQuoteRow, latestMid } from "./dealer/dealer-books.js";
 import { parseRequestedAmount, previewTrade } from "./preview-trade.js";
+import { assertBookLive, findTradeBook } from "./trade-book.js";
 
 export interface ExecutionResult extends JsonObject {
   readonly trade_id: string;
@@ -63,7 +65,7 @@ export function deriveTradeRequestFingerprint(userId: string, input: TradeInput)
       : parseUsdToCents(input.min_proceeds_usd).toString();
   const canonicalRequest = {
     user_id: userId.toLowerCase(),
-    slug: input.slug,
+    market_id: input.market_id,
     action: input.action,
     side: input.side,
     strike_index: input.strike_index,
@@ -140,7 +142,7 @@ function isExecutionResult(value: JsonValue): value is ExecutionResult {
     ) &&
     (value.action === "buy" || value.action === "sell") &&
     (value.side === "yes" || value.side === "no") &&
-    (value.metric_kind === "valuation_median" || value.metric_kind === "yes_probability")
+    value.metric_kind === "yes_probability"
   );
 }
 
@@ -174,10 +176,16 @@ async function loadReplay(
   return existing.execution_result;
 }
 
+export interface TradeOptions {
+  /** The execution time; the database clock when omitted. Tests pass the fixture's calendar. */
+  readonly now?: Date;
+}
+
 export async function executeTrade(
   db: Kysely<Database>,
   userId: string,
   input: TradeInput,
+  options: TradeOptions = {},
 ): Promise<{ result: ExecutionResult; replayed: boolean }> {
   const idempotencyKey = input.idempotency_key.toLowerCase();
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: one serializable transaction on purpose; split validation from ledger writes before growing.
@@ -191,28 +199,17 @@ export async function executeTrade(
       return { result: replay, replayed: true };
     }
 
-    const market = await transaction
-      .selectFrom("markets")
-      .innerJoin("companies", "companies.id", "markets.company_id")
-      .selectAll("markets")
-      .where("companies.slug", "=", input.slug)
-      .where("markets.status", "=", "open")
-      .forUpdate("markets")
-      .executeTakeFirst();
-
-    if (market === undefined) {
-      const latest = await transaction
-        .selectFrom("markets")
-        .innerJoin("companies", "companies.id", "markets.company_id")
-        .select("markets.status")
-        .where("companies.slug", "=", input.slug)
-        .orderBy("markets.created_at", "desc")
-        .executeTakeFirst();
-      if (latest?.status === "settled") {
-        throw new ServiceError("MARKET_SETTLED", "Market is settled.");
-      }
-      throw new ServiceError("MARKET_NOT_FOUND", "Open market not found.");
-    }
+    const book = await findTradeBook(transaction, input, true);
+    const market = book.market;
+    // The clock is read after the book's lock, so marks keep sequence order in time.
+    const executionTs =
+      options.now ??
+      (
+        await transaction
+          .selectNoFrom(sql<Date>`clock_timestamp()`.as("execution_ts"))
+          .executeTakeFirstOrThrow()
+      ).execution_ts;
+    assertBookLive(book, executionTs);
 
     assertFiniteVector(market.q, market.n_buckets, "Market state");
     const marketSequence = addDatabaseBigints(
@@ -220,9 +217,6 @@ export async function executeTrade(
       1n,
       "last_market_sequence",
     );
-    const { execution_ts: executionTs } = await transaction
-      .selectNoFrom(sql<Date>`clock_timestamp()`.as("execution_ts"))
-      .executeTakeFirstOrThrow();
 
     const user = await transaction
       .selectFrom("users")
@@ -271,6 +265,7 @@ export async function executeTrade(
       holdingsBefore,
       { action: input.action, side: input.side, strike_index: input.strike_index },
       amount,
+      book.dealer === null ? null : { pFloor: book.dealer.pFloor },
     );
     const strikeValue = preview.strikeValue;
     const quantity = preview.quantity;
@@ -426,6 +421,26 @@ export async function executeTrade(
         value: metricAfter,
       })
       .executeTakeFirstOrThrow();
+
+    // A dealer binary's fill goes on its instrument's tape at the YES price after it.
+    if (book.dealer !== null) {
+      const mid = await latestMid(transaction, book.dealer.instrument.id, executionTs);
+      await transaction
+        .insertInto("quotes")
+        .values(
+          binaryQuoteRow(
+            {
+              instrumentId: book.dealer.instrument.id,
+              postedAt: executionTs,
+              reason: "fill",
+              modelMidId: mid?.id ?? null,
+              tradeId,
+            },
+            metricAfter,
+          ),
+        )
+        .execute();
+    }
 
     return { result, replayed: false };
   });

@@ -1,8 +1,10 @@
 # OpenMarket
 
-Paper-money markets on private-company valuations. The current code
-runs a 41-bucket LMSR book per company over its next reported
-valuation. The adopted design (D10–D14, Oct 2026) replaces that trading
+Paper-money markets on private-company valuations. The first build
+traded a 41-bucket LMSR book per company over its next reported
+valuation; milestone 6 removed those markets (migration `008`) and their
+trading code, keeping the grid as a read-only implied ladder. The
+adopted design (D10–D14, Oct 2026) replaces that trading
 surface with two contracts per listed name — a quarterly timing binary
 and a next-print forward — quoted by the venue as dealer, with a
 published model mid and a reference-price API. `CONTRACTS.md` is
@@ -42,66 +44,46 @@ Each decision carries its status against the current code.
 the older design document and must change. "Open" means the decision is
 still Nick's to make and is not to be treated as settled.
 
-### D1. Account: shared username paper account, $100,000 — Superseded
+### D1. Account: tournament sign-in, $100,000 paper balance — Implemented
 
-Decided 2026-10-21: tournament sign-in (D9) becomes the only identity.
-The username-only paper account, its cookie, and the passphrase admin
-are removed, with every trace, in the dealer milestone
-(`TECHNICAL_DESIGN.md` §12, milestone 6). A paper balance opens at
-$100,000 the first time a tournament user trades.
+Decided 2026-10-21, superseding the shared-username paper account and
+the passphrase admin, both removed with every trace.
 
-Current code: as described below, unchanged until then.
+- Tournament sign-in (D9: X, or a username and password under `/t`) is
+  the only identity. Signing in alone opens no paper account.
+- A paper account is a `users` row keyed by `tournament_user_id`. The
+  first quote, trade, portfolio read or comment of a signed-in user opens
+  it with exactly $100,000.00 (10,000,000 cents); concurrent first
+  requests open one row.
+- Trading and commenting resolve the account on the server from the
+  session cookie. A client-supplied expected account is only a
+  stale-session check, never authorization to act as that account.
+- `/admin` and every `/api/admin/*` route admit only the tournament admin
+  allowlist (`TOURNAMENT_ADMIN_X_IDS`).
 
+Current code: `requireCurrentUserId` (`src/lib/auth/current-user.ts`)
+resolves the tournament session and calls `ensurePaperAccount`
+(`src/lib/services/user.ts`: insert on conflict do nothing, then
+select). Admin routes call `requireTournamentAdmin`. Migration
+`008_retire_ladder_and_username_accounts` deleted every username
+account and its trades, holdings and comments.
 
-- Opening the site creates nothing. Entering a username opens or resumes
-  that paper account with a signed, HTTP-only, 30-day cookie.
-- Usernames accept 3–20 ASCII letters, numbers, or underscores. Uniqueness
-  is case-insensitive; the original stored spelling remains the display name.
-- Every new account starts with exactly $100,000.00 (10,000,000 cents).
-- Usernames identify shared paper accounts, not verified people. Anyone
-  who knows a username can resume its account through the normal flow.
-  Cookie signatures prevent tampering, not impersonation through username entry.
-- Trading and commenting resolve the stable user ID on the server from
-  the signed cookie. A client-supplied expected account is only a stale-session
-  check, never authorization to act as that account.
-- Account ownership protection is a separate future product decision.
-  This supersedes the earlier anonymous-account/no-username direction.
-- Admin access remains passphrase-backed with a separate signed cookie.
+### D2. Reusable engine, Anthropic first — Superseded
 
-### D2. Reusable engine, Anthropic first — Drifted
+Superseded by D10: names are listed by operator action against the
+listing rule (`npm run seed:listings`), never by code change. The
+ladder's production seed, which required exactly Stripe and Anthropic,
+is deleted, and no path seeds a 41-bucket market any more.
 
-- Production seeding accepts one or more verified markets. It does not
-  require a specific set of companies.
-- Each seeded market carries its own verified anchor: valuation, date,
-  description, source title, source URL, published date, and verified
-  time. Draft or placeholder metadata is still refused.
-- Adding a company is an operator action against the shared seed
-  service, never a code change.
+### D3. Market epochs are first-class — Superseded
 
-Current code: `scripts/production-seed.ts` requires exactly two records
-named Stripe and Anthropic; `AGENTS.md` describes the product as "two
-markets".
-
-### D3. Market epochs are first-class — Drifted
-
-- A company has at most one open market and any number of settled ones.
-  Each market row is an epoch, numbered per company from 1.
-- `/m/[slug]` shows the current epoch: the open market, or the newest
-  settled one if none is open. `/m/[slug]/[epoch]` is a stable permalink
-  to one epoch. API market payloads carry `epoch` and the epoch's own
-  market id.
-- Activity, marks, claims, 24-hour change, and open interest are scoped
-  to one epoch by market id. Slug-scoped activity means the current
-  epoch only.
-- The market board shows one row per company (its current epoch) with
-  the epoch number. Settled epochs are reachable from the company page
-  as history, not as duplicate board rows.
-
-Current code: the schema already allows several markets per company,
-but there is no epoch number, URLs are slug-only, `getActivity` filters
-on company slug and so mixes epochs, and the board lists every market
-row while every row links to `/m/[slug]`, which resolves to the newest
-epoch.
+Asked for numbered epochs per company on the ladder markets, which are
+gone (milestone 6). The dealer numbers them on `instruments.epoch`, per
+listing and kind from 1, a successor at the next (`007_dealer`). The
+market page `/m/[slug]` shows a name's live epoch; every epoch's book,
+settled or not, stays readable by market id
+(`/api/markets/by-id/[marketId]/marks` and `/comments`, and the
+`epochs` list `GET /api/markets/[slug]` returns).
 
 ### D4. Open interest — Implemented
 
@@ -114,16 +96,22 @@ epoch.
   sorts open markets by it.
 
 Current code: `openInterestSql` in `src/lib/services/open-interest.ts`
-is the one query; `listMarkets` and `getMarket` both return it as
-`openInterest`. The board column, the home strip (summed over open
-markets) and the market header all read "Open interest" in dollars. The
-old summed-bucket "Outstanding claims" figure is gone.
+is the binary's figure. A listed name's `openInterest` (from
+`listMarkets` and `getMarket`) is `{ forwardNotionalUsd, binaryUsd,
+totalUsd }`: the live forward's open long plus short notional (each
+dollar carries at most κ of payout) and the live binary's D4 figure.
+The board column, the home strip (summed over names) and the market
+header read "Open interest" in dollars from `totalUsd`, the header
+splitting it into forward and binary.
 
-### D5. Distribution scaling — Open
+### D5. Distribution scaling — Open, display only
 
-The valuation grid is universal (40 boundaries from about $15M to $11T
-in half-octave steps) and seeding floors every bucket at 0.1% before
-normalizing. Together these place at least a few percent of probability
+No ladder market trades any more (D11, milestone 6); this now governs
+only the read-only implied distribution, a lognormal at the forward mid
+with σ = `sigma_tier` (`src/lib/engine/distribution.ts`). The valuation
+grid is universal (40 boundaries from about $15M to $11T in half-octave
+steps) and the distribution floors every bucket at 0.1% before
+normalizing, the rule the ladder's seed used. Together these place at least a few percent of probability
 mass in tails the anchor distribution assigns essentially nothing to, so
 the displayed distribution and its tails are partly an artifact of the
 grid, not a market view.
@@ -143,23 +131,17 @@ Options for Nick to choose between:
 Until this is decided, nothing downstream should treat the displayed
 tail probabilities as meaningful.
 
-### D6. Deployment, migration, and seeding — Partly implemented
+### D6. Deployment, migration, and listing — Implemented
 
-- Vercel builds run `next build`, then migrate the assigned Neon branch,
-  then verify ledger replay in production. Builds never seed.
-- Seeding is an operator action (`npm run seed:production`). It is
-  idempotent on anchor identity: valuation, anchor date, and source URL.
-  Re-running it against an unchanged, traded market reports "unchanged"
-  and exits zero. The 30-day verification freshness rule applies only
-  when a market is created or reseeded, so an old verification time can
-  never turn an existing traded market into a failure.
-- Migrations are append-only after launch.
+- Builds migrate and verify replay (§5); they never seed or list.
+- Listing is an operator action (`npm run seed:listings`), idempotent on
+  (company, listed_at) (D10).
+- Migrations are append-only after launch. One owner-approved exception
+  (Nick, 2026-10-21): `008_retire_ladder_and_username_accounts` deletes
+  the ladder markets, Stripe and every username account.
 
-Current code: builds already do not seed. But the seed script folds the
-verification time into the stored anchor description, so the same seed
-re-run after 30 days is both stale (refused by freshness) and different
-(refused as a non-pristine reseed). Operators cannot re-run the seed
-script safely once anything has traded.
+Current code: `scripts/vercel-build.ts`. The ladder's production seed
+and its 30-day freshness rule are deleted.
 
 ### D7. What stays as designed — Implemented
 
@@ -180,8 +162,8 @@ script safely once anything has traded.
   including after settlement. Roots load 20 at a time, newest first; one-level
   replies load oldest first. New arrivals wait behind an explicit reveal action.
 - Comments are trimmed plain text, 1–2,000 UTF-16 units, with preserved line breaks.
-  They use the stored account username and cookie-derived user ID. The composer
-  discloses that shared usernames are not verified identities.
+  The byline is the author's tournament identity (D1): an @ handle from X, or a
+  username without an @, resolved on the server from the session.
 - Drafts survive account selection and require explicit adoption when their account
   changes. Publishing is always explicit. Uncertain submissions retain their UUID
   and original payload for retry; abandoning a retry does not undo a possible post.
@@ -199,12 +181,13 @@ script safely once anything has traded.
 A log-scored forecasting tournament under `/t`, separate from the paper
 markets: its own users, sessions, questions, and ledger
 (`tournament_*` tables, migration `004_tournament`). No money, trading,
-LMSR, or tokens. Paper accounts and tournament identities never mix.
+LMSR, or tokens. A tournament user's paper account (D1) is keyed by
+this identity, but cash and positions never enter scoring.
 
 - Identity: X OAuth 2.0 with PKCE (`users.read tweet.read`, no write
   scopes, no `offline.access`; the token is dropped after the profile
-  fetch), or a username and password (scrypt, the admin passphrase's
-  format; no email, no recovery). The numeric X id is an X account's
+  fetch), or a username and password (scrypt with fixed work factors;
+  no email, no recovery). The numeric X id is an X account's
   identity; handle, name, avatar, `verified`, and account creation date
   are refreshed on every sign-in. Usernames live in their own namespace:
   shown without an "@", never linked to X, at `/t/u/~username`, so a
@@ -214,7 +197,7 @@ LMSR, or tokens. Paper accounts and tournament identities never mix.
   per network and per username (10 per 15 minutes). Sessions are
   server-side rows keyed by the SHA-256 of an opaque cookie token,
   30-day sliding expiry. Admin is an allowlist (`TOURNAMENT_ADMIN_X_IDS`:
-  X ids, or `password:<username>`).
+  X ids, or `password:<username>`) for `/t/admin` and `/admin`.
 - Affiliation: any forecaster may state one (lab, school, firm; up to 60
   characters, free text with a suggested list in
   `src/lib/config/tournament-affiliations.ts`). It is self-reported,
@@ -261,7 +244,8 @@ for 10 seconds: `GET /api/t/questions`, `/api/t/questions/[slug]`,
 `POST /api/t/questions/[slug]/forecasts`, `POST /api/t/me/affiliation`,
 `POST /api/t/auth/logout`; username accounts:
 `POST /api/t/auth/password/register` and `/login`;
-X sign-in starts at `GET /api/t/auth/x/start?return=/t/...`. Admin:
+X sign-in starts at `GET /api/t/auth/x/start?return=<path>` (any
+same-site page path but the API and `/t/signin`). Admin:
 `POST /api/t/admin/questions` (save draft), and
 `/api/t/admin/questions/[slug]/{open,close,resolve,void,notes}`,
 `/api/t/admin/users/flag`, `/api/t/admin/users/affiliation`.
@@ -294,9 +278,8 @@ recovery, prize payment (off-platform by design).
   prior and the dealer's depth, never a settlement rule. At their
   current prints all five names are mega-cap (Instinct $10B, Modal
   $15.75B); confirmed 2026-10-21.
-- The Anthropic and Stripe ladder markets are delisted and removed,
-  with their rows and every mention, in milestone 6. Stripe is not
-  listed (decided 2026-10-21).
+- The Anthropic and Stripe ladder markets are removed with their rows
+  (migration `008`). Stripe is not listed (decided 2026-10-21).
 
 Current code: `npm run seed:listings -- --listed-at=<ISO>` writes one
 `listings` row per name (migration `007_dealer`) from its last priced
@@ -305,8 +288,7 @@ round in `backtest/events.csv`, that round's source in
 (company, listed_at), replaces an active listing only with `--relist`,
 and refuses, writing nothing, while any anchor lacks a source URL; the
 sources file is not committed yet. It lists no instruments (milestone
-6). `scripts/production-seed.ts` still requires exactly Stripe and
-Anthropic until milestone 6. Supersedes the D2 flagship line.
+6). Supersedes D2.
 
 ### D11. Two contracts per name — Adopted
 
@@ -320,10 +302,29 @@ lifecycle: `CONTRACTS.md`.
 Closing a forward before settlement is not decided; until it is, a
 position is held to settlement or void, and the ticket says so.
 
-Current code: trades YES/NO threshold claims against the ladder. The
-launch T per name is carried in `backtest/out/params.json` as a
-declared proposal (`FORWARD_T_DAYS` in `backtest/analyze.py`); the
-backtest does not compute it yet (`per_name_t` is still to run).
+Current code: the dealer job lists both instruments per active listing,
+each on its own `markets` book (binary `yes_probability`, forward
+`forward_ln`). `GET /api/instruments/[id]/quote` quotes either;
+`POST /api/forward/trade` opens a position at the ask or bid with N·κ
+collateral; `/api/quote` and `/api/trade` trade a dealer binary by
+`market_id` only (slug addressing is deleted). No ladder market or
+ladder trading code remains (migration `008`, milestone 6). The market
+page `/m/[slug]` reads `GET /api/markets/[slug]`: both live quotes, the
+forward's marks for its chart, the read-only implied ladder
+(P(valuation > strike) at each grid strike) and distribution, open
+interest, epochs and versions. Its one ticket switches Forward / Binary:
+the forward side polls `GET /api/instruments/[id]/quote` for the live
+bid/ask in dollars and the fill (entry, collateral = max loss, max gain,
+expiry, model and rulebook versions), sends the entry on screen as its
+guard and re-confirms a PRICE_MOVED requote; the binary side is the
+YES/NO ticket by `market_id`. The board lists one row per name, and the
+portfolio shows open forwards marked at the mid (unrealised = settlement
+credit at the mid less collateral) with account value including them.
+No route closes a forward early; the ticket, the portfolio and the
+resolution panel say a position is held to settlement or void. The launch T per name is carried in
+`backtest/out/params.json` as a declared proposal (`FORWARD_T_DAYS` in
+`backtest/analyze.py`); the backtest does not compute it yet
+(`per_name_t` is still to run).
 
 ### D12. The venue is the dealer — Adopted
 
@@ -354,11 +355,21 @@ ports sim.py's prior (tier, binary p, forward mid with leak re-centring);
 `backtest/out/prior_golden.json`, which `backtest/golden.py` writes from
 sim.py, to 1e-9. `GET /api/cron/dealer` (`dealer.yml`, every 15 min at
 :05) runs its steps in one transaction per `X-Run-Id` (a rerun reports
-"already ran"); the only step so far, `services/dealer/compute-mids.ts`,
+"already ran"); its mids step, `services/dealer/compute-mids.ts`,
 appends a `model_mids` row per live instrument from the listing's anchor,
 params.json and the scoops and releases since the anchor, only when the
 mid or its inputs moved, and `verify:replay` recomputes every row from its
-`inputs_json` to 1e-12. No quoting code exists yet.
+`inputs_json` to 1e-12. `src/lib/engine/dealer/forward.ts`
+(quote, fill, collateral, settlement credit), `binary.ts` (two-outcome
+seed, price clamp, loss bounds) and `lifecycle.ts` (`instruments.state`
+transitions) are pure. The dealer job's steps run state (widen/restore a
+forward on flags observed since its last change; s ×3, Q ÷2 until a newer
+mid or 72 h), list, mids and requote, posting a `quotes` row only when a
+quote moved; a binary is seeded once at the model p, never widened, and
+refuses a trade past [p_floor, 1 − p_floor]. `dealer_pnl` (migration
+`009_dealer_pnl`) reports realised, open collateral, unrealised and bound
+per instrument; `verify:replay` replays forward books by forward rules and
+recomputes every quote.
 
 ### D13. Rulebook and settlement — Adopted
 
@@ -382,8 +393,16 @@ voids at once on an undisclosed one) and a higher-ranked revision
 dated past expiry; `GET /api/ref/rulebook` publishes it with `rulebook_version`,
 `model_version` and `as_of`. `tests/fixtures/rulebook-events.json`
 records how it resolves every row of `backtest/events.csv` (each row
-entering as rank 1, since the file carries no source rank). No settle
-job reads it yet.
+entering as rank 1, since the file carries no source rank).
+`GET /api/cron/settle` (`settle.yml`, hourly at :41) settles each live
+instrument in its own transaction: promotes high-confidence rank 1–2
+releases and S-1s with a post-money to prints (rank 3–4 is reported
+pending; no admin queue yet), resolves through the rulebook, pays a
+binary $1 a share or settles forward positions at
+`settlementCreditCents` (a void refunds collateral), and lists the
+successor (a binary from the announcement that resolved it). A forward
+settled while a higher rank could still supersede it is recorded with
+`final: false`; the correcting settlement is not built.
 
 ### D14. Reference price API — Adopted
 
@@ -429,28 +448,25 @@ DATABASE_URL_TEST=postgresql://... npx playwright test
 npm run dev              # http://localhost:3000, never 127.0.0.1
 ```
 
-- `.env.local` needs `DATABASE_URL`, `DATABASE_URL_UNPOOLED`,
-  `USER_COOKIE_SECRET`, `ADMIN_COOKIE_SECRET`, and
-  `ADMIN_PASSPHRASE_HASH`. Escape `$` as `\$` in that file.
-- Local Playwright trap: `next dev` re-expands any variable present in
-  both `.env.local` and the process environment, which strips the `$`
-  fields from the admin hash Playwright injects and makes admin login
-  return 500. Move `.env.local` aside for the run. CI has no
-  `.env.local` and is unaffected.
+- `.env.local` needs `DATABASE_URL` and `DATABASE_URL_UNPOOLED`; sign-in
+  and admin are the tournament's (below). Dev data: `npm run db:migrate
+  && npm run seed:listings -- --listed-at=<ISO>`. Apply
+  `008_retire_ladder_and_username_accounts` before serving this version:
+  it deletes data (D6).
 - Integration tests create isolated schemas and explicitly scope their migration
   tables, so concurrent suites do not share migration state.
 - Comment posting in production requires Vercel's trusted
   `x-vercel-forwarded-for` header with `VERCEL=1`; missing or unsupported trusted
   addressing disables posting, not reading or trading. Forwarding headers supplied
   by clients are not used in local development, where requests share one bucket.
-  Network keys are HMAC-hashed; raw addresses are not stored. Limits return HTTP 429
+  Network keys are domain-separated SHA-256 hashes; raw addresses are not stored. Limits return HTTP 429
   with `Retry-After`. Apply migration `002_market_comments` before serving this version.
 - Tournament: `X_CLIENT_ID` (and `X_CLIENT_SECRET` for a confidential
   client) enable X sign-in; the callback is
   `${APP_ORIGIN}/api/t/auth/x/callback` unless `X_REDIRECT_URI` is set,
-  and must be registered in the X developer portal. Without them the
-  tournament is read-only. `TOURNAMENT_ADMIN_X_IDS` lists admin X ids
-  (comma separated). For local work without X, `TOURNAMENT_DEV_SIGN_IN=1`
+  and must be registered in the X developer portal. Without them only
+  username and password accounts sign in. `TOURNAMENT_ADMIN_X_IDS` lists
+  the admins of `/t/admin` and `/admin` (comma separated). For local work without X, `TOURNAMENT_DEV_SIGN_IN=1`
   under `next dev` adds a handle-only sign-in (allowlist it as
   `dev:<handle>`); it is off in every other mode. Launch questions:
   `npm run seed:tournament` writes the three drafts, `-- --open`
@@ -500,20 +516,20 @@ See `PART5.md` for the environment contract.
 | Claim | Status | Evidence |
 | --- | --- | --- |
 | CI blocked by a table-order assertion | Stale | Fixed before the current head; 15 integration tests pass locally and in the last pushed run. |
-| CI never reaches browser tests | True, different cause | The last pushed run passed build and was cancelled at 25 minutes inside Playwright: every trade-ticket test and the critical flow waited 90 s for a `YES` button whose accessible name changed in the redesign. |
-| Shared username paper account with $100,000 opening balance | Superseded | D1 is retired with every trace in milestone 6 (decided 2026-10-21); tournament sign-in becomes the only identity. |
-| Any known username resumes that account | True | Upsert on `username_normalized`, cookie issued without any secret. |
-| Production requires exactly Stripe and Anthropic | True | `scripts/production-seed.ts`. |
-| Epochs half-modeled | True | No epoch number, slug-only URLs, slug-scoped activity, board lists every market row. |
+| CI never reaches browser tests | Fixed | The ladder specs that timed out went with the admin seed in milestone 6. Playwright's global setup lists the five names and runs one dealer job against `DATABASE_URL_TEST` (`tests/browser/global-setup.ts`, no production route); `dealer.spec.ts` covers the board, market page, a forward long into the portfolio, a binary buy, PRICE_MOVED, mobile overflow and keyboard reach. Specs sign in through the tournament's dev sign-in. |
+| Shared username paper account with $100,000 opening balance | Fixed | Removed in milestone 6; a tournament user's paper account opens at $100,000 on first use (D1). |
+| Any known username resumes that account | Fixed | The username flow, its cookie and `USER_COOKIE_SECRET` are deleted; identity is the tournament session. |
+| Production requires exactly Stripe and Anthropic | Fixed | `scripts/production-seed.ts` is deleted; `seed:listings` lists the D10 names. |
+| Epochs half-modeled | Superseded | The ladder markets are gone (`008`); the dealer carries `instruments.epoch` (D3). |
 | Outstanding claims varies with mask width | Fixed | Both services read `openInterestSql`, the largest per-bucket total. |
-| Grid and floor impose artificial tails | True | Universal grid in `buckets.ts`; 0.001 floor in `seed.ts`. Decision open. |
-| Deployment deadlocks after 30 days | Overstated | Builds do not seed. Re-running the seed script after 30 days fails against traded markets; deployments continue. |
-| Trading surface is the 41-bucket ladder | True, superseded | D11 adopts a binary + forward per name; the ladder becomes a display. No dealer code exists yet; `TECHNICAL_DESIGN.md` §12 is the plan. |
+| Grid and floor impose artificial tails | True, display only | Universal grid in `buckets.ts`; 0.001 floor in `engine/distribution.ts` (`MIN_BUCKET_PROBABILITY`), now on the read-only implied distribution. Decision open (D5). |
+| Deployment deadlocks after 30 days | Fixed | Builds never seeded; the production seed and its freshness rule are deleted (D6). |
+| Trading surface is the 41-bucket ladder | Fixed | Milestone 6: the market page trades the forward (Long/Short, notional, live bid/ask, max gain/loss, expiry) and the binary (YES/NO by `market_id`); the ladder is a read-only implied display. Slug addressing on `/api/quote` and `/api/trade`, the ladder's preview branch, `settleMarket` and `settlementInputSchema`, `twap.ts`, `decomposition.ts`, the grid's bucket lookups and the valuation seed are deleted; `settleLmsrBook` lives in `services/dealer/settle-lmsr-book.ts`. |
 | Tournament is in `master` | Fixed | Merged in #2 (`a60d971`, 2026-10-21); milestone 1 is done. |
 | `shelved/timing-strips` branch exists | False | Not on the remote as of 2026-10-21; the "by date" market is reinstated as D11's binary. |
 | Loss bound on a binary is b·ln 2 | False | Only from a 50/50 start; against a hazard prior it is b·ln(1/p_floor). D12 states the correct figure. |
 | `events.csv` carries source URLs | Fixed alongside | `events.csv` keeps no URL column (its digest is pinned); `backtest/data/sources.csv` gives 20 of the 21 listed-name prints a located source (Instinct's Seed has none), every listing anchor at rank 1. `seed:listings` joins on company, round and date and refuses an anchor without a URL. |
-| One open market per company (`markets_one_open_per_company`) | Replaced | `007_dealer` relaxes it to one open market per company and `metric_kind`, so a name's binary (`yes_probability`) and forward (`forward_ln`) books stand together. `seedMarket` never touches a row with an `instrument_id`. |
+| One open market per company (`markets_one_open_per_company`) | Replaced | `007_dealer` relaxes it to one open market per company and `metric_kind`, so a name's binary (`yes_probability`) and forward (`forward_ln`) books stand together. |
 | `events.csv` has 56 priced rounds | Partly | 59 `priced_round` rows; 56 fall in Jan 2024–Oct 2026, three are earlier (Anduril Dec 2022, Anthropic May 2023, Modal Oct 2023) and seed the prior. |
 | σ_tier is 0.35 / 0.62 | Rounded | The backtest's figures are 0.3455 / 0.6204 (`params.json` → `sigma_tier`); the config carries those for the quoter (milestone 6); `CONTRACTS.md` keeps the rounded ones as prose. |
 | The backtest owns every dealer parameter | Partly | μ, σ_tier are computed; λ, k, κ, Q, b, s_floor, γ, p_floor, the flag multipliers and the launch T are declared in `sim.py`/`analyze.py` and published through `params.json`. γ is unused by the simulation. |

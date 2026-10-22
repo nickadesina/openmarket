@@ -1,12 +1,8 @@
 import { ServiceError } from "../api/errors.js";
 import { parseUsdToCents } from "../api/money.js";
 import type { ClaimSide, MetricKind, TradeAction } from "../db/schema.js";
-import {
-  VALUATION_BOUNDARIES_USD,
-  VALUATION_BUCKET_COUNT,
-  VALUATION_GRID_VERSION,
-} from "../engine/buckets.js";
 import { contractDelta, contractMask, sellableQuantity } from "../engine/contracts.js";
+import { checkBinaryClamp } from "../engine/dealer/binary.js";
 import {
   probabilities,
   quantizeBuyCostCents,
@@ -15,7 +11,6 @@ import {
   solveBuyQuantityForSpend,
   tradeCost,
 } from "../engine/lmsr.js";
-import { impliedValuationMedian } from "../engine/median.js";
 import { EPS, MAX_QUANTITY, MAX_TRADE_SPEND_CENTS, MIN_QUANTITY } from "../engine/types.js";
 
 /** Structural view shared by the quote and trade request shapes. */
@@ -110,33 +105,15 @@ export function parseRequestedAmount(input: TradeAmountInput): RequestedAmount {
   return { quantity: undefined, spendCents };
 }
 
-function canonicalStrikeValue(market: PreviewMarketState, strikeIndex: number): string | null {
-  if (!Number.isInteger(strikeIndex)) {
-    throw invalidInput("Strike index must be an integer.");
-  }
-
-  // Forward books trade through the dealer quoter (milestone 6), never the LMSR.
+/** The one LMSR book that trades is a dealer binary: two outcomes, strike index 0, no strike value. */
+function assertBinaryBook(market: PreviewMarketState, strikeIndex: number): null {
   if (market.metric_kind === "forward_ln") {
-    throw invalidInput("Forward trading is not yet supported.");
+    throw invalidInput("A forward trades through POST /api/forward/trade.");
   }
-
-  if (market.metric_kind === "yes_probability") {
-    if (market.n_buckets !== 2 || strikeIndex !== 0) {
-      throw invalidInput("Binary markets use strike index 0.");
-    }
-    return null;
+  if (market.metric_kind !== "yes_probability" || market.n_buckets !== 2 || strikeIndex !== 0) {
+    throw invalidInput("Binary markets use strike index 0.");
   }
-
-  if (
-    market.bucket_grid_version !== VALUATION_GRID_VERSION ||
-    market.n_buckets !== VALUATION_BUCKET_COUNT ||
-    strikeIndex < 0 ||
-    strikeIndex >= VALUATION_BOUNDARIES_USD.length
-  ) {
-    throw invalidInput("Strike index is not valid for this valuation market.");
-  }
-
-  return VALUATION_BOUNDARIES_USD[strikeIndex]!.toFixed(2);
+  return null;
 }
 
 function assertFiniteVector(vector: readonly number[], expectedLength: number, name: string): void {
@@ -158,10 +135,7 @@ function sumMasked(values: readonly number[], mask: readonly boolean[]): number 
   return total;
 }
 
-function metricAfterTrade(metricKind: MetricKind, distributionAfter: readonly number[]): number {
-  if (metricKind === "valuation_median") {
-    return impliedValuationMedian(distributionAfter, VALUATION_BOUNDARIES_USD);
-  }
+function yesAfterTrade(distributionAfter: readonly number[]): number {
   const yesProbability = distributionAfter[1];
   if (yesProbability === undefined) {
     throw invalidInput("Binary market state is invalid.");
@@ -177,23 +151,50 @@ function insufficientHoldings(quantity: number, sellableBefore: number): Service
   );
 }
 
+/** A dealer binary's price clamp (CONTRACTS.md → Contract A). */
+export interface PriceClamp {
+  readonly pFloor: number;
+}
+
+function assertWithinClamp(
+  market: PreviewMarketState,
+  delta: readonly number[],
+  clamp: PriceClamp,
+): void {
+  const check = checkBinaryClamp(market.q, delta, market.b, clamp.pFloor);
+  if (!check.ok) {
+    throw new ServiceError(
+      "PRICE_CLAMPED",
+      `This trade would move YES outside the dealer's [${clamp.pFloor}, ${1 - clamp.pFloor}] band.`,
+      {
+        yes_probability_after: check.yesProbabilityAfter,
+        p_floor: clamp.pFloor,
+        p_ceiling: 1 - clamp.pFloor,
+      },
+    );
+  }
+}
+
 /**
  * The one pricing path for a trade against a known market/holdings snapshot.
  * Quoting and execution both consume this, so a quote can never price a
- * trade differently from the ledger write that follows it.
+ * trade differently from the ledger write that follows it. A dealer binary
+ * passes its clamp: a trade that would leave [p_floor, 1 − p_floor] is
+ * refused whole.
  */
 export function previewTrade(
   market: PreviewMarketState,
   rawHoldings: readonly number[],
   request: TradePreviewRequest,
   amount: RequestedAmount,
+  clamp: PriceClamp | null = null,
 ): TradePreview {
   // Defense in depth: callers arrive via parseRequestedAmount, but a
   // hand-built amount must not be able to skip the spend ceiling.
   if (amount.spendCents !== undefined && amount.spendCents > MAX_TRADE_SPEND_CENTS) {
     throw invalidInput("spend_usd exceeds the trade ceiling.");
   }
-  const strikeValue = canonicalStrikeValue(market, request.strike_index);
+  const strikeValue = assertBinaryBook(market, request.strike_index);
   assertFiniteVector(market.q, market.n_buckets, "Market state");
   assertFiniteVector(rawHoldings, market.n_buckets, "Holdings");
   const holdings = rawHoldings.map((value) => (Math.abs(value) < EPS ? 0 : value));
@@ -232,6 +233,7 @@ export function previewTrade(
       request.action,
       quantity,
     );
+    if (clamp !== null) assertWithinClamp(market, delta, clamp);
     const engineCostUsd = spendCostUsd ?? tradeCost(market.q, delta, market.b);
     const cashAmountCents =
       spendCashAmountCents ??
@@ -277,7 +279,7 @@ export function previewTrade(
       redemptionCents,
       priceBefore: sumMasked(distributionBefore, mask),
       priceAfter: sumMasked(distributionAfter, mask),
-      metricAfter: metricAfterTrade(market.metric_kind, distributionAfter),
+      metricAfter: yesAfterTrade(distributionAfter),
       sellableBefore,
       sellableAfter: sellableQuantity(holdingsAfter, mask),
     };

@@ -1,21 +1,20 @@
 import {
+  formatCompactUsd,
   formatDate,
   formatDateTime,
-  formatMetricPrice,
   formatPrice,
   formatProbability,
-  formatUsd,
   formatValuation,
   roundChange,
+  tierLabel,
 } from "../../lib/client/format.js";
 import { CompanyLogo } from "../company-logo/company-logo.js";
-import { computeBand } from "../home-distribution/home-distribution.js";
 import { MovementArrow } from "../icons/icons.js";
-import type { MarketDetail } from "../market-workspace/types.js";
+import type { ListingView } from "../market-workspace/types.js";
 import styles from "./market-header.module.css";
 
 interface MarketHeaderProps {
-  readonly market: MarketDetail;
+  readonly listing: ListingView;
   readonly movement: "up" | "down" | "flat";
 }
 
@@ -25,122 +24,112 @@ const directionClass = {
   flat: styles.muted,
 } as const;
 
-function dayChange(market: MarketDetail) {
-  const change = market.metric.change24Hours;
-  const direction = change > 0 ? "up" : change < 0 ? "down" : "flat";
-  const amount =
-    market.metric.kind === "valuation_median"
-      ? formatPrice(Math.abs(change))
-      : `${(Math.abs(change) * 100).toFixed(1)} pts`;
-  return {
-    direction,
-    label: direction === "flat" ? "Unchanged (24h)" : `Moved ${direction} ${amount} (24h)`,
-  } as const;
-}
-
 /**
  * The quote band: one ruled row that reads like a brokerage quote page, name
- * first, then the level and every figure that frames it.
+ * first, then the forward mid (how big), the round it stands against, the
+ * implied band, the binary (when), open interest and the last trade. Every
+ * figure is the API's.
  */
-export function MarketHeader({ market, movement }: MarketHeaderProps) {
-  const day = dayChange(market);
-  const round =
-    market.anchor === null ? null : roundChange(market.metric.current, market.anchor.valuationUsd);
-  const band = computeBand(market);
-  const lastTrade = market.recentActivity[0]?.createdAt;
+export function MarketHeader({ listing, movement }: MarketHeaderProps) {
+  const { forward, binary, distribution, anchor } = listing;
+  const round = roundChange(listing.vsLastRound);
+  const binaryLabel = listing.binaryEvent === "public_s1" ? "Public S-1" : "Priced round";
 
   return (
     <header className={styles.header}>
       <div className={styles.band}>
         <div className={styles.identity}>
-          <CompanyLogo name={market.company.name} logoPath={market.company.logoPath} size="lg" />
+          <CompanyLogo name={listing.company.name} logoPath={listing.company.logoPath} size="lg" />
           <div>
             <div className={styles.titleRow}>
-              <h1>{market.company.name}</h1>
-              {market.status === "settled" ? (
-                <span className={styles.sealSettled}>Settled</span>
-              ) : null}
+              <h1>{listing.company.name}</h1>
             </div>
             <p className={styles.prompt}>
-              {market.metric.kind === "valuation_median"
-                ? "Next reported private-market valuation"
-                : "Will the stated outcome occur?"}
+              {tierLabel(listing.tier)} · Next post-money, and whether a{" "}
+              {listing.binaryEvent === "public_s1" ? "public S-1" : "priced round"} lands this
+              quarter
             </p>
           </div>
         </div>
 
-        <dl className={styles.cells} aria-label="Current market metrics">
+        <dl className={styles.cells} aria-label="Current market figures">
           <div className={styles.cell}>
-            <dt>{market.metric.label}</dt>
+            <dt>Forward mid</dt>
             <dd
               className={`${styles.price} ${movement === "up" ? styles.flashUp : movement === "down" ? styles.flashDown : ""}`}
             >
-              {formatMetricPrice(market.metric.current, market.metric.kind)}
+              {forward === null ? "Not trading" : formatPrice(forward.mid_usd)}
             </dd>
-            <dd className={`${styles.note} ${directionClass[day.direction]}`}>
-              <MovementArrow direction={day.direction} /> {day.label}
+            {forward === null ? null : (
+              <dd className={styles.note}>
+                Bid {formatPrice(forward.bid_usd)} · Ask {formatPrice(forward.ask_usd)}
+              </dd>
+            )}
+          </div>
+
+          <div className={styles.cell}>
+            <dt>Vs last round</dt>
+            <dd className={`${styles.figure} ${directionClass[round.direction]}`}>
+              <MovementArrow direction={round.direction} /> {round.label}
+            </dd>
+            <dd className={styles.note}>
+              {anchor.round} · {formatValuation(anchor.postMoneyUsd)} ·{" "}
+              <time dateTime={anchor.date}>{formatDate(anchor.date)}</time> ·{" "}
+              <a href={anchor.sourceUrl} target="_blank" rel="noreferrer">
+                Source
+              </a>
             </dd>
           </div>
 
-          {round === null || market.anchor === null ? null : (
-            <div className={styles.cell}>
-              <dt>Vs last round</dt>
-              <dd className={`${styles.figure} ${directionClass[round.direction]}`}>
-                <MovementArrow direction={round.direction} /> {round.label}
-              </dd>
-              <dd className={styles.note}>
-                <span title={market.anchor.description}>
-                  {formatValuation(market.anchor.valuationUsd)}
-                </span>{" "}
-                · <time dateTime={market.anchor.date}>{formatDate(market.anchor.date)}</time>
-              </dd>
-            </div>
-          )}
-
-          {band === null ? null : (
+          {distribution === null ? null : (
             <div className={styles.cell}>
               <dt>80% band</dt>
               <dd className={styles.figure}>
-                {formatPrice(band.lower)} – {formatPrice(band.upper)}
+                {formatPrice(distribution.band.p10)} – {formatPrice(distribution.band.p90)}
               </dd>
-              {band.mode.from !== null && band.mode.to !== null ? (
+              {distribution.mode.fromUsd !== null && distribution.mode.toUsd !== null ? (
                 <dd className={styles.note}>
-                  Most likely {formatValuation(band.mode.from)}–{formatValuation(band.mode.to)} ·{" "}
-                  {formatProbability(band.mode.mass)}
+                  Most likely {formatValuation(distribution.mode.fromUsd)}–
+                  {formatValuation(distribution.mode.toUsd)} ·{" "}
+                  {formatProbability(distribution.mode.mass)}
                 </dd>
               ) : null}
             </div>
           )}
 
           <div className={styles.cell}>
+            <dt>{binaryLabel} this quarter</dt>
+            <dd className={styles.figure}>
+              {binary === null ? "Not trading" : `YES ${formatProbability(binary.yes_price)}`}
+            </dd>
+            {binary === null ? null : (
+              <dd className={styles.note}>
+                By <time dateTime={binary.expires_at}>{formatDate(binary.expires_at)}</time> · model
+                p {formatProbability(binary.model_p)}
+              </dd>
+            )}
+          </div>
+
+          <div className={styles.cell}>
             <dt>Open interest</dt>
-            <dd className={styles.figure}>{formatUsd(market.openInterest)}</dd>
+            <dd className={styles.figure}>{formatCompactUsd(listing.openInterest.totalUsd)}</dd>
+            <dd className={styles.note}>
+              Forward {formatCompactUsd(listing.openInterest.forwardNotionalUsd)} · Binary{" "}
+              {formatCompactUsd(listing.openInterest.binaryUsd)}
+            </dd>
           </div>
 
           <div className={styles.cell}>
             <dt>Last trade</dt>
             <dd className={styles.figure}>
               {/* ICU output differs between Node and the browser; the client value wins. */}
-              <time dateTime={lastTrade} suppressHydrationWarning>
-                {lastTrade === undefined ? "None yet" : formatDateTime(lastTrade)}
+              <time dateTime={listing.lastTradeAt ?? undefined} suppressHydrationWarning>
+                {listing.lastTradeAt === null ? "None yet" : formatDateTime(listing.lastTradeAt)}
               </time>
             </dd>
-            <dd className={styles.note}>Sequence No. {market.sequence}</dd>
           </div>
         </dl>
       </div>
-
-      {market.settlement !== null ? (
-        <section className={styles.outcome} aria-label="Settlement outcome">
-          <div>
-            <strong>Resolved at {formatValuation(market.settlement.settledValueUsd)}</strong>
-            <span suppressHydrationWarning>{formatDateTime(market.settlement.timestamp)}</span>
-          </div>
-          <a href={market.settlement.sourceUrl} target="_blank" rel="noreferrer">
-            {market.settlement.sourceDescription ?? "View settlement source"}
-          </a>
-        </section>
-      ) : null}
     </header>
   );
 }

@@ -2,19 +2,15 @@ import type { Kysely } from "kysely";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ServiceError } from "../../src/lib/api/errors.js";
-import { signAdminCookie } from "../../src/lib/auth/admin-cookie.js";
-import { signUserCookie, verifyUserCookie } from "../../src/lib/auth/user-cookie.js";
+import { TOURNAMENT_SESSION_COOKIE } from "../../src/lib/auth/tournament-session.js";
 import type { Database } from "../../src/lib/db/schema.js";
 
 const mocks = vi.hoisted(() => ({
   getRuntimeDatabase: vi.fn(),
-  createOrResumeUser: vi.fn(),
+  ensurePaperAccount: vi.fn(),
   quoteMarket: vi.fn(),
   executeTrade: vi.fn(),
-  seedMarket: vi.fn(),
-  settleMarket: vi.fn(),
-  getAdminPassphraseHash: vi.fn(),
-  verifyAdminPassphrase: vi.fn(),
+  removeComment: vi.fn(),
   consumeRateLimit: vi.fn(),
   consumeNetworkRateLimit: vi.fn(),
   assertNetworkRateLimitAvailable: vi.fn(),
@@ -23,25 +19,17 @@ const mocks = vi.hoisted(() => ({
 vi.mock("../../src/lib/db/runtime.js", () => ({
   getRuntimeDatabase: mocks.getRuntimeDatabase,
 }));
-vi.mock("../../src/lib/services/user.js", async (importOriginal) => {
-  const original = await importOriginal<typeof import("../../src/lib/services/user.js")>();
-  return { ...original, createOrResumeUser: mocks.createOrResumeUser };
-});
+vi.mock("../../src/lib/services/user.js", () => ({
+  ensurePaperAccount: mocks.ensurePaperAccount,
+}));
 vi.mock("../../src/lib/services/quote.js", () => ({
   quoteMarket: mocks.quoteMarket,
 }));
 vi.mock("../../src/lib/services/execute-trade.js", () => ({
   executeTrade: mocks.executeTrade,
 }));
-vi.mock("../../src/lib/services/seed-market.js", () => ({
-  seedMarket: mocks.seedMarket,
-}));
-vi.mock("../../src/lib/services/settle-market.js", () => ({
-  settleMarket: mocks.settleMarket,
-}));
-vi.mock("../../src/lib/auth/admin-passphrase.js", () => ({
-  getAdminPassphraseHash: mocks.getAdminPassphraseHash,
-  verifyAdminPassphrase: mocks.verifyAdminPassphrase,
+vi.mock("../../src/lib/services/remove-comment.js", () => ({
+  removeComment: mocks.removeComment,
 }));
 vi.mock("../../src/lib/services/rate-limit.js", () => ({
   consumeRateLimit: mocks.consumeRateLimit,
@@ -53,31 +41,29 @@ vi.mock("../../src/lib/services/rate-limit.js", () => ({
   },
 }));
 
-import { POST as adminLoginRoute } from "../../src/app/api/admin/login/route.js";
-import { POST as adminSeedRoute } from "../../src/app/api/admin/seed/route.js";
-import { POST as adminSettleRoute } from "../../src/app/api/admin/settle/route.js";
+import { POST as removeCommentRoute } from "../../src/app/api/admin/comments/[commentId]/remove/route.js";
 import { POST as quoteRoute } from "../../src/app/api/quote/route.js";
 import { POST as tradeRoute } from "../../src/app/api/trade/route.js";
-import { POST as userRoute } from "../../src/app/api/user/route.js";
 
 const APP_ORIGIN = "https://app.openmarket.test";
-const USER_SECRET = Buffer.from(Array.from({ length: 32 }, (_unused, index) => index + 1)).toString(
-  "base64url",
-);
-const ADMIN_SECRET = Buffer.from(
-  Array.from({ length: 32 }, (_unused, index) => index + 65),
-).toString("base64url");
+const COMMENT_ID = "6ba7b810-9dad-41d1-80b4-00c04fd430c8";
 
-const userLookup = {
+/** The session row and the identities behind it, as the tournament tables return them. */
+const sessionLookup = {
   select: vi.fn(),
   where: vi.fn(),
   executeTakeFirst: vi.fn(),
 };
-userLookup.select.mockReturnValue(userLookup);
-userLookup.where.mockReturnValue(userLookup);
+const identityLookup = {
+  select: vi.fn(),
+  where: vi.fn(),
+  execute: vi.fn(),
+};
 
 const fakeDatabase = {
-  selectFrom: vi.fn(() => userLookup),
+  selectFrom: vi.fn((table: string) =>
+    table === "tournament_identities" ? identityLookup : sessionLookup,
+  ),
 } as unknown as Kysely<Database>;
 
 type PostRoute = (request: Request) => Promise<Response>;
@@ -94,30 +80,32 @@ function mutationRequest(path: string, body: unknown, headers: HeadersInit = {})
   });
 }
 
-function userCookieHeader(username = "alice_1"): string {
-  return `openmarket_user=${signUserCookie(username, USER_SECRET)}`;
+function sessionCookieHeader(): string {
+  return `${TOURNAMENT_SESSION_COOKIE}=${"t".repeat(43)}`;
 }
 
-function adminCookieHeader(): string {
-  return `openmarket_admin=${signAdminCookie(ADMIN_SECRET)}`;
-}
+const removeRoute: PostRoute = (request) =>
+  removeCommentRoute(request, { params: Promise.resolve({ commentId: COMMENT_ID }) });
 
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv("NODE_ENV", "production");
   vi.stubEnv("APP_ORIGIN", APP_ORIGIN);
-  vi.stubEnv("USER_COOKIE_SECRET", USER_SECRET);
-  vi.stubEnv("ADMIN_COOKIE_SECRET", ADMIN_SECRET);
-  vi.stubEnv("ADMIN_PASSPHRASE_HASH", "configured-hash");
+  vi.stubEnv("TOURNAMENT_ADMIN_X_IDS", "1234567");
   mocks.getRuntimeDatabase.mockReturnValue(fakeDatabase);
-  mocks.getAdminPassphraseHash.mockReturnValue("configured-hash");
-  mocks.verifyAdminPassphrase.mockResolvedValue(true);
+  mocks.ensurePaperAccount.mockResolvedValue("user-1");
   mocks.consumeRateLimit.mockResolvedValue(undefined);
   mocks.consumeNetworkRateLimit.mockResolvedValue(undefined);
   mocks.assertNetworkRateLimitAvailable.mockResolvedValue(undefined);
-  userLookup.select.mockReturnValue(userLookup);
-  userLookup.where.mockReturnValue(userLookup);
-  userLookup.executeTakeFirst.mockResolvedValue({ id: "user-1" });
+  for (const lookup of [sessionLookup, identityLookup]) {
+    lookup.select.mockReturnValue(lookup);
+    lookup.where.mockReturnValue(lookup);
+  }
+  sessionLookup.executeTakeFirst.mockResolvedValue({
+    user_id: "tournament-user-1",
+    expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+  });
+  identityLookup.execute.mockResolvedValue([{ provider: "x", provider_user_id: "7654321" }]);
 });
 
 afterEach(() => {
@@ -126,12 +114,9 @@ afterEach(() => {
 
 describe("Part 4 mutation request boundary", () => {
   const routes: readonly [string, PostRoute][] = [
-    ["/api/user", userRoute],
     ["/api/quote", quoteRoute],
     ["/api/trade", tradeRoute],
-    ["/api/admin/login", adminLoginRoute],
-    ["/api/admin/seed", adminSeedRoute],
-    ["/api/admin/settle", adminSettleRoute],
+    [`/api/admin/comments/${COMMENT_ID}/remove`, removeRoute],
   ];
 
   for (const [path, route] of routes) {
@@ -204,16 +189,16 @@ describe("Part 4 mutation request boundary", () => {
       mutationRequest(
         "/api/trade",
         {
-          slug: "anthropic",
+          market_id: "0f8a0c1e-6c1d-4f7a-9d2b-3c4e5f607182",
           action: "buy",
           side: "yes",
-          strike_index: 3,
+          strike_index: 0,
           quantity: 2,
           max_cost_usd: "2.00",
           idempotency_key: "1c97cdcb-980b-48b4-9622-0d296c6a98a8",
           user_id: "attacker",
         },
-        { cookie: userCookieHeader() },
+        { cookie: sessionCookieHeader() },
       ),
     );
 
@@ -227,42 +212,15 @@ describe("Part 4 mutation request boundary", () => {
   });
 });
 
-describe("Part 4 user and quote routes", () => {
-  it("atomically creates or resumes a user and sets the signed 30-day cookie", async () => {
-    mocks.createOrResumeUser.mockResolvedValue({
-      id: "user-1",
-      username: "Alice_1",
-      username_normalized: "alice_1",
-      cash_balance_cents: "10000000",
-      created_at: new Date("2026-08-31T00:00:00.000Z"),
-    });
-
-    const response = await userRoute(mutationRequest("/api/user", { username: "Alice_1" }));
-
-    expect(response.status).toBe(200);
-
-    const setCookie = response.headers.get("set-cookie");
-    expect(setCookie).toContain("openmarket_user=");
-    expect(setCookie).toContain("HttpOnly");
-    expect(setCookie).toContain("SameSite=Lax");
-    expect(setCookie).toContain("Path=/");
-    expect(setCookie).toContain("Max-Age=2592000");
-    expect(setCookie).toContain("Secure");
-    const signedValue = setCookie?.match(/openmarket_user=([^;]+)/)?.[1];
-    expect(signedValue).toBeTruthy();
-    expect(verifyUserCookie(signedValue ?? "", USER_SECRET)).toMatchObject({
-      username: "alice_1",
-    });
-  });
-
+describe("Part 4 quote route", () => {
   it("allows anonymous buy quotes", async () => {
     const quote = { market_id: "market-1", action: "buy", quantity: 2 };
     mocks.quoteMarket.mockResolvedValue(quote);
     const input = {
-      slug: "anthropic",
+      market_id: "0f8a0c1e-6c1d-4f7a-9d2b-3c4e5f607182",
       action: "buy",
       side: "yes",
-      strike_index: 3,
+      strike_index: 0,
       quantity: 2,
     } as const;
 
@@ -273,12 +231,12 @@ describe("Part 4 user and quote routes", () => {
     await expect(response.json()).resolves.toEqual(quote);
   });
 
-  it("requires a signed identity for sells and uses only its database user id", async () => {
+  it("requires a tournament session for sells and uses only its paper account", async () => {
     const input = {
-      slug: "anthropic",
+      market_id: "0f8a0c1e-6c1d-4f7a-9d2b-3c4e5f607182",
       action: "sell",
       side: "no",
-      strike_index: 3,
+      strike_index: 0,
       quantity: 1,
     } as const;
     mocks.quoteMarket.mockResolvedValue({ action: "sell", quantity: 1 });
@@ -286,14 +244,14 @@ describe("Part 4 user and quote routes", () => {
     const missingResponse = await quoteRoute(mutationRequest("/api/quote", input));
     const authenticatedResponse = await quoteRoute(
       mutationRequest("/api/quote", input, {
-        cookie: userCookieHeader("Alice_1"),
+        cookie: sessionCookieHeader(),
         "x-user-id": "attacker",
       }),
     );
 
     expect(missingResponse.status).toBe(401);
     expect(authenticatedResponse.status).toBe(200);
-    expect(userLookup.where).toHaveBeenCalledWith("username_normalized", "=", "alice_1");
+    expect(mocks.ensurePaperAccount).toHaveBeenCalledWith(fakeDatabase, "tournament-user-1");
     expect(mocks.quoteMarket).toHaveBeenCalledTimes(1);
     expect(mocks.quoteMarket).toHaveBeenCalledWith(fakeDatabase, input, "user-1");
     await expect(missingResponse.json()).resolves.toMatchObject({
@@ -304,16 +262,16 @@ describe("Part 4 user and quote routes", () => {
 
 describe("Part 4 trade route", () => {
   const tradeInput = {
-    slug: "anthropic",
+    market_id: "0f8a0c1e-6c1d-4f7a-9d2b-3c4e5f607182",
     action: "buy",
     side: "yes",
-    strike_index: 3,
+    strike_index: 0,
     quantity: 2,
     max_cost_usd: "2.00",
     idempotency_key: "1c97cdcb-980b-48b4-9622-0d296c6a98a8",
   } as const;
 
-  it("requires the signed user and marks stored idempotent replays", async () => {
+  it("requires a tournament session and marks stored idempotent replays", async () => {
     const storedResult = {
       trade_id: "trade-1",
       idempotency_key: tradeInput.idempotency_key,
@@ -327,7 +285,7 @@ describe("Part 4 trade route", () => {
     const missingResponse = await tradeRoute(mutationRequest("/api/trade", tradeInput));
     const replayResponse = await tradeRoute(
       mutationRequest("/api/trade", tradeInput, {
-        cookie: userCookieHeader(),
+        cookie: sessionCookieHeader(),
         "x-user-id": "attacker",
       }),
     );
@@ -344,8 +302,8 @@ describe("Part 4 trade route", () => {
     const response = await tradeRoute(
       mutationRequest(
         "/api/trade",
-        { ...tradeInput, slug: "a".repeat(5_000) },
-        { cookie: userCookieHeader() },
+        { ...tradeInput, padding: "a".repeat(5_000) },
+        { cookie: sessionCookieHeader() },
       ),
     );
 
@@ -371,7 +329,7 @@ describe("Part 4 trade route", () => {
 
     const response = await tradeRoute(
       mutationRequest("/api/trade", tradeInput, {
-        cookie: userCookieHeader(),
+        cookie: sessionCookieHeader(),
       }),
     );
 
@@ -386,153 +344,32 @@ describe("Part 4 trade route", () => {
   });
 });
 
-describe("Part 4 admin mutation routes", () => {
-  it("verifies the passphrase and sets a signed 15-minute admin cookie", async () => {
-    const response = await adminLoginRoute(
-      mutationRequest("/api/admin/login", { passphrase: "correct horse" }),
-    );
-
-    expect(response.status).toBe(200);
-    expect(mocks.verifyAdminPassphrase).toHaveBeenCalledWith("correct horse", "configured-hash");
-    await expect(response.json()).resolves.toEqual({ authenticated: true });
-    const setCookie = response.headers.get("set-cookie");
-    expect(setCookie).toContain("openmarket_admin=");
-    expect(setCookie).toContain("HttpOnly");
-    expect(setCookie).toContain("SameSite=Lax");
-    expect(setCookie).toContain("Path=/");
-    expect(setCookie).toContain("Max-Age=900");
-    expect(setCookie).toContain("Secure");
-  });
-
-  it("rate-limits admin login before any passphrase verification work", async () => {
-    mocks.assertNetworkRateLimitAvailable.mockRejectedValue(
-      new ServiceError("RATE_LIMITED", "Too many requests.", { retryAfterSeconds: 42 }),
-    );
-
-    const response = await adminLoginRoute(
-      mutationRequest("/api/admin/login", { passphrase: "correct horse" }),
-    );
-
-    expect(response.status).toBe(429);
-    expect(mocks.assertNetworkRateLimitAvailable).toHaveBeenCalledWith(
-      fakeDatabase,
-      "admin_login",
-      expect.any(Request),
-    );
-    expect(mocks.verifyAdminPassphrase).not.toHaveBeenCalled();
-    await expect(response.json()).resolves.toMatchObject({
-      error: { code: "RATE_LIMITED" },
-    });
-  });
-
-  it("maps an incorrect admin passphrase to ADMIN_REQUIRED without a cookie", async () => {
-    mocks.verifyAdminPassphrase.mockResolvedValue(false);
-
-    const response = await adminLoginRoute(
-      mutationRequest("/api/admin/login", { passphrase: "incorrect" }),
-    );
-
-    expect(response.status).toBe(401);
-    expect(response.headers.get("set-cookie")).toBeNull();
-    expect(mocks.consumeNetworkRateLimit).toHaveBeenCalledWith(
-      fakeDatabase,
-      "admin_login",
-      expect.any(Request),
-    );
-    await expect(response.json()).resolves.toMatchObject({
-      error: { code: "ADMIN_REQUIRED" },
-    });
-  });
-
-  it("requires admin authentication and strictly seeds through the shared service", async () => {
-    const input = {
-      name: "Anthropic",
-      slug: "anthropic",
-      logo_path: "/logos/anthropic.svg",
-      b: 100,
-      metric_kind: "valuation_median",
-      anchor_valuation_usd: "61500000000.00",
-      anchor_date: "2026-08-31",
-      anchor_description: "Draft operational input",
-      sigma: 0.5,
-    } as const;
-    mocks.seedMarket.mockResolvedValue({
-      outcome: "created",
-      company: {
-        id: "company-1",
-        name: "Anthropic",
-        slug: "anthropic",
-        logo_path: "/logos/anthropic.svg",
-        created_at: new Date("2026-08-31T00:00:00.000Z"),
-      },
-      market: {
-        id: "market-1",
-        status: "open",
-        metric_kind: "valuation_median",
-        current_metric: 61_500_000_000,
-        created_at: new Date("2026-08-31T00:00:00.000Z"),
-      },
-    });
-
-    const missingResponse = await adminSeedRoute(mutationRequest("/api/admin/seed", input));
-    const authenticatedResponse = await adminSeedRoute(
-      mutationRequest("/api/admin/seed", input, {
-        cookie: adminCookieHeader(),
-      }),
-    );
-
-    expect(missingResponse.status).toBe(401);
-    expect(authenticatedResponse.status).toBe(200);
-    expect(mocks.seedMarket).toHaveBeenCalledTimes(1);
-    expect(mocks.seedMarket).toHaveBeenCalledWith(fakeDatabase, input);
-    await expect(authenticatedResponse.json()).resolves.toEqual({
-      outcome: "created",
-      market_id: "market-1",
-      slug: "anthropic",
-      status: "open",
-      metric_kind: "valuation_median",
-      current_metric: 61_500_000_000,
-      created_at: "2026-08-31T00:00:00.000Z",
-    });
-  });
-
-  it("requires an exact confirmation slug before irreversible settlement", async () => {
-    const input = {
-      slug: "anthropic",
-      confirm_slug: "anthropic",
-      settled_value_usd: "72500000000.00",
-      source_url: "https://example.test/valuation",
-      source_description: "Reported valuation",
-    } as const;
-    const result = {
-      market_id: "market-1",
-      slug: "anthropic",
-      settled_value_usd: "72500000000.00",
-      winning_bucket: 32,
-      credited_users: 2,
-      total_payout_cents: "12500",
-      rounding_reserve_delta_cents: "0",
-      settled_at: "2026-08-31T00:00:00.000Z",
-    };
-    mocks.settleMarket.mockResolvedValue(result);
-
-    const mismatchResponse = await adminSettleRoute(
+describe("Part 4 admin comment moderation", () => {
+  it("requires a session whose identity is on the tournament admin allowlist", async () => {
+    const removed = { id: COMMENT_ID, removedAt: "2026-10-21T00:00:00.000Z" };
+    mocks.removeComment.mockResolvedValue(removed);
+    const request = () =>
       mutationRequest(
-        "/api/admin/settle",
-        { ...input, confirm_slug: "stripe" },
-        { cookie: adminCookieHeader() },
-      ),
-    );
-    const successResponse = await adminSettleRoute(
-      mutationRequest("/api/admin/settle", input, {
-        cookie: adminCookieHeader(),
-      }),
-    );
+        `/api/admin/comments/${COMMENT_ID}/remove`,
+        {},
+        {
+          cookie: sessionCookieHeader(),
+        },
+      );
 
-    expect(mismatchResponse.status).toBe(400);
-    expect(successResponse.status).toBe(200);
-    expect(mocks.settleMarket).toHaveBeenCalledTimes(1);
-    expect(mocks.settleMarket).toHaveBeenCalledWith(fakeDatabase, input);
-    await expect(successResponse.json()).resolves.toEqual(result);
+    const signedOut = await removeRoute(
+      mutationRequest(`/api/admin/comments/${COMMENT_ID}/remove`, {}),
+    );
+    const notAdmin = await removeRoute(request());
+    identityLookup.execute.mockResolvedValue([{ provider: "x", provider_user_id: "1234567" }]);
+    const admin = await removeRoute(request());
+
+    expect(signedOut.status).toBe(401);
+    expect(notAdmin.status).toBe(401);
+    await expect(notAdmin.json()).resolves.toMatchObject({ error: { code: "ADMIN_REQUIRED" } });
+    expect(admin.status).toBe(200);
+    expect(mocks.removeComment).toHaveBeenCalledTimes(1);
+    expect(mocks.removeComment).toHaveBeenCalledWith(fakeDatabase, COMMENT_ID);
+    await expect(admin.json()).resolves.toEqual(removed);
   });
 });

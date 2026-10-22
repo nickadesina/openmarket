@@ -3,7 +3,6 @@ import { createHash, randomBytes } from "node:crypto";
 import { z } from "zod";
 
 import { safeReturnPath } from "./return-path.js";
-import { getUserCookieSecret, signCookiePayload, verifyCookiePayload } from "./user-cookie.js";
 
 export { safeReturnPath };
 
@@ -19,7 +18,7 @@ export const X_SCOPES = ["users.read", "tweet.read"] as const;
 
 export const OAUTH_STATE_COOKIE = "openmarket_tournament_oauth";
 export const OAUTH_STATE_MAX_AGE_MS = 10 * 60 * 1000;
-const OAUTH_STATE_DOMAIN = "openmarket.tournament.oauth.v1";
+const MAX_STATE_COOKIE_LENGTH = 1_024;
 
 type Environment = Readonly<Record<string, string | undefined>>;
 
@@ -63,6 +62,30 @@ const oauthStateSchema = z
   })
   .strict();
 
+/**
+ * The state cookie is HttpOnly, SameSite=Lax and unsigned. A signature would
+ * add nothing: anyone able to plant a cookie could as well plant one minted by
+ * a real start request, and the return path is re-sanitized on the way out.
+ * What protects the round trip is the random state X must echo and the PKCE
+ * verifier that never leaves this browser and server.
+ */
+function encodeState(payload: OAuthState): string {
+  return Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+}
+
+function decodeState(cookieValue: string): unknown {
+  if (cookieValue.length > MAX_STATE_COOKIE_LENGTH || !/^[A-Za-z0-9_-]+$/.test(cookieValue)) {
+    return null;
+  }
+  const bytes = Buffer.from(cookieValue, "base64url");
+  if (bytes.toString("base64url") !== cookieValue) return null;
+  try {
+    return JSON.parse(bytes.toString("utf8")) as unknown;
+  } catch {
+    return null;
+  }
+}
+
 export interface Authorization {
   readonly url: string;
   readonly stateCookie: string;
@@ -92,24 +115,22 @@ export function beginAuthorization(
   };
   return {
     url: url.toString(),
-    stateCookie: signCookiePayload(payload, getUserCookieSecret(), OAUTH_STATE_DOMAIN),
+    stateCookie: encodeState(payload),
   };
 }
 
-/** Verifies the signed state cookie against the state X echoed back. */
+/** Checks the state cookie against the state X echoed back. */
 export function verifyAuthorizationState(
   cookieValue: string | null,
   returnedState: string | null,
   now = Date.now(),
 ): OAuthState | null {
   if (cookieValue === null || returnedState === null) return null;
-  const parsed = oauthStateSchema.safeParse(
-    verifyCookiePayload(cookieValue, getUserCookieSecret(), OAUTH_STATE_DOMAIN),
-  );
+  const parsed = oauthStateSchema.safeParse(decodeState(cookieValue));
   if (!parsed.success) return null;
   const age = now - parsed.data.issuedAt;
   if (age < 0 || age >= OAUTH_STATE_MAX_AGE_MS || parsed.data.state !== returnedState) return null;
-  return parsed.data;
+  return { ...parsed.data, returnTo: safeReturnPath(parsed.data.returnTo) };
 }
 
 export interface XProfile {

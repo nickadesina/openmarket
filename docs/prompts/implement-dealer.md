@@ -40,7 +40,7 @@ this brief; `CONTRACTS.md` is normative.
   LMSR engine and the existing `quote` / `execute-trade` services.
   If the engine needs a change to support two buckets cleanly, make
   that change; do not fork it.
-- No new identity. Tournament sign-in (X OAuth or username) is the
+- No new identity. Tournament sign-in (X OAuth, or a username and password) is the
   identity for everything; the restricted-person attestation is a
   field on the existing affiliation editor.
 - No new UI framework or component library. The market page keeps its
@@ -108,9 +108,9 @@ dependencies are not merged.
    `/api/cron/dealer` + `dealer.yml`, `/api/cron/settle` +
    `settle.yml`, `dealer_pnl` view, ticket UI changes. Gate: five
    names quoting on staging; a fixture print settles both instruments
-   and lists successors in one transaction each. Delist the old
-   Anthropic/Stripe ladder markets in this PR unless Nick says
-   otherwise.
+   and lists successors in one transaction each. The old
+   Anthropic/Stripe ladder markets are already removed (migration
+   `008`).
 7. **Tournament bridge.** `tournament_instrument_links`, `outcome =
    void` on `tournament_questions`, the crowd component into
    `reference_prices`, `POST /api/t/questions/[slug]/evidence`,

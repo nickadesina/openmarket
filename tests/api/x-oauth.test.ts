@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   beginAuthorization,
@@ -12,9 +12,6 @@ import {
   xClientConfig,
 } from "../../src/lib/auth/x-oauth.js";
 
-const SECRET = Buffer.from(Array.from({ length: 32 }, (_, index) => index + 1)).toString(
-  "base64url",
-);
 const CONFIG = {
   clientId: "client-id",
   clientSecret: null,
@@ -22,9 +19,6 @@ const CONFIG = {
 };
 
 describe("X OAuth 2.0 PKCE", () => {
-  beforeEach(() => vi.stubEnv("USER_COOKIE_SECRET", SECRET));
-  afterEach(() => vi.unstubAllEnvs());
-
   it("derives the redirect from APP_ORIGIN and stays off without a client id", () => {
     expect(xClientConfig({ APP_ORIGIN: "https://openmkt.vercel.app" })).toBeNull();
     expect(xClientConfig({ X_CLIENT_ID: "abc", APP_ORIGIN: "https://openmkt.vercel.app" })).toEqual(
@@ -36,13 +30,18 @@ describe("X OAuth 2.0 PKCE", () => {
     );
   });
 
-  it("only returns to tournament paths", () => {
+  it("only returns to same-site pages", () => {
     expect(safeReturnPath("/t/q/anthropic-s1-arr")).toBe("/t/q/anthropic-s1-arr");
     expect(safeReturnPath("/t")).toBe("/t");
+    expect(safeReturnPath("/")).toBe("/");
+    expect(safeReturnPath("/portfolio")).toBe("/portfolio");
+    expect(safeReturnPath("/m/openai?range=1d")).toBe("/m/openai?range=1d");
     expect(safeReturnPath("//evil.example/t")).toBe("/t");
+    expect(safeReturnPath("/\\evil.example")).toBe("/t");
     expect(safeReturnPath("https://evil.example/t")).toBe("/t");
-    expect(safeReturnPath("/portfolio")).toBe("/t");
-    expect(safeReturnPath("/tx")).toBe("/t");
+    expect(safeReturnPath("/api/t/auth/logout")).toBe("/t");
+    expect(safeReturnPath("/t/signin?return=/")).toBe("/t");
+    expect(safeReturnPath("/m/x\r\nSet-Cookie:a=b")).toBe("/t");
     expect(safeReturnPath(null)).toBe("/t");
   });
 
@@ -63,7 +62,27 @@ describe("X OAuth 2.0 PKCE", () => {
     expect(verifyAuthorizationState(stateCookie, "x".repeat(43), now)).toBeNull();
     expect(verifyAuthorizationState(stateCookie, state, now + 11 * 60_000)).toBeNull();
     expect(verifyAuthorizationState(`${stateCookie}x`, state, now)).toBeNull();
+    expect(verifyAuthorizationState(`${stateCookie}.sig`, state, now)).toBeNull();
     expect(verifyAuthorizationState(null, state, now)).toBeNull();
+  });
+
+  it("re-sanitizes a planted return path and rejects a planted cookie's foreign state", () => {
+    const now = 1_700_000_000_000;
+    const planted = (payload: object) => Buffer.from(JSON.stringify(payload)).toString("base64url");
+    const state = "s".repeat(43);
+    const verified = verifyAuthorizationState(
+      planted({ state, verifier: "v".repeat(43), returnTo: "//evil.example", issuedAt: now }),
+      state,
+      now,
+    );
+    expect(verified?.returnTo).toBe("/t");
+    expect(
+      verifyAuthorizationState(
+        planted({ state, verifier: "v".repeat(43), returnTo: "/t", issuedAt: now, extra: 1 }),
+        state,
+        now,
+      ),
+    ).toBeNull();
   });
 
   it("exchanges the code and reads the public profile", async () => {

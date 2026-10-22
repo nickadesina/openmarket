@@ -1,27 +1,59 @@
 "use client";
 
 import {
-  contractLabel,
   formatCents,
   formatDate,
   formatDateTime,
-  formatMetricPrice,
+  formatPrice,
+  formatProbability,
   formatQuantityShort,
   formatValuation,
+  sideLabel,
 } from "../../lib/client/format.js";
-import { MovementArrow } from "../icons/icons.js";
-import type { ActivityPage, MarketDetail } from "../market-workspace/types.js";
+import type { ActivityItem, ActivityPage, ListingDetail } from "../market-workspace/types.js";
 import styles from "./market-activity.module.css";
 
 interface MarketActivityProps {
-  readonly market: MarketDetail;
+  readonly listing: ListingDetail;
   readonly activity: ActivityPage | undefined;
   readonly loading: boolean;
   readonly error: boolean;
   readonly onRetry: () => void;
 }
 
-export function MarketActivity({ market, activity, loading, error, onRetry }: MarketActivityProps) {
+/** One fill as the tape reads it: a forward's notional at its entry, or a binary's shares. */
+function ActivityRow({ item }: { readonly item: ActivityItem }) {
+  const forward = item.metricKind === "forward_ln";
+  return (
+    <li>
+      <div>
+        <strong>
+          {forward
+            ? `${sideLabel(item.side)} ${formatCents(String(Math.round(item.quantity * 100)))} forward${item.entryUsd === null ? "" : ` at ${formatPrice(item.entryUsd)}`}`
+            : `${item.action === "buy" ? "Bought" : "Sold"} ${formatQuantityShort(item.quantity)} ${sideLabel(item.side)}`}
+        </strong>
+        <span suppressHydrationWarning>{formatDateTime(item.createdAt)}</span>
+      </div>
+      <div className={styles.tradeValues}>
+        <strong>{formatCents(item.cashAmountCents)}</strong>
+        <span>
+          {forward
+            ? "collateral"
+            : `${item.action === "buy" ? "cost" : "proceeds"} · YES ${formatProbability(item.metricAfter)} after`}
+        </span>
+      </div>
+    </li>
+  );
+}
+
+export function MarketActivity({
+  listing,
+  activity,
+  loading,
+  error,
+  onRetry,
+}: MarketActivityProps) {
+  const settled = listing.epochs.filter((epoch) => epoch.marketStatus === "settled");
   return (
     <div className={styles.lowerGrid}>
       <section className={styles.activity} aria-labelledby="activity-title" aria-busy={loading}>
@@ -30,7 +62,7 @@ export function MarketActivity({ market, activity, loading, error, onRetry }: Ma
             <h2 id="activity-title" className={styles.tab}>
               Market activity
             </h2>
-            <p>Completed trades in authoritative market sequence</p>
+            <p>Fills on both contracts, newest first</p>
           </div>
           {error && activity !== undefined ? (
             <button type="button" className={styles.refreshButton} onClick={onRetry}>
@@ -63,57 +95,14 @@ export function MarketActivity({ market, activity, loading, error, onRetry }: Ma
         {activity?.items.length === 0 ? (
           <div className={styles.message}>
             <strong>No trades yet</strong>
-            <p>Select a probability in the ladder to preview the first quote.</p>
+            <p>Price a forward or a binary in the trade ticket to place the first one.</p>
           </div>
         ) : null}
         {activity !== undefined && activity.items.length > 0 ? (
           <ol className={styles.list}>
-            {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: per-row label branching; extract an ActivityRow component before growing. */}
-            {activity.items.map((item) => {
-              const direction =
-                item.metricAfter > item.metricBefore
-                  ? "up"
-                  : item.metricAfter < item.metricBefore
-                    ? "down"
-                    : "flat";
-              const strike = contractLabel(
-                item.side,
-                item.strikeValueUsd === null ? null : formatValuation(item.strikeValueUsd),
-              );
-              return (
-                <li key={item.marketSequence}>
-                  <div>
-                    <strong>
-                      {item.action === "buy" ? "Bought" : "Sold"}{" "}
-                      {formatQuantityShort(item.quantity)} {strike}
-                    </strong>
-                    <span>{formatDateTime(item.createdAt)}</span>
-                  </div>
-                  <div className={styles.tradeValues}>
-                    <strong>{formatCents(item.cashAmountCents)}</strong>
-                    <span
-                      className={
-                        direction === "up"
-                          ? styles.positive
-                          : direction === "down"
-                            ? styles.negative
-                            : undefined
-                      }
-                    >
-                      <MovementArrow direction={direction} />{" "}
-                      <span className={styles.visuallyHidden}>
-                        {direction === "up"
-                          ? "moved up to"
-                          : direction === "down"
-                            ? "moved down to"
-                            : "unchanged at"}
-                      </span>
-                      {formatMetricPrice(item.metricAfter, item.metricKind)}
-                    </span>
-                  </div>
-                </li>
-              );
-            })}
+            {activity.items.map((item) => (
+              <ActivityRow key={`${item.marketId}-${item.marketSequence}`} item={item} />
+            ))}
           </ol>
         ) : null}
       </section>
@@ -122,44 +111,42 @@ export function MarketActivity({ market, activity, loading, error, onRetry }: Ma
         <h2 id="resolution-title" className={styles.tab}>
           Resolution
         </h2>
-        {market.settlement !== null ? (
-          <>
-            <p>
-              This market settled at{" "}
-              <strong>{formatValuation(market.settlement.settledValueUsd)}</strong>.
-            </p>
-            <a href={market.settlement.sourceUrl} target="_blank" rel="noreferrer">
-              {market.settlement.sourceDescription ?? "Open the settlement source"}
-            </a>
-          </>
-        ) : market.metric.kind === "valuation_median" ? (
-          <>
-            <p>
-              The winning bucket is determined from the company&apos;s next reported private-market
-              valuation. Settlement records the published source used.
-            </p>
-            {market.anchor !== null ? (
-              <dl>
-                <div>
-                  <dt>Reference</dt>
-                  <dd>{formatValuation(market.anchor.valuationUsd)}</dd>
-                </div>
-                <div>
-                  <dt>As of</dt>
-                  <dd>{formatDate(market.anchor.date)}</dd>
-                </div>
-              </dl>
-            ) : null}
-          </>
-        ) : (
-          <p>
-            YES pays if the stated outcome is confirmed by the source recorded at settlement.
-            Otherwise, NO pays.
-          </p>
-        )}
-        {market.anchor?.description !== undefined ? (
-          <small>{market.anchor.description}</small>
-        ) : null}
+        <p>
+          The forward settles on the first qualifying post-money after it opens, dated by{" "}
+          {listing.forward === null ? "its expiry" : formatDate(listing.forward.expires_at)}: a long
+          is paid notional × (ln print − ln entry), clipped at ±κ. With no print by then it voids
+          and refunds the collateral. The binary pays $1 a YES share if{" "}
+          {listing.binaryEvent === "public_s1"
+            ? "a public S-1 is filed"
+            : "a priced round is announced"}{" "}
+          by {listing.binary === null ? "quarter-end" : formatDate(listing.binary.expires_at)}.
+          Positions are held to settlement or void; there is no early close.
+        </p>
+        <dl>
+          <div>
+            <dt>Last print</dt>
+            <dd>
+              {formatValuation(listing.anchor.postMoneyUsd)} · {listing.anchor.round}
+            </dd>
+          </div>
+          <div>
+            <dt>As of</dt>
+            <dd>{formatDate(listing.anchor.date)}</dd>
+          </div>
+          {settled.length > 0 ? (
+            <div>
+              <dt>Settled epochs</dt>
+              <dd>{settled.length}</dd>
+            </div>
+          ) : null}
+        </dl>
+        <a href="/api/ref/rulebook" target="_blank" rel="noreferrer">
+          Rulebook v{listing.rulebookVersion}
+        </a>{" "}
+        ·{" "}
+        <a href={listing.anchor.sourceUrl} target="_blank" rel="noreferrer">
+          Last print source
+        </a>
       </section>
     </div>
   );

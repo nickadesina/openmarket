@@ -16,9 +16,7 @@ Direct unpooled operations:
 Application/security:
 
 - `APP_ORIGIN`
-- `USER_COOKIE_SECRET`: canonical base64url, at least 32 decoded random bytes
-- `ADMIN_COOKIE_SECRET`: distinct canonical base64url, at least 32 decoded random bytes
-- `ADMIN_PASSPHRASE_HASH`
+- Sign-in and admin are the tournament's: `X_CLIENT_ID`, `X_CLIENT_SECRET`, `TOURNAMENT_ADMIN_X_IDS` (`.env.example`, README §4)
 
 Vercel-provided preview origins remain dynamically validated through Part 2 origin helpers.
 
@@ -30,20 +28,19 @@ Vercel-provided preview origins remain dynamically validated through Part 2 orig
 4. Set environment variables by scope without exposing values.
 5. Run `npm ci`, typecheck, unit/property/service/route tests, PostgreSQL integration tests, and `next build`.
 6. Run `npm run db:migrate` against `DATABASE_URL_UNPOOLED` before production traffic.
-7. Verify current public Stripe and Anthropic anchor valuation, date, description, and source. Never promote draft anchors.
-8. Seed through the shared seed service.
-9. Run `npm run verify:replay` against the direct production connection.
-10. Deploy, then browser-drive the critical product flow on the deployed origin.
+7. List the names with `npm run seed:listings -- --listed-at=<ISO>`; it refuses an anchor without a source URL.
+8. Run `npm run verify:replay` against the direct production connection.
+9. Deploy, then browser-drive the critical product flow on the deployed origin.
 
 ## Operations
 
 - Route pools stay capped at two.
-- Migrations are append-only after launch.
-- Seed is idempotent and refuses traded-market replacement.
+- Migrations are append-only after launch, except the owner-approved `008` (README D6).
+- `seed:listings` is idempotent on (company, listed_at).
 - Logs exclude secrets and cookies.
 - CI uses PostgreSQL 17 and runs Parts 2–4 coverage.
 - Deployment failure or missing credentials is reported as a concrete blocker after all reachable code/configuration work is complete.
 
 ## Completion gate
 
-Production is complete only when the deployed application is reachable, both verified markets are seeded, the browser flow succeeds, and replay/cash/sequence/mark diagnostics report clean state. A local build or Vercel configuration file is not a production deployment.
+Production is complete only when the deployed application is reachable, the listed names are written, the browser flow succeeds, and replay/cash/sequence/mark diagnostics report clean state. A local build or Vercel configuration file is not a production deployment.

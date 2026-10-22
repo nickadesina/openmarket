@@ -2,7 +2,7 @@ import { parseMutationBody, withMutationRoute } from "../../../../../../lib/api/
 import { assertOnlyQueryParameters } from "../../../../../../lib/api/pagination.js";
 import { jsonSuccess } from "../../../../../../lib/api/response.js";
 import { removeCommentInputSchema } from "../../../../../../lib/api/schemas.js";
-import { requireCurrentAdmin } from "../../../../../../lib/auth/current-admin.js";
+import { requireTournamentAdmin } from "../../../../../../lib/auth/tournament-session.js";
 import { removeComment } from "../../../../../../lib/services/remove-comment.js";
 
 export const runtime = "nodejs";
@@ -13,7 +13,7 @@ interface RemoveCommentRouteContext {
 
 export function POST(request: Request, routeContext: RemoveCommentRouteContext): Promise<Response> {
   return withMutationRoute(request, async (context) => {
-    requireCurrentAdmin(request);
+    await requireTournamentAdmin(context.db, request);
     assertOnlyQueryParameters(new URL(request.url).searchParams, []);
     await parseMutationBody(request, removeCommentInputSchema, 1_024);
     const { commentId } = await routeContext.params;

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { VALUATION_BOUNDARIES_USD, VALUATION_BUCKET_COUNT } from "../../src/lib/engine/buckets.js";
 import { contractDelta, contractMask } from "../../src/lib/engine/contracts.js";
 import {
   probabilities,
@@ -8,13 +7,12 @@ import {
   solveBuyQuantityForSpend,
   tradeCost,
 } from "../../src/lib/engine/lmsr.js";
-import { impliedValuationMedian } from "../../src/lib/engine/median.js";
 import { EPS, MAX_QUANTITY, MAX_TRADE_SPEND_CENTS } from "../../src/lib/engine/types.js";
 import { parseRequestedAmount, previewTrade } from "../../src/lib/services/preview-trade.js";
 
 const BINARY_MARKET = {
   metric_kind: "yes_probability" as const,
-  bucket_grid_version: "valuation-v1",
+  bucket_grid_version: "binary-v1",
   n_buckets: 2,
   b: 100,
   q: [0, 0],
@@ -100,25 +98,26 @@ describe("previewTrade", () => {
     ).toThrowError(expect.objectContaining({ code: "INVALID_INPUT" }));
   });
 
-  it("prices a valuation strike with its canonical value and median", () => {
-    const market = {
-      metric_kind: "valuation_median" as const,
-      bucket_grid_version: "valuation-v1",
-      n_buckets: VALUATION_BUCKET_COUNT,
-      b: 15_000,
-      q: new Array<number>(VALUATION_BUCKET_COUNT).fill(0),
-    };
-    const strikeIndex = 31;
+  it("reports the YES probability after the trade", () => {
     const preview = previewTrade(
-      market,
-      new Array<number>(VALUATION_BUCKET_COUNT).fill(0),
-      { action: "buy", side: "yes", strike_index: strikeIndex },
+      BINARY_MARKET,
+      [0, 0],
+      { action: "buy", side: "no", strike_index: 0 },
       parseRequestedAmount({ action: "buy", quantity: 5 }),
     );
-    expect(preview.strikeValue).toBe(VALUATION_BOUNDARIES_USD[strikeIndex]!.toFixed(2));
-    expect(preview.metricAfter).toBeCloseTo(
-      impliedValuationMedian(probabilities(preview.qAfter, 15_000), VALUATION_BOUNDARIES_USD),
-    );
+    expect(preview.metricAfter).toBeCloseTo(probabilities(preview.qAfter, 100)[1]!);
+    expect(preview.metricAfter).toBeLessThan(0.5);
+  });
+
+  it("refuses a forward book and any book that is not a two-outcome binary", () => {
+    const amount = parseRequestedAmount({ action: "buy", quantity: 1 });
+    const request = { action: "buy", side: "yes", strike_index: 0 } as const;
+    expect(() =>
+      previewTrade({ ...BINARY_MARKET, metric_kind: "forward_ln" }, [0, 0], request, amount),
+    ).toThrowError(expect.objectContaining({ code: "INVALID_INPUT" }));
+    expect(() =>
+      previewTrade({ ...BINARY_MARKET, n_buckets: 3, q: [0, 0, 0] }, [0, 0, 0], request, amount),
+    ).toThrowError(expect.objectContaining({ code: "INVALID_INPUT" }));
   });
 
   it("rejects a sell beyond the EPS tolerance but allows half an EPS", () => {
@@ -145,5 +144,51 @@ describe("previewTrade", () => {
     expect(() =>
       previewTrade(BINARY_MARKET, [0, 0], { action: "buy", side: "yes", strike_index: 1 }, amount),
     ).toThrowError(expect.objectContaining({ code: "INVALID_INPUT" }));
+  });
+
+  it("refuses a dealer binary's trade that would leave [p_floor, 1 − p_floor], either way", () => {
+    const clamp = { pFloor: 0.05 };
+    const yes = { action: "buy", side: "yes", strike_index: 0 } as const;
+    // ln(0.95/0.05) ≈ 2.944 at b = 100: 290 YES stays inside, 300 does not.
+    const inside = previewTrade(
+      BINARY_MARKET,
+      [0, 0],
+      yes,
+      parseRequestedAmount({ action: "buy", quantity: 290 }),
+      clamp,
+    );
+    expect(inside.priceAfter).toBeLessThan(0.95);
+    expect(() =>
+      previewTrade(
+        BINARY_MARKET,
+        [0, 0],
+        yes,
+        parseRequestedAmount({ action: "buy", quantity: 300 }),
+        clamp,
+      ),
+    ).toThrowError(
+      expect.objectContaining({
+        code: "PRICE_CLAMPED",
+        details: expect.objectContaining({ p_floor: 0.05, p_ceiling: 0.95 }),
+      }),
+    );
+    expect(() =>
+      previewTrade(
+        BINARY_MARKET,
+        [0, 0],
+        { ...yes, side: "no" },
+        parseRequestedAmount({ action: "buy", quantity: 300 }),
+        clamp,
+      ),
+    ).toThrowError(expect.objectContaining({ code: "PRICE_CLAMPED" }));
+    // Without a clamp (a fixture book with no instrument), the same trade prices.
+    expect(
+      previewTrade(
+        BINARY_MARKET,
+        [0, 0],
+        yes,
+        parseRequestedAmount({ action: "buy", quantity: 300 }),
+      ).priceAfter,
+    ).toBeGreaterThan(0.95);
   });
 });

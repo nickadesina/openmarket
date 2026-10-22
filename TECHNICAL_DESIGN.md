@@ -274,13 +274,13 @@ Anthropic Series D has no dated close.
 
 | Concern | Choice |
 | --- | --- |
-| Scheduling | Actions workflows `ingest.yml` (15 min), `dealer.yml` (15 min, offset 5), `settle.yml` (hourly) → `/api/cron/*`; Vercel Cron as fallback |
+| Scheduling | Actions workflows `ingest.yml` (15 min), `dealer.yml` (15 min at :05/:20/:35/:50: state, list, mids, requote), `settle.yml` (hourly at :41: promote, resolve, settle or void, roll) → `/api/cron/*` with `CRON_SECRET` and `X-Run-Id`; Vercel Cron as fallback |
 | Idempotency | `cron_runs.run_id` unique (the `event_flags.run_id` FK needs it); reruns exit early |
 | LLM extraction | one provider behind `src/lib/services/ingest/extract.ts`; `EXTRACT_API_KEY`; prompts and schema versioned; daily cost cap in `rate_limits` |
-| Secrets | `CRON_SECRET`, `EXTRACT_API_KEY`, `EDGAR_USER_AGENT`, the tournament's cookie and OAuth secrets (the paper-account cookie and passphrase-admin secrets go in milestone 6) |
+| Secrets | `CRON_SECRET`, `EXTRACT_API_KEY`, `EDGAR_USER_AGENT`, the tournament's X OAuth credentials; sign-in and admin are the tournament's (README D1) |
 | Observability | `/admin/dealer`: `dealer_pnl`, per-source last success, widened instruments, resolution queue; daily Actions job fails if any source is silent 24 h or any instrument widened > 72 h |
 | Replay | `verify:replay` rebuilds quotes-derived state, forward payouts and `reference_prices` |
-| Migration | `007_dealer` is additive; old LMSR markets keep working until delisted by operator action; `npm run seed:listings` idempotent on `(company, listed_at)` |
+| Migration | `007_dealer` is additive; `008` (owner-approved, deletes data) removed the ladder markets, Stripe and the username accounts; `npm run seed:listings` idempotent on `(company, listed_at)` |
 
 ## 12. Build plan
 
@@ -291,7 +291,7 @@ Anthropic Series D has no dated close.
 | 3 | `007_dealer` + `seed:listings` | migrate + replay in build | 1 |
 | 4 | Ingest + flags + admin queue (owned by Nick; the dealer reads `event_flags` and tests will use `tests/fixtures/event-flags.json`, which Nick generates from `events.csv`) | seeded scoop → flag in < 15 min | 2, 3 |
 | 5 | Mid model (TS port) | agrees with `sim.py` to 1e-9 | 2, 3 |
-| 6 | Dealer + settlement + ticket UI; delete the Anthropic/Stripe ladder markets with their rows, Stripe, 41-bucket seeding and ladder trading, the username paper account and the passphrase admin (decided 2026-10-21) | five names quoting; a fixture print settles both instruments and rolls, in an integration test against CI Postgres (no staging gate, 2026-10-21) | 3, 5 |
+| 6 | Dealer + settlement + ticket UI; delete the Anthropic/Stripe ladder markets with their rows, Stripe, 41-bucket seeding and ladder trading, the username paper account and the passphrase admin (decided 2026-10-21; these deletions are done: `008`, README D1) | five names quoting; a fixture print settles both instruments and rolls, in an integration test against CI Postgres (no staging gate, 2026-10-21) | 3, 5 |
 | 7 | Tournament bridge | crowd weight appears with ≥ 10 forecasters | 1, 6 |
 | 8 | Reference API + `/admin/dealer` + alerts | public endpoints cached, versions in every payload | 6, 7 |
 
@@ -305,8 +305,8 @@ Decisions: per-name T launch values; Q per name (flat $25k until
 `heat_scaled_q`); κ per name (labs may warrant 0.7); b and p_floor;
 blend constants; extraction provider (Nick's, with ingest);
 play-money restricted-person enforcement; closing a forward before
-settlement. Decided 2026-10-21: the Anthropic/Stripe LMSR markets are
-delisted and removed in milestone 6.
+settlement. Decided 2026-10-21, and done (`008`): the Anthropic/Stripe
+LMSR markets are removed.
 
 Risks: the down-round blind spot (sample has none; first one costs the
 cap); ingestion silence (alerts make it visible, not impossible); the

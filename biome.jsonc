@@ -42,8 +42,6 @@
         "noNonNullAssertion": "off"
       },
       "a11y": {
-        // Inputs revealed by a user action (username editor, price-moved confirm) take focus on purpose.
-        "noAutofocus": "off",
         // Segmented controls are divs with role=group; fieldset would fight the plate layout.
         "useSemanticElements": "off"
       }

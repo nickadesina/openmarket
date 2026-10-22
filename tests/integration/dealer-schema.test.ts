@@ -3,7 +3,6 @@ import { randomUUID } from "node:crypto";
 import { sql } from "kysely";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-import { createMigrator } from "../../src/lib/db/migrator.js";
 import type {
   EventFlagInsert,
   InstrumentInsert,
@@ -12,6 +11,7 @@ import type {
 } from "../../src/lib/db/schema.js";
 import {
   createPostgresTestDatabase,
+  migrateTestDatabase,
   type PostgresTestDatabase,
   resetPostgresTestDatabase,
   TEST_DATABASE_SKIP_REASON,
@@ -334,9 +334,14 @@ postgresDescribe(suiteName, () => {
   it("accepts long and short trades on the ledger", async () => {
     const forward = await insertInstrument({ kind: "forward", entry_ref_ln: 23.03 });
     const book = await insertMarket("forward_ln", { instrument_id: forward.id });
+    const tournamentUser = await postgres.db
+      .insertInto("tournament_users")
+      .defaultValues()
+      .returning("id")
+      .executeTakeFirstOrThrow();
     const user = await postgres.db
       .insertInto("users")
-      .values({ username: "Long", username_normalized: "long", cash_balance_cents: "100" })
+      .values({ tournament_user_id: tournamentUser.id, cash_balance_cents: "100" })
       .returning("id")
       .executeTakeFirstOrThrow();
     const trade = (side: string) =>
@@ -496,10 +501,10 @@ postgresDescribe(`${suiteName}: down`, () => {
   }
 
   it("drops every dealer table and restores the ladder's constraints, then re-applies", async () => {
-    const migrator = createMigrator(postgres.db, postgres.schema);
-    const down = await migrator.migrateDown();
+    // Down past every later migration to the one before 007.
+    const down = await migrateTestDatabase(postgres, "006_tournament_accounts");
     expect(down.error).toBeUndefined();
-    expect(down.results?.map((result) => result.migrationName)).toEqual(["007_dealer"]);
+    expect(down.results?.map((result) => result.migrationName).at(-1)).toBe("007_dealer");
 
     for (const table of ["listings", "instruments", "event_flags", "cron_runs", "quotes"]) {
       expect(await relationExists(table), table).toBe(false);
@@ -513,7 +518,7 @@ postgresDescribe(`${suiteName}: down`, () => {
     `.execute(postgres.db);
     expect(rows[0]!.definition).not.toContain("long");
 
-    const up = await migrator.migrateToLatest();
+    const up = await migrateTestDatabase(postgres, "latest");
     expect(up.error).toBeUndefined();
     expect(await relationExists("listings")).toBe(true);
   });

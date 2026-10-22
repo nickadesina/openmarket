@@ -7,3 +7,5 @@ Anthropic,Series G,2026-02-12,https://example.test/anthropic-series-g,TEST FIXTU
 Anduril,Series H,2026-05-13,https://example.test/anduril-release,"TEST FIXTURE, not a real source",Test,1,2026-05-13,2026-10-21T00:00:00Z
 Modal,Series D,2026-10-14,https://example.test/modal-filing,TEST FIXTURE – not a real source,Test,2,2026-10-14,2026-10-21T00:00:00Z
 Instinct,Series C,2026-09-28,https://example.test/instinct-release,TEST FIXTURE – not a real source,Test,,2026-09-28,2026-10-21T00:00:00Z
+Modal,Series C,2026-05-21,https://example.test/modal-series-c,TEST FIXTURE – not a real source,Test,1,2026-05-21,2026-10-21T00:00:00Z
+Instinct,Series B,2026-08-26,https://example.test/instinct-series-b,TEST FIXTURE – not a real source,Test,4,2026-08-26,2026-10-21T00:00:00Z
