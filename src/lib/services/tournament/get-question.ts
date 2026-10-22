@@ -226,12 +226,16 @@ async function summarize(
   };
 }
 
-/** Every public question, open ones first, then by close. Drafts are excluded. */
+/**
+ * The board: every public question, open ones first, then by close. Drafts
+ * and voided questions are left off; a voided question keeps its page at
+ * /t/q/[slug] for its note and its forecasts' proofs.
+ */
 export async function listQuestions(db: Kysely<Database>): Promise<QuestionSummary[]> {
   const rows = await db
     .selectFrom("tournament_questions")
     .selectAll()
-    .where("status", "<>", "draft")
+    .where("status", "not in", ["draft", "voided"])
     .orderBy("closes_at", "asc")
     .orderBy("slug", "asc")
     .execute();

@@ -34,7 +34,6 @@ function crowdHeadline(question: QuestionSummary): string {
 
 function statusLabel(question: QuestionSummary, now: number | null): string {
   if (question.status === "resolved") return "Resolved";
-  if (question.status === "voided") return "Voided";
   if (question.status === "closed") return "Closed, awaiting resolution";
   if (!question.acceptingForecasts && now !== null && Date.parse(question.opensAt) > now) {
     return `Opens ${formatTimeUntil(question.opensAt, now)}`;
