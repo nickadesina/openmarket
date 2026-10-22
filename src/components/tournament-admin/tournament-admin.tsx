@@ -292,7 +292,9 @@ function QuestionActions({ question }: { readonly question: AdminQuestion }) {
       {question.storedStatus !== "voided" &&
       (question.storedStatus !== "resolved" || inDisputeWindow) ? (
         <details>
-          <summary>{question.storedStatus === "resolved" ? "Void (dispute window)" : "Void"}</summary>
+          <summary>
+            {question.storedStatus === "resolved" ? "Void (dispute window)" : "Void"}
+          </summary>
           <NoteForm question={question} action="void" />
         </details>
       ) : null}

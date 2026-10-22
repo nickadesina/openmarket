@@ -49,7 +49,10 @@ function marketFigure(question: QuestionDetail): string | null {
     return instrument.yesPrice === null ? null : formatProbability(instrument.yesPrice);
   }
   if (question.unit === null || instrument.midUsd === null) return null;
-  return formatTournamentValue(usdInTournamentUnit(instrument.midUsd, question.unit), question.unit);
+  return formatTournamentValue(
+    usdInTournamentUnit(instrument.midUsd, question.unit),
+    question.unit,
+  );
 }
 
 function CrowdModule({ question }: { readonly question: QuestionDetail }) {
@@ -66,7 +69,7 @@ function CrowdModule({ question }: { readonly question: QuestionDetail }) {
   if (aggregate === null || figure === null) {
     const count = aggregate?.nForecasters ?? 0;
     return (
-      <div className={styles.crowd}>
+      <div className={styles.crowdPending}>
         <div className={styles.statePanel}>
           <strong>Not enough forecasts yet.</strong>
           <p>
@@ -288,8 +291,8 @@ function ScoringNote({ question }: { readonly question: QuestionDetail }) {
   if (question.kind === "binary") {
     return (
       <p className={styles.muted}>
-        Scored by time-averaged log score on the chance you held on the outcome, 100 / ln 2 · ln(2p):
-        100 is certain and right for the whole window, 0 is 50%, and a chance below{" "}
+        Scored by time-averaged log score on the chance you held on the outcome, 100 / ln 2 ·
+        ln(2p): 100 is certain and right for the whole window, 0 is 50%, and a chance below{" "}
         {formatProbability(rules.epsilon)} counts as {formatProbability(rules.epsilon)}, which
         scores {formatScore(rules.clampScore)}. Time before your first forecast counts as 0. The
         crowd is the geometric mean of odds across forecasters, extremized at a ={" "}

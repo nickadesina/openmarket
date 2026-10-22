@@ -170,9 +170,9 @@ export function ProvenancePage({
           <p>
             event_hash = sha256 of the UTF-8 concatenation question_id ‖ user_id ‖ submitted_at ‖
             payload. The payload is the forecast as canonical text: a binary&apos;s chance of YES
-            and of NO, comma-separated; a forward&apos;s level as &quot;fwd:&quot; and the
-            level to ten decimal places; a forecast from before questions took one number, its
-            archived probabilities, comma-separated. The four inputs, one per line here, are joined with no
+            and of NO, comma-separated; a forward&apos;s level as &quot;fwd:&quot; and the level to
+            ten decimal places; a forecast from before questions took one number, its archived
+            probabilities, comma-separated. The four inputs, one per line here, are joined with no
             separators:
           </p>
           <pre className={styles.code}>

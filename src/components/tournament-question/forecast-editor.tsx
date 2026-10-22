@@ -127,7 +127,11 @@ function Readout({
   cells,
   label,
 }: {
-  readonly cells: readonly { readonly label: string; readonly display: string; readonly own?: boolean }[];
+  readonly cells: readonly {
+    readonly label: string;
+    readonly display: string;
+    readonly own?: boolean;
+  }[];
   readonly label: string;
 }) {
   if (cells.length === 0) return null;
@@ -221,7 +225,12 @@ function BinaryEditor({
   }
   if (market !== null) {
     const display = formatProbability(market);
-    figures.push({ label: "Market", chip: `Market ${display}`, display, fill: percentText(market) });
+    figures.push({
+      label: "Market",
+      chip: `Market ${display}`,
+      display,
+      fill: percentText(market),
+    });
   }
 
   function change(next: string) {
@@ -406,9 +415,9 @@ function ForwardEditor({
       <Readout label="Published levels" cells={figures} />
       <p className={styles.previewLine} id={`${formId}-preview`}>
         <span>Score if it settles</span>
-        {FORWARD_PREVIEW.map((point) => `${point.label} ${Math.round(forwardScoreAtRatio(point.ratio))}`).join(
-          " · ",
-        )}
+        {FORWARD_PREVIEW.map(
+          (point) => `${point.label} ${Math.round(forwardScoreAtRatio(point.ratio))}`,
+        ).join(" · ")}
       </p>
       <p className={styles.muted}>
         The score you keep is this one averaged over the open window. Time before your first
