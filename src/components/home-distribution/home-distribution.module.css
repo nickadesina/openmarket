@@ -185,3 +185,15 @@
     min-width: 0;
   }
 }
+
+.state {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+}
+.retry {
+  composes: buttonBase from "../../styles/shared.module.css";
+}
+.skeleton {
+  composes: skeletonBlock from "../../styles/shared.module.css";
+  height: var(--space-6);
+}
