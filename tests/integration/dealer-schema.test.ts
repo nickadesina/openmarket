@@ -3,7 +3,6 @@ import { randomUUID } from "node:crypto";
 import { sql } from "kysely";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-import { createMigrator } from "../../src/lib/db/migrator.js";
 import type {
   EventFlagInsert,
   InstrumentInsert,
@@ -12,6 +11,7 @@ import type {
 } from "../../src/lib/db/schema.js";
 import {
   createPostgresTestDatabase,
+  migrateTestDatabase,
   type PostgresTestDatabase,
   resetPostgresTestDatabase,
   TEST_DATABASE_SKIP_REASON,
@@ -501,9 +501,8 @@ postgresDescribe(`${suiteName}: down`, () => {
   }
 
   it("drops every dealer table and restores the ladder's constraints, then re-applies", async () => {
-    const migrator = createMigrator(postgres.db, postgres.schema);
     // Down past every later migration to the one before 007.
-    const down = await migrator.migrateTo("006_tournament_accounts");
+    const down = await migrateTestDatabase(postgres, "006_tournament_accounts");
     expect(down.error).toBeUndefined();
     expect(down.results?.map((result) => result.migrationName).at(-1)).toBe("007_dealer");
 
@@ -519,7 +518,7 @@ postgresDescribe(`${suiteName}: down`, () => {
     `.execute(postgres.db);
     expect(rows[0]!.definition).not.toContain("long");
 
-    const up = await migrator.migrateToLatest();
+    const up = await migrateTestDatabase(postgres, "latest");
     expect(up.error).toBeUndefined();
     expect(await relationExists("listings")).toBe(true);
   });

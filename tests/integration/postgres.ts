@@ -65,8 +65,44 @@ async function executeAdminStatement(connectionString: string, statement: string
   }
 }
 
+/**
+ * Suites run in parallel, each in its own schema, but Kysely's migrator
+ * introspects tables across every schema: a suite dropping its schema while
+ * another migrates fails the migration with "schema … does not exist". One
+ * session-level advisory lock serializes schema migration and teardown.
+ */
+const SCHEMA_DDL_LOCK = 7_340_211;
+
+async function withSchemaDdlLock<T>(connectionString: string, work: () => Promise<T>): Promise<T> {
+  const client = new Client({ connectionString });
+  await client.connect();
+  try {
+    await client.query("select pg_advisory_lock($1)", [SCHEMA_DDL_LOCK]);
+    try {
+      return await work();
+    } finally {
+      await client.query("select pg_advisory_unlock($1)", [SCHEMA_DDL_LOCK]);
+    }
+  } finally {
+    await client.end();
+  }
+}
+
 async function dropSchema(connectionString: string, schema: string): Promise<void> {
-  await executeAdminStatement(connectionString, `drop schema if exists "${schema}" cascade`);
+  await withSchemaDdlLock(connectionString, () =>
+    executeAdminStatement(connectionString, `drop schema if exists "${schema}" cascade`),
+  );
+}
+
+/** Migrates a test schema up or down under the schema DDL lock. */
+export function migrateTestDatabase(
+  postgres: PostgresTestDatabase,
+  target: "latest" | string,
+): ReturnType<ReturnType<typeof createMigrator>["migrateToLatest"]> {
+  const migrator = createMigrator(postgres.db, postgres.schema);
+  return withSchemaDdlLock(postgres.connectionString, () =>
+    target === "latest" ? migrator.migrateToLatest() : migrator.migrateTo(target),
+  );
 }
 
 /** A fresh schema migrated to latest, or to `migrateTo` to test a later migration on old data. */
@@ -84,10 +120,9 @@ export async function createPostgresTestDatabase(
   try {
     // Kysely otherwise treats a migration table in any test schema as its own.
     const migrator = createMigrator(db, schema);
-    const migration =
-      migrateTo === undefined
-        ? await migrator.migrateToLatest()
-        : await migrator.migrateTo(migrateTo);
+    const migration = await withSchemaDdlLock(connectionString, () =>
+      migrateTo === undefined ? migrator.migrateToLatest() : migrator.migrateTo(migrateTo),
+    );
     if (migration.error !== undefined) throw migration.error;
 
     const results = migration.results ?? [];
