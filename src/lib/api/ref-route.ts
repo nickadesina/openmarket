@@ -45,7 +45,7 @@ export async function withRefRoute(
     request.headers.has("authorization") ? {} : { cacheSeconds: REF_CACHE_SECONDS },
   );
   response.headers.set("Vary", "Authorization");
-  if (request.headers.has("authorization"))
+  if (response.ok && request.headers.has("authorization"))
     response.headers.set("Cache-Control", "private, no-store");
   return response;
 }
