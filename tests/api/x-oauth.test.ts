@@ -117,8 +117,47 @@ describe("X OAuth 2.0 PKCE", () => {
 
   it("fails closed on an X error", async () => {
     const fetchImpl = vi.fn(async () => new Response("nope", { status: 400 }));
-    await expect(
-      fetchXProfile(CONFIG, "code", "verifier", fetchImpl as typeof fetch),
-    ).rejects.toBeInstanceOf(XSignInError);
+    const failure = fetchXProfile(CONFIG, "code", "verifier", fetchImpl as typeof fetch);
+    await expect(failure).rejects.toBeInstanceOf(XSignInError);
+    await expect(failure).rejects.toThrow(/^X token exchange failed \(400\)\.$/);
+  });
+
+  it("names X's problem fields on a refused profile lookup, and nothing else", async () => {
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input) === X_TOKEN_URL) {
+        return Response.json({ access_token: "secret-access-token", token_type: "bearer" });
+      }
+      return Response.json(
+        {
+          title: "Client Forbidden",
+          detail:
+            "This request must be made using an approved developer account\nattached to a Project.",
+          type: "https://api.twitter.com/2/problems/client-forbidden",
+          reason: "client-not-enrolled",
+          client_id: "client-id",
+          access_token: "secret-access-token",
+        },
+        { status: 403 },
+      );
+    });
+    const failure = fetchXProfile(CONFIG, "code", "verifier", fetchImpl as typeof fetch);
+    await expect(failure).rejects.toThrow(
+      'X profile lookup failed (403). title="Client Forbidden" detail="This request must be made using an approved developer account attached to a Project." type="https://api.twitter.com/2/problems/client-forbidden" reason="client-not-enrolled"',
+    );
+    await expect(failure).rejects.not.toThrow(/secret-access-token|client_id/);
+  });
+
+  it("reads only string problem fields from a refused token exchange, capped in length", async () => {
+    const fetchImpl = vi.fn(async () =>
+      Response.json(
+        { title: "x".repeat(1_000), reason: 42, error: "invalid_grant", code: "code" },
+        { status: 401 },
+      ),
+    );
+    const failure = fetchXProfile(CONFIG, "code", "verifier", fetchImpl as typeof fetch);
+    await expect(failure).rejects.toThrow(
+      `X token exchange failed (401). title="${"x".repeat(300)}"`,
+    );
+    await expect(failure).rejects.not.toThrow(/reason|invalid_grant/);
   });
 });

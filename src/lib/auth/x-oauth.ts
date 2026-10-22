@@ -161,6 +161,32 @@ export class XSignInError extends Error {
   }
 }
 
+const X_PROBLEM_FIELDS = ["title", "detail", "type", "reason"] as const;
+const X_PROBLEM_FIELD_MAX = 300;
+
+/**
+ * X's problem fields (title, detail, type, reason) for the server log, as
+ * ` title="…" reason="…"`, or "" when the body has none. Only these string
+ * fields are read, never the body whole, so a token X echoes cannot reach the log.
+ */
+async function describeXProblem(response: Response): Promise<string> {
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    return "";
+  }
+  if (typeof body !== "object" || body === null) return "";
+  const record = body as Record<string, unknown>;
+  const fields = X_PROBLEM_FIELDS.flatMap((key) => {
+    const value = record[key];
+    if (typeof value !== "string") return [];
+    const clean = value.replace(/\p{Cc}/gu, " ").slice(0, X_PROBLEM_FIELD_MAX);
+    return [`${key}=${JSON.stringify(clean)}`];
+  });
+  return fields.length === 0 ? "" : ` ${fields.join(" ")}`;
+}
+
 /** Exchanges the code, fetches the public profile, and drops the token. */
 export async function fetchXProfile(
   config: XClientConfig,
@@ -183,16 +209,20 @@ export async function fetchXProfile(
       client_id: config.clientId,
     }).toString(),
   });
-  if (!tokenResponse.ok)
-    throw new XSignInError(`X token exchange failed (${tokenResponse.status}).`);
+  if (!tokenResponse.ok) {
+    const problem = await describeXProblem(tokenResponse);
+    throw new XSignInError(`X token exchange failed (${tokenResponse.status}).${problem}`);
+  }
   const token = tokenSchema.safeParse(await tokenResponse.json());
   if (!token.success) throw new XSignInError("X returned an unreadable token.");
 
   const profileResponse = await fetchImpl(X_PROFILE_URL, {
     headers: { Authorization: `Bearer ${token.data.access_token}` },
   });
-  if (!profileResponse.ok)
-    throw new XSignInError(`X profile lookup failed (${profileResponse.status}).`);
+  if (!profileResponse.ok) {
+    const problem = await describeXProblem(profileResponse);
+    throw new XSignInError(`X profile lookup failed (${profileResponse.status}).${problem}`);
+  }
   const profile = profileSchema.safeParse(await profileResponse.json());
   if (!profile.success) throw new XSignInError("X returned an unreadable profile.");
 
