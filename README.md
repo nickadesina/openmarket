@@ -242,6 +242,8 @@ for 10 seconds: `GET /api/t/questions`, `/api/t/questions/[slug]`,
 `/api/t/leaderboard?period=all|YYYY-MM`, `/api/t/users/[handle]`,
 `/api/t/derived`. Session: `GET /api/t/me`,
 `POST /api/t/questions/[slug]/forecasts`, `POST /api/t/me/affiliation`,
+`GET`/`POST /api/t/me/restrictions`,
+`POST /api/t/questions/[slug]/evidence`,
 `POST /api/t/auth/logout`; username accounts:
 `POST /api/t/auth/password/register` and `/login`;
 X sign-in starts at `GET /api/t/auth/x/start?return=<path>` (any
@@ -263,8 +265,46 @@ transaction, and re-verifies the hash chain in the visitor's browser.
 Leaves are append-only and batch commitments immutable; `verify:replay`
 rebuilds every root.
 
+Bridge to the dealer (milestone 7, `services/dealer/tournament-bridge.ts`,
+migration `011_tournament_bridge`):
+
+- Every instrument the dealer lists gets a question, created and opened
+  through the tournament's own services in the listing's transaction and
+  linked in `tournament_instrument_links`; live instruments listed before
+  the bridge are linked on the next dealer run. A binary asks its own
+  question as Yes/No, closing at its expiry. A forward asks for the next
+  post-money on a ladder in USD_B (USD_T from a $1T mid): the valuation
+  grid's boundaries strictly between the 1st and 99th percentile of the
+  implied lognormal at the listing mid and σ_tier, to three significant
+  figures (`engine/dealer/question-ladder.ts`), plus the floor bucket "No
+  qualifying print by {expiry}". Slugs are
+  `{name}-{round|s1|next-print}-by-{expiry}`; the question's integer
+  rulebook version is the dealer rulebook's major version, its text cites
+  the full one.
+- The settle job resolves the question in the settlement's transaction,
+  as its run (`tournament_resolutions.settle_run_id`; a resolution has a
+  resolver or a run): the scoring window is back-dated to the settling
+  announcement, even one observed in the grace day after the scheduled
+  close; the rung is the settling flag's source rank, the document its
+  URL; a NO has neither. A forward void voids the question, so the floor
+  never wins. A question an admin already resolved or voided is left as
+  it stands; `verify:replay` checks every settled link's bucket.
+- Evidence: `POST /api/t/questions/[slug]/evidence` (signed in, 10 an
+  hour per forecaster and 30 per network) files a low-confidence
+  `user_submitted` flag for the linked name, its submitter and claimed
+  kind in their own columns; the dealer reads none of it. `/admin/dealer`
+  lists unreviewed submissions; an admin confirms one by citing a later
+  independent flag for the same name, or rejects it, once
+  (`event_flag_reviews`, append-only, `POST
+  /api/admin/dealer/evidence/[flagId]/review`). Open (Nick): the size of
+  the fixed bonus score a confirmation earns; no bonus row is written
+  until it is decided.
+- Restricted persons: the attestation sits beside the affiliation on the
+  forecaster's own profile (D12).
+
 Not built yet: CSV export, track-record weighting, password change and
-recovery, prize payment (off-platform by design).
+recovery, prize payment (off-platform by design), the evidence bonus
+score.
 
 ### D10. Launch universe: five names, two prices each — Adopted
 
@@ -371,6 +411,16 @@ refuses a trade past [p_floor, 1 − p_floor]. `dealer_pnl` (migration
 per instrument; `verify:replay` replays forward books by forward rules and
 recomputes every quote.
 
+Restricted persons (CONTRACTS.md): a forecaster attests on their own
+profile which listed names they are employed by, a director of, or
+invested in (`GET`/`POST /api/t/me/restrictions`; migration `011` keeps
+every attestation, the latest in force). `services/tournament/restrictions.ts`
+refuses those names inside the quote and trade services with
+`RESTRICTED_PERSON` (403): `/api/quote`, `/api/trade`,
+`/api/forward/trade`, and the instrument quote when signed in (it stays
+public signed out). The market page shows a one-line reason in place of
+the ticket. Self-reported, play money; KYC later.
+
 ### D13. Rulebook and settlement — Adopted
 
 A print is the post-money of a priced primary round (IPO first-day
@@ -429,8 +479,9 @@ row per listing and kind when its value, weights, versions or
 instrument move, with `components_json` citing the model mid by id,
 the 30-day traded average on the instrument's own book
 (notional-weighted entry for the forward, cash-weighted YES price for
-the binary) and the linked tournament aggregate
-(`tournament_instrument_links`, milestone 7; no link, no crowd);
+the binary) and the latest aggregate of the instrument's linked question
+(D9: P(yes), or the median in its unit as ln USD), which carries
+w_c = 0.3 from ten forecasters (`tests/integration/crowd-gate.test.ts`);
 `verify:replay` recomputes every row from its components and each
 component from the table it cites. `GET /api/ref/listings`,
 `/api/ref/[slug]`, `/[slug]/history`, `/[slug]/mids`, `/[slug]/flags`
@@ -441,12 +492,13 @@ then one unit of the `ref` quota, 60 a minute per network, or a key's
 own with `Authorization: Bearer <key>` (migration `010_api_keys`); an
 unknown or revoked key is refused (401), never served as public.
 `npm run api-key:create -- --name=<desk> [--quota=600]` prints a key
-once and stores its SHA-256. The forward's reference blends the model
+once and stores its SHA-256. `/api/ref/[slug]` lists each live
+instrument's `question_slug`. The forward's reference blends the model
 mid, not the inventory-skewed quote mid, and the API publishes only the
 inventory's sign, on the reference and on the tape. `/admin/dealer`
 (tournament admins, via `/api/admin/dealer`) shows `dealer_pnl`, live
 instruments, recent runs, the settle job's pending rank 3–4 promotions
-(read-only) and `source_health`; `dealer-alerts.yml` fails daily when
+(read-only), the evidence queue (D9) and `source_health`; `dealer-alerts.yml` fails daily when
 any instrument stays widened past the 72 h hold. Not built: the admin
 actions on the resolution queue, the silent-source and
 print-without-scoop alerts (ingest's), and the correcting settlement.
@@ -519,8 +571,10 @@ npm run dev              # http://localhost:3000, never 127.0.0.1
   overrides the public endpoint. Without the key, roots are committed
   and shown but not posted; posting resumes from the oldest pending hour
   once it is set. Fund the wallet with fee SOL only. Apply migration
-  `005_tournament_provenance` before serving this version, and
-  `006_tournament_accounts` for affiliations and username accounts.
+  `005_tournament_provenance` before serving this version,
+  `006_tournament_accounts` for affiliations and username accounts, and
+  `011_tournament_bridge` for linked questions, evidence and restricted
+  persons.
 
 ### Backtest
 
@@ -570,5 +624,9 @@ See `PART5.md` for the environment contract.
 | Flags halve the binary's b | Dropped | Never simulated, and it needs a mutable b with an adjustment log in replay. Flags act on the forward only (D12). |
 | Three cron routes | Fixed | `TECHNICAL_DESIGN.md` §5 named a fourth, `/api/cron/mid`; the mid step now runs inside `/api/cron/dealer`, so there are three routes (ingest, dealer, settle). |
 | `outcome = void` is a tournament schema change | False | The tournament already has `status = 'voided'` and `voidQuestion`, which writes no scores. The bridge uses it. |
+| The bridge needs no tournament schema change | Partly | Questions, buckets and voids are unchanged; `011` lets a settle run, not a person, be a resolution's resolver (`settle_run_id`), and the close service back-dates past a scheduled close for the bridge only (D9). |
+| The crowd enters the reference price | Fixed | Milestone 7: every live instrument has a linked question; ten forecasters give w_c = 0.3 (D14, `crowd-gate.test.ts`). |
+| Restricted persons attest at sign-in (`CONTRACTS.md`) | Partly | The attestation is on the forecaster's profile, not a sign-in step; refusal at the API and the hidden ticket are as specified (D12). |
+| A confirmed evidence flag pays a fixed bonus score (`TECHNICAL_DESIGN.md` §7) | Open | The review is built (D9); the bonus size is Nick's to decide, so no bonus row is written. |
 | Launch T settles most forward lives | False for some | On `events.csv` with roll-on-void, Modal (120 d) settles 3 of 10 resolved lives (an 11th is open) and Anduril (270 d) 3 of 7 (an 8th is open); `tests/fixtures/rulebook-events.json` lists each. |
 | Early YES rolls into next quarter's binary | Decided | `docs/decisions/0002-binary-event-window-and-expiry.md`: any announcement strictly after listing counts, and expiry is this quarter-end with ≥ 21 days left, else the next. Instinct's Series A, B and C now resolve three Q3 2026 binaries; `binaryExpiry` in the rulebook, `binary_expiry` in `sim.py`, and `params.json` → `contract.binary_min_days` agree, and a test checks it. |
