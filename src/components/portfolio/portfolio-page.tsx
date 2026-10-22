@@ -603,6 +603,12 @@ export function PortfolioPage() {
         </button>
       </header>
 
+      {portfolioQuery.isError ? (
+        <p className={styles.stateLabel} role="status">
+          Refresh paused. Showing the last confirmed account.
+        </p>
+      ) : null}
+
       {completion !== null ? (
         <div className={styles.successNotice} role="status">
           <span>{completion}</span>

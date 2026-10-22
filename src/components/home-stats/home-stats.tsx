@@ -115,7 +115,11 @@ export function HomeStats({
           </dd>
         </div>
       </dl>
-      <p className={styles.note}>Refreshes every {POLL_INTERVAL_MS / 1000}s</p>
+      <p className={styles.note}>
+        {marketsQuery.isError
+          ? "Refresh paused; showing confirmed levels."
+          : `Refreshes every ${POLL_INTERVAL_MS / 1000}s`}
+      </p>
     </div>
   );
 }
