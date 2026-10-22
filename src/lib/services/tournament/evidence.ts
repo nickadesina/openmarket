@@ -6,11 +6,11 @@ import { ServiceError } from "../../api/errors.js";
 import type { EvidenceInput, EvidenceReviewInput } from "../../api/tournament-schemas.js";
 import type {
   Database,
-  EventFlagKind,
   EventFlagReviewDecision,
   EvidenceKind,
   JsonObject,
 } from "../../db/schema.js";
+import { FLAG_KINDS, type FlagKind } from "../../engine/dealer/lifecycle.js";
 import { identitiesFor } from "./identities.js";
 import { databaseNow, requireQuestion, type TournamentDb } from "./records.js";
 
@@ -185,15 +185,7 @@ export async function submitEvidence(
 }
 
 /** Flags an admin may cite as the later independent confirmation of a submission. */
-const CONFIRMING_KINDS: readonly EventFlagKind[] = [
-  "form_d",
-  "form_d_amend",
-  "charter",
-  "scoop",
-  "release",
-  "s1_public",
-  "print",
-];
+const CONFIRMING_KINDS = FLAG_KINDS.filter((kind) => kind !== "user_submitted");
 
 export interface EvidenceReview {
   readonly id: string;
@@ -281,7 +273,7 @@ export interface PendingEvidence {
   /** Later flags for the same name an admin may confirm it with, same report first. */
   readonly candidates: readonly {
     readonly flag_id: string;
-    readonly kind: EventFlagKind;
+    readonly kind: FlagKind;
     readonly source_url: string | null;
     readonly observed_at: Date;
     readonly same_report: boolean;

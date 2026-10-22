@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { forecasterHref, useTournamentViewer, useTournamentSignOut } from "../../lib/client/tournament.js";
+import {
+  forecasterHref,
+  useTournamentSignOut,
+  useTournamentViewer,
+} from "../../lib/client/tournament.js";
 import { SignInCallout } from "./sign-in-callout.js";
 import { DevSignIn } from "./tournament-account.js";
 import styles from "./tournament-nav.module.css";

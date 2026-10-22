@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 
 import { binaryScore, forwardScore } from "../engine/tournament/score.js";
 import type { Viewer, ViewerForecast } from "../services/tournament/forecaster.js";
+import type { QuestionDetail } from "../services/tournament/get-question.js";
+import type { AggregateView } from "../services/tournament/records.js";
 import { apiRequest } from "./api.js";
 import type {
   BinaryScoreBounds,
@@ -10,6 +12,7 @@ import type {
   WindowCoverage,
   WindowSpanUnit,
 } from "./format.js";
+import { usdInTournamentUnit } from "./format.js";
 import { queryKeys } from "./query-keys.js";
 
 /** The forward preview's misses: exact, 10% either side, 2× either side. */
@@ -130,4 +133,33 @@ export function useTournamentSignOut() {
     mutationFn: () => apiRequest("/api/t/auth/logout", { method: "POST", body: "{}" }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.all }),
   });
+}
+
+/** The numeric crowd figure shared by the readout and the editable forecast chips. */
+export function tournamentCrowdValue(
+  question: Pick<QuestionDetail, "kind">,
+  aggregate: AggregateView | null,
+): number | null {
+  if (aggregate?.published !== true) return null;
+  return question.kind === "binary" ? aggregate.p : aggregate.value;
+}
+
+/** A linked contract's figure in the question's own units. */
+export function tournamentMarketValue(question: QuestionDetail): number | null {
+  const instrument = question.instrument;
+  if (instrument === null) return null;
+  if (question.kind === "binary") return instrument.yesPrice;
+  if (question.unit === null || instrument.midUsd === null) return null;
+  return usdInTournamentUnit(instrument.midUsd, question.unit);
+}
+
+/** Same scorer and miss ratios as the forward editor, including its doubled outer miss. */
+export function forwardRuleScores() {
+  const [exact, near, double] = forwardScoreLadder(1).rungs;
+  return {
+    exact: exact!.score,
+    near: near!.score,
+    double: double!.score,
+    quadruple: forwardScore(1, FORWARD_MISS_RATIOS[2] ** 2),
+  };
 }

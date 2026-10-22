@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useId, useState } from "react";
 
+import { PASSWORD_MIN_LENGTH } from "../../lib/api/tournament-schemas.js";
 import { safeReturnPath, welcomeHref } from "../../lib/auth/return-path.js";
 import { ApiClientError, apiRequest } from "../../lib/client/api.js";
 import { errorMessage } from "../../lib/client/format.js";
@@ -12,8 +13,6 @@ import { useTournamentViewer, xSignInHref } from "../../lib/client/tournament.js
 import styles from "./signin-page.module.css";
 
 type Mode = "sign-in" | "create";
-
-const PASSWORD_MIN_LENGTH = 10;
 
 function failure(error: unknown): string {
   if (error instanceof ApiClientError && error.code === "INVALID_INPUT") {

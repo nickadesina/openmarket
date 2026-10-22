@@ -8,7 +8,12 @@ import { type FormEvent, useState } from "react";
 import { apiRequest } from "../../lib/client/api.js";
 import { errorMessage, formatCents, formatForecasterName } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
-import { forecasterHref, signInHref, useTournamentViewer, useTournamentSignOut } from "../../lib/client/tournament.js";
+import {
+  forecasterHref,
+  signInHref,
+  useTournamentSignOut,
+  useTournamentViewer,
+} from "../../lib/client/tournament.js";
 import { UserIcon } from "../icons/icons.js";
 import styles from "./tournament-nav.module.css";
 

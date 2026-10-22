@@ -124,7 +124,6 @@ button.link {
   background: var(--color-primary-subtle);
 }
 
-
 .accountError {
   color: var(--color-primary);
   font-size: var(--font-size-xs);
