@@ -1,3 +1,5 @@
+import { assertFinite, assertPositive } from "../assert.js";
+import { CENT_TOLERANCE } from "../types.js";
 /**
  * The next-print forward's quoter and payout (CONTRACTS.md → Contract B and
  * The dealer). Pure: every parameter arrives as an argument, so the services
@@ -79,22 +81,6 @@ export interface ForwardPosition {
   readonly entryLn: number;
   /** κ the position opened under. */
   readonly kappa: number;
-}
-
-/** Same tolerance as lmsr.ts's quantizeEntitlementCents, for float noise around a whole cent. */
-const CENT_TOLERANCE = 1e-6;
-
-function assertFinite(value: number, name: string): void {
-  if (!Number.isFinite(value)) {
-    throw new RangeError(`${name} must be finite`);
-  }
-}
-
-function assertPositive(value: number, name: string): void {
-  assertFinite(value, name);
-  if (value <= 0) {
-    throw new RangeError(`${name} must be greater than zero`);
-  }
 }
 
 function assertSafeInteger(value: number, name: string): void {

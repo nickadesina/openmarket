@@ -1,3 +1,4 @@
+import { assertFinite, assertPositive } from "../assert.js";
 /**
  * The quarterly timing binary on the existing LMSR (CONTRACTS.md → Contract
  * A, README D12): two outcomes, NO at index 0 and YES at index 1 as
@@ -26,19 +27,6 @@ export type BinaryClampCheck =
       readonly reason: "below_floor" | "above_ceiling";
       readonly yesProbabilityAfter: number;
     };
-
-function assertFinite(value: number, name: string): void {
-  if (!Number.isFinite(value)) {
-    throw new RangeError(`${name} must be finite`);
-  }
-}
-
-function assertPositive(value: number, name: string): void {
-  assertFinite(value, name);
-  if (value <= 0) {
-    throw new RangeError(`${name} must be greater than zero`);
-  }
-}
 
 function assertPFloor(pFloor: number): void {
   assertFinite(pFloor, "pFloor");

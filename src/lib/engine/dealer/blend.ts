@@ -1,3 +1,4 @@
+import { assertFinite } from "../assert.js";
 /**
  * The published reference price (README D14, TECHNICAL_DESIGN.md §8): a
  * pre-committed blend of the model mid, the 30-day traded price on the
@@ -88,10 +89,6 @@ export interface BlendResult {
   readonly weights: BlendWeights;
   /** True when R is the model mid exactly: no flow and no crowd past N_min. */
   readonly modelOnly: boolean;
-}
-
-function assertFinite(value: number, name: string): void {
-  if (!Number.isFinite(value)) throw new RangeError(`${name} must be finite`);
 }
 
 function assertProbability(value: number, name: string, open: boolean): void {

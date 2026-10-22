@@ -1,22 +1,11 @@
+import { assertFinite, assertPositive } from "./assert.js";
+
 /** The two-outcome LMSR book a dealer binary trades on, seeded at a YES probability. */
 
 interface SeededMarket {
   probabilities: number[];
   q: number[];
   currentMetric: number;
-}
-
-function assertFinite(value: number, name: string): void {
-  if (!Number.isFinite(value)) {
-    throw new RangeError(`${name} must be finite`);
-  }
-}
-
-function assertPositive(value: number, name: string): void {
-  assertFinite(value, name);
-  if (value <= 0) {
-    throw new RangeError(`${name} must be greater than zero`);
-  }
 }
 
 function quantitiesFromProbabilities(probabilities: readonly number[], b: number): number[] {

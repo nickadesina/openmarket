@@ -1,3 +1,4 @@
+import { assertDate } from "../assert.js";
 /**
  * The `instruments.state` machine (CONTRACTS.md → Lifecycle,
  * TECHNICAL_DESIGN.md §6) as a pure transition function. It decides state
@@ -12,14 +13,13 @@
  * an event cannot settle or roll twice.
  */
 import {
+  afterGrace,
   type BinaryResolution,
   type ForwardResolution,
-  RULEBOOK,
   type SourceRank,
 } from "./rulebook.js";
 
 const HOUR_MS = 3_600_000;
-const DAY_MS = 86_400_000;
 
 export const INSTRUMENT_STATES = ["quoting", "widened", "resolved", "expired"] as const;
 export type InstrumentState = (typeof INSTRUMENT_STATES)[number];
@@ -121,12 +121,6 @@ export interface Transition {
   readonly effects: readonly LifecycleEffect[];
 }
 
-function assertDate(value: Date, name: string): void {
-  if (!(value instanceof Date) || !Number.isFinite(value.getTime())) {
-    throw new RangeError(`${name} must be a valid Date`);
-  }
-}
-
 function validateSnapshot(instrument: InstrumentSnapshot): void {
   if (instrument.kind !== "binary" && instrument.kind !== "forward") {
     throw new RangeError('kind must be "binary" or "forward"');
@@ -154,11 +148,6 @@ function unchanged(instrument: InstrumentSnapshot): Transition {
 
 function quoting(instrument: InstrumentSnapshot): InstrumentSnapshot {
   return { ...instrument, state: "quoting", widenedAt: null, widenedUntil: null };
-}
-
-/** Same deadline rule as the rulebook: an outcome is final one grace day after T. */
-function pastGrace(expiresAt: Date, at: Date): boolean {
-  return at.getTime() > expiresAt.getTime() + RULEBOOK.observation_grace_days * DAY_MS;
 }
 
 function end(
@@ -215,7 +204,7 @@ function onRemid(instrument: InstrumentSnapshot, at: Date): Transition {
  * announcement dated ≤ T but observed in the grace day still resolves it.
  */
 function onTick(instrument: InstrumentSnapshot, now: Date): Transition {
-  if (pastGrace(instrument.expiresAt, now)) {
+  if (afterGrace(instrument.expiresAt, now)) {
     const outcome: LifecycleEffect =
       instrument.kind === "binary" ? { type: "pay_no" } : { type: "void" };
     return end(instrument, "expired", outcome, now, null);
@@ -288,7 +277,7 @@ function onForwardResolve(
     case "void":
       return end(
         instrument,
-        pastGrace(instrument.expiresAt, at) ? "expired" : "resolved",
+        afterGrace(instrument.expiresAt, at) ? "expired" : "resolved",
         { type: "void" },
         at,
         null,
