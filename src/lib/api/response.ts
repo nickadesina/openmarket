@@ -83,11 +83,15 @@ export function jsonSuccess<T>(data: T, init: JsonResponseInit = {}): Response {
 }
 
 export function jsonError(error: ServiceError, requestId: string): Response {
+  // Authentication context is server-only: distinguish forbidden from signed out
+  // without changing the public error code or exposing the guard's metadata.
+  const details = { ...error.details };
+  if (error.code === "ADMIN_REQUIRED") delete details.authenticated;
   const envelope: ErrorEnvelope = {
     error: {
       code: error.code,
       message: error.message,
-      details: error.details,
+      details,
     },
   };
 
@@ -97,7 +101,10 @@ export function jsonError(error: ServiceError, requestId: string): Response {
   }
 
   return new Response(jsonBody(envelope), {
-    status: SERVICE_ERROR_STATUS[error.code],
+    status:
+      error.code === "ADMIN_REQUIRED" && error.details.authenticated === true
+        ? 403
+        : SERVICE_ERROR_STATUS[error.code],
     headers,
   });
 }

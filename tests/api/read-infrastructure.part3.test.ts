@@ -163,3 +163,25 @@ describe("Part 3 current user", () => {
     expect(accounts.where).toHaveBeenCalledWith("tournament_user_id", "=", "tournament-user-1");
   });
 });
+
+it("distinguishes a signed-in admin denial while preserving anonymous and cron denials", () => {
+  expect(
+    jsonError(new ServiceError("ADMIN_REQUIRED", "Admin required.", { authenticated: true }), "r")
+      .status,
+  ).toBe(403);
+  expect(
+    jsonError(new ServiceError("ADMIN_REQUIRED", "Admin required.", { authenticated: false }), "r")
+      .status,
+  ).toBe(401);
+  expect(jsonError(new ServiceError("ADMIN_REQUIRED", "Admin required."), "r").status).toBe(401);
+});
+
+it("keeps server-only admin authentication context out of the public response", async () => {
+  const response = jsonError(
+    new ServiceError("ADMIN_REQUIRED", "Admin required.", { authenticated: true }),
+    "r",
+  );
+  await expect(response.json()).resolves.toEqual({
+    error: { code: "ADMIN_REQUIRED", message: "Admin required.", details: {} },
+  });
+});

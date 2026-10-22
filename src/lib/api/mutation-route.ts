@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Kysely } from "kysely";
-import type { ZodType } from "zod";
+import type { ZodIssue, ZodType } from "zod";
 import { getRuntimeDatabase } from "../db/runtime.js";
 import type { Database } from "../db/schema.js";
 import { logReadRequest, logUnexpectedError } from "../logging/server-log.js";
@@ -57,6 +57,11 @@ async function readBoundedJson(request: Request, maximumBytes: number): Promise<
   return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(Buffer.concat(chunks)));
 }
 
+function firstInvalidPath(issue: ZodIssue | undefined): string {
+  if (issue?.code === "invalid_union") return firstInvalidPath(issue.errors[0]?.[0]);
+  return issue?.path.map(String).join(".") || "body";
+}
+
 export async function parseMutationBody<T>(
   request: Request,
   schema: ZodType<T>,
@@ -71,7 +76,7 @@ export async function parseMutationBody<T>(
 
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
-    const path = parsed.error.issues[0]?.path.join(".") || "body";
+    const path = firstInvalidPath(parsed.error.issues[0]);
     throw new ServiceError("INVALID_INPUT", `Request body is invalid at ${path}.`);
   }
   return parsed.data;
