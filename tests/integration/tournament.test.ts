@@ -1,7 +1,5 @@
-import { batchCompletedHours } from "../../src/lib/services/tournament/provenance.js";
 import { sql } from "kysely";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-
 import { type QuestionInput, questionInputSchema } from "../../src/lib/api/tournament-schemas.js";
 import {
   createTournamentSession,
@@ -34,6 +32,8 @@ import {
   getLeaderboard,
   listLeaderboardPeriods,
 } from "../../src/lib/services/tournament/leaderboard.js";
+import { batchCompletedHours } from "../../src/lib/services/tournament/provenance.js";
+import { seedQuestion } from "../../src/lib/services/tournament/seed-question.js";
 import { upsertIdentity } from "../../src/lib/services/tournament/sign-in.js";
 import {
   forecastEventHash,
@@ -185,6 +185,24 @@ postgresDescribe(suiteName, () => {
       })
       .execute();
   }
+
+  it("rolls back the seeded draft if opening it fails", async () => {
+    const now = Date.now();
+    await expect(
+      seedQuestion(
+        postgres.db,
+        binary("seed-expired", new Date(now - 2 * HOUR), new Date(now - HOUR)),
+        true,
+      ),
+    ).rejects.toMatchObject({ code: "QUESTION_STATE" });
+    expect(
+      await postgres.db
+        .selectFrom("tournament_questions")
+        .select("id")
+        .where("slug", "=", "seed-expired")
+        .execute(),
+    ).toEqual([]);
+  });
 
   it("keeps an identity per X id and refreshes its handle", async () => {
     const { userId: again } = await upsertIdentity(postgres.db, {
