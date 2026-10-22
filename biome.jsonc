@@ -36,8 +36,9 @@
       "style": {
         // Module stylesheets group a control's states next to its base rule; the cascade order is intentional and local.
         "noDescendingSpecificity": "off",
-        // `!` after an index read is deliberate here: tsconfig sets noUncheckedIndexedAccess,
-        // and the engine asserts array shape at its boundaries.
+        // noUncheckedIndexedAccess also flags validated engine vectors, test fixtures,
+        // service query results, and UI arrays/query values guarded before use. Keep
+        // assertions available across those layers; their owners audit the guards.
         "noNonNullAssertion": "off"
       },
       "a11y": {
