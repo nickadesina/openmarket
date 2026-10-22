@@ -33,6 +33,8 @@ file is more specific, it wins.
 | `dedupe_key` | text | **indexed, not unique**: syndications of one report share a key; the rulebook counts distinct `terms_json.outlet` within a key |
 | `promoted_from` | fk event_flags | `print` rows only: the `release`/`s1_public` flag promoted; null for admin-created prints |
 | `run_id` | fk cron_runs | nullable (null for fixtures and admin rows) |
+| `submitted_by` | fk tournament_users | `user_submitted` rows only: the forecaster who filed the evidence (`011`) |
+| `submitted_kind` | text | `user_submitted` rows only: the kind the submitter claims (`011`) |
 | `created_at` | timestamptz | generated |
 
 Append-only via the same trigger the tournament uses. No `updated_at`.
@@ -90,9 +92,10 @@ until then, so ingest landing is a data change, not a UI change.
 - A `scoop` on a Tier-1 RSS feed becomes a row within one 15-minute
   job run; the dealer job that follows widens within 30 minutes of
   publication.
-- A `release` with `confidence: high` and a post-money is promotable
-  to `print` by the settle job without human action; anything less
-  waits in the admin queue.
+- A `release` or `s1_public` with `confidence: high`, source rank 1–2,
+  a `source_url` and a post-money is promoted to `print` by the settle
+  job without human action; anything less waits for the admin queue
+  (not built: `/admin/dealer` lists rank 3–4 as pending, read-only).
 - Every row has a `run_id`; every run has a `cron_runs` row; nothing
   is written outside a run except admin-created prints and
   `user_submitted` flags.

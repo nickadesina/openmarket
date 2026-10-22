@@ -10,13 +10,16 @@ disagree; a Claude Doc that has an in-repo copy is listed with it.
 | --- | --- | --- |
 | `README.md` | The MVP contract: product, decision record D1–D14 with status against code, non-goals, how to run, drift register | before any product or scope change |
 | `CONTRACTS.md` | Normative semantics of the two instruments per name (binary, forward), the dealer's bound, lifecycle, tournament mapping | before touching anything that quotes, settles or scores |
-| `TECHNICAL_DESIGN.md` | How the dealer design is built inside this codebase: schema, jobs, state machine, API, bridge, backtest CI, 8-week plan, open decisions | before starting any milestone in §12 |
+| `TECHNICAL_DESIGN.md` | How the dealer design is built inside this codebase: schema, jobs, state machine, API, bridge, backtest CI, milestones (all done but 4, ingest), open decisions; marks what is not built | before touching the dealer, or starting ingest |
 | `AGENTS.md` / `CLAUDE.md` | Operating rules for agents: gates, layout, conventions, what is not open | every session |
 | `PRODUCT.md`, `DESIGN.md` | Product voice and the visual system | before changing a screen |
-| `PART1.md`–`PART5.md` | The original build parts (engine, persistence, read APIs, UI, deployment) for the LMSR ladder; still accurate as engine/persistence/API reference, superseded on product decisions by `README.md` §2. Milestone 6 trimmed the username account, passphrase admin, ladder seeding, ladder trading (slug addressing, admin settlement, TWAP, decomposition) and their browser flows from them; PART3 now states the listing read model | when working in `src/lib/engine`, `src/lib/services`, `src/app/api` |
-| `docs/prompts/implement-dealer.md` | The implementation brief for the agent that builds the dealer design | when starting that work |
-| `docs/decisions/NNNN-*.md` | Agreed changes that supplement the design (first: `event_flags` shape and the ingest hand-off) | before any milestone a decision names |
-| `tests/browser/dealer.spec.ts`, `tests/browser/global-setup.ts` | The dealer UI's browser specs and the Playwright setup that lists the five names and runs one dealer job against `DATABASE_URL_TEST` (no production route) | changing the market page, board, ticket or portfolio |
+| `PART1.md`–`PART5.md` | Layer references: engine (1), persistence and transactions (2), read APIs (3), the markets UI (4), deployment (5); superseded on product decisions by `README.md` §2 | when working in `src/lib/engine`, `src/lib/services`, `src/app/api`, the markets screens, or the build |
+| `.env.example` | The environment contract: every variable the app, scripts and build read | adding or reading an env var |
+| `docs/prompts/cleanup/` | The robustness and cleanup pass: a dispatch README and one brief per workstream | running that pass |
+| `docs/prompts/onboarding-and-demo/` | Briefs O1–O3 (O1 and O2 stage 1 merged; O3 not started; status in its README) | running O3 |
+| `docs/archive/prompts/` | Finished briefs kept for history: `implement-dealer.md` (milestones 1–3, 5–8), `tournament-contracts/` (decision 0004) | never as instructions |
+| `docs/decisions/NNNN-*.md` | Agreed changes that supplement the design: 0001 `event_flags` and the ingest hand-off, 0002 the binary's event window and expiry, 0004 tournament questions follow the contracts (there is no 0003 in the repository) | before any milestone a decision names |
+| `tests/browser/*.spec.ts`, `tests/browser/global-setup.ts`, `tests/browser/seed-dealer.ts` | Browser specs (dealer, tournament, onboarding, account, restrictions) and the Playwright setup that migrates, lists the five names and runs one dealer job against `DATABASE_URL_TEST` (no production route) | changing the market page, board, ticket or portfolio |
 | `tests/fixtures/event-flags.json` | 161 fixture flags (scoop / release / print) derived from `backtest/events.csv`; what settlement and mid-model tests read until ingest exists | writing any test that needs a flag |
 
 ## Backtest (evidence for D11–D12)
@@ -29,7 +32,8 @@ disagree; a Claude Doc that has an in-repo copy is listed with it.
 | `backtest/sim.py` | Prior (leave-one-out tier step-up, Weibull hazard, leak overrides), dealer (LMSR binary, clipped forward with cap, event-flag widening), four trader scenarios |
 | `backtest/analyze.py` | Runs the scenarios on an events file; writes `out/summary.csv`, `out/calibration.csv`, `out/losses_T12.csv`, `out/meta.json`, four PNG charts |
 | `backtest/golden.py` | Reruns the calibration run (T = 12, no trader, leave-one-out, from 2024) and records sim.py's prior for the listed names with its inputs; writes `out/prior_golden.json` |
-| `backtest/events.csv` | Merged events: 64 rows, 56 priced rounds, 14 companies, Jan 2024–Oct 19 2026; tenders/secondaries recorded but excluded as prints |
+| `backtest/events.csv` | Merged events: 64 rows, 59 priced rounds (56 in Jan 2024–Oct 2026; three earlier ones seed the prior), 14 companies, to Oct 19 2026; tenders/secondaries recorded but excluded as prints; no URL column (its digest is pinned) |
+| `backtest/data/sources.csv` | A located source URL and rank for the listed names' prints (Instinct's Seed has none); `seed:listings` joins it to `events.csv` and refuses an anchor without a URL. `tests/fixtures/listing-sources.csv` is the tests' placeholder copy |
 | `backtest/data/labs.csv` | OpenAI and Anthropic rounds with leak dates and notes on conflicts |
 | `backtest/data/anduril_modal_instinct.csv` | The three red-hot names |
 | `backtest/data/analogs.csv` | Cursor, SSI, xAI, Mercor, Harvey, Cognition, Perplexity, Valar Atomics, Greptile |
