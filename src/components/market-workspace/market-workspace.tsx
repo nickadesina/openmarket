@@ -71,25 +71,46 @@ function hasLiveContract(listing: ListingView): boolean {
   return listing.forward !== null || listing.binary !== null;
 }
 
-/** The ticket, or in its place the one-line reason a restricted viewer has none. */
-function TicketUnlessRestricted({
-  name,
-  profileHref,
-  children,
-}: {
+interface RestrictionProps {
   readonly name: string;
   readonly profileHref: string | null;
-  readonly children: ReactNode;
+}
+
+function RestrictionNote({
+  name,
+  profileHref,
+  className,
+}: {
+  readonly name: string;
+  readonly profileHref: string;
+  readonly className: string | undefined;
 }) {
-  if (profileHref === null) return children;
   return (
-    <div className={styles.ticketPrompt} role="note">
+    <div className={className} role="note">
       <strong>Not open to you</strong>
       <p>
         You attested a tie to {name}, so its contracts are closed to you.{" "}
         <Link href={profileHref}>Change it on your profile.</Link>
       </p>
     </div>
+  );
+}
+
+/** The ticket, or in its place the one-line reason a restricted viewer has none. */
+function TicketUnlessRestricted({
+  name,
+  profileHref,
+  children,
+}: RestrictionProps & { readonly children: ReactNode }) {
+  if (profileHref === null) return children;
+  return <RestrictionNote name={name} profileHref={profileHref} className={styles.ticketPrompt} />;
+}
+
+/** On a phone the rail is hidden, so the reason takes the trade bar's place. */
+function MobileRestriction({ name, profileHref }: RestrictionProps) {
+  if (profileHref === null) return null;
+  return (
+    <RestrictionNote name={name} profileHref={profileHref} className={styles.mobileRestriction} />
   );
 }
 
@@ -278,6 +299,7 @@ export function MarketWorkspace({
         onRetry={() => void activityQuery.refetch()}
       />
 
+      <MobileRestriction name={listing.company.name} profileHref={restrictedProfile} />
       {trading ? (
         <div className={styles.mobileTradeBar}>
           <span className={styles.mobileTradeSummary}>
