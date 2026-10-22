@@ -13,7 +13,8 @@ import { assertDate, assertFinite, assertPositive } from "../assert.js";
 
 import { DAY_MS, utcMidnight } from "../time.js";
 
-export type Tier = "mega" | "redhot";
+export const TIERS = ["mega", "redhot"] as const;
+export type Tier = (typeof TIERS)[number];
 
 export interface TierValues {
   readonly mega: number;
