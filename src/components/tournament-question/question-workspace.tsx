@@ -15,10 +15,12 @@ import {
   formatTournamentOutcome,
   formatTournamentValue,
   tournamentKindCaption,
+  tournamentSettleSentences,
   usdInTournamentUnit,
 } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
-import { useNow } from "../../lib/client/tournament.js";
+import { useNow, useTournamentViewer } from "../../lib/client/tournament.js";
+import type { ForecasterProfile } from "../../lib/services/tournament/forecaster.js";
 import type {
   PublicForecast,
   QuestionDetail,
@@ -104,6 +106,32 @@ function CrowdModule({ question }: { readonly question: QuestionDetail }) {
   );
 }
 
+/**
+ * The viewer's own score beside the outcome, read from their profile's
+ * stored score rows; nothing when they did not forecast or have no row.
+ */
+function ViewerScoreRow({ slug }: { readonly slug: string }) {
+  const viewer = useTournamentViewer().data?.viewer ?? null;
+  const profileSlug =
+    viewer !== null && viewer.forecasts[slug] !== undefined ? viewer.identity.profileSlug : null;
+  const profile = useQuery({
+    queryKey: queryKeys.tournamentForecaster(profileSlug ?? "none"),
+    queryFn: () =>
+      apiRequest<ForecasterProfile>(`/api/t/users/${encodeURIComponent(profileSlug ?? "")}`),
+    enabled: profileSlug !== null,
+  });
+  const own = profile.data?.resolved.find((position) => position.slug === slug);
+  if (profileSlug === null || own === undefined) return null;
+  return (
+    <div>
+      <dt>Your score</dt>
+      <dd>
+        {formatScore(own.timeAvgLogScore)} · {formatCoverage(own.coverage)} of the window
+      </dd>
+    </div>
+  );
+}
+
 function ResolutionModule({
   question,
   resolution,
@@ -133,6 +161,7 @@ function ResolutionModule({
             </dd>
           </div>
         )}
+        <ViewerScoreRow slug={question.slug} />
         <div>
           <dt>Source rank</dt>
           <dd>{resolution.rungFired ?? "—"}</dd>
@@ -311,6 +340,32 @@ function ScoringNote({ question }: { readonly question: QuestionDetail }) {
   );
 }
 
+const RULEBOOK_ID = "rulebook";
+
+/**
+ * "How this settles": what settles the question and what happens otherwise,
+ * from its kind, level and expiry. The condition is the rulebook's, linked
+ * rather than paraphrased.
+ */
+function SettlesBlock({ question }: { readonly question: QuestionDetail }) {
+  const [settles, otherwise] = tournamentSettleSentences(question);
+  return (
+    <section className={styles.module} aria-labelledby="settles-title">
+      <h2 className={styles.tab} id="settles-title">
+        How this settles
+      </h2>
+      <div className={styles.settles}>
+        <p>
+          {settles} {otherwise}
+        </p>
+        <a className={styles.rulesLink} href={`#${RULEBOOK_ID}`}>
+          Full rules
+        </a>
+      </div>
+    </section>
+  );
+}
+
 function windowLine(question: QuestionDetail, now: number | null): string {
   const closes = formatTournamentDateTime(question.windowEndsAt);
   if (question.status === "voided") return "Voided. No scores are written.";
@@ -379,6 +434,8 @@ export function QuestionWorkspace({
         </p>
       </header>
 
+      <SettlesBlock question={question} />
+
       {question.status === "voided" && question.voidNoteMd !== null ? (
         <section className={styles.module} aria-labelledby="void-title">
           <h2 className={styles.tab} id="void-title">
@@ -418,7 +475,7 @@ export function QuestionWorkspace({
         ) : null}
       </div>
 
-      <section className={styles.module} aria-labelledby="rulebook-title">
+      <section className={styles.module} aria-labelledby="rulebook-title" id={RULEBOOK_ID}>
         <h2 className={styles.tab} id="rulebook-title">
           Rulebook v{question.rulebookVersion}
         </h2>

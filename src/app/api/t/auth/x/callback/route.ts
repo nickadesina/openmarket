@@ -1,3 +1,4 @@
+import { signInLanding } from "../../../../../../lib/auth/return-path.js";
 import {
   cookieHeader,
   createTournamentSession,
@@ -12,7 +13,6 @@ import {
 } from "../../../../../../lib/auth/x-oauth.js";
 import { getRuntimeDatabase } from "../../../../../../lib/db/runtime.js";
 import { logUnexpectedError } from "../../../../../../lib/logging/server-log.js";
-import { profileSlug } from "../../../../../../lib/services/tournament/identities.js";
 import { upsertIdentity } from "../../../../../../lib/services/tournament/sign-in.js";
 
 export const runtime = "nodejs";
@@ -25,8 +25,8 @@ function redirect(location: string, cookies: readonly string[]): Response {
 
 /**
  * X redirects here with a code; exchange it, upsert the identity, open a
- * session, and land on the forecaster's own page, where they set their
- * affiliation and restrictions.
+ * session, and land where sign-in started. An identity this call created
+ * passes through the welcome step on the way.
  */
 export async function GET(request: Request): Promise<Response> {
   const clearState = cookieHeader(OAUTH_STATE_COOKIE, "", 0);
@@ -44,7 +44,7 @@ export async function GET(request: Request): Promise<Response> {
   try {
     const profile = await fetchXProfile(config, code, state.verifier);
     const db = getRuntimeDatabase();
-    const userId = await upsertIdentity(db, {
+    const { userId, created } = await upsertIdentity(db, {
       provider: "x",
       providerUserId: profile.id,
       handle: profile.username,
@@ -54,10 +54,7 @@ export async function GET(request: Request): Promise<Response> {
       providerCreatedAt: profile.createdAt,
     });
     const token = await createTournamentSession(db, userId);
-    return redirect(`/t/u/${profileSlug("x", profile.username)}`, [
-      clearState,
-      sessionCookie(token),
-    ]);
+    return redirect(signInLanding(state.returnTo, created), [clearState, sessionCookie(token)]);
   } catch (error) {
     logUnexpectedError(crypto.randomUUID(), error);
     return redirect("/t?sign_in=failed", [clearState]);

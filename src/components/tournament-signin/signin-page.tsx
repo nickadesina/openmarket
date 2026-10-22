@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useId, useState } from "react";
 
-import { safeReturnPath } from "../../lib/auth/return-path.js";
+import { safeReturnPath, welcomeHref } from "../../lib/auth/return-path.js";
 import { ApiClientError, apiRequest } from "../../lib/client/api.js";
 import { errorMessage } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
@@ -22,7 +22,11 @@ function failure(error: unknown): string {
   return errorMessage(error, "Sign-in did not complete. Try again.");
 }
 
-/** X or a username and password, on one page; both land back where the visitor started. */
+/**
+ * One primary path, X, and a username and password beneath it. A returning
+ * sign-in lands back where the visitor started; a new account passes through
+ * the welcome step first.
+ */
 export function SignInPage({ returnTo: rawReturn }: { readonly returnTo: string | null }) {
   const returnTo = safeReturnPath(rawReturn);
   const router = useRouter();
@@ -34,19 +38,20 @@ export function SignInPage({ returnTo: rawReturn }: { readonly returnTo: string 
   const [password, setPassword] = useState("");
 
   const submit = useMutation({
-    mutationFn: () =>
+    mutationFn: (submitted: Mode) =>
       apiRequest(
-        mode === "create" ? "/api/t/auth/password/register" : "/api/t/auth/password/login",
+        submitted === "create" ? "/api/t/auth/password/register" : "/api/t/auth/password/login",
         {
           method: "POST",
           body: JSON.stringify({ username, password }),
         },
       ),
-    onSuccess: async () => {
+    onSuccess: async (_result, submitted) => {
       setPassword("");
       // The identity owns the paper account too, so every cached read is stale.
       await queryClient.invalidateQueries({ queryKey: queryKeys.all });
-      router.push(returnTo);
+      // Registering always creates the identity, so it always onboards.
+      router.push(submitted === "create" ? welcomeHref(returnTo) : returnTo);
     },
   });
 
@@ -57,47 +62,50 @@ export function SignInPage({ returnTo: rawReturn }: { readonly returnTo: string 
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    submit.mutate();
+    submit.mutate(mode);
   }
+
+  function choose(next: Mode) {
+    setMode(next);
+    submit.reset();
+  }
+
+  const xAvailable = viewer.data?.signIn.x === true;
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <h1>Sign in</h1>
-        <p>
-          One account forecasts in the tournament and trades a $100,000 paper balance. Your name
-          appears on every forecast and comment you make and on the leaderboard.
-        </p>
-      </header>
+      <section className={styles.panel} aria-labelledby={`${id}-title`}>
+        <header className={styles.header}>
+          <h1 id={`${id}-title`}>Sign in to forecast</h1>
+          <p>
+            A forecasting tournament on private-company milestones: each question asks for one
+            number, the chance of YES or a dollar level.
+          </p>
+        </header>
 
-      <div className={styles.options}>
-        <section className={styles.option} aria-labelledby={`${id}-x`}>
-          <h2 className={styles.optionTitle} id={`${id}-x`}>
-            With X
-          </h2>
-          <p>Your X handle and avatar are shown. Only the public profile is read.</p>
-          {viewer.data?.signIn.x === true ? (
-            <a className={styles.primaryButton} href={xSignInHref(returnTo)}>
+        {viewer.isPending ? (
+          <div className={styles.xSkeleton} role="status" aria-label="Checking sign-in options" />
+        ) : xAvailable ? (
+          <div className={styles.xPath}>
+            <a className={styles.xButton} href={xSignInHref(returnTo)}>
               Continue with X
             </a>
-          ) : (
-            <p className={styles.muted}>X sign-in is not configured on this deployment.</p>
-          )}
-        </section>
+            <p className={styles.note}>
+              Only your public X profile is read; your handle and avatar are shown.
+            </p>
+          </div>
+        ) : null}
 
-        <section className={styles.option} aria-labelledby={`${id}-password`}>
-          <h2 className={styles.optionTitle} id={`${id}-password`}>
-            With a username
+        <div className={styles.passwordPath}>
+          <h2 className={styles.divider} id={`${id}-password`}>
+            <span>{xAvailable ? "Or use a username" : "With a username"}</span>
           </h2>
-          <div className={styles.modes} role="group" aria-label="Account">
+          <div className={styles.modes} role="group" aria-labelledby={`${id}-password`}>
             <button
               type="button"
               className={styles.mode}
               aria-pressed={mode === "sign-in"}
-              onClick={() => {
-                setMode("sign-in");
-                submit.reset();
-              }}
+              onClick={() => choose("sign-in")}
             >
               Sign in
             </button>
@@ -105,10 +113,7 @@ export function SignInPage({ returnTo: rawReturn }: { readonly returnTo: string 
               type="button"
               className={styles.mode}
               aria-pressed={mode === "create"}
-              onClick={() => {
-                setMode("create");
-                submit.reset();
-              }}
+              onClick={() => choose("create")}
             >
               Create account
             </button>
@@ -139,12 +144,16 @@ export function SignInPage({ returnTo: rawReturn }: { readonly returnTo: string 
               />
             </label>
             {mode === "create" ? (
-              <p className={styles.muted}>
+              <p className={styles.note}>
                 There is no email and no recovery: keep the password somewhere safe. Usernames show
                 without an @, so they are never mistaken for X handles.
               </p>
             ) : null}
-            <button type="submit" className={styles.primaryButton} disabled={submit.isPending}>
+            <button
+              type="submit"
+              className={xAvailable ? styles.secondarySubmit : styles.primarySubmit}
+              disabled={submit.isPending}
+            >
               {submit.isPending ? "Working…" : mode === "create" ? "Create account" : "Sign in"}
             </button>
             {submit.isError ? (
@@ -153,8 +162,12 @@ export function SignInPage({ returnTo: rawReturn }: { readonly returnTo: string 
               </p>
             ) : null}
           </form>
-        </section>
-      </div>
+        </div>
+
+        <p className={styles.footnote}>
+          Your name appears on every forecast and comment you make and on the leaderboard.
+        </p>
+      </section>
     </div>
   );
 }

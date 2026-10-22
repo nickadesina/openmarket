@@ -21,7 +21,7 @@ export function POST(request: Request): Promise<Response> {
       throw new ServiceError("SIGN_IN_UNAVAILABLE", "Development sign-in is disabled.");
     }
     const input = await parseMutationBody(request, devSignInSchema, 256);
-    const userId = await upsertIdentity(context.db, {
+    const { userId } = await upsertIdentity(context.db, {
       provider: "dev",
       providerUserId: input.handle.toLowerCase(),
       handle: input.handle,

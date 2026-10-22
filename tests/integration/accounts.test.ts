@@ -120,7 +120,7 @@ postgresDescribe(suiteName, () => {
   });
 
   it("keeps usernames apart from X handles and lets them forecast", async () => {
-    const xUser = await upsertIdentity(postgres.db, {
+    const { userId: xUser } = await upsertIdentity(postgres.db, {
       provider: "x",
       providerUserId: "77",
       handle: "kim",

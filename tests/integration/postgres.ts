@@ -346,7 +346,7 @@ export interface TestTrader {
 
 /** A development-provider tournament identity with its paper account open. */
 export async function createTrader(db: Kysely<Database>, handle: string): Promise<TestTrader> {
-  const tournamentUserId = await upsertIdentity(db, {
+  const { userId: tournamentUserId } = await upsertIdentity(db, {
     provider: "dev",
     providerUserId: handle.toLowerCase(),
     handle,

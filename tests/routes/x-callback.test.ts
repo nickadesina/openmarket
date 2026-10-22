@@ -56,7 +56,7 @@ describe("GET /api/t/auth/x/callback", () => {
     vi.stubEnv("APP_ORIGIN", "https://openmarket.systems");
     mocks.getRuntimeDatabase.mockReturnValue({});
     mocks.fetchXProfile.mockResolvedValue(PROFILE);
-    mocks.upsertIdentity.mockResolvedValue("user-1");
+    mocks.upsertIdentity.mockResolvedValue({ userId: "user-1", created: false });
     mocks.createTournamentSession.mockResolvedValue("t".repeat(43));
   });
 
@@ -65,10 +65,10 @@ describe("GET /api/t/auth/x/callback", () => {
     vi.clearAllMocks();
   });
 
-  it("lands a new session on the forecaster's own page, whatever page started sign-in", async () => {
+  it("lands a returning sign-in on the page that started it", async () => {
     const response = await GET(callback("/t/q/anthropic-s1-by-2026-12-31"));
     expect(response.status).toBe(302);
-    expect(response.headers.get("location")).toBe("/t/u/Zetsurui");
+    expect(response.headers.get("location")).toBe("/t/q/anthropic-s1-by-2026-12-31");
     expect(response.headers.get("set-cookie")).toContain(
       `${TOURNAMENT_SESSION_COOKIE}=${"t".repeat(43)}`,
     );
@@ -80,6 +80,17 @@ describe("GET /api/t/auth/x/callback", () => {
         avatarUrl: "https://pbs.twimg.com/profile_images/1/photo.jpg",
       }),
     );
+  });
+
+  it("sends a first sign-in through the welcome step, carrying where it was headed", async () => {
+    mocks.upsertIdentity.mockResolvedValue({ userId: "user-1", created: true });
+    const fromQuestion = await GET(callback("/t/q/anthropic-s1-by-2026-12-31"));
+    expect(fromQuestion.headers.get("location")).toBe(
+      "/t/welcome?return=%2Ft%2Fq%2Fanthropic-s1-by-2026-12-31",
+    );
+    expect(fromQuestion.headers.get("set-cookie")).toContain(TOURNAMENT_SESSION_COOKIE);
+    const fromQuestions = await GET(callback("/t"));
+    expect(fromQuestions.headers.get("location")).toBe("/t/welcome");
   });
 
   it("still fails closed without opening a session", async () => {
