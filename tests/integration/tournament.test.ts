@@ -15,6 +15,7 @@ import {
 } from "../../src/lib/engine/tournament/score.js";
 import {
   closeQuestion,
+  listAdminQuestions,
   openQuestion,
   resolveQuestion,
   saveDraftQuestion,
@@ -518,8 +519,9 @@ postgresDescribe(suiteName, () => {
       voidNoteMd: "No figure in the 424(b).",
       resolution: null,
     });
-    // Off the board, still at its own page.
+    // Off the board and the admin console, still at its own page.
     expect(await listQuestions(postgres.db)).toHaveLength(0);
+    expect(await listAdminQuestions(postgres.db)).toHaveLength(0);
     expect(await verifyTournament(postgres.db)).toMatchObject({ passed: true, findings: [] });
   });
 
