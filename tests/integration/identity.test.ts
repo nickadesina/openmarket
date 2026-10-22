@@ -419,6 +419,7 @@ postgresDescribe(`${suiteName}: 008 on a populated 007 database`, () => {
       "009_dealer_pnl",
       "010_api_keys",
       "011_tournament_bridge",
+      "012_tournament_choice",
     ]);
 
     for (const table of [

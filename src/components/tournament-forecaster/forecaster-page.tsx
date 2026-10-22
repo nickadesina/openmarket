@@ -7,6 +7,7 @@ import { apiRequest } from "../../lib/client/api.js";
 import {
   formatCoverage,
   formatForecasterName,
+  formatLeadingOutcome,
   formatProbability,
   formatScore,
   formatTournamentDateTime,
@@ -23,6 +24,7 @@ import { RestrictionsEditor } from "./restrictions-editor.js";
 
 function positionHeadline(position: OpenPosition): string {
   if (position.unit === "bool") return `${formatProbability(position.probs[0] ?? 0)} yes`;
+  if (position.unit === "choice") return formatLeadingOutcome(position.buckets, position.probs);
   if (position.median === null) return "All on the floor";
   return formatTournamentMedian(position.median.value, position.median.position, position.unit);
 }
@@ -31,6 +33,9 @@ function crowdHeadline(position: OpenPosition): string {
   const aggregate = position.aggregate;
   if (aggregate === null || !aggregate.published) return "Not published";
   if (position.unit === "bool") return `${formatProbability(aggregate.pYes ?? 0)} yes`;
+  if (position.unit === "choice") {
+    return formatLeadingOutcome(position.buckets, aggregate.probs ?? []);
+  }
   if (aggregate.medianValue === null) return "All on the floor";
   return formatTournamentMedian(aggregate.medianValue, aggregate.medianPosition, position.unit);
 }

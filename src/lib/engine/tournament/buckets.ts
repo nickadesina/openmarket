@@ -4,10 +4,15 @@
  * first has no lower bound, the last no upper bound). A numeric question
  * carries exactly one floor bucket, "no qualifying event by expiry", which
  * has no bounds and sits last. A binary is two unbounded range buckets,
- * Yes then No, and no floor.
+ * Yes then No, and no floor. A choice question names its outcomes: one
+ * unbounded range bucket per outcome, in order, then the floor ("neither by
+ * expiry"), so no value ever resolves it.
  */
 
 export type BucketKind = "range" | "floor";
+
+/** Which rules a question's buckets obey: its unit, with the two USD units as one. */
+export type BucketShape = "binary" | "numeric" | "choice";
 
 export interface Bucket {
   readonly index: number;
@@ -99,13 +104,61 @@ export function binaryBuckets(): Bucket[] {
   }));
 }
 
+export interface ChoiceBucketInput {
+  readonly outcomes: readonly string[];
+  readonly floorLabel: string;
+}
+
+export function choiceBuckets(input: ChoiceBucketInput): Bucket[] {
+  const outcomes = input.outcomes.map((outcome) => outcome.trim());
+  const floorLabel = input.floorLabel.trim();
+  if (outcomes.length < 2) throw new BucketError("A choice question needs two outcomes.");
+  if (floorLabel.length === 0 || outcomes.some((outcome) => outcome.length === 0)) {
+    throw new BucketError("Every outcome and the floor need a label.");
+  }
+  if (new Set([...outcomes, floorLabel]).size !== outcomes.length + 1) {
+    throw new BucketError("Outcome labels must be distinct.");
+  }
+  return [
+    ...outcomes.map((label, index) => ({
+      index,
+      kind: "range" as const,
+      lower: null,
+      upper: null,
+      label,
+    })),
+    { index: outcomes.length, kind: "floor", lower: null, upper: null, label: floorLabel },
+  ];
+}
+
+function assertValidChoice(buckets: readonly Bucket[]): void {
+  const last = buckets.length - 1;
+  const valid =
+    buckets.length >= 3 &&
+    buckets.every(
+      (bucket, position) =>
+        bucket.lower === null &&
+        bucket.upper === null &&
+        bucket.kind === (position === last ? "floor" : "range"),
+    );
+  if (!valid) {
+    throw new BucketError(
+      "A choice question has two or more unbounded outcomes, then exactly one floor.",
+    );
+  }
+}
+
 /** Throws unless the buckets satisfy the tiling and floor rules for their question type. */
-export function assertValidBuckets(buckets: readonly Bucket[], binary: boolean): void {
+export function assertValidBuckets(buckets: readonly Bucket[], shape: BucketShape): void {
   buckets.forEach((bucket, position) => {
     if (bucket.index !== position) throw new BucketError("Bucket indexes must run 0..n−1.");
   });
 
-  if (binary) {
+  if (shape === "choice") {
+    assertValidChoice(buckets);
+    return;
+  }
+  if (shape === "binary") {
     if (
       buckets.length !== 2 ||
       buckets.some((bucket) => bucket.kind !== "range" || bucket.lower !== null) ||

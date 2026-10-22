@@ -205,7 +205,9 @@ this identity, but cash and positions never enter scoring.
   can override or clear it.
 - Questions: a discrete distribution over buckets that tile the line
   (lower inclusive, upper exclusive) plus one floor bucket ("nothing by
-  expiry") on numeric ladders; binaries are Yes/No. Drafts are editable;
+  expiry") on numeric ladders; binaries are Yes/No; a choice question
+  (migration `012_tournament_choice`) names its outcomes, then the floor
+  ("neither by expiry"), and resolves by bucket. Drafts are editable;
   opening pins the record. Close is automatic at `closes_at`, or manual
   and back-dated to a resolution document's public time (later events
   stay in the log and are never counted).
@@ -234,13 +236,13 @@ this identity, but cash and positions never enter scoring.
   being superseded. `npm run verify:replay` also recomputes every stored
   score and every open question's live aggregate from the event log.
 
-Pages: `/t` (questions and implied EV/ARR), `/t/signin`, `/t/q/[slug]`,
+Pages: `/t` (questions), `/t/signin`, `/t/q/[slug]`,
 `/t/u/[handle]`, `/t/leaderboard`, `/t/admin`. Public JSON, cacheable
 for 10 seconds: `GET /api/t/questions`, `/api/t/questions/[slug]`,
 `/api/t/questions/[slug]/forecasts`,
 `/api/t/questions/[slug]/aggregate/history`,
-`/api/t/leaderboard?period=all|YYYY-MM`, `/api/t/users/[handle]`,
-`/api/t/derived`. Session: `GET /api/t/me`,
+`/api/t/leaderboard?period=all|YYYY-MM`, `/api/t/users/[handle]`.
+Session: `GET /api/t/me`,
 `POST /api/t/questions/[slug]/forecasts`, `POST /api/t/me/affiliation`,
 `GET`/`POST /api/t/me/restrictions`,
 `POST /api/t/questions/[slug]/evidence`,
@@ -551,7 +553,7 @@ npm run dev              # http://localhost:3000, never 127.0.0.1
   the admins of `/t/admin` and `/admin` (comma separated). For local work without X, `TOURNAMENT_DEV_SIGN_IN=1`
   under `next dev` adds a handle-only sign-in (allowlist it as
   `dev:<handle>`); it is off in every other mode. Launch questions:
-  `npm run seed:tournament` writes the three drafts, `-- --open`
+  `npm run seed:tournament` writes the two drafts, `-- --open`
   (optionally `--opens-at=<ISO>`) opens them.
 - Provenance: `.github/workflows/provenance.yml` calls
   `/api/t/cron/provenance` hourly with `Authorization: Bearer
@@ -574,7 +576,7 @@ npm run dev              # http://localhost:3000, never 127.0.0.1
   `005_tournament_provenance` before serving this version,
   `006_tournament_accounts` for affiliations and username accounts, and
   `011_tournament_bridge` for linked questions, evidence and restricted
-  persons.
+  persons, and `012_tournament_choice` before seeding the launch questions.
 
 ### Backtest
 

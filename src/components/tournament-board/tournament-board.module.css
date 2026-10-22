@@ -7,48 +7,12 @@
   composes: visuallyHidden from "../../styles/shared.module.css";
 }
 
-.derived {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin: 0;
-  border: 1px solid var(--color-border);
-}
-
-.derived > div {
-  padding: var(--space-3) var(--space-4);
-  border-right: 1px solid var(--color-border-subtle);
-}
-
-.derived > div:last-child {
-  border-right: 0;
-}
-
-.derived dt,
 .table th {
   font-family: var(--font-caps);
   font-size: var(--font-size-xs);
   font-weight: 700;
   letter-spacing: var(--caps-tracking);
   text-transform: uppercase;
-}
-
-.derived dd {
-  margin: var(--space-1) 0 0;
-  font-family: var(--font-num);
-  font-size: var(--font-size-lg);
-  font-weight: 700;
-}
-
-.derived small {
-  color: var(--color-ink-muted);
-  font-family: var(--font-sans);
-  font-size: var(--font-size-xs);
-  font-weight: 400;
-}
-
-.derived .derivedFigure {
-  color: var(--color-primary);
-  font-size: var(--font-size-xl);
 }
 
 .table {
@@ -151,19 +115,6 @@
 }
 
 @media (max-width: 52rem) {
-  .derived {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .derived > div {
-    border-right: 0;
-    border-bottom: 1px solid var(--color-border-subtle);
-  }
-
-  .derived > div:last-child {
-    border-bottom: 0;
-  }
-
   .table thead {
     position: absolute;
     overflow: hidden;

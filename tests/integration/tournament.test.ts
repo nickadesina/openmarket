@@ -16,7 +16,6 @@ import {
   setUserFlag,
   voidQuestion,
 } from "../../src/lib/services/tournament/admin.js";
-import { getDerivedNumbers } from "../../src/lib/services/tournament/derived.js";
 import { getForecaster } from "../../src/lib/services/tournament/forecaster.js";
 import { getQuestion, listQuestions } from "../../src/lib/services/tournament/get-question.js";
 import { getLeaderboard } from "../../src/lib/services/tournament/leaderboard.js";
@@ -380,44 +379,89 @@ postgresDescribe(suiteName, () => {
     expect(outcome.winningBucketIndex).toBe(3);
   });
 
-  it("drops flagged accounts from the aggregate and derives EV/ARR from two medians", async () => {
+  it("resolves a choice question by bucket and holds its floor until expiry", async () => {
     const now = Date.now();
-    await saveDraftQuestion(
+    await saveDraftQuestion(postgres.db, {
+      slug: "race",
+      title: "Which comes first?",
+      description_md: "Description.",
+      rulebook_md: "Rulebook.",
+      rulebook_version: 1,
+      unit: "choice",
+      opens_at: new Date(now - HOUR).toISOString(),
+      closes_at: new Date(now + HOUR).toISOString(),
+      expiry_at: new Date(now + HOUR).toISOString(),
+      outcomes: { labels: ["A first", "B first"], floor_label: "Neither" },
+    });
+    await openQuestion(postgres.db, "race");
+    for (const userId of users) {
+      await submitForecast(postgres.db, { slug: "race", userId, probs: [0.6, 0.3, 0.1] });
+    }
+    const open = await getQuestion(postgres.db, "race");
+    expect(open.buckets.map((bucket) => bucket.kind)).toEqual(["range", "range", "floor"]);
+    expect(open.aggregate!.medianValue).toBeNull();
+    expect(open.aggregate!.pYes).toBeNull();
+    expect(open.aggregate!.pFloor).toBeGreaterThan(0);
+
+    await closeQuestion(postgres.db, "race", {});
+    const base = {
+      rung_fired: null,
+      source_url: "https://example.com/",
+      source_excerpt: "Shares began trading",
+      note_md: "B printed first.",
+    };
+    await expect(
+      resolveQuestion(
+        postgres.db,
+        "race",
+        { ...base, resolved_value: 1, winning_bucket_index: 1 },
+        users[0]!,
+      ),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" });
+    await expect(
+      resolveQuestion(
+        postgres.db,
+        "race",
+        { ...base, resolved_value: null, winning_bucket_index: 2 },
+        users[0]!,
+      ),
+    ).rejects.toMatchObject({ code: "QUESTION_STATE" });
+    const outcome = await resolveQuestion(
       postgres.db,
-      ladder("anthropic-s1-arr", new Date(now - HOUR), new Date(now + HOUR), [60, 100]),
+      "race",
+      { ...base, resolved_value: null, winning_bucket_index: 1 },
+      users[0]!,
     );
+    expect(outcome.winningBucketIndex).toBe(1);
+    expect((await verifyTournament(postgres.db)).passed).toBe(true);
+  });
+
+  it("drops flagged accounts from the aggregate", async () => {
+    const now = Date.now();
     await saveDraftQuestion(
       postgres.db,
       ladder("anthropic-ipo-day1-mcap", new Date(now - HOUR), new Date(now + HOUR), [1, 2]),
     );
-    await openQuestion(postgres.db, "anthropic-s1-arr");
     await openQuestion(postgres.db, "anthropic-ipo-day1-mcap");
     for (const userId of users) {
-      await submitForecast(postgres.db, {
-        slug: "anthropic-s1-arr",
-        userId,
-        probs: [0, 1, 0, 0],
-      });
       await submitForecast(postgres.db, {
         slug: "anthropic-ipo-day1-mcap",
         userId,
         probs: [0, 1, 0, 0],
       });
     }
-    const derived = await getDerivedNumbers(postgres.db);
-    const arr = derived.arr.value!;
-    const mcap = derived.marketCap.value!;
-    expect(arr).toBeGreaterThan(60);
-    expect(arr).toBeLessThan(100);
-    expect(derived.impliedEvArr).toBeCloseTo((mcap * 1000) / arr, 9);
+    const before = await getQuestion(postgres.db, "anthropic-ipo-day1-mcap");
+    expect(before.aggregate!.nForecasters).toBe(6);
+    expect(before.aggregate!.medianValue).toBeGreaterThan(1);
+    expect(before.aggregate!.medianValue).toBeLessThan(2);
 
     const flagged = await setUserFlag(postgres.db, {
       handle: "forecaster5",
       flagged: true,
       reason: "Sock puppet",
     });
-    expect(flagged.recomputed).toBe(2);
-    const question = await getQuestion(postgres.db, "anthropic-s1-arr");
+    expect(flagged.recomputed).toBe(1);
+    const question = await getQuestion(postgres.db, "anthropic-ipo-day1-mcap");
     expect(question.aggregate!.nForecasters).toBe(5);
   });
 

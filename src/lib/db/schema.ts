@@ -140,7 +140,7 @@ export interface RateLimitsTable {
   request_count: number;
 }
 
-export type TournamentUnit = "USD_B" | "USD_T" | "bool";
+export type TournamentUnit = "USD_B" | "USD_T" | "bool" | "choice";
 export type TournamentQuestionStatus = "draft" | "open" | "closed" | "resolved" | "voided";
 export type TournamentProvider = "x" | "dev" | "password";
 

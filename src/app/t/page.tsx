@@ -1,30 +1,16 @@
 import { TournamentBoard } from "../../components/tournament-board/tournament-board.js";
 import { getRuntimeDatabase } from "../../lib/db/runtime.js";
-import { type DerivedNumbers, getDerivedNumbers } from "../../lib/services/tournament/derived.js";
 import { listQuestions, type QuestionSummary } from "../../lib/services/tournament/get-question.js";
 import styles from "./page.module.css";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-interface IndexData {
-  readonly questions?: QuestionSummary[];
-  readonly derived?: DerivedNumbers;
-}
-
-async function loadIndex(): Promise<IndexData> {
+async function loadQuestions(): Promise<QuestionSummary[] | undefined> {
   try {
-    const database = getRuntimeDatabase();
-    const [questions, derived] = await Promise.allSettled([
-      listQuestions(database),
-      getDerivedNumbers(database),
-    ]);
-    return {
-      ...(questions.status === "fulfilled" ? { questions: questions.value } : {}),
-      ...(derived.status === "fulfilled" ? { derived: derived.value } : {}),
-    };
+    return await listQuestions(getRuntimeDatabase());
   } catch {
-    return {};
+    return undefined;
   }
 }
 
@@ -33,7 +19,7 @@ interface TournamentIndexProps {
 }
 
 export default async function TournamentIndex({ searchParams }: TournamentIndexProps) {
-  const [{ sign_in: signIn }, data] = await Promise.all([searchParams, loadIndex()]);
+  const [{ sign_in: signIn }, questions] = await Promise.all([searchParams, loadQuestions()]);
   return (
     <div className={styles.page}>
       {signIn === "failed" || signIn === "unavailable" ? (
@@ -51,7 +37,7 @@ export default async function TournamentIndex({ searchParams }: TournamentIndexP
           counts most. Every forecast is public and keyed by X handle.
         </p>
       </header>
-      <TournamentBoard initialQuestions={data.questions} initialDerived={data.derived} />
+      <TournamentBoard initialQuestions={questions} />
       <p className={styles.disclosure}>
         <strong>No money moves here.</strong> The tournament produces a ranking per prize period;
         prizes, if any, are handled off-platform.

@@ -76,9 +76,25 @@ const binaryQuestionSchema = z
   })
   .strict();
 
+/** Named outcomes, then the floor; resolved by bucket, never by value. */
+const choiceQuestionSchema = z
+  .object({
+    ...questionFields,
+    unit: z.literal("choice"),
+    expiry_at: instantSchema,
+    outcomes: z
+      .object({
+        labels: z.array(z.string().trim().min(1).max(60)).min(2).max(63),
+        floor_label: z.string().trim().min(1).max(200),
+      })
+      .strict(),
+  })
+  .strict();
+
 export const questionInputSchema = z.discriminatedUnion("unit", [
   numericQuestionSchema,
   binaryQuestionSchema,
+  choiceQuestionSchema,
 ]);
 
 export const emptyBodySchema = z.object({}).strict();
@@ -92,7 +108,7 @@ export const closeQuestionSchema = z
 
 export const resolveQuestionSchema = z
   .object({
-    /** After the rulebook's rounding; null resolves the floor (or a binary by index). */
+    /** After the rulebook's rounding; null resolves the floor (or a binary or choice by index). */
     resolved_value: z.number().finite().nullable(),
     /** The bucket the resolver confirms; must equal the one the system computes. */
     winning_bucket_index: z.number().int().min(0).max(63),

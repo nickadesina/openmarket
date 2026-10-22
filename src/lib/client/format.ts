@@ -172,9 +172,8 @@ const wholePercentFormatter = new Intl.NumberFormat("en-US", {
   style: "percent",
   maximumFractionDigits: 0,
 });
-const multipleFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
 
-export type TournamentUnitLabel = "USD_B" | "USD_T" | "bool";
+export type TournamentUnitLabel = "USD_B" | "USD_T" | "bool" | "choice";
 
 /** A ladder value in its question's unit: $74.2B, $1.25T. */
 export function formatTournamentValue(value: number, unit: TournamentUnitLabel): string {
@@ -198,7 +197,20 @@ export function formatTournamentMedian(
 export function tournamentUnitCaption(unit: TournamentUnitLabel): string {
   if (unit === "USD_B") return "USD billions";
   if (unit === "USD_T") return "USD trillions";
+  if (unit === "choice") return "One of the outcomes";
   return "Yes or no";
+}
+
+/** A choice question's headline: the most likely outcome and its probability, "48% OpenAI first". */
+export function formatLeadingOutcome(
+  buckets: readonly { readonly label: string }[],
+  probs: readonly number[],
+): string {
+  let leader = 0;
+  probs.forEach((probability, index) => {
+    if (probability > probs[leader]!) leader = index;
+  });
+  return `${formatProbability(probs[leader] ?? 0)} ${buckets[leader]?.label ?? ""}`.trim();
 }
 
 export function formatTournamentDateTime(value: string): string {
@@ -220,10 +232,6 @@ export function formatScore(value: number): string {
 export function formatCoverage(value: number): string {
   if (value > 0 && value < 0.01) return "<1%";
   return wholePercentFormatter.format(value);
-}
-
-export function formatMultiple(value: number): string {
-  return `${multipleFormatter.format(value)}×`;
 }
 
 /** Coarse time remaining; callers render it after mount so server and client agree. */

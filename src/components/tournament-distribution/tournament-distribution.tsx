@@ -123,7 +123,7 @@ export function TournamentDistribution({
 
   return (
     <figure
-      className={`${styles.chart} ${compact ? styles.compact : ""} ${unit === "bool" ? styles.binary : ""}`}
+      className={`${styles.chart} ${compact ? styles.compact : ""} ${unit === "bool" || unit === "choice" ? styles.named : ""}`}
     >
       {primary !== null && overlay !== null ? (
         <div className={styles.legend} aria-hidden="true">
