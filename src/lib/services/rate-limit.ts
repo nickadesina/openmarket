@@ -6,7 +6,13 @@ import { ServiceError } from "../api/errors.js";
 import type { Database } from "../db/schema.js";
 import { trustedClientAddress } from "../security/comment-address.js";
 
-export type RateLimitScope = "quote" | "trade" | "tournament_register" | "tournament_login" | "ref";
+export type RateLimitScope =
+  | "quote"
+  | "trade"
+  | "tournament_register"
+  | "tournament_login"
+  | "ref"
+  | "evidence";
 
 export interface RateLimitPolicy {
   readonly limit: number;
@@ -23,13 +29,18 @@ export const RATE_LIMIT_POLICIES: Readonly<Record<RateLimitScope, RateLimitPolic
   tournament_login: { limit: 10, windowMs: 15 * 60_000 },
   // The public reference API, per network (README D14); a keyed request uses its key's quota.
   ref: { limit: 60, windowMs: 60_000 },
+  // Evidence submissions (POST /api/t/questions/[slug]/evidence), per user.
+  evidence: { limit: 10, windowMs: 60 * 60_000 },
 };
 
 /** Per-network ceilings consumed alongside the per-user policy, so signing
  * in as fresh accounts cannot reset a caller's quote/trade quota. */
-export const RATE_LIMIT_NETWORK_POLICIES: Readonly<Record<"quote" | "trade", RateLimitPolicy>> = {
+export const RATE_LIMIT_NETWORK_POLICIES: Readonly<
+  Record<"quote" | "trade" | "evidence", RateLimitPolicy>
+> = {
   quote: { limit: 600, windowMs: 60_000 },
   trade: { limit: 120, windowMs: 60_000 },
+  evidence: { limit: 30, windowMs: 60 * 60_000 },
 };
 
 export interface RateLimitWindowState {

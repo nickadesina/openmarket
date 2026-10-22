@@ -11,7 +11,6 @@ import type { ReferenceComponents } from "../../src/lib/services/dealer/referenc
 import { runDealerJob } from "../../src/lib/services/dealer/run-dealer-job.js";
 import { verifyDealer } from "../../src/lib/services/dealer/verify-dealer.js";
 import { executeTrade } from "../../src/lib/services/execute-trade.js";
-import { saveDraftQuestion } from "../../src/lib/services/tournament/admin.js";
 import { insertUser, NAMES, seedFixtureListings } from "./dealer-fixture.js";
 import {
   createPostgresTestDatabase,
@@ -36,7 +35,6 @@ const LISTED_AT = new Date("2026-10-20T00:00:00.000Z");
 const RUN_AT = new Date("2026-10-20T00:05:00.000Z");
 const TRADE_AT = new Date("2026-10-20T01:00:00.000Z");
 const LATER = new Date("2026-10-20T01:05:00.000Z");
-const HOUR = 3_600_000;
 
 postgresDescribe(suiteName, () => {
   let postgres: PostgresTestDatabase;
@@ -88,64 +86,36 @@ postgresDescribe(suiteName, () => {
       .executeTakeFirstOrThrow();
   }
 
-  async function linkQuestion(
+  /** An aggregate row on the question the dealer linked to the instrument when it listed it. */
+  async function aggregateOnLinkedQuestion(
     instrumentId: string,
-    unit: "bool" | "USD_B",
-    aggregate: { n: number; pYes?: number; medianB?: number },
+    aggregate: { n: number; pYes?: number; median?: number },
   ) {
-    const slug = `ref-${randomUUID().slice(0, 8)}`;
-    const opensAt = new Date(LISTED_AT.getTime() - HOUR);
-    const closesAt = new Date(LISTED_AT.getTime() + 90 * 24 * HOUR);
-    const saved = await saveDraftQuestion(
-      postgres.db,
-      unit === "bool"
-        ? {
-            slug,
-            title: "Linked binary",
-            description_md: "Description.",
-            rulebook_md: "Rulebook.",
-            rulebook_version: 1,
-            unit,
-            opens_at: opensAt.toISOString(),
-            closes_at: closesAt.toISOString(),
-          }
-        : {
-            slug,
-            title: "Linked ladder",
-            description_md: "Description.",
-            rulebook_md: "Rulebook.",
-            rulebook_version: 1,
-            unit,
-            opens_at: opensAt.toISOString(),
-            closes_at: closesAt.toISOString(),
-            expiry_at: closesAt.toISOString(),
-            buckets: { edges: [5, 10, 20, 40], floor_label: "Nothing by expiry" },
-          },
-    );
     const question = await postgres.db
-      .selectFrom("tournament_questions")
-      .select("id")
-      .where("slug", "=", saved.slug)
+      .selectFrom("tournament_instrument_links")
+      .innerJoin(
+        "tournament_questions",
+        "tournament_questions.id",
+        "tournament_instrument_links.question_id",
+      )
+      .select(["tournament_questions.id", "tournament_questions.unit", "bucket_count"])
+      .where("tournament_instrument_links.instrument_id", "=", instrumentId)
       .executeTakeFirstOrThrow();
-    await postgres.db
-      .insertInto("tournament_instrument_links")
-      .values({ question_id: question.id, instrument_id: instrumentId })
-      .execute();
     await postgres.db
       .insertInto("tournament_aggregates")
       .values({
         question_id: question.id,
         computed_at: TRADE_AT,
-        probs: unit === "bool" ? ["0.3", "0.7"] : ["0.1", "0.2", "0.4", "0.2", "0.1"],
+        probs: new Array<string>(question.bucket_count).fill(String(1 / question.bucket_count)),
         n_forecasters: aggregate.n,
-        median_value: aggregate.medianB === undefined ? null : String(aggregate.medianB),
-        p_floor: unit === "bool" ? null : "0.1",
+        median_value: aggregate.median === undefined ? null : String(aggregate.median),
+        p_floor: question.unit === "bool" ? null : String(1 / question.bucket_count),
         p_yes: aggregate.pYes === undefined ? null : String(aggregate.pYes),
         extremization: 1,
         weighting_version: "test",
       })
       .execute();
-    return question.id;
+    return question;
   }
 
   it("publishes the model mid as the reference when there is no flow and no crowd", async () => {
@@ -257,8 +227,9 @@ postgresDescribe(suiteName, () => {
   it("gives a linked crowd weight only from ten forecasters", async () => {
     const binary = await instrumentOf("anthropic", "binary");
     const forward = await instrumentOf("anthropic", "forward");
-    await linkQuestion(binary.id, "bool", { n: 9, pYes: 0.7 });
-    await linkQuestion(forward.id, "USD_B", { n: 12, medianB: 400 });
+    await aggregateOnLinkedQuestion(binary.id, { n: 9, pYes: 0.7 });
+    const ladder = await aggregateOnLinkedQuestion(forward.id, { n: 12, median: 400 });
+    const scale = ladder.unit === "USD_T" ? 1e12 : 1e9;
 
     await runDealerJob(postgres.db, "reference-4", LATER);
 
@@ -270,13 +241,16 @@ postgresDescribe(suiteName, () => {
     const components = forwardRef.components_json as unknown as ReferenceComponents;
     expect(components.crowd).toMatchObject({
       n_forecasters: 12,
-      unit: "USD_B",
+      unit: ladder.unit,
       reported: 400,
-      value: Math.log(400e9),
+      value: Math.log(400 * scale),
     });
     expect(forwardRef.w_crowd).toBe(BLEND_SCHEDULE.crowd.max_weight);
     expect(forwardRef.w_model).toBeCloseTo(1 - BLEND_SCHEDULE.crowd.max_weight, 15);
-    expect(forwardRef.value).toBeCloseTo(0.7 * components.model.value + 0.3 * Math.log(400e9), 12);
+    expect(forwardRef.value).toBeCloseTo(
+      0.7 * components.model.value + 0.3 * Math.log(400 * scale),
+      12,
+    );
 
     const verification = await verifyDealer(postgres.db);
     expect(verification.findings).toEqual([]);

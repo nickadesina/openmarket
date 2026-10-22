@@ -156,6 +156,9 @@ export async function createPostgresTestDatabase(
 export async function resetPostgresTestDatabase(db: Kysely<Database>): Promise<void> {
   await sql`
     truncate table
+      event_flag_reviews,
+      tournament_restriction_companies,
+      tournament_restriction_attestations,
       api_keys,
       source_health,
       tournament_instrument_links,
