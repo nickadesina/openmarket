@@ -1,9 +1,11 @@
+import { createHash } from "node:crypto";
+
+import { sql } from "kysely";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { DEALER_PARAMS } from "../../src/lib/config/dealer.js";
-import { forwardQuestionLadder } from "../../src/lib/engine/dealer/question-ladder.js";
 import { runDealerJob } from "../../src/lib/services/dealer/run-dealer-job.js";
 import { runSettleJob } from "../../src/lib/services/dealer/settle-instruments.js";
+import { forwardQuestionUnit } from "../../src/lib/services/dealer/tournament-bridge.js";
 import { verifyDealer } from "../../src/lib/services/dealer/verify-dealer.js";
 import {
   closeQuestionIn,
@@ -11,7 +13,6 @@ import {
   saveDraftQuestion,
   voidQuestion,
 } from "../../src/lib/services/tournament/admin.js";
-import { forecastEventHash } from "../../src/lib/services/tournament/submit-forecast.js";
 import { verifyReplay } from "../../src/lib/services/verify-replay.js";
 import { insertFixtureFlags, NAMES, seedFixtureListings } from "./dealer-fixture.js";
 import {
@@ -24,11 +25,12 @@ import {
 } from "./postgres.js";
 
 /**
- * The tournament bridge (milestone 7): every instrument the dealer lists has
- * an open tournament question, and the settle job resolves or voids it in the
- * settlement's own transaction. The fixture's calendar: names listed on
- * 2026-09-01, Instinct's Series C release of 2026-09-28 the first
- * announcement after listing.
+ * The tournament bridge (milestone 7, decision 0004): every instrument the
+ * dealer lists has an open tournament question of its own kind, and the
+ * settle job resolves or voids it in the settlement's own transaction. The
+ * fixture's calendar: names listed on 2026-09-01, Instinct's Series C
+ * release of 2026-09-28 ($10B post-money) the first announcement after
+ * listing.
  */
 const databaseUrl = testDatabaseUrl();
 const postgresDescribe = databaseUrl === undefined ? describe.skip : describe;
@@ -41,6 +43,27 @@ const LISTED_AT = new Date("2026-09-01T00:00:00.000Z");
 const RUN_AT = new Date("2026-09-01T00:05:00.000Z");
 const ANNOUNCED = new Date("2026-09-28T00:00:00.000Z");
 const SETTLE_AT = new Date("2026-09-29T00:41:00.000Z");
+
+type Forecast = { readonly p: number } | { readonly value: number };
+
+/**
+ * The event hash decision 0004 pins: sha256(question ‖ user ‖ ISO time ‖
+ * payload), the payload a binary's [p, 1 − p] at 10 dp or a forward's
+ * "fwd:" + x at 10 dp. Written out here so the fixture events are exactly
+ * what verify:replay re-derives.
+ */
+function forecastHash(questionId: string, userId: string, at: Date, forecast: Forecast): string {
+  const payload =
+    "p" in forecast
+      ? [forecast.p, 1 - forecast.p].map((probability) => probability.toFixed(10)).join(",")
+      : `fwd:${forecast.value.toFixed(10)}`;
+  return createHash("sha256")
+    .update(questionId)
+    .update(userId)
+    .update(at.toISOString())
+    .update(payload)
+    .digest("hex");
+}
 
 postgresDescribe(suiteName, () => {
   let postgres: PostgresTestDatabase;
@@ -75,8 +98,8 @@ postgresDescribe(suiteName, () => {
         "instruments.epoch",
         "instruments.question",
         "instruments.expires_at",
-        "listings.tier",
         "questions.id as question_id",
+        "questions.kind as question_kind",
         "questions.slug",
         "questions.title",
         "questions.unit",
@@ -95,26 +118,18 @@ postgresDescribe(suiteName, () => {
       .execute();
   }
 
-  async function bucketsOf(questionId: string) {
-    return postgres.db
-      .selectFrom("tournament_buckets")
-      .selectAll()
-      .where("question_id", "=", questionId)
-      .orderBy("index")
-      .execute();
-  }
-
-  /** A forecast event at a fixture time; the tournament's own hash, so replay re-derives it. */
-  async function forecastAt(questionId: string, userId: string, at: Date, probs: number[]) {
+  /** A forecast event at a fixture time, hashed as verify:replay re-derives it. */
+  async function forecastAt(questionId: string, userId: string, at: Date, forecast: Forecast) {
     await postgres.db
       .insertInto("tournament_forecast_events")
       .values({
         user_id: userId,
         question_id: questionId,
         submitted_at: at,
-        probs: probs.map((probability) => probability.toFixed(10)),
+        p: "p" in forecast ? String(forecast.p) : null,
+        value: "value" in forecast ? String(forecast.value) : null,
         client_hash: null,
-        event_hash: forecastEventHash(questionId, userId, at, probs),
+        event_hash: forecastHash(questionId, userId, at, forecast),
       })
       .execute();
   }
@@ -133,15 +148,16 @@ postgresDescribe(suiteName, () => {
     ).toEqual([]);
   });
 
-  it("lists every instrument with an open question that asks what it settles", async () => {
+  it("lists every instrument with an open question of its own kind", async () => {
     const links = await postgres.db.selectFrom("tournament_instrument_links").selectAll().execute();
     expect(links).toHaveLength(NAMES.length * 2);
 
     const [binary, forward] = await linked("instinct");
     expect(binary).toMatchObject({
       kind: "binary",
+      question_kind: "binary",
       slug: "instinct-round-by-2026-09-30",
-      unit: "bool",
+      unit: null,
       status: "open",
       rulebook_version: 1,
     });
@@ -150,30 +166,36 @@ postgresDescribe(suiteName, () => {
     expect(binary!.closes_at).toEqual(binary!.expires_at);
     expect(binary!.rulebook_md).toContain("OpenMarket rulebook 1.0.0");
 
+    // The forward's unit follows its listing mid; it carries no edges.
     const firstMid = await postgres.db
       .selectFrom("model_mids")
       .select("mid_ln")
       .where("instrument_id", "=", forward!.instrument_id)
       .orderBy("computed_at")
       .executeTakeFirstOrThrow();
-    const ladder = forwardQuestionLadder(firstMid.mid_ln!, DEALER_PARAMS.sigma_tier[forward!.tier]);
     expect(forward).toMatchObject({
       kind: "forward",
+      question_kind: "forward",
       slug: "instinct-next-print-by-2026-11-30",
-      unit: ladder.unit,
+      unit: forwardQuestionUnit(Math.exp(firstMid.mid_ln!)),
       status: "open",
     });
     expect(forward!.closes_at).toEqual(forward!.expires_at);
     expect(forward!.expiry_at).toEqual(forward!.expires_at);
-    const buckets = await bucketsOf(forward!.question_id);
-    expect(buckets.filter((bucket) => bucket.kind === "range").length).toBe(
-      ladder.edges.length + 1,
-    );
-    expect(buckets.slice(1, -1).map((bucket) => Number(bucket.lower))).toEqual(ladder.edges);
-    expect(buckets.at(-1)).toMatchObject({
-      kind: "floor",
-      label: "No qualifying print by 2026-11-30",
-    });
+    expect(forward!.rulebook_md).not.toMatch(/bucket|floor/i);
+
+    // Every forward question is a forward in a dollar unit; every binary has none.
+    const all = await postgres.db
+      .selectFrom("tournament_instrument_links as links")
+      .innerJoin("instruments", "instruments.id", "links.instrument_id")
+      .innerJoin("tournament_questions as questions", "questions.id", "links.question_id")
+      .select(["instruments.kind", "questions.kind as question_kind", "questions.unit"])
+      .execute();
+    for (const row of all) {
+      expect(row.question_kind).toBe(row.kind);
+      if (row.kind === "binary") expect(row.unit).toBeNull();
+      else expect(["USD_B", "USD_T"]).toContain(row.unit);
+    }
 
     // The labs' binary asks about a public S-1.
     const [openaiBinary] = await linked("openai");
@@ -194,12 +216,13 @@ postgresDescribe(suiteName, () => {
     const late = await createTrader(postgres.db, "late");
     const before = new Date("2026-09-10T00:00:00.000Z");
     const after = new Date("2026-09-28T12:00:00.000Z");
-    await forecastAt(binary!.question_id, early.tournamentUserId, before, [0.8, 0.2]);
+    await forecastAt(binary!.question_id, early.tournamentUserId, before, { p: 0.8 });
     // Public after the announcement: kept in the log, never counted.
-    await forecastAt(binary!.question_id, late.tournamentUserId, after, [0.99, 0.01]);
-    const forwardBuckets = await bucketsOf(forward!.question_id);
-    const uniform = forwardBuckets.map(() => 1 / forwardBuckets.length);
-    await forecastAt(forward!.question_id, early.tournamentUserId, before, uniform);
+    await forecastAt(binary!.question_id, late.tournamentUserId, after, { p: 0.99 });
+    const twelveBillion = forward!.unit === "USD_T" ? 0.012 : 12;
+    await forecastAt(forward!.question_id, early.tournamentUserId, before, {
+      value: twelveBillion,
+    });
 
     await insertFixtureFlags(
       postgres.db,
@@ -220,7 +243,7 @@ postgresDescribe(suiteName, () => {
       .execute();
     const binaryResolution = resolutions.find((row) => row.question_id === binary!.question_id)!;
     expect(binaryResolution).toMatchObject({
-      winning_bucket_index: 0,
+      outcome: "yes",
       resolved_value: null,
       rung_fired: 1,
       resolver_user_id: null,
@@ -228,14 +251,16 @@ postgresDescribe(suiteName, () => {
       superseded_by: null,
     });
     expect(binaryResolution.source_url).toContain("businesswire.com");
+
+    // The settled forward resolves its question to the post-money, in the question's unit.
     const forwardResolution = resolutions.find((row) => row.question_id === forward!.question_id)!;
-    const winning = forwardBuckets[forwardResolution.winning_bucket_index]!;
     const tenBillion = doneForward!.unit === "USD_T" ? 0.01 : 10;
+    expect(forwardResolution).toMatchObject({
+      outcome: null,
+      rung_fired: 1,
+      settle_run_id: "settle-1",
+    });
     expect(Number(forwardResolution.resolved_value)).toBe(tenBillion);
-    expect(winning.kind).toBe("range");
-    expect(winning.lower === null || Number(winning.lower) <= tenBillion).toBe(true);
-    expect(winning.upper === null || tenBillion < Number(winning.upper)).toBe(true);
-    expect(forwardResolution).toMatchObject({ rung_fired: 1, settle_run_id: "settle-1" });
 
     // The early forecaster is scored; the post-announcement one is not.
     const scores = await postgres.db
@@ -249,7 +274,11 @@ postgresDescribe(suiteName, () => {
     const settled = outcome.status === "succeeded" ? outcome.result.outcomes : [];
     expect(settled.find((row) => row.instrument_id === binary!.instrument_id)).toMatchObject({
       outcome: "yes",
-      question: { slug: binary!.slug, status: "resolved", winning_bucket_index: 0 },
+      question: { slug: binary!.slug, status: "resolved", outcome: "yes" },
+    });
+    expect(settled.find((row) => row.instrument_id === forward!.instrument_id)).toMatchObject({
+      outcome: "settled",
+      question: { slug: forward!.slug, status: "resolved", resolved_value: tenBillion },
     });
 
     // Successors list with their own open questions.
@@ -259,21 +288,48 @@ postgresDescribe(suiteName, () => {
       slug: "instinct-round-by-2026-12-31",
     });
     expect(nextBinary!.opens_at).toEqual(SETTLE_AT);
-    expect(nextForward).toMatchObject({ epoch: 2, status: "open" });
+    expect(nextForward).toMatchObject({ epoch: 2, status: "open", question_kind: "forward" });
 
     expect((await verifyReplay(postgres.db)).passed).toBe(true);
     expect(await verifyDealer(postgres.db)).toMatchObject({ passed: true, findings: [] });
   });
 
+  it("flags a linked resolution that does not carry the settlement's value", async () => {
+    const [, forward] = await linked("instinct");
+    await insertFixtureFlags(
+      postgres.db,
+      "instinct",
+      ["release"],
+      (flag) => flag.published_at > "2026-09-01",
+    );
+    await runSettleJob(postgres.db, "settle-tamper", SETTLE_AT);
+    expect(await verifyDealer(postgres.db)).toMatchObject({ passed: true, findings: [] });
+    // The settlement's record now names an $11B print; the question still says $10B.
+    await postgres.db
+      .updateTable("instruments")
+      .set({
+        resolution_json: sql`jsonb_set(resolution_json, '{post_money_usd}', '11000000000'::jsonb)`,
+      })
+      .where("id", "=", forward!.instrument_id)
+      .execute();
+    const verification = await verifyDealer(postgres.db);
+    expect(verification.passed).toBe(false);
+    expect(verification.findings).toContainEqual(
+      expect.objectContaining({
+        check: "linked_question",
+        detail: expect.stringContaining("does not carry the settlement's value"),
+      }),
+    );
+  });
+
   it("resolves an expired binary No and voids a void forward's question unscored", async () => {
     const [, modalForward] = await linked("modal");
     const forecaster = await createTrader(postgres.db, "voided");
-    const buckets = await bucketsOf(modalForward!.question_id);
     await forecastAt(
       modalForward!.question_id,
       forecaster.tournamentUserId,
       new Date("2026-09-05T00:00:00Z"),
-      buckets.map(() => 1 / buckets.length),
+      { value: modalForward!.unit === "USD_T" ? 0.02 : 20 },
     );
 
     await runSettleJob(postgres.db, "expiry-1", new Date("2026-10-02T00:41:00Z"));
@@ -285,7 +341,8 @@ postgresDescribe(suiteName, () => {
       .where("question_id", "=", modalBinary!.question_id)
       .executeTakeFirstOrThrow();
     expect(no).toMatchObject({
-      winning_bucket_index: 1,
+      outcome: "no",
+      resolved_value: null,
       rung_fired: null,
       source_url: null,
       settle_run_id: "expiry-1",
@@ -293,12 +350,22 @@ postgresDescribe(suiteName, () => {
     expect(nextBinary).toMatchObject({ kind: "binary", epoch: 2, status: "open" });
 
     const voidAt = new Date(modalForward!.expires_at.getTime() + 86_400_000 + 3_600_000);
-    await runSettleJob(postgres.db, "expiry-2", voidAt);
+    const voidRun = await runSettleJob(postgres.db, "expiry-2", voidAt);
     const voided = (await linked("modal")).find(
       (row) => row.question_id === modalForward!.question_id,
     )!;
     expect(voided.status).toBe("voided");
     expect(voided.void_note_md).toContain("Unscored");
+    expect(
+      voidRun.status === "succeeded" &&
+        voidRun.result.outcomes.find((row) => row.instrument_id === modalForward!.instrument_id),
+    ).toMatchObject({ outcome: "void", question: { slug: modalForward!.slug, status: "voided" } });
+    const resolutions = await postgres.db
+      .selectFrom("tournament_resolutions")
+      .select("id")
+      .where("question_id", "=", modalForward!.question_id)
+      .execute();
+    expect(resolutions).toEqual([]);
     const written = await postgres.db
       .selectFrom("tournament_scores")
       .select("user_id")
@@ -349,6 +416,10 @@ postgresDescribe(suiteName, () => {
     );
     const after = await linked("anthropic");
     expect(after.map((row) => row.status)).toEqual(["open", "open"]);
+    // The backfilled forward takes the same unit: both read the instrument's listing mid.
+    expect(after.map((row) => [row.question_kind, row.unit])).toEqual(
+      before.map((row) => [row.question_kind, row.unit]),
+    );
   });
 
   it("back-dates a close past the scheduled close only when the caller asks", async () => {
@@ -359,7 +430,7 @@ postgresDescribe(suiteName, () => {
       description_md: "Description.",
       rulebook_md: "Rulebook.",
       rulebook_version: 1,
-      unit: "bool",
+      kind: "binary",
       opens_at: opens.toISOString(),
       closes_at: "2026-09-30T00:00:00.000Z",
     });

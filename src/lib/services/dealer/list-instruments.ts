@@ -213,12 +213,7 @@ export async function listInstrument(
 
   const marketId = await insertBook(db, listing, instrument, mid.value, now);
   const question = linkedQuestionsEnabled()
-    ? await linkInstrumentQuestion(db, {
-        listing,
-        instrument,
-        midLn: kind === "forward" ? mid.value : null,
-        now,
-      })
+    ? await linkInstrumentQuestion(db, { listing, instrument, now })
     : null;
   const quoteBase = {
     instrumentId: instrument.id,
@@ -371,13 +366,7 @@ export async function listInstruments(
       .execute();
     for (const instrument of live) {
       if (instrument.question_id !== null || !linkedQuestionsEnabled()) continue;
-      const mid = await latestMid(db, instrument.id, now);
-      const question = await linkInstrumentQuestion(db, {
-        listing,
-        instrument,
-        midLn: mid?.mid_ln ?? null,
-        now,
-      });
+      const question = await linkInstrumentQuestion(db, { listing, instrument, now });
       if (question !== null) linked.push(question.slug);
     }
     for (const kind of KINDS) {
