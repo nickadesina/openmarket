@@ -25,6 +25,7 @@ import { queryKeys } from "../../lib/client/query-keys.js";
 import {
   binaryScoreBounds,
   forwardScoreLadder,
+  PUBLIC_FORECAST_HEADING,
   signInHref,
   tournamentCrowdValue,
   tournamentMarketValue,
@@ -497,8 +498,8 @@ export function ForecastEditor({ question }: { readonly question: QuestionDetail
   const previous = viewer.forecasts[question.slug];
   const notice = viewer.firstSubmission ? (
     <p className={styles.publicNotice}>
-      <strong>Forecasts are public.</strong> Every forecast you submit is shown under your name on
-      this page, your profile and the leaderboard, and stays in the record after you revise it.
+      <strong>{PUBLIC_FORECAST_HEADING}</strong> Every forecast you submit is shown under your name
+      on this page, your profile and the leaderboard, and stays in the record after you revise it.
     </p>
   ) : null;
   return question.kind === "forward" && question.unit !== null ? (

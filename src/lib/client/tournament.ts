@@ -155,11 +155,14 @@ export function tournamentMarketValue(question: QuestionDetail): number | null {
 
 /** Same scorer and miss ratios as the forward editor, including its doubled outer miss. */
 export function forwardRuleScores() {
-  const [exact, near, double] = forwardScoreLadder(1).rungs;
+  const [exact, near, double] = FORWARD_MISS_RATIOS;
   return {
-    exact: exact!.score,
-    near: near!.score,
-    double: double!.score,
-    quadruple: forwardScore(1, FORWARD_MISS_RATIOS[2] ** 2),
+    exact: forwardScore(1, exact),
+    near: forwardScore(1, near),
+    double: forwardScore(1, double),
+    quadruple: forwardScore(1, double ** 2),
   };
 }
+
+/** Shared heading; the surrounding explanation is specific to onboarding or submission. */
+export const PUBLIC_FORECAST_HEADING = "Forecasts are public.";
