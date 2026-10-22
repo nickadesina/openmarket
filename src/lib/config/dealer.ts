@@ -20,6 +20,7 @@ export const MODEL_VERSION = Object.keys(PARAMS_SHA256_BY_MODEL_VERSION).at(-1)!
 
 const tierSchema = z.object({ mega: z.number().finite(), redhot: z.number().finite() }).strict();
 const positive = z.number().finite().positive();
+const positiveTierSchema = z.object({ mega: positive, redhot: positive }).strict();
 
 const paramsSchema = z
   .object({
@@ -30,7 +31,7 @@ const paramsSchema = z
       .object({
         mu_stepup: z.record(z.string(), tierSchema),
         mu_stepup_fallback: tierSchema,
-        cadence_months: tierSchema,
+        cadence_months: positiveTierSchema,
         weibull_k: positive,
         days_per_month: positive,
         leak_hazard_near: z.number().gt(0).lt(1),
@@ -38,7 +39,7 @@ const paramsSchema = z
         leak_window_days: z.number().int().positive(),
       })
       .strict(),
-    sigma_tier: tierSchema,
+    sigma_tier: positiveTierSchema,
     dealer: z
       .object({
         kappa: positive,
@@ -48,7 +49,7 @@ const paramsSchema = z
         gamma: z.number().finite().nonnegative(),
         p_floor: z.number().gt(0).lt(0.5),
         flag_spread_mult: positive,
-        flag_cap_mult: positive,
+        flag_cap_mult: positive.max(1),
         flag_hours: z.number().int().positive(),
       })
       .strict(),
