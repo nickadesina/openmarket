@@ -150,7 +150,7 @@ postgresDescribe(suiteName, () => {
       description_md: "D.",
       rulebook_md: "R.",
       rulebook_version: 1,
-      unit: "bool",
+      kind: "binary",
       opens_at: new Date(now - HOUR).toISOString(),
       closes_at: new Date(now + HOUR).toISOString(),
     });
@@ -158,10 +158,12 @@ postgresDescribe(suiteName, () => {
     await submitForecast(postgres.db, {
       slug: "accounts-q",
       userId: passwordUser!,
-      probs: [0.4, 0.6],
+      p: 0.4,
     });
     const { forecasts } = await listLatestForecasts(postgres.db, "accounts-q");
-    expect(forecasts.map((forecast) => forecast.profileSlug)).toEqual(["~kim"]);
+    expect(forecasts.map((forecast) => [forecast.profileSlug, forecast.p])).toEqual([
+      ["~kim", 0.4],
+    ]);
   });
 
   it("sets, clears, and validates a self-reported affiliation", async () => {

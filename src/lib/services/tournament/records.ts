@@ -80,7 +80,8 @@ export function acceptingForecasts(question: QuestionRecord, now: Date): boolean
   );
 }
 
-export function toNumbers(values: readonly string[]): number[] {
+/** An archived numeric[] as numbers (pg parses its elements; strings are accepted too). */
+export function toNumbers(values: readonly (string | number)[]): number[] {
   return values.map(Number);
 }
 
