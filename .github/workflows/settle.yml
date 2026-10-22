@@ -10,6 +10,12 @@ on:
     - cron: "41 * * * *"
   workflow_dispatch:
 
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   run:
     runs-on: ubuntu-latest

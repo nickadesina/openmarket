@@ -18,6 +18,12 @@ on:
     - cron: "23 6 * * *"
   workflow_dispatch:
 
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   widened:
     runs-on: ubuntu-latest
