@@ -20,7 +20,7 @@ const NAMES = ["Anduril", "Anthropic", "Instinct", "Modal", "OpenAI"] as const;
 const PRICE = /\$\d[\d.,]*[MBT]/;
 
 test("the board lists the five names with forward and binary prices", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/m");
   const board = page.getByRole("tabpanel", { name: "Board" });
   for (const name of NAMES) {
     await expect(board.getByRole("link", { name, exact: true })).toBeVisible();
@@ -189,7 +189,7 @@ test("the ticket's controls are reachable and operable from the keyboard", async
 });
 
 test("home and a market page fit a phone width", async ({ page }) => {
-  for (const path of ["/", "/m/openai", "/m/instinct"]) {
+  for (const path of ["/m", "/m/openai", "/m/instinct"]) {
     await page.goto(path);
     await expect(page.getByRole("main")).toBeVisible();
     await expectNoHorizontalOverflow(page);

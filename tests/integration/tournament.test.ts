@@ -117,17 +117,16 @@ postgresDescribe(suiteName, () => {
     await resetPostgresTestDatabase(postgres.db);
     users = [];
     for (let index = 0; index < 6; index += 1) {
-      users.push(
-        await upsertIdentity(postgres.db, {
-          provider: "x",
-          providerUserId: String(1_000 + index),
-          handle: `Forecaster${index}`,
-          displayName: `Forecaster ${index}`,
-          avatarUrl: null,
-          verified: index === 0,
-          providerCreatedAt: OLD_ACCOUNT,
-        }),
-      );
+      const { userId } = await upsertIdentity(postgres.db, {
+        provider: "x",
+        providerUserId: String(1_000 + index),
+        handle: `Forecaster${index}`,
+        displayName: `Forecaster ${index}`,
+        avatarUrl: null,
+        verified: index === 0,
+        providerCreatedAt: OLD_ACCOUNT,
+      });
+      users.push(userId);
     }
     runtime.getRuntimeDatabase.mockReturnValue(postgres.db);
     vi.stubEnv("NODE_ENV", "production");
@@ -186,7 +185,7 @@ postgresDescribe(suiteName, () => {
   }
 
   it("keeps an identity per X id and refreshes its handle", async () => {
-    const again = await upsertIdentity(postgres.db, {
+    const { userId: again } = await upsertIdentity(postgres.db, {
       provider: "x",
       providerUserId: "1000",
       handle: "Renamed",
@@ -335,7 +334,7 @@ postgresDescribe(suiteName, () => {
 
   it("rejects accounts younger than the question's minimum age", async () => {
     await openBinary();
-    const young = await upsertIdentity(postgres.db, {
+    const { userId: young } = await upsertIdentity(postgres.db, {
       provider: "x",
       providerUserId: "9999",
       handle: "Fresh",

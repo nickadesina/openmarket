@@ -247,8 +247,10 @@ this identity, but cash and positions never enter scoring.
   being superseded. `npm run verify:replay` also recomputes every stored
   score and every open question's live aggregate from the event log.
 
-Pages: `/t` (questions), `/t/signin`, `/t/q/[slug]`,
-`/t/u/[handle]`, `/t/leaderboard`, `/t/admin`. Public JSON, cacheable
+Pages: `/t` (questions; `/` redirects here, and the markets board is
+`/m`), `/t/signin`, `/t/welcome` (a new identity's one onboarding step,
+an optional affiliation), `/t/q/[slug]`, `/t/u/[handle]`,
+`/t/leaderboard`, `/t/admin`. Public JSON, cacheable
 for 10 seconds: `GET /api/t/questions`, `/api/t/questions/[slug]`,
 `/api/t/questions/[slug]/forecasts`,
 `/api/t/questions/[slug]/aggregate/history`,

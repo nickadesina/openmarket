@@ -12,6 +12,12 @@ export interface IdentityProfile {
   readonly providerCreatedAt: Date | null;
 }
 
+export interface SignedInIdentity {
+  readonly userId: string;
+  /** True only when this call created the identity: its first sign-in, which onboards. */
+  readonly created: boolean;
+}
+
 /**
  * One user per provider id. The id is the identity; handle, name and avatar
  * are re-fetched and cached on every sign-in because handles change.
@@ -19,7 +25,7 @@ export interface IdentityProfile {
 export async function upsertIdentity(
   db: Kysely<Database>,
   profile: IdentityProfile,
-): Promise<string> {
+): Promise<SignedInIdentity> {
   return db.transaction().execute(async (transaction) => {
     const values = {
       handle: profile.handle,
@@ -37,7 +43,7 @@ export async function upsertIdentity(
       .where("provider_user_id", "=", profile.providerUserId)
       .returning("user_id")
       .executeTakeFirst();
-    if (existing !== undefined) return existing.user_id;
+    if (existing !== undefined) return { userId: existing.user_id, created: false };
 
     const user = await transaction
       .insertInto("tournament_users")
@@ -55,9 +61,10 @@ export async function upsertIdentity(
       .onConflict((conflict) => conflict.columns(["provider", "provider_user_id"]).doNothing())
       .returning("user_id")
       .executeTakeFirst();
-    if (inserted !== undefined) return inserted.user_id;
+    if (inserted !== undefined) return { userId: inserted.user_id, created: true };
 
     // A concurrent first sign-in won the race; adopt its user and drop ours.
+    // That call onboards, so this one is a returning sign-in.
     await transaction.deleteFrom("tournament_users").where("id", "=", user.id).execute();
     const winner = await transaction
       .selectFrom("tournament_identities")
@@ -65,6 +72,6 @@ export async function upsertIdentity(
       .where("provider", "=", profile.provider)
       .where("provider_user_id", "=", profile.providerUserId)
       .executeTakeFirstOrThrow();
-    return winner.user_id;
+    return { userId: winner.user_id, created: false };
   });
 }
