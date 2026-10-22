@@ -1,5 +1,4 @@
 import type { Kysely } from "kysely";
-
 import { MODEL_VERSION } from "../../config/dealer.js";
 import type {
   Database,
@@ -21,7 +20,8 @@ import {
 } from "../../engine/dealer/blend.js";
 import { RULEBOOK_VERSION } from "../../engine/dealer/rulebook.js";
 import { canonicalJson } from "./compute-mids.js";
-import { LIVE_STATES, latestMid } from "./dealer-books.js";
+import { LIVE_STATES } from "./dealer-books.js";
+import { groupBy } from "./service-helpers.js";
 import { type LinkedQuestionShape, UNIT_USD } from "./tournament-bridge.js";
 
 /**
@@ -183,41 +183,60 @@ interface InstrumentBookRef {
   readonly market_id: string;
 }
 
-/** The traded component of a book over (to − window, to], counting trades through `throughSequence`. */
-async function loadTradedComponent(
-  db: Kysely<Database>,
+async function referenceTrades(db: Kysely<Database>, marketIds: readonly string[], at?: Date) {
+  if (marketIds.length === 0) return [];
+  let query = db
+    .selectFrom("trades")
+    .leftJoin("forward_positions", "forward_positions.trade_id", "trades.id")
+    .select([
+      "trades.market_id",
+      "trades.market_sequence",
+      "trades.created_at",
+      "trades.contract_side",
+      "trades.cash_amount_cents",
+      "trades.quantity",
+      "forward_positions.notional_cents",
+      "forward_positions.entry_ln",
+    ])
+    .where("trades.market_id", "in", marketIds)
+    .orderBy("trades.market_sequence");
+  if (at !== undefined)
+    query = query
+      .where(
+        "trades.created_at",
+        ">",
+        new Date(at.getTime() - BLEND_SCHEDULE.traded.window_days * DAY_MS),
+      )
+      .where("trades.created_at", "<=", at);
+  return query.execute();
+}
+type ReferenceTrade = Awaited<ReturnType<typeof referenceTrades>>[number];
+
+/** The traded component over (to − window, to], in original market sequence order. */
+function tradedComponent(
   book: InstrumentBookRef,
   to: Date,
   throughSequence: string,
   windowDays: number,
-): Promise<TradedComponent> {
+  rows: readonly ReferenceTrade[],
+): TradedComponent {
   const from = new Date(to.getTime() - windowDays * DAY_MS);
-  const base = db
-    .selectFrom("trades")
-    .where("trades.market_id", "=", book.market_id)
-    .where("trades.created_at", ">", from)
-    .where("trades.created_at", "<=", to)
-    .where("trades.market_sequence", "<=", throughSequence)
-    .orderBy("trades.market_sequence");
-  let fills: TradedFill[];
-  if (book.kind === "forward") {
-    const rows = await base
-      .innerJoin("forward_positions", "forward_positions.trade_id", "trades.id")
-      .select(["forward_positions.notional_cents", "forward_positions.entry_ln"])
-      .execute();
-    fills = rows.map((row) => ({ weightCents: Number(row.notional_cents), value: row.entry_ln }));
-  } else {
-    const rows = await base
-      .select(["trades.contract_side", "trades.quantity", "trades.cash_amount_cents"])
-      .execute();
-    fills = rows.map((row) => {
-      const cash = Number(row.cash_amount_cents);
-      return {
-        weightCents: cash,
-        value: binaryYesPrice(row.contract_side, cash, row.quantity),
-      };
-    });
-  }
+  const fills = rows
+    .filter(
+      (row) =>
+        row.created_at > from &&
+        row.created_at <= to &&
+        BigInt(row.market_sequence) <= BigInt(throughSequence),
+    )
+    .filter((row) => book.kind !== "forward" || row.entry_ln !== null)
+    .map((row) =>
+      book.kind === "forward"
+        ? { weightCents: Number(row.notional_cents), value: row.entry_ln! }
+        : {
+            weightCents: Number(row.cash_amount_cents),
+            value: binaryYesPrice(row.contract_side, Number(row.cash_amount_cents), row.quantity),
+          },
+    );
   const average = tradedAverage(fills);
   return {
     weighting: book.kind === "forward" ? "notional_entry_ln" : "cash_yes_price",
@@ -231,48 +250,58 @@ async function loadTradedComponent(
   };
 }
 
-/** The linked question's latest aggregate at `at`, or null with no link or no aggregate yet. */
-async function loadCrowdComponent(
+/** Latest linked crowds for every live instrument, fetched as one query. */
+async function crowdComponents(
   db: Kysely<Database>,
-  instrumentId: string,
-  kind: InstrumentKind,
+  ids: readonly string[],
   at: Date,
-): Promise<CrowdComponent | null> {
-  const link = await db
+): Promise<Map<string, CrowdComponent>> {
+  const rows = await db
     .selectFrom("tournament_instrument_links")
     .innerJoin(
       "tournament_questions",
       "tournament_questions.id",
       "tournament_instrument_links.question_id",
     )
+    .innerJoin(
+      "tournament_aggregates",
+      "tournament_aggregates.question_id",
+      "tournament_questions.id",
+    )
+    .innerJoin("instruments", "instruments.id", "tournament_instrument_links.instrument_id")
     .select([
+      "tournament_instrument_links.instrument_id",
       "tournament_questions.id as question_id",
       "tournament_questions.kind",
       "tournament_questions.unit",
+      "instruments.kind as instrument_kind",
+      "tournament_aggregates.id",
+      "tournament_aggregates.computed_at",
+      "tournament_aggregates.n_forecasters",
+      "tournament_aggregates.p",
+      "tournament_aggregates.value",
     ])
-    .where("tournament_instrument_links.instrument_id", "=", instrumentId)
-    .executeTakeFirst();
-  if (link === undefined) return null;
-  const aggregate = await db
-    .selectFrom("tournament_aggregates")
-    .select(["id", "computed_at", "n_forecasters", "p", "value"])
-    .where("question_id", "=", link.question_id)
-    .where("computed_at", "<=", at)
-    .orderBy("computed_at", "desc")
-    .orderBy("id", "desc")
-    .executeTakeFirst();
-  if (aggregate === undefined) return null;
-  const { reported, value } = crowdValue(kind, link, aggregate);
-  return {
-    question_id: link.question_id,
-    aggregate_id: aggregate.id,
-    computed_at: aggregate.computed_at.toISOString(),
-    n_forecasters: aggregate.n_forecasters,
-    kind: link.kind,
-    unit: link.unit,
-    reported,
-    value,
-  };
+    .where("tournament_instrument_links.instrument_id", "in", ids)
+    .where("tournament_aggregates.computed_at", "<=", at)
+    .distinctOn("tournament_instrument_links.instrument_id")
+    .orderBy("tournament_instrument_links.instrument_id")
+    .orderBy("tournament_aggregates.computed_at", "desc")
+    .orderBy("tournament_aggregates.id", "desc")
+    .execute();
+  return new Map(
+    rows.map((row) => [
+      row.instrument_id,
+      {
+        question_id: row.question_id,
+        aggregate_id: row.id,
+        computed_at: row.computed_at.toISOString(),
+        n_forecasters: row.n_forecasters,
+        kind: row.kind,
+        unit: row.unit,
+        ...crowdValue(row.instrument_kind, row, row),
+      },
+    ]),
+  );
 }
 
 interface LiveBook extends InstrumentBookRef {
@@ -362,24 +391,61 @@ export async function writeReferencePrices(
   now: Date,
 ): Promise<ReferenceStepSummary> {
   const books = await liveBooks(db);
+  if (books.length === 0) return { instruments: 0, written: [], unchanged: 0 };
+  const ids = books.map((book) => book.instrument_id);
+  const [trades, mids, crowds, references] = await Promise.all([
+    referenceTrades(
+      db,
+      books.map((book) => book.market_id),
+      now,
+    ),
+    db
+      .selectFrom("model_mids")
+      .selectAll()
+      .where("instrument_id", "in", ids)
+      .where("computed_at", "<=", now)
+      .distinctOn("instrument_id")
+      .orderBy("instrument_id")
+      .orderBy("computed_at", "desc")
+      .orderBy("id", "desc")
+      .execute(),
+    crowdComponents(db, ids, now),
+    db
+      .selectFrom("reference_prices")
+      .selectAll()
+      .where(
+        "listing_id",
+        "in",
+        books.map((book) => book.listing_id),
+      )
+      .distinctOn(["listing_id", "kind"])
+      .orderBy("listing_id")
+      .orderBy("kind")
+      .orderBy("as_of", "desc")
+      .orderBy("id", "desc")
+      .execute(),
+  ]);
+  const tradesByMarket = groupBy(trades, (row) => row.market_id);
+  const midsByInstrument = new Map(mids.map((row) => [row.instrument_id, row]));
+  const previous = new Map(references.map((row) => [`${row.listing_id}:${row.kind}`, row]));
   const written: ReferenceStepSummary["written"][number][] = [];
   let unchanged = 0;
   for (const book of books) {
-    const mid = await latestMid(db, book.instrument_id, now);
+    const mid = midsByInstrument.get(book.instrument_id);
     const model = book.kind === "forward" ? mid?.mid_ln : mid?.p;
     if (mid === undefined || model === null || model === undefined) continue;
     const components: ReferenceComponents = {
       instrument_id: book.instrument_id,
       kind: book.kind,
       model: { model_mid_id: mid.id, computed_at: mid.computed_at.toISOString(), value: model },
-      traded: await loadTradedComponent(
-        db,
+      traded: tradedComponent(
         book,
         now,
         book.last_market_sequence,
         BLEND_SCHEDULE.traded.window_days,
+        tradesByMarket.get(book.market_id) ?? [],
       ),
-      crowd: await loadCrowdComponent(db, book.instrument_id, book.kind, now),
+      crowd: crowds.get(book.instrument_id) ?? null,
       schedule: BLEND_SCHEDULE,
     };
     const result = blendFromComponents(components);
@@ -396,9 +462,7 @@ export async function writeReferencePrices(
       w_crowd: result.weights.crowd,
       components_json: JSON.stringify(components),
     };
-    if (
-      sameReference(await latestReference(db, book.listing_id, book.kind), row, book.instrument_id)
-    ) {
+    if (sameReference(previous.get(`${book.listing_id}:${book.kind}`), row, book.instrument_id)) {
       unchanged += 1;
       continue;
     }
@@ -442,26 +506,71 @@ function near(left: number | null, right: number | null): boolean {
   return Math.abs(left - right) <= REFERENCE_TOLERANCE;
 }
 
+async function referenceSnapshot(db: Kysely<Database>, rows: readonly ReferencePriceRow[]) {
+  const components: ReferenceComponents[] = [];
+  for (const row of rows)
+    if (isComponents(row.components_json)) components.push(row.components_json);
+  const ids = [...new Set(components.map((row) => row.instrument_id))];
+  const midIds = [...new Set(components.map((row) => row.model.model_mid_id))];
+  const crowdIds = components.flatMap((row) =>
+    row.crowd === null ? [] : [row.crowd.aggregate_id],
+  );
+  const books =
+    ids.length === 0
+      ? []
+      : await db
+          .selectFrom("instruments")
+          .innerJoin("markets", "markets.instrument_id", "instruments.id")
+          .select([
+            "instruments.id",
+            "instruments.listing_id",
+            "instruments.kind",
+            "markets.id as market_id",
+          ])
+          .where("instruments.id", "in", ids)
+          .execute();
+  const [mids, crowds, trades] = await Promise.all([
+    midIds.length === 0
+      ? []
+      : db.selectFrom("model_mids").selectAll().where("id", "in", midIds).execute(),
+    crowdIds.length === 0
+      ? []
+      : db
+          .selectFrom("tournament_aggregates")
+          .innerJoin(
+            "tournament_questions",
+            "tournament_questions.id",
+            "tournament_aggregates.question_id",
+          )
+          .selectAll("tournament_aggregates")
+          .select(["tournament_questions.kind", "tournament_questions.unit"])
+          .where("tournament_aggregates.id", "in", crowdIds)
+          .execute(),
+    referenceTrades(
+      db,
+      books.map((book) => book.market_id),
+    ),
+  ]);
+  return {
+    books: new Map(books.map((row) => [row.id, row])),
+    mids: new Map(mids.map((row) => [row.id, row])),
+    crowds: new Map(crowds.map((row) => [row.id, row])),
+    trades: groupBy(trades, (row) => row.market_id),
+  };
+}
+type ReferenceSnapshot = Awaited<ReturnType<typeof referenceSnapshot>>;
+
 /** The checks on one row's components against the tables they cite; the first failure, or null. */
-async function checkComponents(
-  db: Kysely<Database>,
+function checkComponents(
+  snapshot: ReferenceSnapshot,
   row: ReferencePriceRow,
   components: ReferenceComponents,
-): Promise<string | null> {
-  const book = await db
-    .selectFrom("instruments")
-    .innerJoin("markets", "markets.instrument_id", "instruments.id")
-    .select(["instruments.listing_id", "instruments.kind", "markets.id as market_id"])
-    .where("instruments.id", "=", components.instrument_id)
-    .executeTakeFirst();
+): string | null {
+  const book = snapshot.books.get(components.instrument_id);
   if (book === undefined || book.listing_id !== row.listing_id || book.kind !== row.kind) {
     return `instrument ${components.instrument_id} is not this listing's ${row.kind}`;
   }
-  const mid = await db
-    .selectFrom("model_mids")
-    .select(["instrument_id", "computed_at", "mid_ln", "p"])
-    .where("id", "=", components.model.model_mid_id)
-    .executeTakeFirst();
+  const mid = snapshot.mids.get(components.model.model_mid_id);
   const midValue = row.kind === "forward" ? mid?.mid_ln : mid?.p;
   if (
     mid === undefined ||
@@ -471,12 +580,12 @@ async function checkComponents(
   ) {
     return `model mid ${components.model.model_mid_id} does not give ${components.model.value}`;
   }
-  const traded = await loadTradedComponent(
-    db,
+  const traded = tradedComponent(
     { instrument_id: components.instrument_id, kind: row.kind, market_id: book.market_id },
     row.as_of,
     components.traded.through_sequence,
     components.traded.window_days,
+    snapshot.trades.get(book.market_id) ?? [],
   );
   if (
     traded.trades !== components.traded.trades ||
@@ -487,7 +596,7 @@ async function checkComponents(
   }
   if (components.crowd !== null) {
     const cited = components.crowd;
-    const crowd = await crowdById(db, cited, components.instrument_id, row.kind);
+    const crowd = crowdById(snapshot, cited, row.kind);
     if (
       crowd === null ||
       new Date(cited.computed_at) > row.as_of ||
@@ -500,36 +609,13 @@ async function checkComponents(
   return null;
 }
 
-/** The cited aggregate, recomputed, when its question is linked to the instrument. */
-async function crowdById(
-  db: Kysely<Database>,
+/** The cited aggregate, recomputed, using the immutable question id recorded at publication. */
+function crowdById(
+  snapshot: ReferenceSnapshot,
   cited: CrowdComponent,
-  instrumentId: string,
   kind: InstrumentKind,
-): Promise<CrowdComponent | null> {
-  const aggregate = await db
-    .selectFrom("tournament_aggregates")
-    .innerJoin(
-      "tournament_instrument_links",
-      "tournament_instrument_links.question_id",
-      "tournament_aggregates.question_id",
-    )
-    .innerJoin(
-      "tournament_questions",
-      "tournament_questions.id",
-      "tournament_aggregates.question_id",
-    )
-    .select([
-      "tournament_aggregates.n_forecasters",
-      "tournament_aggregates.p",
-      "tournament_aggregates.value",
-      "tournament_aggregates.question_id",
-      "tournament_questions.kind",
-      "tournament_questions.unit",
-    ])
-    .where("tournament_aggregates.id", "=", cited.aggregate_id)
-    .where("tournament_instrument_links.instrument_id", "=", instrumentId)
-    .executeTakeFirst();
+): CrowdComponent | null {
+  const aggregate = snapshot.crowds.get(cited.aggregate_id);
   if (aggregate === undefined || aggregate.question_id !== cited.question_id) return null;
   return {
     ...cited,
@@ -553,6 +639,7 @@ export async function verifyReferencePrices(
     .orderBy("as_of")
     .orderBy("id")
     .execute();
+  const snapshot = await referenceSnapshot(db, rows);
   const findings: ReferenceFinding[] = [];
   for (const row of rows) {
     const fail = (detail: string) => findings.push({ id: row.id, detail });
@@ -593,7 +680,7 @@ export async function verifyReferencePrices(
       fail(`stored ${row.value}, recomputed ${result.value} from its components`);
       continue;
     }
-    const mismatch = await checkComponents(db, row, components);
+    const mismatch = checkComponents(snapshot, row, components);
     if (mismatch !== null) fail(mismatch);
   }
   return { checked: rows.length, findings };

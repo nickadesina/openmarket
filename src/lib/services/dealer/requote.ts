@@ -1,14 +1,12 @@
-import type { Transaction } from "kysely";
+import { sql, type Transaction } from "kysely";
 
 import type { Database, InstrumentKind, QuoteFlagState, QuoteInsert } from "../../db/schema.js";
 import {
   binaryQuoteRow,
   forwardQuoteFor,
   forwardQuoteRow,
+  isWidened,
   LIVE_STATES,
-  latestMid,
-  latestQuote,
-  openForwardInventory,
   sameQuote,
 } from "./dealer-books.js";
 
@@ -40,6 +38,7 @@ export async function requote(db: Transaction<Database>, now: Date): Promise<Req
       "instruments.id",
       "instruments.kind",
       "instruments.state",
+      "instruments.widened_until",
       "companies.name as company",
       "listings.tier",
       "listings.kappa",
@@ -53,9 +52,50 @@ export async function requote(db: Transaction<Database>, now: Date): Promise<Req
     .orderBy("instruments.kind")
     .execute();
 
+  const ids = rows.map((row) => row.id);
+  if (ids.length === 0) return { instruments: 0, requoted: [] };
+  const [mids, quotes, inventories] = await Promise.all([
+    db
+      .selectFrom("model_mids")
+      .selectAll()
+      .where("instrument_id", "in", ids)
+      .where("computed_at", "<=", now)
+      .distinctOn("instrument_id")
+      .orderBy("instrument_id")
+      .orderBy("computed_at", "desc")
+      .orderBy("id", "desc")
+      .execute(),
+    db
+      .selectFrom("quotes")
+      .selectAll()
+      .where("instrument_id", "in", ids)
+      .distinctOn("instrument_id")
+      .orderBy("instrument_id")
+      .orderBy("posted_at", "desc")
+      .orderBy("sequence", "desc")
+      .execute(),
+    db
+      .selectFrom("forward_positions")
+      .select([
+        "instrument_id",
+        sql<string>`sum(case when side = 'short' then notional_cents else -notional_cents end)::text`.as(
+          "inventory",
+        ),
+      ])
+      .where("instrument_id", "in", ids)
+      .where("settled_at", "is", null)
+      .where("voided_at", "is", null)
+      .groupBy("instrument_id")
+      .execute(),
+  ]);
+  const midByInstrument = new Map(mids.map((row) => [row.instrument_id, row]));
+  const quoteByInstrument = new Map(quotes.map((row) => [row.instrument_id, row]));
+  const inventoryByInstrument = new Map(
+    inventories.map((row) => [row.instrument_id, Number(row.inventory)]),
+  );
   const requoted: RequoteSummary["requoted"][number][] = [];
   for (const row of rows) {
-    const mid = await latestMid(db, row.id, now);
+    const mid = midByInstrument.get(row.id);
     if (mid === undefined) continue;
     const base = {
       instrumentId: row.id,
@@ -68,15 +108,15 @@ export async function requote(db: Transaction<Database>, now: Date): Promise<Req
       next = binaryQuoteRow(base, row.current_metric);
     } else {
       if (mid.mid_ln === null) continue;
-      const flagState: QuoteFlagState = row.state === "widened" ? "widened" : "normal";
-      const { inventoryCents } = await openForwardInventory(db, row.id);
+      const flagState: QuoteFlagState = isWidened(row, now) ? "widened" : "normal";
+      const inventoryCents = inventoryByInstrument.get(row.id) ?? 0;
       next = forwardQuoteRow(
         base,
         forwardQuoteFor(row, mid.mid_ln, inventoryCents, flagState),
         flagState,
       );
     }
-    if (sameQuote(await latestQuote(db, row.id), next)) continue;
+    if (sameQuote(quoteByInstrument.get(row.id), next)) continue;
     await db.insertInto("quotes").values(next).execute();
     requoted.push({ instrument_id: row.id, company: row.company, kind: row.kind });
   }
