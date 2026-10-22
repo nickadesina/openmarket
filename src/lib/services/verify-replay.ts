@@ -569,45 +569,11 @@ function analyzeForwardBook(
   return findings;
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: every ledger invariant checked in one pass; split per invariant family before growing.
-function analyzeMarket(
+function analyzeBucketDrift(
   market: ReplayMarketInput,
-  trades: readonly ReplayTradeInput[],
-  marks: readonly ReplayMarkInput[],
-  holdings: readonly ReplayHoldingInput[],
-  positions: readonly ReplayForwardPositionInput[] = [],
-): MarketReplayDiagnostics {
-  const stateFindings: StateFinding[] = [];
-  const parsedLastSequence = parseInteger(market.lastMarketSequence);
-  const validLastSequence =
-    parsedLastSequence !== null && parsedLastSequence >= 0n ? parsedLastSequence : null;
-  if (validLastSequence === null) {
-    stateFindings.push({
-      code: "INVALID_MARKET_SEQUENCE",
-      detail: `last_market_sequence is ${market.lastMarketSequence}`,
-    });
-  }
-
-  if (
-    market.nBuckets <= 0 ||
-    market.initialQ.length !== market.nBuckets ||
-    market.q.length !== market.nBuckets
-  ) {
-    stateFindings.push({
-      code: "INVALID_VECTOR_LENGTH",
-      detail: `expected ${market.nBuckets} buckets, initial_q has ${market.initialQ.length}, q has ${market.q.length}`,
-    });
-  }
-  if (!Number.isFinite(market.b) || market.b <= 0) {
-    stateFindings.push({ code: "INVALID_LIQUIDITY", detail: `b is ${String(market.b)}` });
-  }
-
-  const isForward = market.metricKind === "forward_ln";
-  const replayed = replayTrades(market, trades, stateFindings, isForward);
-  const replayedQ = replayed.q;
-  const tradeEconomics = replayed.tradeEconomics;
-  const forwardFindings = isForward ? analyzeForwardBook(market, trades, positions) : [];
-
+  replayedQ: readonly number[],
+  stateFindings: StateFinding[],
+) {
   let maximumDrift = -1;
   let driftBucket: number | null = null;
   let driftReplayed: number | null = null;
@@ -648,9 +614,14 @@ function analyzeMarket(
       driftBucket === null || driftTolerance === null || maximumDrift > driftTolerance,
   };
 
-  // A forward's q is open notional, not LMSR quantities: it has no PMF.
-  const pmfNormalizationError = isForward ? 0 : pmfError(market, stateFindings);
+  return maxBucketDrift;
+}
 
+function analyzeHoldings(
+  market: ReplayMarketInput,
+  holdings: readonly ReplayHoldingInput[],
+  stateFindings: StateFinding[],
+) {
   const negativeHoldings: NegativeHoldingFinding[] = [];
   for (const holding of holdings) {
     if (holding.h.length !== market.nBuckets) {
@@ -671,41 +642,13 @@ function analyzeMarket(
     });
   }
 
-  const tradeSequences = analyzeSequences(
-    trades.map((trade) => trade.marketSequence),
-    1n,
-    validLastSequence,
-  );
-  const markSequences = analyzeSequences(
-    marks.map((mark) => mark.marketSequence),
-    0n,
-    validLastSequence,
-  );
+  return negativeHoldings;
+}
 
-  const tradesById = new Map<string, ReplayTradeInput[]>();
-  const tradesBySequence = new Map<string, ReplayTradeInput[]>();
-  for (const trade of trades) {
-    const idRows = tradesById.get(trade.id) ?? [];
-    idRows.push(trade);
-    tradesById.set(trade.id, idRows);
-    const parsed = parseInteger(trade.marketSequence);
-    if (parsed !== null) {
-      const sequence = parsed.toString();
-      const sequenceRows = tradesBySequence.get(sequence) ?? [];
-      sequenceRows.push(trade);
-      tradesBySequence.set(sequence, sequenceRows);
-    }
-  }
-
-  const marksByTradeId = new Map<string, ReplayMarkInput[]>();
-  for (const mark of marks) {
-    if (mark.tradeId !== null) {
-      const rows = marksByTradeId.get(mark.tradeId) ?? [];
-      rows.push(mark);
-      marksByTradeId.set(mark.tradeId, rows);
-    }
-  }
-
+function analyzeMarkCardinality(
+  trades: readonly ReplayTradeInput[],
+  marksByTradeId: ReadonlyMap<string, ReplayMarkInput[]>,
+) {
   const tradeMarkCardinality: TradeMarkCardinalityFinding[] = [];
   for (const trade of trades) {
     const linked = marksByTradeId.get(trade.id) ?? [];
@@ -736,72 +679,113 @@ function analyzeMarket(
     }
   }
 
-  const tradeMarkDisagreements: TradeMarkDisagreement[] = [];
-  for (const mark of marks) {
-    const markSequence = parseInteger(mark.marketSequence);
-    if (markSequence === 0n) {
-      if (mark.tradeId !== null) {
-        tradeMarkDisagreements.push({
-          markSequence: mark.marketSequence,
-          markTradeId: mark.tradeId,
-          tradeSequence: null,
-          expectedTradeId: null,
-          fields: ["trade_id"],
-        });
-      }
-      continue;
-    }
+  return tradeMarkCardinality;
+}
 
-    const sequenceCandidates =
-      markSequence === null ? [] : (tradesBySequence.get(markSequence.toString()) ?? []);
-    const idCandidates = mark.tradeId === null ? [] : (tradesById.get(mark.tradeId) ?? []);
-    const sequenceTrade = sequenceCandidates.length === 1 ? sequenceCandidates[0] : undefined;
-    const linkedTrade = idCandidates.length === 1 ? idCandidates[0] : undefined;
-    const trade = sequenceTrade ?? linkedTrade;
-    if (trade === undefined) {
+function checkTradeMark(
+  mark: ReplayMarkInput,
+  tradesById: ReadonlyMap<string, ReplayTradeInput[]>,
+  tradesBySequence: ReadonlyMap<string, ReplayTradeInput[]>,
+  tradeMarkDisagreements: TradeMarkDisagreement[],
+): void {
+  const markSequence = parseInteger(mark.marketSequence);
+  if (markSequence === 0n) {
+    if (mark.tradeId !== null) {
       tradeMarkDisagreements.push({
         markSequence: mark.marketSequence,
         markTradeId: mark.tradeId,
         tradeSequence: null,
         expectedTradeId: null,
-        fields: ["trade_not_found"],
+        fields: ["trade_id"],
       });
-      continue;
     }
+    return;
+  }
 
-    const fields: TradeMarkDisagreementField[] = [];
-    const tradeSequence = parseInteger(trade.marketSequence);
-    const linkedTradeSequence =
-      linkedTrade === undefined ? null : parseInteger(linkedTrade.marketSequence);
-    const markTimestamp = finiteTimestamp(mark.timestamp);
-    const tradeTimestamp = finiteTimestamp(trade.createdAt);
-    if (sequenceTrade !== undefined && mark.tradeId !== sequenceTrade.id) {
-      fields.push("trade_id");
-    }
-    if (
-      markSequence === null ||
-      tradeSequence === null ||
-      markSequence !== tradeSequence ||
-      (linkedTrade !== undefined &&
-        (linkedTradeSequence === null || markSequence !== linkedTradeSequence))
-    ) {
-      fields.push("market_sequence");
-    }
-    if (markTimestamp === null || tradeTimestamp === null || markTimestamp !== tradeTimestamp) {
-      fields.push("timestamp");
-    }
-    if (!numbersAgree(mark.value, trade.metricAfter)) fields.push("metric");
-    if (fields.length > 0) {
-      tradeMarkDisagreements.push({
-        markSequence: mark.marketSequence,
-        markTradeId: mark.tradeId,
-        tradeSequence: trade.marketSequence,
-        expectedTradeId: trade.id,
-        fields,
-      });
+  const sequenceCandidates =
+    markSequence === null ? [] : (tradesBySequence.get(markSequence.toString()) ?? []);
+  const idCandidates = mark.tradeId === null ? [] : (tradesById.get(mark.tradeId) ?? []);
+  const sequenceTrade = sequenceCandidates.length === 1 ? sequenceCandidates[0] : undefined;
+  const linkedTrade = idCandidates.length === 1 ? idCandidates[0] : undefined;
+  const trade = sequenceTrade ?? linkedTrade;
+  if (trade === undefined) {
+    tradeMarkDisagreements.push({
+      markSequence: mark.marketSequence,
+      markTradeId: mark.tradeId,
+      tradeSequence: null,
+      expectedTradeId: null,
+      fields: ["trade_not_found"],
+    });
+    return;
+  }
+
+  const fields: TradeMarkDisagreementField[] = [];
+  const tradeSequence = parseInteger(trade.marketSequence);
+  const linkedTradeSequence =
+    linkedTrade === undefined ? null : parseInteger(linkedTrade.marketSequence);
+  const markTimestamp = finiteTimestamp(mark.timestamp);
+  const tradeTimestamp = finiteTimestamp(trade.createdAt);
+  if (sequenceTrade !== undefined && mark.tradeId !== sequenceTrade.id) {
+    fields.push("trade_id");
+  }
+  if (
+    markSequence === null ||
+    tradeSequence === null ||
+    markSequence !== tradeSequence ||
+    (linkedTrade !== undefined &&
+      (linkedTradeSequence === null || markSequence !== linkedTradeSequence))
+  ) {
+    fields.push("market_sequence");
+  }
+  if (markTimestamp === null || tradeTimestamp === null || markTimestamp !== tradeTimestamp) {
+    fields.push("timestamp");
+  }
+  if (!numbersAgree(mark.value, trade.metricAfter)) fields.push("metric");
+  if (fields.length > 0) {
+    tradeMarkDisagreements.push({
+      markSequence: mark.marketSequence,
+      markTradeId: mark.tradeId,
+      tradeSequence: trade.marketSequence,
+      expectedTradeId: trade.id,
+      fields,
+    });
+  }
+}
+
+function analyzeTradeMarks(trades: readonly ReplayTradeInput[], marks: readonly ReplayMarkInput[]) {
+  const tradesById = new Map<string, ReplayTradeInput[]>();
+  const tradesBySequence = new Map<string, ReplayTradeInput[]>();
+  for (const trade of trades) {
+    const idRows = tradesById.get(trade.id) ?? [];
+    idRows.push(trade);
+    tradesById.set(trade.id, idRows);
+    const parsed = parseInteger(trade.marketSequence);
+    if (parsed !== null) {
+      const sequence = parsed.toString();
+      const sequenceRows = tradesBySequence.get(sequence) ?? [];
+      sequenceRows.push(trade);
+      tradesBySequence.set(sequence, sequenceRows);
     }
   }
 
+  const marksByTradeId = new Map<string, ReplayMarkInput[]>();
+  for (const mark of marks) {
+    if (mark.tradeId !== null) {
+      const rows = marksByTradeId.get(mark.tradeId) ?? [];
+      rows.push(mark);
+      marksByTradeId.set(mark.tradeId, rows);
+    }
+  }
+
+  const tradeMarkCardinality = analyzeMarkCardinality(trades, marksByTradeId);
+  const tradeMarkDisagreements: TradeMarkDisagreement[] = [];
+  for (const mark of marks)
+    checkTradeMark(mark, tradesById, tradesBySequence, tradeMarkDisagreements);
+
+  return { tradeMarkCardinality, tradeMarkDisagreements };
+}
+
+function analyzeTimestampOrder(marks: readonly ReplayMarkInput[]) {
   const timestampInversions: TimestampInversionFinding[] = [];
   const orderedMarks = parseAndOrder(marks, (mark) => mark.marketSequence).ordered;
   let latestPrior: ParsedSequence<ReplayMarkInput> | undefined;
@@ -829,6 +813,69 @@ function analyzeMarket(
       latestPrior = current;
     }
   }
+
+  return timestampInversions;
+}
+
+function analyzeMarket(
+  market: ReplayMarketInput,
+  trades: readonly ReplayTradeInput[],
+  marks: readonly ReplayMarkInput[],
+  holdings: readonly ReplayHoldingInput[],
+  positions: readonly ReplayForwardPositionInput[] = [],
+): MarketReplayDiagnostics {
+  const stateFindings: StateFinding[] = [];
+  const parsedLastSequence = parseInteger(market.lastMarketSequence);
+  const validLastSequence =
+    parsedLastSequence !== null && parsedLastSequence >= 0n ? parsedLastSequence : null;
+  if (validLastSequence === null) {
+    stateFindings.push({
+      code: "INVALID_MARKET_SEQUENCE",
+      detail: `last_market_sequence is ${market.lastMarketSequence}`,
+    });
+  }
+
+  if (
+    market.nBuckets <= 0 ||
+    market.initialQ.length !== market.nBuckets ||
+    market.q.length !== market.nBuckets
+  ) {
+    stateFindings.push({
+      code: "INVALID_VECTOR_LENGTH",
+      detail: `expected ${market.nBuckets} buckets, initial_q has ${market.initialQ.length}, q has ${market.q.length}`,
+    });
+  }
+  if (!Number.isFinite(market.b) || market.b <= 0) {
+    stateFindings.push({ code: "INVALID_LIQUIDITY", detail: `b is ${String(market.b)}` });
+  }
+
+  const isForward = market.metricKind === "forward_ln";
+  const replayed = replayTrades(market, trades, stateFindings, isForward);
+  const replayedQ = replayed.q;
+  const tradeEconomics = replayed.tradeEconomics;
+  const forwardFindings = isForward ? analyzeForwardBook(market, trades, positions) : [];
+
+  const maxBucketDrift = analyzeBucketDrift(market, replayedQ, stateFindings);
+
+  // A forward's q is open notional, not LMSR quantities: it has no PMF.
+  const pmfNormalizationError = isForward ? 0 : pmfError(market, stateFindings);
+
+  const negativeHoldings = analyzeHoldings(market, holdings, stateFindings);
+
+  const tradeSequences = analyzeSequences(
+    trades.map((trade) => trade.marketSequence),
+    1n,
+    validLastSequence,
+  );
+  const markSequences = analyzeSequences(
+    marks.map((mark) => mark.marketSequence),
+    0n,
+    validLastSequence,
+  );
+
+  const { tradeMarkCardinality, tradeMarkDisagreements } = analyzeTradeMarks(trades, marks);
+
+  const timestampInversions = analyzeTimestampOrder(marks);
 
   const passed =
     stateFindings.length === 0 &&

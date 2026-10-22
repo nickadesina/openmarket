@@ -1,9 +1,7 @@
-import { sql, type Transaction } from "kysely";
-
+import type { Transaction } from "kysely";
 import { MODEL_VERSION } from "../../config/dealer.js";
 import { linkedQuestionsEnabled } from "../../config/tournament.js";
 import type {
-  CompanyRow,
   Database,
   InstrumentKind,
   InstrumentRow,
@@ -28,6 +26,13 @@ import {
   LIVE_STATES,
   latestMid,
 } from "./dealer-books.js";
+import {
+  isoDay,
+  type ListingWithCompany,
+  listingQuery,
+  listingWithCompany,
+  lockListing,
+} from "./service-helpers.js";
 import { linkInstrumentQuestion, relinkVoidedQuestion } from "./tournament-bridge.js";
 
 /**
@@ -44,9 +49,7 @@ import { linkInstrumentQuestion, relinkVoidedQuestion } from "./tournament-bridg
 
 const DAY_MS = 86_400_000;
 
-export type ListingWithCompany = ListingRow & {
-  readonly company: Pick<CompanyRow, "id" | "name" | "slug">;
-};
+export type { ListingWithCompany } from "./service-helpers.js";
 
 export interface ListInstrumentInput {
   readonly listing: ListingWithCompany;
@@ -72,10 +75,6 @@ export interface ListedInstrument {
   readonly value: number;
   /** The linked tournament question (milestone 7); null when linking is off or listed past its own expiry. */
   readonly question_slug: string | null;
-}
-
-function isoDay(at: Date): string {
-  return at.toISOString().slice(0, 10);
 }
 
 /** The question each instrument asks (CONTRACTS.md → Tournament mapping). */
@@ -305,19 +304,12 @@ async function insertBook(
 
 /** Active listings (listed by `now`, not delisted) with their companies. */
 async function activeListings(db: Transaction<Database>, now: Date): Promise<ListingWithCompany[]> {
-  const rows = await db
-    .selectFrom("listings")
-    .innerJoin("companies", "companies.id", "listings.company_id")
-    .selectAll("listings")
-    .select(["companies.name as company_name", "companies.slug as company_slug"])
+  const rows = await listingQuery(db)
     .where("listings.delisted_at", "is", null)
     .where("listings.listed_at", "<=", now)
     .orderBy("companies.name")
     .execute();
-  return rows.map(({ company_name, company_slug, ...listing }) => ({
-    ...listing,
-    company: { id: listing.company_id, name: company_name, slug: company_slug },
-  }));
+  return rows.map(listingWithCompany);
 }
 
 export interface ListInstrumentsSummary {
@@ -352,9 +344,7 @@ export async function listInstruments(
   const linked: string[] = [];
   for (const listing of listings) {
     // One listing at a time, so a concurrent roll of the same name waits.
-    await sql`select pg_advisory_xact_lock(hashtext('openmarket_listing'), hashtext(${listing.id}))`.execute(
-      db,
-    );
+    await lockListing(db, listing.id);
     const live = await db
       .selectFrom("instruments")
       .leftJoin(
@@ -374,6 +364,7 @@ export async function listInstruments(
       ])
       .where("instruments.listing_id", "=", listing.id)
       .where("instruments.state", "in", LIVE_STATES)
+      .orderBy("instruments.kind")
       .execute();
     for (const instrument of live) {
       if (!linkedQuestionsEnabled()) continue;

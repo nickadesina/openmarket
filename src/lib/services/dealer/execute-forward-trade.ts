@@ -1,7 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-
 import { type Kysely, sql, type Transaction } from "kysely";
-
 import { ServiceError } from "../../api/errors.js";
 import { formatCentsAsUsd, parseUsdToCents } from "../../api/money.js";
 import type { ForwardTradeInput } from "../../api/schemas.js";
@@ -17,6 +15,7 @@ import {
   loadForwardBook,
   loadInstrumentBook,
 } from "./get-instrument-quote.js";
+import { loadTradeReplay, lockIdempotency } from "./service-helpers.js";
 
 /**
  * Opens a forward position against the dealer's live quote (CONTRACTS.md →
@@ -93,31 +92,6 @@ function isForwardExecutionResult(value: JsonValue): value is ForwardExecutionRe
   );
 }
 
-async function loadReplay(
-  transaction: Transaction<Database>,
-  idempotencyKey: string,
-  userId: string,
-  fingerprint: string,
-): Promise<ForwardExecutionResult | undefined> {
-  const existing = await transaction
-    .selectFrom("trades")
-    .select(["user_id", "request_fingerprint", "execution_result"])
-    .where("idempotency_key", "=", idempotencyKey)
-    .executeTakeFirst();
-  if (existing === undefined) return undefined;
-  if (
-    existing.user_id.toLowerCase() !== userId.toLowerCase() ||
-    existing.request_fingerprint !== fingerprint ||
-    !isForwardExecutionResult(existing.execution_result)
-  ) {
-    throw new ServiceError(
-      "IDEMPOTENCY_CONFLICT",
-      "Idempotency key is bound to a different caller or request.",
-    );
-  }
-  return existing.execution_result;
-}
-
 function quoteDetails(state: ForwardBookState, at: Date): Record<string, unknown> {
   return {
     mid_ln: state.quote.mid,
@@ -191,9 +165,16 @@ export async function executeForwardTrade(
   const idempotencyKey = input.idempotency_key.toLowerCase();
   return db.transaction().execute(async (transaction) => {
     const lockKey = deriveAdvisoryLockKey(idempotencyKey);
-    await sql`select pg_advisory_xact_lock(${lockKey.toString()}::bigint)`.execute(transaction);
+    await lockIdempotency(transaction, lockKey);
     const fingerprint = deriveForwardTradeFingerprint(userId, input);
-    const replay = await loadReplay(transaction, idempotencyKey, userId, fingerprint);
+    const replay = await loadTradeReplay(
+      transaction,
+      idempotencyKey,
+      userId,
+      fingerprint,
+      isForwardExecutionResult,
+      "Idempotency key is bound to a different caller or request.",
+    );
     if (replay !== undefined) return { result: replay, replayed: true };
 
     const book = await loadInstrumentBook(transaction, input.instrument_id, true);

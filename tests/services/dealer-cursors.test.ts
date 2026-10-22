@@ -7,14 +7,15 @@ import {
 
 describe("reference cursor validation", () => {
   const at = "2026-10-20T00:00:00.000000Z";
-  it.each(["2026-99-20T00:00:00.000000Z", "2026-02-30T00:00:00.000000Z"])(
-    "rejects invalid timestamp %s before SQL",
-    (value) => {
-      expect(() => decodeCursor(encodeCursor({ rows: { at: value, key: "1" } }), ["rows"])).toThrow(
-        "Invalid cursor",
-      );
-    },
-  );
+  it.each([
+    "2026-99-20T00:00:00.000000Z",
+    "2026-02-30T00:00:00.000000Z",
+    "0000-01-01T00:00:00.000000Z",
+  ])("rejects invalid timestamp %s before SQL", (value) => {
+    expect(() => decodeCursor(encodeCursor({ rows: { at: value, key: "1" } }), ["rows"])).toThrow(
+      "Invalid cursor",
+    );
+  });
   it.each(["abc", "0-0", "ffffffff-ffff-ffff-ffff-fffffffffff"])(
     "rejects invalid UUID %s before SQL",
     (key) => {

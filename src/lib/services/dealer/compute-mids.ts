@@ -1,5 +1,4 @@
 import type { Kysely } from "kysely";
-
 import {
   DEALER_PARAMS,
   type DealerParams,
@@ -23,6 +22,7 @@ import {
 } from "../../engine/dealer/prior.js";
 import { type FlagTerms, postMoneyUsd, RULEBOOK_VERSION } from "../../engine/dealer/rulebook.js";
 import { LIVE_STATES } from "./dealer-books.js";
+import { isoDay } from "./service-helpers.js";
 
 /**
  * The mid step of /api/cron/dealer (TECHNICAL_DESIGN.md §5): one model mid
@@ -183,10 +183,6 @@ function anchorOf(instrument: LiveInstrument): MidAnchor {
     source_url: instrument.anchor_source_url,
     ...(instrument.anchor_flag_id ? { flag_id: instrument.anchor_flag_id } : {}),
   };
-}
-
-function isoDay(at: Date): string {
-  return at.toISOString().slice(0, 10);
 }
 
 /**
