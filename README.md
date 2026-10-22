@@ -402,9 +402,34 @@ settled while a higher rank could still supersede it is recorded with
 - A keyed tier exists from day one so the first desk that asks gets a
   key the same day; nothing is gated at launch.
 
-Current code: only `GET /api/ref/rulebook` exists, served `no-store`
-like every read route; the 60 s cache arrives with the reference API
-(milestone 8), using `withReadRoute`'s `cacheSeconds` option.
+Current code: `src/lib/engine/dealer/blend.ts` (`BLEND_VERSION`
+1.0.0) is the blend; the dealer job's last step, `reference`
+(`services/dealer/reference-prices.ts`), appends a `reference_prices`
+row per listing and kind when its value, weights, versions or
+instrument move, with `components_json` citing the model mid by id,
+the 30-day traded average on the instrument's own book
+(notional-weighted entry for the forward, cash-weighted YES price for
+the binary) and the linked tournament aggregate
+(`tournament_instrument_links`, milestone 7; no link, no crowd);
+`verify:replay` recomputes every row from its components and each
+component from the table it cites. `GET /api/ref/listings`,
+`/api/ref/[slug]`, `/[slug]/history`, `/[slug]/mids`, `/[slug]/flags`
+and `/api/ref/rulebook` share `withRefRoute`
+(`src/lib/api/ref-route.ts`): `Cache-Control: public, max-age=60`
+on success, the four versions and `as_of` first in every payload,
+then one unit of the `ref` quota, 60 a minute per network, or a key's
+own with `Authorization: Bearer <key>` (migration `010_api_keys`); an
+unknown or revoked key is refused (401), never served as public.
+`npm run api-key:create -- --name=<desk> [--quota=600]` prints a key
+once and stores its SHA-256. The forward's reference blends the model
+mid, not the inventory-skewed quote mid, and the API publishes only the
+inventory's sign, on the reference and on the tape. `/admin/dealer`
+(tournament admins, via `/api/admin/dealer`) shows `dealer_pnl`, live
+instruments, recent runs, the settle job's pending rank 3–4 promotions
+(read-only) and `source_health`; `dealer-alerts.yml` fails daily when
+any instrument stays widened past the 72 h hold. Not built: the admin
+actions on the resolution queue, the silent-source and
+print-without-scoop alerts (ingest's), and the correcting settlement.
 
 ## 3. Non-goals for v0
 
@@ -465,6 +490,9 @@ npm run dev              # http://localhost:3000, never 127.0.0.1
   than Vercel Cron keeps hourly runs plan-independent; missed runs catch
   up. `.github/workflows/dealer.yml` calls `/api/cron/dealer` the same
   way with the same secret (`vars.DEALER_URL` overrides the target).
+  `.github/workflows/dealer-alerts.yml` (daily, same secret) fails when
+  an instrument stays widened past its 72 h hold. Apply migration
+  `010_api_keys` before serving the reference API.
   `npm run provenance:batch` runs the provenance job by hand. `SOLANA_PROVENANCE_SECRET_KEY` is the fee wallet (the
   64-byte `solana-keygen` JSON array, or its base58), `SOLANA_CLUSTER`
   is `mainnet-beta` (default) or `devnet`, and `SOLANA_RPC_URL`
