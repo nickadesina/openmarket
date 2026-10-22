@@ -92,23 +92,9 @@ function validateMask(mask: readonly boolean[], expectedLength: number): void {
 }
 
 function maskedBuyCost(state: NormalizedState, mask: readonly boolean[], quantity: number): number {
-  let maxShifted = -Infinity;
-  for (let index = 0; index < state.values.length; index += 1) {
-    const shifted = state.values[index]! + (mask[index] ? quantity : 0);
-    if (shifted > maxShifted) {
-      maxShifted = shifted;
-    }
-  }
-
-  let sumExp = 0;
-  for (let index = 0; index < state.values.length; index += 1) {
-    const shifted = state.values[index]! + (mask[index] ? quantity : 0);
-    sumExp += Math.exp((shifted - maxShifted) / state.b);
-  }
-
-  return assertFiniteResult(
-    maxShifted + state.b * (Math.log(sumExp) - state.logSumExp),
-    "buy cost",
+  return shiftedCost(
+    state,
+    mask.map((included) => (included ? quantity : 0)),
   );
 }
 
