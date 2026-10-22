@@ -5,7 +5,6 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 
 import type { TradeInput } from "../../src/lib/api/schemas.js";
 import { TOURNAMENT_SESSION_COOKIE } from "../../src/lib/auth/tournament-session.js";
-import { createMigrator } from "../../src/lib/db/migrator.js";
 import type { Database } from "../../src/lib/db/schema.js";
 import { createComment } from "../../src/lib/services/create-comment.js";
 import { executeTrade } from "../../src/lib/services/execute-trade.js";
@@ -16,6 +15,7 @@ import {
   createBinaryBook,
   createPostgresTestDatabase,
   createTrader,
+  migrateTestDatabase,
   type PostgresTestDatabase,
   resetPostgresTestDatabase,
   sessionCookie,
@@ -397,7 +397,7 @@ postgresDescribe(`${suiteName}: 008 on a populated 007 database`, () => {
     expect(before.cashReconciliation.userCount).toBe(3);
     expect(Number(before.cashReconciliation.marketMakerCashFlowCents)).not.toBe(0);
 
-    const migration = await createMigrator(db, postgres.schema).migrateToLatest();
+    const migration = await migrateTestDatabase(postgres, "latest");
     expect(migration.error).toBeUndefined();
     expect(migration.results?.map((result) => result.migrationName)).toEqual([
       "008_retire_ladder_and_username_accounts",
@@ -457,7 +457,7 @@ postgresDescribe(`${suiteName}: 008 on a populated 007 database`, () => {
     expect(opened.cashReconciliation).toMatchObject({ userCount: 1, differenceCents: "0" });
 
     // down restores the username shape for surviving accounts, then up runs clean again.
-    const down = await createMigrator(db, postgres.schema).migrateTo("007_dealer");
+    const down = await migrateTestDatabase(postgres, "007_dealer");
     expect(down.error).toBeUndefined();
     const { rows } = await sql<{ username: string; username_normalized: string }>`
       select username, username_normalized from users
@@ -466,7 +466,7 @@ postgresDescribe(`${suiteName}: 008 on a populated 007 database`, () => {
     expect(rows[0]!.username).toMatch(/^u_[0-9a-f]{18}$/);
     expect(rows[0]!.username_normalized).toBe(rows[0]!.username);
     expect(await columns("users")).not.toContain("tournament_user_id");
-    const up = await createMigrator(db, postgres.schema).migrateToLatest();
+    const up = await migrateTestDatabase(postgres, "latest");
     expect(up.error).toBeUndefined();
     expect(await countRows(db, "users")).toBe(0);
   });
@@ -489,7 +489,7 @@ postgresDescribe(`${suiteName}: 008 after dealer trading`, () => {
     const trader = await insertUsernameAccount(db, "EarlyDealer");
     await executeTrade(db, trader, buy(bookId, "10.00", "yes"));
 
-    const migration = await createMigrator(db, postgres.schema).migrateToLatest();
+    const migration = await migrateTestDatabase(postgres, "latest");
     expect(String(migration.error)).toMatch(/008 runs before dealer trading/);
     expect(await countRows(db, "users")).toBe(1);
     expect(await countRows(db, "trades")).toBe(1);
