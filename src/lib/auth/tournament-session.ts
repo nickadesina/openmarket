@@ -114,7 +114,7 @@ export async function requireTournamentUserId(
 ): Promise<string> {
   const session = await resolveTournamentSession(db, request);
   if (session === null) {
-    throw new ServiceError("USER_REQUIRED", "Sign in with X to submit a forecast.");
+    throw new ServiceError("USER_REQUIRED", "Sign in to continue.");
   }
   return session.userId;
 }
@@ -146,9 +146,9 @@ export async function requireTournamentAdmin(
   db: Kysely<Database>,
   request: Request,
 ): Promise<string> {
-  const session = await resolveTournamentSession(db, request);
-  if (session === null || !(await isTournamentAdmin(db, session.userId))) {
+  const userId = await requireTournamentUserId(db, request);
+  if (!(await isTournamentAdmin(db, userId))) {
     throw new ServiceError("ADMIN_REQUIRED", "A tournament admin session is required.");
   }
-  return session.userId;
+  return userId;
 }
