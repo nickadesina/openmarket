@@ -6,9 +6,8 @@ Each brief stands alone; each agent reads 0004 in full first.
 
 ## Before dispatch
 
-Nick answers the four "Open calls" in 0004 and flips its status to
-`decided`. A brief never re-opens a call: agents implement the answer
-written in 0004.
+0004 is `decided` (its "Calls" section records Nick's answers). A brief
+never re-opens a call: agents implement what 0004 says.
 
 ## Order and branches
 

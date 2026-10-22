@@ -1,7 +1,7 @@
 # 0004 — Tournament questions follow the two contracts; buckets go
 
-Date: 2026-10-22. Status: proposed (Nick to approve the four calls in
-"Open calls"). Amends `CONTRACTS.md` → Tournament mapping, README D9 and
+Date: 2026-10-22. Status: decided (Nick, 2026-10-22; see "Calls").
+Amends `CONTRACTS.md` → Tournament mapping, README D9 and
 `TECHNICAL_DESIGN.md` §7. Where this file is more specific, it wins.
 
 ## Why
@@ -59,7 +59,7 @@ and writes no scores.
 | `anthropic-ipo-day1-mcap` | forward, $T | Anthropic's basic-shares market cap at its first-day official close | void if no first trade by 2026-12-31 |
 | `anthropic-424b-run-rate` | forward, $B | The run-rate KPI in the final 424(b), latest as-of date; range → midpoint, "over $X" → X | void if the 424(b) has no such KPI (voids at filing) or no 424(b) by 2027-01-31 |
 | `openai-round-before-anthropic-ipo` | binary | Does OpenAI announce a priced primary round at ≥ $1.4T post-money before Anthropic's first trade? | NO if Anthropic trades first or neither happens by 2026-12-31 |
-| `anthropic-first-trade-by-2026` | binary | Do Anthropic's shares trade by 2026-12-31? | NO otherwise (optional; see Open calls) |
+| `anthropic-first-trade-by-2026` | binary | Do Anthropic's shares trade by 2026-12-31? | NO otherwise |
 
 Resolution text, sources and the 72-hour dispute rule carry over from
 the current rulebooks, minus every bucket sentence.
@@ -250,19 +250,18 @@ production.
 5. Check `/t`, each question, and `/t/provenance/<legacy event>` still
    verifying.
 
-## Open calls (Nick)
+## Calls (decided by Nick, 2026-10-22)
 
-1. **Forward scale.** A 2× miss scores 0. A tighter scale (1.5× = 0)
-   rewards precision more and makes the floor bind sooner; looser makes
-   forwards count less against binaries. Proposed: 2×.
-2. **The race on "neither".** NO (proposed, the dealer binary's own rule)
-   or void.
-3. **The timing binary** `anthropic-first-trade-by-2026`. Voiding the
-   day-one forward on no IPO drops the timing bet the floor bucket used
-   to carry; this binary keeps it. Proposed: add it.
-4. **Dispute vs revision window.** The forward rulebook lets a higher
-   rank supersede within 7 days; the tournament's dispute window is 72
-   hours. Proposed: leave 72 h for hand-written questions; linked
+1. **Forward scale: a 2× miss scores 0.** A tighter scale (1.5× = 0)
+   would reward precision more and make the floor bind sooner; a looser
+   one would make forwards count less against binaries.
+2. **The race resolves NO on "neither"**, the dealer binary's own rule
+   (an expired binary pays NO), not void.
+3. **The timing binary `anthropic-first-trade-by-2026` is added.**
+   Voiding the day-one forward on no IPO drops the timing bet the floor
+   bucket used to carry; this binary keeps it.
+4. **Hand-written questions keep the 72-hour dispute window.** The
+   forward rulebook lets a higher rank supersede within 7 days; linked
    forwards follow the settlement, which already supersedes.
 
 Not changed: log units in the engine, two contracts per name,
