@@ -8,9 +8,12 @@ import { type ReactNode, useId, useState } from "react";
 import { ApiClientError, apiRequest } from "../../lib/client/api.js";
 import {
   errorMessage,
+  formatBinaryScoreBounds,
+  formatForwardScoreLadder,
   formatProbability,
   formatScore,
-  formatTournamentDate,
+  formatScoreAtFigure,
+  formatTimeAverageNote,
   formatTournamentDateTime,
   formatTournamentValue,
   type TournamentUnitLabel,
@@ -19,8 +22,15 @@ import {
   usdInTournamentUnit,
 } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
-import { signInHref, useTournamentViewer } from "../../lib/client/tournament.js";
-import { forwardScore, pointLogScore } from "../../lib/engine/tournament/score.js";
+import {
+  binaryScoreBounds,
+  forwardScoreLadder,
+  signInHref,
+  useNow,
+  useTournamentViewer,
+  windowCoverage,
+} from "../../lib/client/tournament.js";
+import { binaryScore, forwardScore } from "../../lib/engine/tournament/score.js";
 import type { ListingDetail } from "../../lib/services/get-market.js";
 import type { ViewerForecast } from "../../lib/services/tournament/forecaster.js";
 import type { QuestionDetail } from "../../lib/services/tournament/get-question.js";
@@ -31,26 +41,49 @@ import styles from "./tournament-question.module.css";
 const PERCENT_MIN = 0.1;
 const PERCENT_MAX = 99.9;
 
-/**
- * The forward score's preview: three fixed miss ratios, since the score of
- * a level against its settling value depends on their ratio alone.
- */
-function forwardScoreAtRatio(ratio: number): number {
-  return forwardScore(ratio, 1);
-}
-
-const FORWARD_PREVIEW = [
-  { label: "Exact", ratio: 1 },
-  { label: "10% off", ratio: 1.1 },
-  { label: "2× off", ratio: 2 },
-] as const;
-
 interface Figure {
   readonly label: string;
   readonly chip: string;
   readonly display: string;
   /** What the chip writes into the field; the chip reads pressed while the field holds it. */
   readonly fill: string;
+}
+
+/** A published level beside the forward's field, with the level itself for scoring. */
+interface LevelFigure extends Figure {
+  /** How the score sentence names it: "crowd median", "dealer mid". */
+  readonly name: string;
+  readonly level: number;
+}
+
+/**
+ * Time, said once: the window the score averages over, and how much of it
+ * the viewer's forecast covers (or would, submitted now).
+ */
+function TimeNote({
+  question,
+  previous,
+}: {
+  readonly question: QuestionDetail;
+  readonly previous: ViewerForecast | undefined;
+}) {
+  const now = useNow();
+  const coverage =
+    now === null
+      ? null
+      : windowCoverage({
+          opensAt: question.opensAt,
+          windowEndsAt: question.windowEndsAt,
+          now,
+          previous,
+        });
+  if (coverage === null) return null;
+  const [rule, own] = formatTimeAverageNote(question.kind, coverage);
+  return (
+    <p className={styles.scoreNote}>
+      {rule} <strong>{own}</strong>
+    </p>
+  );
 }
 
 function submitError(error: unknown): string {
@@ -292,21 +325,24 @@ function BinaryEditor({
         ]}
       />
       {p === null ? null : (
-        <dl className={styles.preview} id={`${formId}-preview`}>
-          <div>
-            <dt>If YES</dt>
-            <dd>{formatScore(pointLogScore(p, 2))}</dd>
-          </div>
-          <div>
-            <dt>If NO</dt>
-            <dd>{formatScore(pointLogScore(1 - p, 2))}</dd>
-          </div>
-        </dl>
+        <div className={styles.scoreBlock} id={`${formId}-preview`}>
+          <dl className={styles.preview} aria-label={`What ${formatProbability(p)} scores`}>
+            <div>
+              <dt>If YES</dt>
+              <dd>{formatScore(binaryScore(p, "yes"))}</dd>
+            </div>
+            <div>
+              <dt>If NO</dt>
+              <dd>{formatScore(binaryScore(p, "no"))}</dd>
+            </div>
+          </dl>
+          <p className={styles.scoreNote}>
+            {formatBinaryScoreBounds(binaryScoreBounds(PERCENT_MAX / 100))} Your best score on
+            average comes from entering the chance you actually believe.
+          </p>
+        </div>
       )}
-      <p className={styles.muted}>
-        The score you keep is this one averaged over the open window. Time before your first
-        forecast counts as 0, the score of 50%, so an early forecast that stays right counts most.
-      </p>
+      <TimeNote question={question} previous={previous} />
       <SubmitRow submit={submit} previous={previous} ready={p !== null} />
     </form>
   );
@@ -340,11 +376,18 @@ function ForwardEditor({
     enabled: companySlug !== null,
   });
 
-  const figures: Figure[] = [];
+  const figures: LevelFigure[] = [];
   const pushLevel = (label: string, chipLabel: string, level: number | null) => {
     if (level === null || !Number.isFinite(level) || level <= 0) return;
     const display = formatTournamentValue(level, unit);
-    figures.push({ label, chip: `${chipLabel} ${display}`, display, fill: levelText(level) });
+    figures.push({
+      label,
+      name: label.toLowerCase(),
+      level,
+      chip: `${chipLabel} ${display}`,
+      display,
+      fill: levelText(level),
+    });
   };
   pushLevel(
     "Crowd median",
@@ -358,6 +401,8 @@ function ForwardEditor({
       ? usdInTournamentUnit(question.instrument.midUsd, unit)
       : null,
   );
+  // The crowd and the dealer are where it might settle; the last round is a reference, not a forecast.
+  const settleFigures = [...figures];
   pushLevel(
     "Last round",
     "Last round",
@@ -388,26 +433,20 @@ function ForwardEditor({
           {question.levelLabel ?? `Level in ${tournamentUnitName(unit)}`}
         </label>
       </h3>
-      <div className={styles.forwardField}>
-        <span className={styles.inputFrame}>
-          <span aria-hidden="true">$</span>
-          <input
-            id={inputId}
-            type="text"
-            inputMode="decimal"
-            autoComplete="off"
-            value={text}
-            aria-invalid={text !== "" && value === null}
-            aria-describedby={`${formId}-error ${formId}-void ${formId}-preview`}
-            onChange={(event) => change(event.target.value)}
-          />
-          <span aria-hidden="true">{suffix}</span>
-        </span>
-        <p className={styles.voidNote} id={`${formId}-void`}>
-          If nothing settles it by {formatTournamentDate(question.expiryAt)}, the question voids and
-          nothing is scored. The rulebook lists every void condition.
-        </p>
-      </div>
+      <span className={`${styles.inputFrame} ${styles.levelFrame}`}>
+        <span aria-hidden="true">$</span>
+        <input
+          id={inputId}
+          type="text"
+          inputMode="decimal"
+          autoComplete="off"
+          value={text}
+          aria-invalid={text !== "" && value === null}
+          aria-describedby={`${formId}-error ${formId}-preview`}
+          onChange={(event) => change(event.target.value)}
+        />
+        <span aria-hidden="true">{suffix}</span>
+      </span>
       {text !== "" && value === null ? (
         <p className={styles.error} id={`${formId}-error`}>
           Enter a level above zero in {tournamentUnitName(unit)}.
@@ -415,17 +454,28 @@ function ForwardEditor({
       ) : null}
       <Chips figures={figures} text={text} onPick={change} label="Use a published level" />
       <Readout label="Published levels" cells={figures} />
-      <p className={styles.previewLine} id={`${formId}-preview`}>
-        <span>Score if it settles</span>
-        {FORWARD_PREVIEW.map(
-          (point) => `${point.label} ${Math.round(forwardScoreAtRatio(point.ratio))}`,
-        ).join(" · ")}
-      </p>
-      <p className={styles.muted}>
-        The score you keep is this one averaged over the open window. Time before your first
-        forecast counts as 0, the score of a 2× miss, so an early level that stays close counts
-        most.
-      </p>
+      {value === null ? null : (
+        <div className={styles.scoreBlock} id={`${formId}-preview`}>
+          <p className={styles.scoreLine}>
+            {formatForwardScoreLadder(forwardScoreLadder(value), unit)}
+          </p>
+          {settleFigures.map((figure) => (
+            <p className={styles.scoreLine} key={figure.label}>
+              {formatScoreAtFigure(
+                figure.name,
+                figure.level,
+                forwardScore(value, figure.level),
+                unit,
+              )}
+            </p>
+          ))}
+          <p className={styles.scoreNote}>
+            Your best score on average comes from entering your median: the level you think it is as
+            likely to settle above as below.
+          </p>
+        </div>
+      )}
+      <TimeNote question={question} previous={previous} />
       <SubmitRow submit={submit} previous={previous} ready={value !== null} />
     </form>
   );
