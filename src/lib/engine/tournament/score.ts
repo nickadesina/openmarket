@@ -1,14 +1,14 @@
-/** Probability floor applied before taking a log; bounds the worst segment. */
+/** ε: the least probability a log is taken of; bounds the worst segment. */
 export const SCORE_EPSILON = 1e-3;
 
 /**
  * Baseline-relative log score of one probability on the outcome that
- * happened: 0 for uniform over `bucketCount` outcomes, 100 for certainty.
- * A binary is `bucketCount = 2`: 0 is "said 50%".
+ * happened: 0 for uniform over `outcomeCount` outcomes, 100 for certainty.
+ * A binary is `outcomeCount = 2`: 0 is "said 50%".
  */
-export function pointLogScore(probability: number, bucketCount: number): number {
+export function pointLogScore(probability: number, outcomeCount: number): number {
   return (
-    (100 / Math.log(bucketCount)) * Math.log(bucketCount * Math.max(probability, SCORE_EPSILON))
+    (100 / Math.log(outcomeCount)) * Math.log(outcomeCount * Math.max(probability, SCORE_EPSILON))
   );
 }
 

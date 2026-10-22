@@ -242,7 +242,8 @@ m is the latest `model_mids` value, not the skewed quote mid m̃, so the
 dealer's own inventory never moves the reference. p̄_traded is the
 30-day average on the instrument's book (forward: notional-weighted F₀;
 binary: cash-weighted YES price); p̄_crowd the linked question's latest
-aggregate (forward: ln of its median; binary: P(YES)). With n₀ = 20 the
+aggregate (forward: ln of the median of its forecasters' levels, in USD;
+binary: P(YES); the crowd's definition since blend 1.1.0, decision 0004). With n₀ = 20 the
 0.3 cap binds from N_min on, so w_c is 0 or 0.3. With no flow and no
 crowd the reference *is* the model mid and says so (`model_only`). The
 constants are policy, published under `BLEND_VERSION` (README D14).

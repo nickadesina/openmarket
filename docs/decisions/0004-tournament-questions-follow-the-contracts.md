@@ -1,6 +1,7 @@
 # 0004 — Tournament questions follow the two contracts; buckets go
 
-Date: 2026-10-22. Status: decided (Nick, 2026-10-22; see "Calls").
+Date: 2026-10-22. Status: implemented (decided by Nick, 2026-10-22; see
+"Calls"; built on `tournament-contracts`, PRs #18–#21).
 Amends `CONTRACTS.md` → Tournament mapping, README D9 and
 `TECHNICAL_DESIGN.md` §7. Where this file is more specific, it wins.
 
@@ -37,7 +38,8 @@ else.
   forward score is affine in −|ln x − ln y|, so it is proper for the
   median, which is what the crowd publishes and what the blend reads.
   Calibration: 10% off ≈ 86, 1.5× off ≈ 41, 2× off = 0, 4× off = −100.
-  The floor equals the binary clamp and binds only past a ~15,000× miss.
+  The floor equals the binary clamp and binds only past a 1/ε = 1,000×
+  miss (100 · (1 − log₂ 1000) = 100 · log₂ 0.002 = −896.6).
 - The crowd publishes from five forecasters, as today. The blend's input
   becomes simpler: `p_yes` for a binary, the forward median already in
   ln USD (no median-from-buckets, no open-end bounds).
