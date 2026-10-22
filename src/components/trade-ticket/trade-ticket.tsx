@@ -99,8 +99,8 @@ export function TradeTicket({
       ) : (
         <div className={styles.body}>
           <p className={styles.pending} role="status">
-            This contract is not trading right now: its epoch has ended and the next one lists
-            when the dealer job rolls it.
+            This contract is not trading right now: its epoch has ended and the next one lists when
+            the dealer job rolls it.
           </p>
         </div>
       )}

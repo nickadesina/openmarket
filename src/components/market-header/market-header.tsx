@@ -99,8 +99,7 @@ export function MarketHeader({ listing, movement }: MarketHeaderProps) {
 
           <div className={styles.cell}>
             <dt>
-              {binaryLabel}{" "}
-              {binary === null ? "quarter-end" : formatDate(binary.expires_at)}
+              {binaryLabel} {binary === null ? "quarter-end" : formatDate(binary.expires_at)}
             </dt>
             <dd className={styles.figure}>
               {binary === null ? "Not trading" : `YES ${formatProbability(binary.yes_price)}`}

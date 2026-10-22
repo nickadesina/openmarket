@@ -2,8 +2,8 @@
 
 Paper-money markets on private-company valuations. The first build
 traded a 41-bucket LMSR book per company over its next reported
-valuation; milestone 6 removed those markets (migration `008`), and
-their trading code stays only until the dealer ticket replaces it. The
+valuation; milestone 6 removed those markets (migration `008`) and their
+trading code, keeping the grid as a read-only implied ladder. The
 adopted design (D10–D14, Oct 2026) replaces that trading
 surface with two contracts per listed name — a quarterly timing binary
 and a next-print forward — quoted by the venue as dealer, with a
@@ -79,8 +79,11 @@ is deleted, and no path seeds a 41-bucket market any more.
 
 Asked for numbered epochs per company on the ladder markets, which are
 gone (milestone 6). The dealer numbers them on `instruments.epoch`, per
-listing and kind from 1, a successor at the next (`007_dealer`); how
-the market page addresses an epoch is the dealer UI's to decide.
+listing and kind from 1, a successor at the next (`007_dealer`). The
+market page `/m/[slug]` shows a name's live epoch; every epoch's book,
+settled or not, stays readable by market id
+(`/api/markets/by-id/[marketId]/marks` and `/comments`, and the
+`epochs` list `GET /api/markets/[slug]` returns).
 
 ### D4. Open interest — Implemented
 
@@ -93,17 +96,22 @@ the market page addresses an epoch is the dealer UI's to decide.
   sorts open markets by it.
 
 Current code: `openInterestSql` in `src/lib/services/open-interest.ts`
-is the one query; `listMarkets` and `getMarket` both return it as
-`openInterest`. The board column, the home strip (summed over open
-markets) and the market header all read "Open interest" in dollars. The
-old summed-bucket "Outstanding claims" figure is gone.
+is the binary's figure. A listed name's `openInterest` (from
+`listMarkets` and `getMarket`) is `{ forwardNotionalUsd, binaryUsd,
+totalUsd }`: the live forward's open long plus short notional (each
+dollar carries at most κ of payout) and the live binary's D4 figure.
+The board column, the home strip (summed over names) and the market
+header read "Open interest" in dollars from `totalUsd`, the header
+splitting it into forward and binary.
 
 ### D5. Distribution scaling — Open, display only
 
 No ladder market trades any more (D11, milestone 6); this now governs
-only the read-only implied distribution. The valuation grid is
-universal (40 boundaries from about $15M to $11T in half-octave steps)
-and seeding floors every bucket at 0.1% before normalizing. Together these place at least a few percent of probability
+only the read-only implied distribution, a lognormal at the forward mid
+with σ = `sigma_tier` (`src/lib/engine/distribution.ts`). The valuation
+grid is universal (40 boundaries from about $15M to $11T in half-octave
+steps) and the distribution floors every bucket at 0.1% before
+normalizing, the rule the ladder's seed used. Together these place at least a few percent of probability
 mass in tails the anchor distribution assigns essentially nothing to, so
 the displayed distribution and its tails are partly an artifact of the
 grid, not a market view.
@@ -299,9 +307,21 @@ each on its own `markets` book (binary `yes_probability`, forward
 `forward_ln`). `GET /api/instruments/[id]/quote` quotes either;
 `POST /api/forward/trade` opens a position at the ask or bid with N·κ
 collateral; `/api/quote` and `/api/trade` trade a dealer binary by
-`market_id`. No ladder market remains (migration `008`); the ladder's
-quote and trade routes and its ticket stay until the dealer ticket
-replaces them. No route closes a forward early. The launch T per name is carried in
+`market_id` only (slug addressing is deleted). No ladder market or
+ladder trading code remains (migration `008`, milestone 6). The market
+page `/m/[slug]` reads `GET /api/markets/[slug]`: both live quotes, the
+forward's marks for its chart, the read-only implied ladder
+(P(valuation > strike) at each grid strike) and distribution, open
+interest, epochs and versions. Its one ticket switches Forward / Binary:
+the forward side polls `GET /api/instruments/[id]/quote` for the live
+bid/ask in dollars and the fill (entry, collateral = max loss, max gain,
+expiry, model and rulebook versions), sends the entry on screen as its
+guard and re-confirms a PRICE_MOVED requote; the binary side is the
+YES/NO ticket by `market_id`. The board lists one row per name, and the
+portfolio shows open forwards marked at the mid (unrealised = settlement
+credit at the mid less collateral) with account value including them.
+No route closes a forward early; the ticket, the portfolio and the
+resolution panel say a position is held to settlement or void. The launch T per name is carried in
 `backtest/out/params.json` as a declared proposal (`FORWARD_T_DAYS` in
 `backtest/analyze.py`); the backtest does not compute it yet
 (`per_name_t` is still to run).
@@ -496,15 +516,15 @@ See `PART5.md` for the environment contract.
 | Claim | Status | Evidence |
 | --- | --- | --- |
 | CI blocked by a table-order assertion | Stale | Fixed before the current head; 15 integration tests pass locally and in the last pushed run. |
-| CI never reaches browser tests | Fixed by deletion | The trade-ticket, critical-flow, market-page, portfolio and accessibility specs that timed out seeded ladder markets through the deleted admin seed; they went with it in milestone 6. The remaining specs sign in through the tournament's dev sign-in. |
+| CI never reaches browser tests | Fixed | The ladder specs that timed out went with the admin seed in milestone 6. Playwright's global setup lists the five names and runs one dealer job against `DATABASE_URL_TEST` (`tests/browser/global-setup.ts`, no production route); `dealer.spec.ts` covers the board, market page, a forward long into the portfolio, a binary buy, PRICE_MOVED, mobile overflow and keyboard reach. Specs sign in through the tournament's dev sign-in. |
 | Shared username paper account with $100,000 opening balance | Fixed | Removed in milestone 6; a tournament user's paper account opens at $100,000 on first use (D1). |
 | Any known username resumes that account | Fixed | The username flow, its cookie and `USER_COOKIE_SECRET` are deleted; identity is the tournament session. |
 | Production requires exactly Stripe and Anthropic | Fixed | `scripts/production-seed.ts` is deleted; `seed:listings` lists the D10 names. |
 | Epochs half-modeled | Superseded | The ladder markets are gone (`008`); the dealer carries `instruments.epoch` (D3). |
 | Outstanding claims varies with mask width | Fixed | Both services read `openInterestSql`, the largest per-bucket total. |
-| Grid and floor impose artificial tails | True, display only | Universal grid in `buckets.ts`; 0.001 floor in `seed.ts`. Decision open (D5). |
+| Grid and floor impose artificial tails | True, display only | Universal grid in `buckets.ts`; 0.001 floor in `engine/distribution.ts` (`MIN_BUCKET_PROBABILITY`), now on the read-only implied distribution. Decision open (D5). |
 | Deployment deadlocks after 30 days | Fixed | Builds never seeded; the production seed and its freshness rule are deleted (D6). |
-| Trading surface is the 41-bucket ladder | Partly fixed | D11 adopts a binary + forward per name. The dealer's backend quotes, trades, settles and rolls both (milestone 6); the ticket UI and the ladder's removal are separate milestone-6 work. |
+| Trading surface is the 41-bucket ladder | Fixed | Milestone 6: the market page trades the forward (Long/Short, notional, live bid/ask, max gain/loss, expiry) and the binary (YES/NO by `market_id`); the ladder is a read-only implied display. Slug addressing on `/api/quote` and `/api/trade`, the ladder's preview branch, `settleMarket` and `settlementInputSchema`, `twap.ts`, `decomposition.ts`, the grid's bucket lookups and the valuation seed are deleted; `settleLmsrBook` lives in `services/dealer/settle-lmsr-book.ts`. |
 | Tournament is in `master` | Fixed | Merged in #2 (`a60d971`, 2026-10-21); milestone 1 is done. |
 | `shelved/timing-strips` branch exists | False | Not on the remote as of 2026-10-21; the "by date" market is reinstated as D11's binary. |
 | Loss bound on a binary is b·ln 2 | False | Only from a 50/50 start; against a hazard prior it is b·ln(1/p_floor). D12 states the correct figure. |

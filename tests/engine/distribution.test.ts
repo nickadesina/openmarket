@@ -7,7 +7,7 @@ import {
   MIN_BUCKET_PROBABILITY,
   probabilitiesAbove,
 } from "../../src/lib/engine/distribution.js";
-import { impliedValuationMedian } from "../../src/lib/engine/median.js";
+import { impliedValuationQuantile } from "../../src/lib/engine/median.js";
 
 const CENTER = 380e9;
 
@@ -24,7 +24,10 @@ describe("lognormalBucketProbabilities", () => {
   it("puts the grid median at the centre and widens with sigma", () => {
     const narrow = lognormalBucketProbabilities(CENTER, 0.3455, VALUATION_BOUNDARIES_USD);
     const wide = lognormalBucketProbabilities(CENTER, 0.6204, VALUATION_BOUNDARIES_USD);
-    expect(impliedValuationMedian(narrow, VALUATION_BOUNDARIES_USD) / CENTER).toBeCloseTo(1, 1);
+    expect(impliedValuationQuantile(narrow, VALUATION_BOUNDARIES_USD, 0.5) / CENTER).toBeCloseTo(
+      1,
+      1,
+    );
     expect(Math.max(...narrow)).toBeGreaterThan(Math.max(...wide));
   });
 

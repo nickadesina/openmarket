@@ -113,9 +113,9 @@ export function MarketActivity({
         </h2>
         <p>
           The forward settles on the first qualifying post-money after it opens, dated by{" "}
-          {listing.forward === null ? "its expiry" : formatDate(listing.forward.expires_at)}:{" "}
-          a long is paid notional × (ln print − ln entry), clipped at ±κ. With no print by then
-          it voids and refunds the collateral. The binary pays $1 a YES share if{" "}
+          {listing.forward === null ? "its expiry" : formatDate(listing.forward.expires_at)}: a long
+          is paid notional × (ln print − ln entry), clipped at ±κ. With no print by then it voids
+          and refunds the collateral. The binary pays $1 a YES share if{" "}
           {listing.binaryEvent === "public_s1"
             ? "a public S-1 is filed"
             : "a priced round is announced"}{" "}

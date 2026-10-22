@@ -139,8 +139,8 @@ export function MarketBoard({
         <div>
           <strong>No names are listed.</strong>
           <p>
-            Listed names appear here once an operator lists them and the dealer job quotes their
-            two contracts.
+            Listed names appear here once an operator lists them and the dealer job quotes their two
+            contracts.
           </p>
         </div>
       </div>

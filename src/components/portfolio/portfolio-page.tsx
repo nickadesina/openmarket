@@ -493,7 +493,6 @@ function HistoryRow({ trade }: { readonly trade: PortfolioTrade }) {
   );
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: page states and three sections share one tree; extract a PositionsSection component before growing.
 export function PortfolioPage() {
   const [offset, setOffset] = useState(0);
   const [selection, setSelection] = useState<SellSelection | null>(null);
@@ -617,8 +616,8 @@ export function PortfolioPage() {
               Forward positions
             </h2>
             <p>
-              Open forwards, held to settlement or void; there is no early close. A void refunds
-              the collateral.
+              Open forwards, held to settlement or void; there is no early close. A void refunds the
+              collateral.
             </p>
           </div>
         </div>

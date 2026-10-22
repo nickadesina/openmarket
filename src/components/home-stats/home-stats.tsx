@@ -86,7 +86,11 @@ export function HomeStats({
         <ul className={styles.index} aria-label="Market levels">
           {listings.map((listing) =>
             listing.forward === null ? null : (
-              <IndexCell key={listing.listingId} listing={listing} midUsd={listing.forward.mid_usd} />
+              <IndexCell
+                key={listing.listingId}
+                listing={listing}
+                midUsd={listing.forward.mid_usd}
+              />
             ),
           )}
         </ul>

@@ -48,8 +48,8 @@ vi.mock("../../src/lib/services/portfolio.js", () => ({
 }));
 
 import { GET as getActivityRoute } from "../../src/app/api/activity/route.js";
-import { GET as getMarksRoute } from "../../src/app/api/markets/[slug]/marks/route.js";
 import { GET as getMarketRoute } from "../../src/app/api/markets/[slug]/route.js";
+import { GET as getMarksRoute } from "../../src/app/api/markets/by-id/[marketId]/marks/route.js";
 import { GET as getMarketsRoute } from "../../src/app/api/markets/route.js";
 import { GET as getPortfolioRoute } from "../../src/app/api/portfolio/route.js";
 
@@ -76,7 +76,12 @@ describe("Part 3 public read routes", () => {
   });
 
   it("returns typed market data with the required response headers", async () => {
-    const result = { markets: [], asOf: "2026-01-01T00:00:00.000Z" };
+    const result = {
+      listings: [],
+      modelVersion: "1.0.0",
+      rulebookVersion: "1.0.0",
+      asOf: "2026-01-01T00:00:00.000Z",
+    };
     mocks.listMarkets.mockResolvedValue(result);
 
     const response = await getMarketsRoute(new Request("http://localhost/api/markets"));
@@ -106,11 +111,17 @@ describe("Part 3 public read routes", () => {
     });
   });
 
-  it("rejects missing, invalid, and duplicate mark ranges before database access", async () => {
-    for (const query of ["", "?range=month", "?range=1h&range=1d"]) {
+  it("rejects bad mark ranges and market ids before database access", async () => {
+    const marketId = "0f8a0c1e-6c1d-4f7a-9d2b-3c4e5f607182";
+    for (const [query, id] of [
+      ["", marketId],
+      ["?range=month", marketId],
+      ["?range=1h&range=1d", marketId],
+      ["?range=1d", "acme"],
+    ] as const) {
       const response = await getMarksRoute(
-        new Request(`http://localhost/api/markets/acme/marks${query}`),
-        { params: Promise.resolve({ slug: "acme" }) },
+        new Request(`http://localhost/api/markets/by-id/${id}/marks${query}`),
+        { params: Promise.resolve({ marketId: id }) },
       );
       expect(response.status).toBe(400);
       await expect(response.json()).resolves.toMatchObject({

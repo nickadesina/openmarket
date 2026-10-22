@@ -58,9 +58,7 @@ postgresDescribe(suiteName, () => {
 
   it("lists every listed name with both live contracts and the versions behind them", async () => {
     const list = await listMarkets(postgres.db, { now: READ_AT });
-    expect(list.listings.map((listing) => listing.company.name).sort()).toEqual(
-      [...NAMES].sort(),
-    );
+    expect(list.listings.map((listing) => listing.company.name).sort()).toEqual([...NAMES].sort());
     expect(list.modelVersion).toBe(MODEL_VERSION);
     expect(list.rulebookVersion).toBe(RULEBOOK_VERSION);
     for (const listing of list.listings) {

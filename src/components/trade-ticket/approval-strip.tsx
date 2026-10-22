@@ -61,8 +61,8 @@ export function PendingOrderActions({
         Abandon order
       </button>
       <small>
-        Retrying resends the identical request; the server replays the fill if it already
-        happened. Abandoning does not cancel a fill: check the portfolio.
+        Retrying resends the identical request; the server replays the fill if it already happened.
+        Abandoning does not cancel a fill: check the portfolio.
       </small>
     </div>
   );

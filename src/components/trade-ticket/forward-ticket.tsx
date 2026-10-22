@@ -20,10 +20,7 @@ import {
   type TradeOutcome,
   useTradeExecution,
 } from "../../lib/client/use-trade-execution.js";
-import type {
-  ForwardExecutionResult,
-  ForwardInstrumentQuote,
-} from "../market-workspace/types.js";
+import type { ForwardExecutionResult, ForwardInstrumentQuote } from "../market-workspace/types.js";
 import { QuoteReview } from "../quote-review/quote-review.js";
 import {
   ApprovalStrip,
@@ -126,7 +123,8 @@ export function ForwardTicket({
       : null;
   const live = preview ?? forward;
   const fill = preview?.fill ?? null;
-  const refusal = fill === null ? null : refusalMessage(side, fill.refusal, fill.max_notional_cents);
+  const refusal =
+    fill === null ? null : refusalMessage(side, fill.refusal, fill.max_notional_cents);
 
   function resetOrder() {
     setError(null);
@@ -334,7 +332,9 @@ export function ForwardTicket({
 
       {refusal !== null && error === null ? (
         <div className={styles.error} role="alert">
-          <strong>{fill?.refusal === "side_pulled" ? "Side pulled" : "Over the dealer's cap"}</strong>
+          <strong>
+            {fill?.refusal === "side_pulled" ? "Side pulled" : "Over the dealer's cap"}
+          </strong>
           <p>{refusal}</p>
           {fill?.refusal === "exceeds_cap" ? (
             <button
@@ -361,9 +361,7 @@ export function ForwardTicket({
 
       {needsSignIn ? (
         <div className={styles.signIn}>
-          <p>
-            Trading needs a signed-in account. Your first trade opens a $100,000 paper balance.
-          </p>
+          <p>Trading needs a signed-in account. Your first trade opens a $100,000 paper balance.</p>
           <Link className={styles.primary} href={signInHref(pathname)}>
             Sign in to trade
           </Link>

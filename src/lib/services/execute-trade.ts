@@ -63,10 +63,9 @@ export function deriveTradeRequestFingerprint(userId: string, input: TradeInput)
     input.action === "buy"
       ? parseUsdToCents(input.max_cost_usd).toString()
       : parseUsdToCents(input.min_proceeds_usd).toString();
-  // A slug request keeps the fingerprint it had before books were addressed by id.
   const canonicalRequest = {
     user_id: userId.toLowerCase(),
-    ...(input.market_id === undefined ? { slug: input.slug } : { market_id: input.market_id }),
+    market_id: input.market_id,
     action: input.action,
     side: input.side,
     strike_index: input.strike_index,
@@ -143,7 +142,7 @@ function isExecutionResult(value: JsonValue): value is ExecutionResult {
     ) &&
     (value.action === "buy" || value.action === "sell") &&
     (value.side === "yes" || value.side === "no") &&
-    (value.metric_kind === "valuation_median" || value.metric_kind === "yes_probability")
+    value.metric_kind === "yes_probability"
   );
 }
 

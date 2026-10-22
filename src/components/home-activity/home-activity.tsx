@@ -43,8 +43,7 @@ function ActivityRow({ item }: { readonly item: ActivityItem }) {
               {item.action === "buy" ? "Bought" : "Sold"}
             </span>{" "}
             <strong>{formatQuantityShort(item.quantity)}</strong>{" "}
-            <span className={styles.muted}>shares of</span>{" "}
-            <strong>{sideLabel(item.side)}</strong>
+            <span className={styles.muted}>shares of</span> <strong>{sideLabel(item.side)}</strong>
           </p>
         )}
         <p className={styles.meta}>

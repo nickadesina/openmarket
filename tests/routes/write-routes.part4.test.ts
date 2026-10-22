@@ -189,10 +189,10 @@ describe("Part 4 mutation request boundary", () => {
       mutationRequest(
         "/api/trade",
         {
-          slug: "anthropic",
+          market_id: "0f8a0c1e-6c1d-4f7a-9d2b-3c4e5f607182",
           action: "buy",
           side: "yes",
-          strike_index: 3,
+          strike_index: 0,
           quantity: 2,
           max_cost_usd: "2.00",
           idempotency_key: "1c97cdcb-980b-48b4-9622-0d296c6a98a8",
@@ -217,10 +217,10 @@ describe("Part 4 quote route", () => {
     const quote = { market_id: "market-1", action: "buy", quantity: 2 };
     mocks.quoteMarket.mockResolvedValue(quote);
     const input = {
-      slug: "anthropic",
+      market_id: "0f8a0c1e-6c1d-4f7a-9d2b-3c4e5f607182",
       action: "buy",
       side: "yes",
-      strike_index: 3,
+      strike_index: 0,
       quantity: 2,
     } as const;
 
@@ -233,10 +233,10 @@ describe("Part 4 quote route", () => {
 
   it("requires a tournament session for sells and uses only its paper account", async () => {
     const input = {
-      slug: "anthropic",
+      market_id: "0f8a0c1e-6c1d-4f7a-9d2b-3c4e5f607182",
       action: "sell",
       side: "no",
-      strike_index: 3,
+      strike_index: 0,
       quantity: 1,
     } as const;
     mocks.quoteMarket.mockResolvedValue({ action: "sell", quantity: 1 });
@@ -262,10 +262,10 @@ describe("Part 4 quote route", () => {
 
 describe("Part 4 trade route", () => {
   const tradeInput = {
-    slug: "anthropic",
+    market_id: "0f8a0c1e-6c1d-4f7a-9d2b-3c4e5f607182",
     action: "buy",
     side: "yes",
-    strike_index: 3,
+    strike_index: 0,
     quantity: 2,
     max_cost_usd: "2.00",
     idempotency_key: "1c97cdcb-980b-48b4-9622-0d296c6a98a8",
@@ -302,7 +302,7 @@ describe("Part 4 trade route", () => {
     const response = await tradeRoute(
       mutationRequest(
         "/api/trade",
-        { ...tradeInput, slug: "a".repeat(5_000) },
+        { ...tradeInput, padding: "a".repeat(5_000) },
         { cookie: sessionCookieHeader() },
       ),
     );

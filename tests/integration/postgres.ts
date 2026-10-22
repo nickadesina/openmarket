@@ -12,6 +12,7 @@ import { createPooledDatabase, destroyDatabase } from "../../src/lib/db/client.j
 import { createMigrator } from "../../src/lib/db/migrator.js";
 import type { CompanyRow, Database, MarketRow } from "../../src/lib/db/schema.js";
 import { seedBinaryMarket } from "../../src/lib/engine/seed.js";
+import { settleLmsrBook } from "../../src/lib/services/dealer/settle-lmsr-book.js";
 import { upsertIdentity } from "../../src/lib/services/tournament/sign-in.js";
 import { ensurePaperAccount } from "../../src/lib/services/user.js";
 
@@ -266,6 +267,34 @@ export async function createBinaryBook(
       })
       .execute();
     return { company, market };
+  });
+}
+
+/** Settles a fixture binary book YES or NO through the settle job's LMSR payout. */
+export async function settleBinaryBook(
+  db: Kysely<Database>,
+  marketId: string,
+  outcome: "yes" | "no",
+  sourceUrl = "https://example.test/settlement",
+): Promise<void> {
+  await db.transaction().execute(async (transaction) => {
+    const market = await transaction
+      .selectFrom("markets")
+      .select(["id as market_id", "n_buckets", "mm_cash_flow_cents", "rounding_reserve_cents"])
+      .where("id", "=", marketId)
+      .forUpdate()
+      .executeTakeFirstOrThrow();
+    const { ts } = await transaction
+      .selectNoFrom(sql<Date>`clock_timestamp()`.as("ts"))
+      .executeTakeFirstOrThrow();
+    await settleLmsrBook(transaction, {
+      market,
+      winningBucket: outcome === "yes" ? 1 : 0,
+      settledValue: outcome === "yes" ? "1.00" : "0.00",
+      sourceUrl,
+      sourceDescription: null,
+      ts,
+    });
   });
 }
 

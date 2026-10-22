@@ -5,7 +5,7 @@ Part 2 consumes the verified mathematical core in `PART1.md`. It adds PostgreSQL
 ## Required prior context
 
 - Read `/Users/nick/tmp/openmarket/TECHNICAL_DESIGN.md`, especially sections 6 and 10–14, before editing.
-- Reuse the engine exports in `src/lib/engine`; do not duplicate LMSR, grid, median, seeding, TWAP, or decomposition math.
+- Reuse the engine exports in `src/lib/engine`; do not duplicate LMSR, grid, quantile or seeding math.
 - Float vectors are application-zero-indexed and PostgreSQL arrays are PostgreSQL-one-indexed. Kysely must pass whole arrays rather than manually shifting their contents.
 - Cash is integer cents. JSON-facing dollar values remain decimal strings at later route boundaries.
 
@@ -21,8 +21,8 @@ Part 2 consumes the verified mathematical core in `PART1.md`. It adds PostgreSQL
 - `ensurePaperAccount(db, tournamentUserId)` opens, race-safely, or returns the tournament user's paper account with a $100,000 initial balance (README D1).
 - `quoteMarket(db, input, userId?)` is read-only. Anonymous buys are allowed; sells require a user. Buy accepts exactly one of quantity or spend cents; sell accepts quantity only.
 - `executeTrade(db, userId, input)` returns `{ result, replayed }`. It owns idempotency locking, market/user/holdings locking, execution, cash and vector updates, immutable trade insertion, and one matching mark.
-- `settleMarket(db, input)` is irreversible and credits users exactly once in stable user-ID order.
-- `getPortfolio(db, userId, options?)` returns cash, marked account value, decomposed positions, residual exposure, sellable quantities, and paginated trades.
+- `settleLmsrBook(transaction, book)` (`services/dealer/settle-lmsr-book.ts`, called by the settle job) is irreversible and credits holders exactly once in stable user-ID order. The ladder's admin `settleMarket` is deleted (milestone 6).
+- `getPortfolio(db, userId, options?)` returns cash, binary holdings marked at the book's price, open forward positions marked at the model mid (collateral, max gain/loss, unrealised), account value, and paginated trades.
 - `verifyReplay(db)` is read-only and reports vector drift, PMF normalization, negative holdings, cash/MM-flow reconciliation, sequence gaps, and trade/mark disagreement.
 
 ## Transaction invariants
@@ -40,5 +40,5 @@ Part 2 consumes the verified mathematical core in `PART1.md`. It adds PostgreSQL
 
 - Part 1 tests remain green.
 - Strict TypeScript passes.
-- Unit tests cover quote, user, settlement math adapters, portfolio decomposition, and replay analysis.
+- Unit tests cover quote, user, the binary portfolio mark, and replay analysis.
 - PostgreSQL integration tests cover serialization, idempotency, rollback, sequence/mark pairing, settlement, and replay when a disposable database URL is available.

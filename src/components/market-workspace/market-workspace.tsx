@@ -44,7 +44,9 @@ function defaultSelection(listing: ListingView): TradeSelection {
 function workingPrice(listing: ListingView, selection: TradeSelection): string | null {
   if (selection.contract === "forward") {
     if (listing.forward === null) return null;
-    return formatPrice(selection.side === "long" ? listing.forward.ask_usd : listing.forward.bid_usd);
+    return formatPrice(
+      selection.side === "long" ? listing.forward.ask_usd : listing.forward.bid_usd,
+    );
   }
   if (listing.binary === null) return null;
   return formatProbability(
@@ -52,7 +54,6 @@ function workingPrice(listing: ListingView, selection: TradeSelection): string |
   );
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: page states and the mobile sheet share one tree; extract a MarketPageState component before growing.
 export function MarketWorkspace({
   slug,
   initialListing,
@@ -254,7 +255,10 @@ export function MarketWorkspace({
       <Dialog.Root open={sheetOpen} onOpenChange={setSheetOpen}>
         <Dialog.Portal>
           <Dialog.Overlay className={styles.sheetOverlay} />
-          <Dialog.Content className={styles.sheetContent} aria-describedby="trade-sheet-description">
+          <Dialog.Content
+            className={styles.sheetContent}
+            aria-describedby="trade-sheet-description"
+          >
             <Dialog.Title className={styles.visuallyHidden}>
               Trade {listing.company.name}
             </Dialog.Title>

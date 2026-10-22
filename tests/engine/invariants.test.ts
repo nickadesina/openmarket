@@ -1,16 +1,9 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
-import {
-  VALUATION_BOUNDARIES_USD,
-  VALUATION_BUCKET_COUNT,
-  valuationBucketEdges,
-  valuationBucketIndex,
-} from "../../src/lib/engine/buckets.js";
+import { VALUATION_BOUNDARIES_USD, VALUATION_BUCKET_COUNT } from "../../src/lib/engine/buckets.js";
 import { contractDelta, contractMask } from "../../src/lib/engine/contracts.js";
-import { decomposeHoldings } from "../../src/lib/engine/decomposition.js";
 import { probabilities, solveBuyQuantityForSpend, tradeCost } from "../../src/lib/engine/lmsr.js";
-import { impliedValuationMedian } from "../../src/lib/engine/median.js";
 import { type ContractSide, EPS, MIN_QUANTITY } from "../../src/lib/engine/types.js";
 
 const PROPERTY_OPTIONS = { numRuns: 48, seed: 0x51eed } as const;
@@ -38,19 +31,6 @@ function addVectors(left: readonly number[], right: readonly number[]): number[]
 
 function expectClose(actual: number, expected: number, scale = 1): void {
   expect(Math.abs(actual - expected)).toBeLessThanOrEqual(EPS * Math.max(1, scale));
-}
-
-function medianBucketIndex(pmf: readonly number[]): number {
-  let cumulative = 0;
-
-  for (let index = 0; index < pmf.length; index += 1) {
-    cumulative += pmf[index]!;
-    if (cumulative >= 0.5) {
-      return index;
-    }
-  }
-
-  return pmf.length - 1;
 }
 
 describe("cross-module mathematical invariants", () => {
@@ -201,82 +181,6 @@ describe("cross-module mathematical invariants", () => {
           );
         },
       ),
-      PROPERTY_OPTIONS,
-    );
-  });
-
-  it("keeps the implied median inside its selected valuation bucket", () => {
-    fc.assert(
-      fc.property(marketStateArb, ([q, liquidity]) => {
-        const pmf = probabilities(q, liquidity);
-        const selectedBucketIndex = medianBucketIndex(pmf);
-        const median = impliedValuationMedian(pmf, VALUATION_BOUNDARIES_USD);
-        const edges = valuationBucketEdges(selectedBucketIndex);
-        const edgeScale = Math.max(Math.abs(edges.lower), Math.abs(edges.upper), 1);
-
-        expect(median).toBeGreaterThanOrEqual(edges.lower - EPS * edgeScale);
-        expect(median).toBeLessThanOrEqual(edges.upper + EPS * edgeScale);
-        expect(valuationBucketIndex(median)).toBe(selectedBucketIndex);
-      }),
-      PROPERTY_OPTIONS,
-    );
-  });
-
-  it("reconstructs non-negative holdings from decomposed positions and residual", () => {
-    const tradeArb = fc.record({
-      strikeIndex: strikeArb,
-      side: sideArb,
-      quantity: quantityArb,
-    });
-
-    fc.assert(
-      fc.property(fc.array(tradeArb, { minLength: 0, maxLength: 12 }), (trades) => {
-        const holdings = Array<number>(VALUATION_BUCKET_COUNT).fill(0);
-
-        for (const trade of trades) {
-          const delta = contractDelta(
-            VALUATION_BUCKET_COUNT,
-            trade.strikeIndex,
-            trade.side,
-            "buy",
-            trade.quantity,
-          );
-          for (let bucketIndex = 0; bucketIndex < holdings.length; bucketIndex += 1) {
-            holdings[bucketIndex] = holdings[bucketIndex]! + delta[bucketIndex]!;
-          }
-        }
-
-        const snapshot = holdings.slice();
-        const decomposition = decomposeHoldings(holdings);
-        const reconstructed = decomposition.residual.slice();
-
-        expect(holdings).toEqual(snapshot);
-        expect(decomposition.residual).toHaveLength(holdings.length);
-        expect(decomposition.residual.every((quantity) => quantity >= -EPS)).toBe(true);
-
-        for (const position of decomposition.positions) {
-          expect(position.quantity).toBeGreaterThan(0);
-          const delta = contractDelta(
-            VALUATION_BUCKET_COUNT,
-            position.strikeIndex,
-            position.side,
-            "buy",
-            position.quantity,
-          );
-          for (let bucketIndex = 0; bucketIndex < reconstructed.length; bucketIndex += 1) {
-            reconstructed[bucketIndex] = reconstructed[bucketIndex]! + delta[bucketIndex]!;
-          }
-        }
-
-        for (let bucketIndex = 0; bucketIndex < holdings.length; bucketIndex += 1) {
-          expect(reconstructed[bucketIndex]!).toBeGreaterThanOrEqual(-EPS);
-          expectClose(
-            reconstructed[bucketIndex]!,
-            holdings[bucketIndex]!,
-            Math.abs(holdings[bucketIndex]!),
-          );
-        }
-      }),
       PROPERTY_OPTIONS,
     );
   });

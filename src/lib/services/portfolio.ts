@@ -219,10 +219,7 @@ function normalizeOptions(options: PortfolioOptions): {
 }
 
 function groupCostBasis(trades: readonly CostBasisTrade[]): Map<string, PortfolioCostBasis> {
-  const groups = new Map<
-    string,
-    { side: ClaimSide; netQuantity: number; netCostCents: bigint }
-  >();
+  const groups = new Map<string, { side: ClaimSide; netQuantity: number; netCostCents: bigint }>();
   for (const trade of trades) {
     if (trade.contract_side !== "yes" && trade.contract_side !== "no") continue;
     const key = `${trade.market_id}:${trade.contract_side}`;
@@ -251,7 +248,6 @@ function groupCostBasis(trades: readonly CostBasisTrade[]): Map<string, Portfoli
     ]),
   );
 }
-
 
 async function forwardPositionsOf(
   transaction: Transaction<Database>,
