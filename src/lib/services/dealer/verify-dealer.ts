@@ -5,6 +5,7 @@ import type { Database, ForwardSide, QuoteRow } from "../../db/schema.js";
 import { type MidInputs, midFromInputs } from "./compute-mids.js";
 import { type ForwardQuoteListing, forwardQuoteFor } from "./dealer-books.js";
 import { verifyReferencePrices } from "./reference-prices.js";
+import { verifyLinkedQuestions } from "./tournament-bridge.js";
 
 /** A stored mid must recompute from its inputs this closely. */
 export const MID_TOLERANCE = 1e-12;
@@ -13,7 +14,12 @@ export const QUOTE_TOLERANCE = 1e-12;
 
 export interface DealerFinding {
   readonly id: string;
-  readonly check: "mid_recompute" | "quote_recompute" | "fill_entry" | "reference_recompute";
+  readonly check:
+    | "mid_recompute"
+    | "quote_recompute"
+    | "fill_entry"
+    | "reference_recompute"
+    | "linked_question";
   readonly detail: string;
 }
 
@@ -21,6 +27,7 @@ export interface DealerVerification {
   readonly midsChecked: number;
   readonly quotesChecked: number;
   readonly referencesChecked: number;
+  readonly linksChecked: number;
   readonly findings: DealerFinding[];
   readonly passed: boolean;
 }
@@ -246,11 +253,14 @@ export async function verifyDealer(db: Kysely<Database>): Promise<DealerVerifica
   for (const finding of references.findings) {
     findings.push({ ...finding, check: "reference_recompute" });
   }
+  const links = await verifyLinkedQuestions(db);
+  for (const finding of links.findings) findings.push({ ...finding, check: "linked_question" });
 
   return {
     midsChecked,
     quotesChecked: quotes.length,
     referencesChecked: references.checked,
+    linksChecked: links.checked,
     findings,
     passed: findings.length === 0,
   };

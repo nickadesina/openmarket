@@ -1,12 +1,14 @@
-import type { Transaction } from "kysely";
+import type { Kysely, Transaction } from "kysely";
 
 import type { QuestionInput, ResolveQuestionInput } from "../../api/tournament-schemas.js";
 import { DEALER_PARAMS } from "../../config/dealer.js";
 import type {
   Database,
   InstrumentRow,
+  JsonObject,
   ListingRow,
   TournamentQuestionStatus,
+  TournamentUnit,
 } from "../../db/schema.js";
 import {
   forwardQuestionLadder,
@@ -14,7 +16,11 @@ import {
   type QuestionLadder,
 } from "../../engine/dealer/question-ladder.js";
 import { RULEBOOK, RULEBOOK_VERSION } from "../../engine/dealer/rulebook.js";
-import { BINARY_YES_INDEX, bucketIndexForValue } from "../../engine/tournament/buckets.js";
+import {
+  BINARY_YES_INDEX,
+  type Bucket,
+  bucketIndexForValue,
+} from "../../engine/tournament/buckets.js";
 import {
   closeQuestionIn,
   openQuestionIn,
@@ -229,6 +235,35 @@ export type InstrumentEnding =
     }
   | { readonly kind: "forward_void" };
 
+/** How the instrument ended, from its settlement's own record, for the linked question. */
+export function instrumentEnding(result: JsonObject): InstrumentEnding {
+  const at = typeof result.announced_at === "string" ? new Date(result.announced_at) : null;
+  const rank = typeof result.source_rank === "number" ? result.source_rank : null;
+  const sourceUrl = typeof result.source_url === "string" ? result.source_url : null;
+  switch (result.outcome) {
+    case "yes":
+      return { kind: "binary_yes", at: at!, rank, sourceUrl };
+    case "no":
+      return { kind: "binary_no" };
+    case "settled": {
+      const postMoney =
+        typeof result.post_money_usd === "number"
+          ? result.post_money_usd
+          : Math.exp(result.settle_ln as number);
+      return {
+        kind: "forward_settled",
+        at: at!,
+        rank: rank!,
+        sourceUrl,
+        postMoneyUsd: postMoney,
+        final: result.final === true,
+      };
+    }
+    default:
+      return { kind: "forward_void" };
+  }
+}
+
 export interface LinkedResolution {
   readonly slug: string;
   readonly status: "resolved" | "voided" | "skipped";
@@ -318,15 +353,13 @@ export async function resolveLinkedQuestion(
     await closeQuestionIn(db, slug, {}, { at: now });
   }
 
-  let winningIndex: number;
-  let resolvedValue: number | null = null;
-  if (ending.kind === "forward_settled") {
-    if (question.unit === "bool") throw new RangeError(`question ${slug} is not a ladder`);
-    resolvedValue = inLadderUnit(ending.postMoneyUsd, question.unit);
-    winningIndex = bucketIndexForValue(await loadBuckets(db, question.id), resolvedValue);
-  } else {
-    winningIndex = ending.kind === "binary_yes" ? BINARY_YES_INDEX : 1 - BINARY_YES_INDEX;
-  }
+  const { unit } = question;
+  const winningIndex = expectedWinningBucket(ending, unit, await loadBuckets(db, question.id));
+  if (winningIndex === null) throw new RangeError(`question ${slug} cannot take this outcome`);
+  const resolvedValue =
+    ending.kind === "forward_settled" && unit !== "bool"
+      ? inLadderUnit(ending.postMoneyUsd, unit)
+      : null;
   await resolveQuestionIn(
     db,
     slug,
@@ -335,4 +368,87 @@ export async function resolveLinkedQuestion(
     now,
   );
   return { slug, status: "resolved", winning_bucket_index: winningIndex };
+}
+
+/** The winning bucket an ending implies on its question; null for a void or a mismatch. */
+export function expectedWinningBucket(
+  ending: InstrumentEnding,
+  unit: TournamentUnit,
+  buckets: readonly Bucket[],
+): number | null {
+  switch (ending.kind) {
+    case "binary_yes":
+      return unit === "bool" ? BINARY_YES_INDEX : null;
+    case "binary_no":
+      return unit === "bool" ? 1 - BINARY_YES_INDEX : null;
+    case "forward_settled":
+      return unit === "bool"
+        ? null
+        : bucketIndexForValue(buckets, inLadderUnit(ending.postMoneyUsd, unit));
+    case "forward_void":
+      return null;
+  }
+}
+
+export interface BridgeFinding {
+  readonly id: string;
+  readonly detail: string;
+}
+
+/**
+ * verify:replay's bridge half: every closed instrument whose settlement
+ * resolved or voided its linked question left that question so, and the
+ * settle run's resolution (the first, before any dispute superseded it)
+ * names the bucket the instrument's own outcome implies.
+ */
+export async function verifyLinkedQuestions(
+  db: Kysely<Database>,
+): Promise<{ readonly checked: number; readonly findings: BridgeFinding[] }> {
+  const rows = await db
+    .selectFrom("tournament_instrument_links as links")
+    .innerJoin("instruments", "instruments.id", "links.instrument_id")
+    .innerJoin("tournament_questions as questions", "questions.id", "links.question_id")
+    .select([
+      "links.id",
+      "instruments.resolution_json",
+      "questions.id as question_id",
+      "questions.status",
+      "questions.unit",
+    ])
+    .where("instruments.state", "in", ["resolved", "expired"])
+    .orderBy("links.id")
+    .execute();
+  const findings: BridgeFinding[] = [];
+  for (const row of rows) {
+    const record = row.resolution_json;
+    if (record === null || typeof record !== "object" || Array.isArray(record)) continue;
+    const linked = record.question;
+    if (linked === null || typeof linked !== "object" || Array.isArray(linked)) continue;
+    const fail = (detail: string) => findings.push({ id: row.id, detail });
+    if (linked.status === "voided" && row.status !== "voided") {
+      fail(`the settlement voided question ${row.question_id}; it is ${row.status}`);
+    }
+    if (linked.status !== "resolved") continue;
+    const first = await db
+      .selectFrom("tournament_resolutions")
+      .select(["winning_bucket_index", "settle_run_id"])
+      .where("question_id", "=", row.question_id)
+      .orderBy("resolved_at")
+      .orderBy("id")
+      .executeTakeFirst();
+    const expected = expectedWinningBucket(
+      instrumentEnding(record),
+      row.unit,
+      await loadBuckets(db, row.question_id),
+    );
+    if (
+      row.status !== "resolved" ||
+      first === undefined ||
+      first.settle_run_id === null ||
+      first.winning_bucket_index !== expected
+    ) {
+      fail(`question ${row.question_id} does not carry the settlement's bucket ${expected}`);
+    }
+  }
+  return { checked: rows.length, findings };
 }

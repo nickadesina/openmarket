@@ -34,7 +34,7 @@ import { LIVE_STATES, latestMid, RULEBOOK_SOURCE_URL } from "./dealer-books.js";
 import { type ListingWithCompany, listInstrument } from "./list-instruments.js";
 import { settleLmsrBook } from "./settle-lmsr-book.js";
 import {
-  type InstrumentEnding,
+  instrumentEnding,
   type LinkedResolution,
   resolveLinkedQuestion,
 } from "./tournament-bridge.js";
@@ -405,35 +405,6 @@ async function settleForward(context: SettleContext, effect: LifecycleEffect): P
     final: settled.final,
     ...counts,
   };
-}
-
-/** How the instrument ended, from its settlement's own record, for the linked question. */
-export function instrumentEnding(result: JsonObject): InstrumentEnding {
-  const at = typeof result.announced_at === "string" ? new Date(result.announced_at) : null;
-  const rank = typeof result.source_rank === "number" ? result.source_rank : null;
-  const sourceUrl = typeof result.source_url === "string" ? result.source_url : null;
-  switch (result.outcome) {
-    case "yes":
-      return { kind: "binary_yes", at: at!, rank, sourceUrl };
-    case "no":
-      return { kind: "binary_no" };
-    case "settled": {
-      const postMoney =
-        typeof result.post_money_usd === "number"
-          ? result.post_money_usd
-          : Math.exp(result.settle_ln as number);
-      return {
-        kind: "forward_settled",
-        at: at!,
-        rank: rank!,
-        sourceUrl,
-        postMoneyUsd: postMoney,
-        final: result.final === true,
-      };
-    }
-    default:
-      return { kind: "forward_void" };
-  }
 }
 
 /** (d) The successor's listing time and, for a forward, its entry reference. */
