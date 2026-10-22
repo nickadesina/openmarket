@@ -625,7 +625,7 @@ export function PortfolioPage() {
           <div className={styles.emptyState}>
             <h3>No open forwards</h3>
             <p>Go long or short a name&apos;s next post-money from its market page.</p>
-            <Link href="/" className={styles.secondaryLink}>
+            <Link href="/m" className={styles.secondaryLink}>
               Browse markets
             </Link>
           </div>

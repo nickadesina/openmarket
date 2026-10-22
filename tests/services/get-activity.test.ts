@@ -26,7 +26,7 @@ function readDatabase(selectFrom: Mock): Kysely<Database> {
   } as unknown as Kysely<Database>;
 }
 
-function activityRow(id: string, sequence: string, minute: number) {
+function activityRow(id: string, sequence: string, minute: number, demo = false) {
   return {
     id,
     market_sequence: sequence,
@@ -43,6 +43,7 @@ function activityRow(id: string, sequence: string, minute: number) {
     company_name: "Acme",
     company_slug: "acme",
     company_logo_path: "/acme.svg",
+    demo,
     user_id: "private-user",
     idempotency_key: "private-key",
     request_fingerprint: "private-fingerprint",
@@ -77,6 +78,22 @@ describe("getActivity", () => {
     expect(secondPage.items.map((item) => item.marketSequence)).toEqual(["1"]);
     expect(secondPage.nextCursor).toBeNull();
     expect(secondQuery.where).toHaveBeenCalledTimes(1);
+  });
+
+  it("carries each fill's demo flag and nothing else about its account (decision 0005)", async () => {
+    const query = queryReturning([
+      activityRow("00000000-0000-4000-8000-000000000002", "2", 2, true),
+      activityRow("00000000-0000-4000-8000-000000000001", "1", 1),
+    ]);
+    const page = await getActivity(readDatabase(vi.fn(() => query)));
+
+    expect(page.items.map((item) => item.demo)).toEqual([true, false]);
+    expect(JSON.stringify(page.items)).not.toContain("private-");
+    expect(query.innerJoin).toHaveBeenCalledWith(
+      "tournament_users",
+      "tournament_users.id",
+      "users.tournament_user_id",
+    );
   });
 
   it("checks a company filter and rejects missing slugs", async () => {
