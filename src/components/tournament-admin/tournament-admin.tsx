@@ -5,14 +5,15 @@ import Link from "next/link";
 import { type FormEvent, type ReactNode, useState } from "react";
 
 import { apiRequest } from "../../lib/client/api.js";
-import { errorMessage, formatTournamentDateTime } from "../../lib/client/format.js";
+import {
+  errorMessage,
+  formatTournamentDateTime,
+  formatTournamentValue,
+  tournamentKindCaption,
+  tournamentUnitName,
+} from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
 import { useTournamentViewer } from "../../lib/client/tournament.js";
-import {
-  BucketError,
-  bucketIndexForValue,
-  floorIndex,
-} from "../../lib/engine/tournament/buckets.js";
 import type { AdminQuestion } from "../../lib/services/tournament/admin.js";
 import styles from "./tournament-admin.module.css";
 
@@ -90,25 +91,16 @@ function CloseForm({ question }: { readonly question: AdminQuestion }) {
   );
 }
 
-/** Binary and choice questions resolve by picking a bucket; numeric ones by value. */
-function resolvesByBucket(question: AdminQuestion): boolean {
-  return question.unit === "bool" || question.unit === "choice";
+/** The settling value as typed: a level above zero in the question's unit, or null. */
+function parseLevel(text: string): number | null {
+  const value = Number(text.replace(/[,\s]/g, ""));
+  return text.trim() !== "" && Number.isFinite(value) && value > 0 ? value : null;
 }
 
-function computedBucket(question: AdminQuestion, value: string): number | null {
-  if (resolvesByBucket(question)) return null;
-  if (value.trim() === "") return floorIndex(question.buckets);
-  try {
-    return bucketIndexForValue(question.buckets, Number(value));
-  } catch (error) {
-    if (error instanceof BucketError) return null;
-    throw error;
-  }
-}
-
+/** A binary by its outcome, a forward by its settling value; a void goes through the Void form. */
 function ResolveForm({ question }: { readonly question: AdminQuestion }) {
+  const [outcome, setOutcome] = useState<"yes" | "no">("yes");
   const [value, setValue] = useState("");
-  const [pickedIndex, setPickedIndex] = useState(0);
   const [rung, setRung] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
   const [excerpt, setExcerpt] = useState("");
@@ -116,15 +108,15 @@ function ResolveForm({ question }: { readonly question: AdminQuestion }) {
   const resolve = useAdminAction<Record<string, unknown>>(
     `/api/t/admin/questions/${question.slug}/resolve`,
   );
-  const byBucket = resolvesByBucket(question);
-  const winning = byBucket ? pickedIndex : computedBucket(question, value);
+  const unit = question.kind === "forward" ? question.unit : null;
+  const level = unit === null ? null : parseLevel(value);
+  const ready = unit === null || level !== null;
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (winning === null) return;
+    if (!ready) return;
     resolve.mutate({
-      resolved_value: byBucket || value.trim() === "" ? null : Number(value),
-      winning_bucket_index: winning,
+      ...(unit === null ? { outcome } : { resolved_value: level }),
       rung_fired: rung === "" ? null : Number(rung),
       source_url: sourceUrl === "" ? null : sourceUrl,
       source_excerpt: excerpt === "" ? null : excerpt,
@@ -134,43 +126,34 @@ function ResolveForm({ question }: { readonly question: AdminQuestion }) {
 
   return (
     <form className={styles.form} onSubmit={submit}>
-      {byBucket ? (
+      {unit === null ? (
         <Field label="Outcome">
           <select
-            value={pickedIndex}
-            onChange={(event) => setPickedIndex(Number(event.target.value))}
+            value={outcome}
+            onChange={(event) => setOutcome(event.target.value === "no" ? "no" : "yes")}
           >
-            {question.buckets.map((bucket) => (
-              <option key={bucket.index} value={bucket.index}>
-                {bucket.label}
-              </option>
-            ))}
+            <option value="yes">YES</option>
+            <option value="no">NO (includes nothing by expiry)</option>
           </select>
         </Field>
       ) : (
-        <Field label="Resolved value after rounding (blank = floor: after expiry, or closed early)">
-          <input
-            inputMode="decimal"
-            value={value}
-            onChange={(event) => setValue(event.target.value)}
-          />
-        </Field>
+        <>
+          <Field label={`Settling value after rounding, in ${tournamentUnitName(unit)}`}>
+            <input
+              inputMode="decimal"
+              value={value}
+              required
+              onChange={(event) => setValue(event.target.value)}
+            />
+          </Field>
+          <p className={styles.confirm}>
+            Settles at: <strong>{level === null ? "—" : formatTournamentValue(level, unit)}</strong>
+          </p>
+        </>
       )}
-      <p className={styles.confirm}>
-        Winning bucket:{" "}
-        <strong>
-          {winning === null ? "—" : `${winning} · ${question.buckets[winning]?.label}`}
-        </strong>
-      </p>
-      {byBucket ? null : (
-        <Field label="Rung fired">
-          <input
-            inputMode="numeric"
-            value={rung}
-            onChange={(event) => setRung(event.target.value)}
-          />
-        </Field>
-      )}
+      <Field label="Source rank (the rung that fired; blank if none)">
+        <input inputMode="numeric" value={rung} onChange={(event) => setRung(event.target.value)} />
+      </Field>
       <Field label="Source URL">
         <input
           type="url"
@@ -197,7 +180,7 @@ function ResolveForm({ question }: { readonly question: AdminQuestion }) {
       <button
         className={styles.inkButton}
         type="submit"
-        disabled={resolve.isPending || winning === null || note.trim() === ""}
+        disabled={resolve.isPending || !ready || note.trim() === ""}
       >
         {question.storedStatus === "resolved" ? "Supersede resolution" : "Resolve and score"}
       </button>
@@ -257,7 +240,7 @@ function QuestionActions({ question }: { readonly question: AdminQuestion }) {
         <div>
           <strong>{question.title}</strong>
           <span className={styles.meta}>
-            {question.slug} · {question.status}
+            {tournamentKindCaption(question)} · {question.slug} · {question.status}
             {question.status !== question.storedStatus ? ` (stored ${question.storedStatus})` : ""}{" "}
             · {question.forecasters} forecasters · {question.forecastEvents} events
           </span>
@@ -306,9 +289,10 @@ function QuestionActions({ question }: { readonly question: AdminQuestion }) {
           <NoteForm question={question} action="notes" />
         </details>
       ) : null}
-      {question.storedStatus !== "resolved" && question.storedStatus !== "voided" ? (
+      {question.storedStatus !== "voided" &&
+      (question.storedStatus !== "resolved" || inDisputeWindow) ? (
         <details>
-          <summary>Void</summary>
+          <summary>{question.storedStatus === "resolved" ? "Void (dispute window)" : "Void"}</summary>
           <NoteForm question={question} action="void" />
         </details>
       ) : null}
@@ -340,7 +324,7 @@ function DraftForm() {
           spellCheck={false}
           value={source}
           onChange={(event) => setSource(event.target.value)}
-          placeholder='{"slug": "…", "title": "…", "unit": "USD_B", "buckets": {"edges": [66, 70], "floor_label": "…"}, …}'
+          placeholder='{"slug": "…", "title": "…", "kind": "forward", "unit": "USD_B", "expiry_at": "…", "opens_at": "…", "closes_at": "…", "description_md": "…", "rulebook_md": "…", "rulebook_version": 1} — or "kind": "binary" with no unit or expiry_at'
         />
       </Field>
       <button className={styles.inkButton} type="submit" disabled={save.isPending}>

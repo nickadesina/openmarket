@@ -5,38 +5,31 @@ import Link from "next/link";
 
 import { apiRequest } from "../../lib/client/api.js";
 import {
-  formatLeadingOutcome,
-  formatProbability,
   formatTimeUntil,
   formatTournamentDateTime,
-  formatTournamentMedian,
+  formatTournamentForecast,
+  formatTournamentOutcome,
   formatTournamentValue,
-  tournamentUnitCaption,
+  tournamentKindCaption,
 } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
 import { useNow } from "../../lib/client/tournament.js";
 import type { QuestionSummary } from "../../lib/services/tournament/get-question.js";
 import styles from "./tournament-board.module.css";
 
+/** The crowd column: "42.0% yes" or "$412B"; a resolved question shows its outcome instead. */
 function crowdHeadline(question: QuestionSummary): string {
-  if (question.resolution !== null) {
-    const winner = question.buckets[question.resolution.winningBucketIndex];
-    return question.resolution.resolvedValue !== null
-      ? formatTournamentValue(question.resolution.resolvedValue, question.unit)
-      : (winner?.label ?? "Resolved");
+  const resolution = question.resolution;
+  if (resolution !== null) {
+    if (resolution.outcome !== null) return formatTournamentOutcome(resolution.outcome);
+    if (resolution.resolvedValue !== null && question.unit !== null) {
+      return formatTournamentValue(resolution.resolvedValue, question.unit);
+    }
+    return "Resolved";
   }
   const aggregate = question.aggregate;
   if (aggregate === null || !aggregate.published) return "Not enough forecasts";
-  if (question.unit === "bool" && aggregate.pYes !== null) {
-    return `${formatProbability(aggregate.pYes)} yes`;
-  }
-  if (question.unit === "choice" && aggregate.probs !== null) {
-    return formatLeadingOutcome(question.buckets, aggregate.probs);
-  }
-  if (aggregate.medianValue !== null) {
-    return formatTournamentMedian(aggregate.medianValue, aggregate.medianPosition, question.unit);
-  }
-  return "All mass on the floor";
+  return formatTournamentForecast(question, aggregate) ?? "Not enough forecasts";
 }
 
 function statusLabel(question: QuestionSummary, now: number | null): string {
@@ -114,7 +107,7 @@ export function TournamentBoard({
                     <Link className={styles.questionLink} href={`/t/q/${question.slug}`}>
                       {question.title}
                     </Link>
-                    <span className={styles.unit}>{tournamentUnitCaption(question.unit)}</span>
+                    <span className={styles.unit}>{tournamentKindCaption(question)}</span>
                   </div>
                 </td>
                 <td
@@ -125,15 +118,7 @@ export function TournamentBoard({
                       : styles.crowd
                   }
                 >
-                  <div>
-                    {crowdHeadline(question)}
-                    {question.aggregate?.published === true &&
-                    question.aggregate.pFloor !== null ? (
-                      <span className={styles.sub}>
-                        {formatProbability(question.aggregate.pFloor)} on the floor
-                      </span>
-                    ) : null}
-                  </div>
+                  <div>{crowdHeadline(question)}</div>
                 </td>
                 <td data-label="Forecasters" className={styles.figure}>
                   <div>{question.aggregate?.nForecasters ?? 0}</div>

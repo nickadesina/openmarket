@@ -32,9 +32,9 @@ export default async function TournamentIndex({ searchParams }: TournamentIndexP
       <header className={styles.header}>
         <h1>Questions</h1>
         <p>
-          Submit a probability for every bucket and revise it until the question closes. Scores are
-          the time-averaged log probability you held on the outcome, so early, steady accuracy
-          counts most. Every forecast is public and keyed by X handle.
+          Each question asks for one number: the chance of YES, or a dollar level. Revise it until
+          the question closes. Your score is averaged over the open window, so early, steady
+          accuracy counts most. Every forecast is public under your name.
         </p>
       </header>
       <TournamentBoard initialQuestions={questions} />

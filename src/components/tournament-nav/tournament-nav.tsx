@@ -45,7 +45,7 @@ export function TournamentNav() {
     <div className={styles.bar}>
       <p className={styles.title}>
         <span className={styles.tab}>Forecasting tournament</span>
-        <span className={styles.caption}>Log-scored distributions. No money, no trading.</span>
+        <span className={styles.caption}>One number per question, scored. No money, no trading.</span>
       </p>
       <nav className={styles.nav} aria-label="Tournament">
         {links.map((link) => (

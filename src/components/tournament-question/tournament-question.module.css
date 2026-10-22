@@ -65,6 +65,7 @@
 .editor,
 .signInPanel {
   display: grid;
+  min-width: 0;
   gap: var(--space-4);
   padding: var(--space-4);
   border: 1px solid var(--color-border);
@@ -130,6 +131,7 @@
 }
 
 .muted {
+  max-width: 80ch;
   margin: 0;
   color: var(--color-ink-muted);
   font-size: var(--font-size-xs);
@@ -161,6 +163,7 @@
   font-size: var(--font-size-xs);
   font-weight: 700;
   letter-spacing: var(--caps-tracking);
+  text-align: left;
   text-transform: uppercase;
 }
 
@@ -170,10 +173,15 @@
   border-bottom: 1px solid var(--color-border-subtle);
 }
 
-.figureCell {
+/* Figure columns align right in head and body alike; outranks `.table th`'s left alignment. */
+.table .figureCell {
   font-family: var(--font-num);
   font-weight: 700;
   text-align: right;
+}
+
+.forecastTable td {
+  height: var(--row-table);
 }
 
 .source {
@@ -212,31 +220,6 @@
   text-transform: uppercase;
 }
 
-.forecastList {
-  display: grid;
-  margin: 0;
-  padding: 0;
-  border: 1px solid var(--color-border);
-  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
-  list-style: none;
-}
-
-.forecastList > li {
-  display: grid;
-  gap: var(--space-2);
-  padding: var(--space-3);
-  border-right: 1px solid var(--color-border-subtle);
-  border-bottom: 1px solid var(--color-border-subtle);
-}
-
-.forecastMeta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-2);
-}
-
 .proofLink {
   color: var(--color-ink);
   text-decoration: underline;
@@ -245,6 +228,67 @@
 
 .proofLink:hover {
   text-decoration-color: var(--color-primary);
+}
+
+.emptyNote {
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* Crowd history: the published figure as a red step line over a faint baseline. */
+.history {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.historyPlot {
+  display: grid;
+  grid-template-rows: auto 6rem auto;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+}
+
+.historyPlot svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.historyAxis,
+.historyDates {
+  color: var(--color-ink-muted);
+  font-family: var(--font-num);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+}
+
+.historyDates {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.historyLine {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 2;
+}
+
+.historyGuide {
+  stroke: var(--color-border-subtle);
+  stroke-width: 1;
+}
+
+.historySkeleton {
+  composes: skeletonBlock from "../../styles/shared.module.css";
+  height: 8rem;
 }
 
 /* Forecast editor. */
@@ -257,61 +301,87 @@
   font-size: var(--font-size-sm);
 }
 
-.editorTable {
-  width: 100%;
-  border-collapse: collapse;
+/* The field's name: caps voice, and the label of the one input under it. */
+.fieldHead {
+  margin: 0;
+  font-family: var(--font-caps);
   font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  line-height: 1;
+  text-transform: uppercase;
 }
 
-.editorTable th,
-.editorTable td {
-  height: var(--row-table);
-  padding: 0 var(--space-2);
-  border-bottom: 1px solid var(--color-border-subtle);
+.inputFrame {
+  composes: inputFrame from "../../styles/shared.module.css";
+  gap: var(--space-1);
+  font-family: var(--font-num);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
 }
 
-.editorTable thead th {
-  height: var(--row-compact);
-  border-bottom-color: var(--color-border);
+.slider {
+  width: 100%;
+  min-height: var(--control-height);
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+.slider:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Published figures as chips, at the full control height. */
+.chips {
+  composes: quickAmounts from "../../styles/shared.module.css";
+  --quick-chip-height: var(--control-height);
+}
+
+.readout {
+  composes: twoWay from "../../styles/shared.module.css";
+}
+
+/* What the forecast would score: ink figures with a sign, never green. */
+.preview {
+  composes: specTable;
+}
+
+.previewLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  font-family: var(--font-num);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.previewLine span {
+  color: var(--color-ink-muted);
   font-family: var(--font-caps);
   font-size: var(--font-size-xs);
-  font-weight: 700;
   letter-spacing: var(--caps-tracking);
   text-transform: uppercase;
 }
 
-.editorTable tbody th {
-  font-family: var(--font-num);
-  font-weight: 700;
-  /* Range labels stay on one line; a long floor label wraps instead of widening the table. */
-  overflow-wrap: anywhere;
-}
-
-.floorRow th,
-.floorRow td {
-  background: var(--color-surface-elevated);
-}
-
-.weightCell {
-  display: flex;
-  min-width: 0;
+/* The level's field with its void condition beside it. */
+.forwardField {
+  display: grid;
+  grid-template-columns: minmax(10rem, 14rem) minmax(0, 1fr);
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-2) var(--space-3);
 }
 
-.weightCell input[type="range"] {
-  width: 100%;
-  min-width: 4rem;
-  accent-color: var(--color-primary);
-}
-
-.weightInput {
-  width: 4.5rem;
-  min-height: var(--control-height-sm);
-  padding: 0 var(--space-2);
-  border: 1px solid var(--color-border);
-  font-family: var(--font-num);
-  text-align: right;
+.voidNote {
+  max-width: 50ch;
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
 }
 
 .editorActions {
@@ -400,16 +470,55 @@
     padding: var(--space-3);
   }
 
-  .weightCell input[type="range"] {
+  /* The field is the control at phone width; the slider is a desktop aid. */
+  .slider {
     display: none;
   }
 
-  .editorTable th,
-  .editorTable td {
-    padding: 0 var(--space-1);
+  .forwardField {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .forecastList {
-    grid-template-columns: minmax(0, 1fr);
+  /* The forecast table reflows into stacked label/value rows. */
+  .forecastTable thead {
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .forecastTable,
+  .forecastTable tbody,
+  .forecastTable tr,
+  .forecastTable td {
+    display: block;
+  }
+
+  .forecastTable tr {
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+
+  /* Outranks `.table .figureCell`: stacked rows read left to right. */
+  .forecastTable td,
+  .forecastTable .figureCell {
+    display: grid;
+    height: auto;
+    grid-template-columns: 7rem minmax(0, 1fr);
+    gap: var(--space-2);
+    padding: var(--space-1) 0;
+    border-bottom: 0;
+    text-align: left;
+  }
+
+  .forecastTable td::before {
+    content: attr(data-label);
+    font-family: var(--font-caps);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    letter-spacing: var(--caps-tracking);
+    text-transform: uppercase;
   }
 }
