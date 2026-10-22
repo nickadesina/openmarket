@@ -251,6 +251,8 @@ postgresDescribe(suiteName, () => {
       quotesChecked: 2,
       // The reference step's first row of each: the model mid, with no flow or crowd.
       referencesChecked: 2,
+      // Hand-made books have no linked questions to check.
+      linksChecked: 0,
       findings: [],
       passed: true,
     });

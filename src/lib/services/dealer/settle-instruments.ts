@@ -33,6 +33,11 @@ import { beginCronRun, type CronRunOutcome, finishCronRun } from "./cron-run.js"
 import { LIVE_STATES, latestMid, RULEBOOK_SOURCE_URL } from "./dealer-books.js";
 import { type ListingWithCompany, listInstrument } from "./list-instruments.js";
 import { settleLmsrBook } from "./settle-lmsr-book.js";
+import {
+  instrumentEnding,
+  type LinkedResolution,
+  resolveLinkedQuestion,
+} from "./tournament-bridge.js";
 
 /**
  * /api/cron/settle (TECHNICAL_DESIGN.md §6, §9): every live instrument in its
@@ -50,7 +55,9 @@ import { settleLmsrBook } from "./settle-lmsr-book.js";
  *      pays the binary $1 a winning share or settles the forward's
  *      positions at forward.ts's credit (voids refund the collateral), and
  *      closes the book and the instrument;
- *  (d) lists the successor in that same transaction.
+ *  (d) resolves the instrument's linked tournament question through the
+ *      tournament's services (a forward's void voids it), and lists the
+ *      successor, with its own question, in that same transaction.
  *
  * A forward settled while a higher-ranked source could still supersede it
  * is recorded with `final: false`; a correcting settlement is a follow-up.
@@ -75,6 +82,7 @@ export interface InstrumentOutcome {
   readonly outcome: "open" | "yes" | "no" | "settled" | "void" | "skipped";
   readonly final?: boolean;
   readonly successor_instrument_id?: string | null;
+  readonly question?: LinkedResolution | null;
 }
 
 export interface SettleRunSummary {
@@ -497,6 +505,14 @@ export async function settleInstrument(
     .where("id", "=", instrument.id)
     .execute();
 
+  const question = await resolveLinkedQuestion(
+    db,
+    instrument.id,
+    instrumentEnding(result),
+    runId,
+    now,
+  );
+
   let successorId: string | null = null;
   if (roll?.type === "list_successor" && listing.delisted_at === null) {
     await sql`select pg_advisory_xact_lock(hashtext('openmarket_listing'), hashtext(${listing.id}))`.execute(
@@ -522,6 +538,7 @@ export async function settleInstrument(
         rulebook_version: RULEBOOK_VERSION,
         model_version: MODEL_VERSION,
         successor_instrument_id: successorId,
+        question,
       }),
     })
     .where("id", "=", instrument.id)
@@ -533,6 +550,7 @@ export async function settleInstrument(
       outcome,
       ...(typeof result.final === "boolean" ? { final: result.final } : {}),
       successor_instrument_id: successorId,
+      question,
     },
     ...promotion,
   };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -11,6 +11,7 @@ import {
   formatDateTime,
   formatDuration,
   formatHours,
+  formatValuation,
 } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
 import { signInHref, useTournamentViewer } from "../../lib/client/tournament.js";
@@ -18,6 +19,7 @@ import type {
   AdminPendingPromotion,
   DealerAdminPayload,
 } from "../../lib/services/dealer/get-dealer-admin.js";
+import type { EvidenceReview } from "../../lib/services/tournament/evidence.js";
 import styles from "./admin-dealer-page.module.css";
 
 /** The payload as JSON carries it: every Date an ISO string. */
@@ -347,6 +349,120 @@ function QueueModule({ queue }: { readonly queue: Payload["resolution_queue"] })
   );
 }
 
+const EVIDENCE_KINDS = { scoop: "Scoop", release: "Release", s1_public: "Public S-1" } as const;
+
+type PendingRow = Payload["evidence_queue"][number];
+
+function evidenceTerms(row: PendingRow): string {
+  const valuation = row.terms.valuation_usd;
+  const basis = row.terms.valuation_basis;
+  const outlet = typeof row.terms.outlet === "string" ? row.terms.outlet : null;
+  const figure =
+    typeof valuation === "number"
+      ? `${formatValuation(valuation)} ${basis === "pre" ? "pre-money" : basis === "post" ? "post-money" : "basis unknown"}`
+      : "No valuation";
+  return outlet === null ? figure : `${figure} · ${outlet}`;
+}
+
+function EvidenceRow({ row }: { readonly row: PendingRow }) {
+  const queryClient = useQueryClient();
+  const review = useMutation({
+    mutationFn: (body: { decision: "confirmed" | "rejected"; confirming_flag_id?: string }) =>
+      apiRequest<EvidenceReview>(
+        `/api/admin/dealer/evidence/${encodeURIComponent(row.flag_id)}/review`,
+        { method: "POST", body: JSON.stringify(body) },
+      ),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: queryKeys.adminDealer }),
+  });
+  return (
+    <tr>
+      <td>{row.company}</td>
+      <td>{EVIDENCE_KINDS[row.submitted_kind]}</td>
+      <td>{evidenceTerms(row)}</td>
+      <td>{when(row.published_at)}</td>
+      <td>{row.submitter ?? "—"}</td>
+      <td>
+        {row.source_url === null ? (
+          "—"
+        ) : (
+          <a className={styles.link} href={row.source_url} rel="noreferrer">
+            Source
+          </a>
+        )}
+      </td>
+      <td>
+        <div className={styles.actions}>
+          {row.candidates.map((candidate) => (
+            <button
+              key={candidate.flag_id}
+              type="button"
+              className={styles.retry}
+              disabled={review.isPending}
+              onClick={() =>
+                review.mutate({ decision: "confirmed", confirming_flag_id: candidate.flag_id })
+              }
+            >
+              Confirm by {candidate.kind} {formatDateTime(candidate.observed_at)}
+              {candidate.same_report ? " (same report)" : ""}
+            </button>
+          ))}
+          <button
+            type="button"
+            className={styles.retry}
+            disabled={review.isPending}
+            onClick={() => review.mutate({ decision: "rejected" })}
+          >
+            Reject
+          </button>
+        </div>
+        {review.isError ? (
+          <p className={styles.errorText} role="alert">
+            {errorMessage(review.error, "The review was not saved.")}
+          </p>
+        ) : null}
+      </td>
+    </tr>
+  );
+}
+
+function EvidenceModule({ queue }: { readonly queue: Payload["evidence_queue"] }) {
+  return (
+    <Module
+      id="dealer-evidence"
+      label="Evidence"
+      title="Submitted evidence"
+      note="Sources forecasters filed on linked questions, at low confidence. The dealer reads none of them. Confirm one by a later independent flag for the same name, or reject it; a review is final."
+    >
+      {queue.length === 0 ? (
+        <Empty title="No submissions waiting for review.">
+          Signed-in forecasters file them through POST /api/t/questions/[slug]/evidence.
+        </Empty>
+      ) : (
+        <div className={styles.scroller}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Claimed</th>
+                <th scope="col">Terms</th>
+                <th scope="col">Published</th>
+                <th scope="col">Submitter</th>
+                <th scope="col">Source</th>
+                <th scope="col">Review</th>
+              </tr>
+            </thead>
+            <tbody>
+              {queue.map((row) => (
+                <EvidenceRow key={row.flag_id} row={row} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Module>
+  );
+}
+
 function SourcesModule({ sources }: { readonly sources: Payload["sources"] }) {
   return (
     <Module
@@ -433,6 +549,7 @@ function DealerOperations({ onAdminRequired }: { readonly onAdminRequired: () =>
       <PnlModule pnl={data.pnl} />
       <InstrumentsModule data={data} />
       <QueueModule queue={data.resolution_queue} />
+      <EvidenceModule queue={data.evidence_queue} />
       <RunsModule cronRuns={data.cron_runs} />
       <SourcesModule sources={data.sources} />
     </div>
@@ -448,7 +565,8 @@ export function AdminDealerPage() {
         <p className={styles.sectionLabel}>Restricted operations</p>
         <h1>Dealer operations</h1>
         <p>
-          The house's books, scheduled jobs, settlement queue and evidence sources. Read-only.{" "}
+          The house's books, scheduled jobs, settlement queue, submitted evidence and evidence
+          sources. Read-only but for evidence reviews.{" "}
           <Link className={styles.link} href="/admin">
             Back to administration
           </Link>

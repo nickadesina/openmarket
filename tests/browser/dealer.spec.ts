@@ -1,7 +1,9 @@
-import { expect, type Locator, type Page, test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 import {
   expectNoHorizontalOverflow,
+  isMobile,
+  openTicket,
   signInDev,
   skipWithoutDatabase,
   uniqueHandle,
@@ -16,23 +18,6 @@ skipWithoutDatabase();
 
 const NAMES = ["Anduril", "Anthropic", "Instinct", "Modal", "OpenAI"] as const;
 const PRICE = /\$\d[\d.,]*[MBT]/;
-
-function isMobile(page: Page): boolean {
-  return (page.viewportSize()?.width ?? 1440) < 832;
-}
-
-/** The trade ticket: the desktop rail, or on a phone the sheet the fixed bar opens. */
-async function openTicket(page: Page): Promise<Locator> {
-  if (isMobile(page)) {
-    await page.getByRole("button", { name: "Trade", exact: true }).click();
-    const sheet = page.getByRole("dialog");
-    await expect(sheet).toBeVisible();
-    return sheet.getByRole("region", { name: "Trade ticket" });
-  }
-  const ticket = page.getByRole("region", { name: "Trade ticket" });
-  await expect(ticket).toBeVisible();
-  return ticket;
-}
 
 test("the board lists the five names with forward and binary prices", async ({ page }) => {
   await page.goto("/");

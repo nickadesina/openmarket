@@ -221,6 +221,12 @@
   background: var(--color-primary-subtle);
 }
 
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 .skeleton {
   composes: skeletonBlock from "../../styles/shared.module.css";
   height: 16rem;

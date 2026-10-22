@@ -18,6 +18,7 @@ import {
   toQuestionRecord,
   windowEnd,
 } from "./records.js";
+import { restrictedCompanies } from "./restrictions.js";
 
 export interface OpenPosition {
   readonly slug: string;
@@ -173,6 +174,8 @@ export interface Viewer {
   readonly forecasts: Readonly<Record<string, ViewerForecast>>;
   /** True until the viewer's first submission anywhere: the UI discloses that forecasts are public. */
   readonly firstSubmission: boolean;
+  /** Listed names the viewer attested a tie to; their tickets are hidden and trades refused. */
+  readonly restrictedCompanySlugs: readonly string[];
 }
 
 export async function getViewer(db: Kysely<Database>, userId: string): Promise<Viewer | null> {
@@ -198,5 +201,11 @@ export async function getViewer(db: Kysely<Database>, userId: string): Promise<V
           }
         : { ...existing, submissionCount: existing.submissionCount + 1 };
   }
-  return { identity, forecasts, firstSubmission: rows.length === 0 };
+  const restricted = await restrictedCompanies(db, userId);
+  return {
+    identity,
+    forecasts,
+    firstSubmission: rows.length === 0,
+    restrictedCompanySlugs: restricted.map((company) => company.slug),
+  };
 }

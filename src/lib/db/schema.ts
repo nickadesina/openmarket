@@ -132,7 +132,9 @@ export interface CommentRateLimitsTable {
 }
 
 export interface RateLimitsTable {
-  scope: Immutable<"quote" | "trade" | "tournament_register" | "tournament_login" | "ref">;
+  scope: Immutable<
+    "quote" | "trade" | "tournament_register" | "tournament_login" | "ref" | "evidence"
+  >;
   key: Immutable<string>;
   window_started_at: Date;
   request_count: number;
@@ -231,7 +233,10 @@ export interface TournamentResolutionsTable {
   source_url: Immutable<string | null>;
   source_excerpt: Immutable<string | null>;
   note_md: Immutable<string>;
-  resolver_user_id: Immutable<string>;
+  /** The admin who resolved it; null when the settle job did (migration 011). */
+  resolver_user_id: Immutable<string | null>;
+  /** The settle run that resolved a linked question; exactly one of this and the resolver. */
+  settle_run_id: GeneratedImmutable<string | null>;
   superseded_by: string | null;
 }
 
@@ -354,7 +359,39 @@ export interface EventFlagsTable {
   dedupe_key: Immutable<string>;
   promoted_from: Immutable<string | null>;
   run_id: Immutable<string | null>;
+  /** The tournament user behind a `user_submitted` flag; null on every other kind (011). */
+  submitted_by: GeneratedImmutable<string | null>;
+  /** What a `user_submitted` flag claims to be; null on every other kind (011). */
+  submitted_kind: GeneratedImmutable<EvidenceKind | null>;
   created_at: GeneratedImmutable<Date>;
+}
+
+export type EventFlagReviewDecision = "confirmed" | "rejected";
+/** The kinds a forecaster may submit evidence as (POST /api/t/questions/[slug]/evidence). */
+export type EvidenceKind = "scoop" | "release" | "s1_public";
+
+/** An admin's review of user-submitted evidence (migration 011); append-only, one per flag. */
+export interface EventFlagReviewsTable {
+  id: GeneratedImmutable<string>;
+  flag_id: Immutable<string>;
+  decision: Immutable<EventFlagReviewDecision>;
+  /** The later independent flag that confirms it; set exactly when confirmed. */
+  confirming_flag_id: Immutable<string | null>;
+  reviewer_user_id: Immutable<string>;
+  note: Immutable<string | null>;
+  created_at: GeneratedImmutable<Date>;
+}
+
+/** A restricted-person self-attestation (migration 011); the latest per user is in force. */
+export interface TournamentRestrictionAttestationsTable {
+  id: GeneratedImmutable<string>;
+  user_id: Immutable<string>;
+  attested_at: GeneratedImmutable<Date>;
+}
+
+export interface TournamentRestrictionCompaniesTable {
+  attestation_id: Immutable<string>;
+  company_id: Immutable<string>;
 }
 
 export interface CronRunsTable {
@@ -509,6 +546,9 @@ export interface Database {
   source_health: SourceHealthTable;
   dealer_pnl: DealerPnlView;
   api_keys: ApiKeysTable;
+  event_flag_reviews: EventFlagReviewsTable;
+  tournament_restriction_attestations: TournamentRestrictionAttestationsTable;
+  tournament_restriction_companies: TournamentRestrictionCompaniesTable;
 }
 
 export type CompanyRow = Selectable<CompaniesTable>;

@@ -54,6 +54,16 @@
   line-height: 1.5;
 }
 
+.ticketPrompt a {
+  color: var(--color-ink);
+  text-decoration-color: var(--color-primary);
+}
+
+/* A restricted viewer's reason, in the trade bar's place on a phone; the rail carries it on desktop. */
+.mobileRestriction {
+  display: none;
+}
+
 /* Mobile: the order form lives in a sheet, so a fixed bar keeps the working
    contract and its price in view and opens the sheet without a ladder tap. */
 .mobileTradeBar {
@@ -233,6 +243,36 @@
 
   .page {
     padding-bottom: calc(var(--space-8) + 4rem);
+  }
+
+  .mobileRestriction {
+    position: fixed;
+    z-index: var(--z-header);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--page-gutter);
+    padding-bottom: max(var(--space-2), env(safe-area-inset-bottom));
+    border-top: 1px solid var(--color-border-strong);
+    background: var(--color-bg);
+    color: var(--color-ink-muted);
+    font-size: var(--font-size-xs);
+  }
+
+  .mobileRestriction strong {
+    color: var(--color-ink);
+    font-size: var(--font-size-sm);
+  }
+
+  .mobileRestriction p {
+    margin: 0;
+  }
+
+  .mobileRestriction a {
+    color: var(--color-ink);
+    text-decoration-color: var(--color-primary);
   }
 
   .mobileTradeBar {

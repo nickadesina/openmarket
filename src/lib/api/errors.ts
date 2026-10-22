@@ -25,6 +25,9 @@ export const ERROR_CODES = [
   "PRICE_CLAMPED",
   "INSTRUMENT_CLOSED",
   "API_KEY_INVALID",
+  "RESTRICTED_PERSON",
+  "EVIDENCE_NOT_FOUND",
+  "EVIDENCE_REVIEWED",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

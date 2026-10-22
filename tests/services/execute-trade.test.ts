@@ -53,6 +53,7 @@ function queryReturning(
     return query;
   });
   query.orderBy = vi.fn(fluent);
+  query.limit = vi.fn(fluent);
   query.forUpdate = vi.fn(fluent);
   query.returning = vi.fn(fluent);
   query.values = vi.fn((values: unknown) => {
@@ -147,6 +148,10 @@ function createTransactionHarness(options?: {
       }
       if (table === "holdings") {
         return queryReturning(holdings, events, "holdings lock");
+      }
+      if (table === "tournament_restriction_attestations") {
+        // No attestation: the user is restricted from nothing.
+        return queryReturning(undefined, events, "restriction lookup");
       }
       throw new Error(`Unexpected select: ${table}`);
     }),
@@ -363,13 +368,14 @@ describe("executeTrade", () => {
     expect(executed.result.price_after).toBeCloseTo(0.5024999791, 8);
 
     // A book by id: its instrument reference is read, then the book is locked.
-    expect(harness.events.slice(0, 8)).toEqual([
+    expect(harness.events.slice(0, 9)).toEqual([
       "advisory lock",
       "replay lookup",
       "market lock",
       "market lock",
       "execution timestamp",
       "user lock",
+      "restriction lookup",
       "holdings upsert",
       "holdings lock",
     ]);

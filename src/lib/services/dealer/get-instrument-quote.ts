@@ -22,6 +22,7 @@ import {
   maxFillCents,
 } from "../../engine/dealer/forward.js";
 import { RULEBOOK_VERSION } from "../../engine/dealer/rulebook.js";
+import { assertMayTrade, type Trader } from "../tournament/restrictions.js";
 import {
   forwardQuoteFor,
   isWidened,
@@ -314,6 +315,7 @@ export async function getInstrumentQuote(
   instrumentId: string,
   query: ForwardQuoteQuery,
   at: Date = new Date(),
+  viewer: Trader | null = null,
 ): Promise<InstrumentQuote> {
   return db
     .transaction()
@@ -321,6 +323,8 @@ export async function getInstrumentQuote(
     .setAccessMode("read only")
     .execute(async (transaction: Transaction<Database>) => {
       const book = await loadInstrumentBook(transaction, instrumentId);
+      // Anonymous quotes are public; a signed-in restricted person is refused (README D12).
+      if (viewer !== null) await assertMayTrade(transaction, viewer, book.listing.company_id);
       if (book.instrument.kind === "binary") {
         if (query.side !== undefined) {
           throw new ServiceError(

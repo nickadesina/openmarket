@@ -19,6 +19,7 @@ import type { ForecasterProfile, OpenPosition } from "../../lib/services/tournam
 import { TournamentDistribution } from "../tournament-distribution/tournament-distribution.js";
 import { AffiliationEditor } from "./affiliation-editor.js";
 import styles from "./forecaster-page.module.css";
+import { RestrictionsEditor } from "./restrictions-editor.js";
 
 function positionHeadline(position: OpenPosition): string {
   if (position.unit === "bool") return `${formatProbability(position.probs[0] ?? 0)} yes`;
@@ -160,6 +161,7 @@ export function ForecasterPage({
       </header>
 
       {ownProfile ? <AffiliationEditor current={identity.affiliation} /> : null}
+      {ownProfile ? <RestrictionsEditor /> : null}
 
       <section className={styles.section} aria-labelledby="open-title">
         <h2 className={styles.tab} id="open-title">

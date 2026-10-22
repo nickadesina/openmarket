@@ -59,6 +59,8 @@ export interface RefLiveInstrument {
   readonly opens_at: Date;
   readonly expires_at: Date;
   readonly widened_until: Date | null;
+  /** The linked tournament question at /t/q/[slug], whose crowd feeds the reference. */
+  readonly question_slug: string | null;
 }
 
 export interface RefLastPrint {
@@ -161,11 +163,30 @@ export async function getRefReference(
   const listing = await loadRefListing(db, slug);
   const instruments = await db
     .selectFrom("instruments")
-    .select(["id", "kind", "epoch", "state", "opens_at", "expires_at", "widened_until"])
-    .where("listing_id", "=", listing.id)
-    .where("state", "in", LIVE_STATES)
-    .orderBy("expires_at")
-    .orderBy("kind")
+    .leftJoin(
+      "tournament_instrument_links",
+      "tournament_instrument_links.instrument_id",
+      "instruments.id",
+    )
+    .leftJoin(
+      "tournament_questions",
+      "tournament_questions.id",
+      "tournament_instrument_links.question_id",
+    )
+    .select([
+      "instruments.id",
+      "instruments.kind",
+      "instruments.epoch",
+      "instruments.state",
+      "instruments.opens_at",
+      "instruments.expires_at",
+      "instruments.widened_until",
+      "tournament_questions.slug as question_slug",
+    ])
+    .where("instruments.listing_id", "=", listing.id)
+    .where("instruments.state", "in", LIVE_STATES)
+    .orderBy("instruments.expires_at")
+    .orderBy("instruments.kind")
     .execute();
   const forward = instruments.find((instrument) => instrument.kind === "forward");
   const forwardRow = await latestReference(db, listing.id, "forward");

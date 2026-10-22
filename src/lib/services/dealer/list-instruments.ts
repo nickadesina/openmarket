@@ -27,6 +27,7 @@ import {
   LIVE_STATES,
   latestMid,
 } from "./dealer-books.js";
+import { linkInstrumentQuestion } from "./tournament-bridge.js";
 
 /**
  * The list step of /api/cron/dealer, and the roll the settle job does in its
@@ -68,6 +69,8 @@ export interface ListedInstrument {
   readonly entry_ref_ln: number | null;
   /** The model's p for a binary, mid in ln USD for a forward. */
   readonly value: number;
+  /** The linked tournament question (milestone 7); null when listed past its own expiry. */
+  readonly question_slug: string | null;
 }
 
 function isoDay(at: Date): string {
@@ -208,6 +211,12 @@ export async function listInstrument(
     .executeTakeFirstOrThrow();
 
   const marketId = await insertBook(db, listing, instrument, mid.value, now);
+  const question = await linkInstrumentQuestion(db, {
+    listing,
+    instrument,
+    midLn: kind === "forward" ? mid.value : null,
+    now,
+  });
   const quoteBase = {
     instrumentId: instrument.id,
     postedAt: now,
@@ -230,6 +239,7 @@ export async function listInstrument(
     expires_at: expiresAt,
     entry_ref_ln: entryRefLn,
     value: mid.value,
+    question_slug: question?.slug ?? null,
   };
 }
 
@@ -318,6 +328,8 @@ export async function activeListings(
 export interface ListInstrumentsSummary {
   readonly listings: number;
   readonly listed: readonly ListedInstrument[];
+  /** Questions linked to live instruments listed before the bridge (milestone 7). */
+  readonly linked: readonly string[];
 }
 
 const KINDS: readonly InstrumentKind[] = ["binary", "forward"];
@@ -326,7 +338,8 @@ const KINDS: readonly InstrumentKind[] = ["binary", "forward"];
  * The dealer job's list step: every active listing ends it with a live
  * binary and a live forward, listed now. The settle job rolls a successor
  * in the predecessor's own transaction, so this lists epoch 1, or fills a gap
- * an operator left.
+ * an operator left. A live instrument listed before the tournament bridge
+ * gets its linked question here, once.
  */
 export async function listInstruments(
   db: Transaction<Database>,
@@ -335,6 +348,7 @@ export async function listInstruments(
 ): Promise<ListInstrumentsSummary> {
   const listings = await activeListings(db, now);
   const listed: ListedInstrument[] = [];
+  const linked: string[] = [];
   for (const listing of listings) {
     // One listing at a time, so a concurrent roll of the same name waits.
     await sql`select pg_advisory_xact_lock(hashtext('openmarket_listing'), hashtext(${listing.id}))`.execute(
@@ -342,14 +356,31 @@ export async function listInstruments(
     );
     const live = await db
       .selectFrom("instruments")
-      .select("kind")
-      .where("listing_id", "=", listing.id)
-      .where("state", "in", LIVE_STATES)
+      .leftJoin(
+        "tournament_instrument_links",
+        "tournament_instrument_links.instrument_id",
+        "instruments.id",
+      )
+      .selectAll("instruments")
+      .select("tournament_instrument_links.question_id")
+      .where("instruments.listing_id", "=", listing.id)
+      .where("instruments.state", "in", LIVE_STATES)
       .execute();
+    for (const instrument of live) {
+      if (instrument.question_id !== null) continue;
+      const mid = await latestMid(db, instrument.id, now);
+      const question = await linkInstrumentQuestion(db, {
+        listing,
+        instrument,
+        midLn: mid?.mid_ln ?? null,
+        now,
+      });
+      if (question !== null) linked.push(question.slug);
+    }
     for (const kind of KINDS) {
       if (live.some((row) => row.kind === kind)) continue;
       listed.push(await listInstrument(db, { listing, kind, opensAt: now, now, runId }));
     }
   }
-  return { listings: listings.length, listed };
+  return { listings: listings.length, listed, linked };
 }

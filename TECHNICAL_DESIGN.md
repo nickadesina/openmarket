@@ -172,9 +172,9 @@ URL and rank; collateral released; successor listed. A higher-ranked
 revision within 7 days writes a correcting settlement. Materialised
 view `dealer_pnl` per listing per epoch: realised, unrealised, bound.
 
-Restricted persons: attestation at sign-in listing any of the five
-names the user is employed by or invested in; those instruments are
-hidden in the UI and refused at the API.
+Restricted persons: an attestation (on the profile, README D12) listing
+any listed name the user is employed by, a director of, or invested in;
+those instruments are hidden in the UI and refused at the API.
 
 UI: the market page keeps chart and ticket; the strike ladder becomes a
 read-only implied distribution from the forward mid and prior width;
@@ -188,16 +188,27 @@ numeric ladders with a floor bucket, binaries, append-only forecast
 events, log scoring, leaderboard, X sign-in and Merkle commitments.
 The bridge is a mapping, not a mechanism:
 
-Mapping per `CONTRACTS.md` → Tournament mapping. A forward that expires
-without a print closes its question with the tournament's existing
-`status = 'voided'`, which writes no scores; no schema change.
+Mapping per `CONTRACTS.md` → Tournament mapping, built in milestone 7
+(`services/dealer/tournament-bridge.ts`; README D9 has the rules):
 
-The live aggregate (median / mean p, forecaster count, recency weight)
-feeds `reference_prices` as the crowd component once `n ≥ N_min` (10).
-`POST /api/t/questions/[slug]/evidence` creates a `user_submitted`
-flag; a later independent flag for the same event pays a fixed bonus
-score row (admin-reviewed). Merge order: tournament branch first;
-`007_dealer` numbered after its `004`–`006`.
+- List: the dealer's list step (and the settle job's roll) creates,
+  opens and links the instrument's question in the same transaction,
+  through the tournament's admin services' in-transaction variants
+  (`saveDraftQuestionIn`, `openQuestionIn`, …), so their invariants hold.
+  The forward's ladder edges come from `engine/dealer/question-ladder.ts`,
+  reproducible from the listing's first `model_mids` row and σ_tier.
+- Settle: the settle job closes (back-dated to the announcement) and
+  resolves the question as its run, or voids it on a forward void, in the
+  settlement's transaction; `verify:replay` checks each link.
+- Crowd: the reference step reads the linked question's latest
+  `tournament_aggregates` row; blend.ts gives it weight from N_min (10).
+- Evidence: `POST /api/t/questions/[slug]/evidence` files a
+  `user_submitted` flag that an admin confirms against a later
+  independent flag, or rejects (`event_flag_reviews`). The fixed bonus
+  score a confirmation pays waits on its size (README D9).
+
+Merge order: tournament branch first; `007_dealer` numbered after its
+`004`–`006`; the bridge's additive `011_tournament_bridge` after `010`.
 
 ## 8. Reference price API
 
@@ -290,7 +301,7 @@ Anthropic Series D has no dated close.
 | Secrets | `CRON_SECRET`, `EXTRACT_API_KEY`, `EDGAR_USER_AGENT`, the tournament's X OAuth credentials; sign-in and admin are the tournament's (README D1) |
 | Observability | `/admin/dealer`: `dealer_pnl`, per-source last success, widened instruments, resolution queue; `dealer-alerts.yml` fails daily if any instrument is widened > 72 h; the silent-source (24 h) check ships with ingest |
 | Replay | `verify:replay` rebuilds quotes-derived state, forward payouts and `reference_prices` |
-| Migration | `007_dealer` is additive; `008` (owner-approved, deletes data) removed the ladder markets, Stripe and the username accounts; `npm run seed:listings` idempotent on `(company, listed_at)` |
+| Migration | `007_dealer` is additive; `008` (owner-approved, deletes data) removed the ladder markets, Stripe and the username accounts; `011_tournament_bridge` is additive; `npm run seed:listings` idempotent on `(company, listed_at)` |
 
 ## 12. Build plan
 
@@ -302,7 +313,7 @@ Anthropic Series D has no dated close.
 | 4 | Ingest + flags + admin queue (owned by Nick; the dealer reads `event_flags` and tests will use `tests/fixtures/event-flags.json`, which Nick generates from `events.csv`) | seeded scoop → flag in < 15 min | 2, 3 |
 | 5 | Mid model (TS port) | agrees with `sim.py` to 1e-9 | 2, 3 |
 | 6 | Dealer + settlement + ticket UI; delete the Anthropic/Stripe ladder markets with their rows, Stripe, 41-bucket seeding and ladder trading, the username paper account and the passphrase admin (decided 2026-10-21; these deletions are done: `008`, README D1) | five names quoting; a fixture print settles both instruments and rolls, in an integration test against CI Postgres (no staging gate, 2026-10-21) | 3, 5 |
-| 7 | Tournament bridge | crowd weight appears with ≥ 10 forecasters | 1, 6 |
+| 7 | Tournament bridge (done: README D9, D12) | crowd weight appears with ≥ 10 forecasters | 1, 6 |
 | 8 | Reference API + `/admin/dealer` + alerts | public endpoints cached, versions in every payload | 6, 7 |
 
 Eight weeks for one engineer plus agents; the dealer (wk 4–6) is the

@@ -1,6 +1,13 @@
 import { randomUUID } from "node:crypto";
 
-import { type APIResponse, expect, type Page, type TestInfo, test } from "@playwright/test";
+import {
+  type APIResponse,
+  expect,
+  type Locator,
+  type Page,
+  type TestInfo,
+  test,
+} from "@playwright/test";
 
 export const databaseAvailable = Boolean(process.env.DATABASE_URL_TEST);
 
@@ -69,4 +76,21 @@ export async function expectNoHorizontalOverflow(page: Page): Promise<void> {
       }),
     )
     .toBe(true);
+}
+
+export function isMobile(page: Page): boolean {
+  return (page.viewportSize()?.width ?? 1440) < 832;
+}
+
+/** The trade ticket: the desktop rail, or on a phone the sheet the fixed bar opens. */
+export async function openTicket(page: Page): Promise<Locator> {
+  if (isMobile(page)) {
+    await page.getByRole("button", { name: "Trade", exact: true }).click();
+    const sheet = page.getByRole("dialog");
+    await expect(sheet).toBeVisible();
+    return sheet.getByRole("region", { name: "Trade ticket" });
+  }
+  const ticket = page.getByRole("region", { name: "Trade ticket" });
+  await expect(ticket).toBeVisible();
+  return ticket;
 }

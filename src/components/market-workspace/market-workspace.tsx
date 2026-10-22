@@ -2,11 +2,13 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 
 import { ApiClientError, apiRequest, POLL_INTERVAL_MS } from "../../lib/client/api.js";
 import { formatPrice, formatProbability } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
+import { forecasterHref, useTournamentViewer } from "../../lib/client/tournament.js";
 import { DistributionChart } from "../distribution-chart/distribution-chart.js";
 import { MarketActivity } from "../market-activity/market-activity.js";
 import { MarketChart } from "../market-chart/market-chart.js";
@@ -54,6 +56,64 @@ function workingPrice(listing: ListingView, selection: TradeSelection): string |
   );
 }
 
+/**
+ * The signed-in viewer's profile link when they attested a tie to this name
+ * (README D12): the page then shows no ticket, and the server refuses the
+ * trade regardless. Null otherwise.
+ */
+function useRestrictedProfile(companySlug: string): string | null {
+  const viewer = useTournamentViewer().data?.viewer;
+  if (viewer == null || !viewer.restrictedCompanySlugs.includes(companySlug)) return null;
+  return forecasterHref(viewer.identity);
+}
+
+function hasLiveContract(listing: ListingView): boolean {
+  return listing.forward !== null || listing.binary !== null;
+}
+
+interface RestrictionProps {
+  readonly name: string;
+  readonly profileHref: string | null;
+}
+
+function RestrictionNote({
+  name,
+  profileHref,
+  className,
+}: {
+  readonly name: string;
+  readonly profileHref: string;
+  readonly className: string | undefined;
+}) {
+  return (
+    <div className={className} role="note">
+      <strong>Not open to you</strong>
+      <p>
+        You attested a tie to {name}, so its contracts are closed to you.{" "}
+        <Link href={profileHref}>Change it on your profile.</Link>
+      </p>
+    </div>
+  );
+}
+
+/** The ticket, or in its place the one-line reason a restricted viewer has none. */
+function TicketUnlessRestricted({
+  name,
+  profileHref,
+  children,
+}: RestrictionProps & { readonly children: ReactNode }) {
+  if (profileHref === null) return children;
+  return <RestrictionNote name={name} profileHref={profileHref} className={styles.ticketPrompt} />;
+}
+
+/** On a phone the rail is hidden, so the reason takes the trade bar's place. */
+function MobileRestriction({ name, profileHref }: RestrictionProps) {
+  if (profileHref === null) return null;
+  return (
+    <RestrictionNote name={name} profileHref={profileHref} className={styles.mobileRestriction} />
+  );
+}
+
 export function MarketWorkspace({
   slug,
   initialListing,
@@ -61,6 +121,7 @@ export function MarketWorkspace({
   initialActivity,
 }: MarketWorkspaceProps) {
   const queryClient = useQueryClient();
+  const restrictedProfile = useRestrictedProfile(slug);
   const [range, setRange] = useState<MarkRange>(initialMarks?.range ?? "1w");
   // The order form is live from first paint on the forward's long side.
   const [selection, setSelection] = useState<TradeSelection>(() =>
@@ -167,7 +228,7 @@ export function MarketWorkspace({
     );
   }
 
-  const trading = listing.forward !== null || listing.binary !== null;
+  const trading = restrictedProfile === null && hasLiveContract(listing);
   const commentsMarketId = listing.forward?.market_id ?? listing.binary?.market_id ?? null;
   const price = workingPrice(listing, selection);
 
@@ -221,7 +282,9 @@ export function MarketWorkspace({
         </div>
 
         <aside className={styles.tradeRail} aria-label="Trade rail">
-          {ticket("desktop")}
+          <TicketUnlessRestricted name={listing.company.name} profileHref={restrictedProfile}>
+            {ticket("desktop")}
+          </TicketUnlessRestricted>
         </aside>
       </div>
 
@@ -236,6 +299,7 @@ export function MarketWorkspace({
         onRetry={() => void activityQuery.refetch()}
       />
 
+      <MobileRestriction name={listing.company.name} profileHref={restrictedProfile} />
       {trading ? (
         <div className={styles.mobileTradeBar}>
           <span className={styles.mobileTradeSummary}>
