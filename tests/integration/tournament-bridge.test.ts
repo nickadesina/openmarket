@@ -1,5 +1,3 @@
-import { createHash } from "node:crypto";
-
 import { sql } from "kysely";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -13,6 +11,7 @@ import {
   saveDraftQuestion,
   voidQuestion,
 } from "../../src/lib/services/tournament/admin.js";
+import { forecastEventHash } from "../../src/lib/services/tournament/submit-forecast.js";
 import { verifyReplay } from "../../src/lib/services/verify-replay.js";
 import { insertFixtureFlags, NAMES, seedFixtureListings } from "./dealer-fixture.js";
 import {
@@ -45,25 +44,6 @@ const ANNOUNCED = new Date("2026-09-28T00:00:00.000Z");
 const SETTLE_AT = new Date("2026-09-29T00:41:00.000Z");
 
 type Forecast = { readonly p: number } | { readonly value: number };
-
-/**
- * The event hash decision 0004 pins: sha256(question ‖ user ‖ ISO time ‖
- * payload), the payload a binary's [p, 1 − p] at 10 dp or a forward's
- * "fwd:" + x at 10 dp. Written out here so the fixture events are exactly
- * what verify:replay re-derives.
- */
-function forecastHash(questionId: string, userId: string, at: Date, forecast: Forecast): string {
-  const payload =
-    "p" in forecast
-      ? [forecast.p, 1 - forecast.p].map((probability) => probability.toFixed(10)).join(",")
-      : `fwd:${forecast.value.toFixed(10)}`;
-  return createHash("sha256")
-    .update(questionId)
-    .update(userId)
-    .update(at.toISOString())
-    .update(payload)
-    .digest("hex");
-}
 
 postgresDescribe(suiteName, () => {
   let postgres: PostgresTestDatabase;
@@ -118,18 +98,22 @@ postgresDescribe(suiteName, () => {
       .execute();
   }
 
-  /** A forecast event at a fixture time, hashed as verify:replay re-derives it. */
+  /** A forecast event at a fixture time; the tournament's own hash, so replay re-derives it. */
   async function forecastAt(questionId: string, userId: string, at: Date, forecast: Forecast) {
+    const point = {
+      p: "p" in forecast ? forecast.p : null,
+      value: "value" in forecast ? forecast.value : null,
+    };
     await postgres.db
       .insertInto("tournament_forecast_events")
       .values({
         user_id: userId,
         question_id: questionId,
         submitted_at: at,
-        p: "p" in forecast ? String(forecast.p) : null,
-        value: "value" in forecast ? String(forecast.value) : null,
+        p: point.p === null ? null : point.p.toFixed(10),
+        value: point.value === null ? null : point.value.toFixed(10),
         client_hash: null,
-        event_hash: forecastHash(questionId, userId, at, forecast),
+        event_hash: forecastEventHash(questionId, userId, at, point),
       })
       .execute();
   }
@@ -420,6 +404,47 @@ postgresDescribe(suiteName, () => {
     expect(after.map((row) => [row.question_kind, row.unit])).toEqual(
       before.map((row) => [row.question_kind, row.unit]),
     );
+  });
+
+  it("relinks a live instrument whose linked question was voided to a fresh question", async () => {
+    const [binary, forward] = await linked("anthropic");
+    // An admin voids the binary's question; migration 013 voided and renamed the forward's.
+    await voidQuestion(postgres.db, binary!.slug, { note_md: "Voided by an admin." });
+    await postgres.db
+      .updateTable("tournament_questions")
+      .set({ status: "voided", slug: `${forward!.slug}-v1`, void_note_md: "Replaced." })
+      .where("id", "=", forward!.question_id)
+      .execute();
+
+    const run = await runDealerJob(postgres.db, "bridge-relink", new Date("2026-09-02T00:05Z"));
+    const relinked = run.status === "succeeded" ? [...run.result.steps.list.linked] : [];
+    // The renamed question freed the canonical slug; the admin-voided one still holds its own.
+    expect(relinked.sort()).toEqual([`${binary!.slug}-2`, forward!.slug].sort());
+    const after = await linked("anthropic");
+    expect(after.map((row) => [row.instrument_id, row.status, row.question_kind])).toEqual([
+      [binary!.instrument_id, "open", "binary"],
+      [forward!.instrument_id, "open", "forward"],
+    ]);
+    expect(after.map((row) => row.question_id)).not.toContain(binary!.question_id);
+    // The voided questions stay voided, with no link.
+    const old = await postgres.db
+      .selectFrom("tournament_questions")
+      .leftJoin(
+        "tournament_instrument_links",
+        "tournament_instrument_links.question_id",
+        "tournament_questions.id",
+      )
+      .select(["tournament_questions.status", "tournament_instrument_links.id as link_id"])
+      .where("tournament_questions.id", "in", [binary!.question_id, forward!.question_id])
+      .execute();
+    expect(old).toEqual([
+      { status: "voided", link_id: null },
+      { status: "voided", link_id: null },
+    ]);
+
+    // A rerun relinks nothing more.
+    const rerun = await runDealerJob(postgres.db, "bridge-relink-2", new Date("2026-09-02T00:20Z"));
+    expect(rerun.status === "succeeded" && rerun.result.steps.list.linked).toEqual([]);
   });
 
   it("back-dates a close past the scheduled close only when the caller asks", async () => {

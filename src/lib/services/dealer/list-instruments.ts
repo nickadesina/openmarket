@@ -28,7 +28,7 @@ import {
   LIVE_STATES,
   latestMid,
 } from "./dealer-books.js";
-import { linkInstrumentQuestion } from "./tournament-bridge.js";
+import { linkInstrumentQuestion, relinkVoidedQuestion } from "./tournament-bridge.js";
 
 /**
  * The list step of /api/cron/dealer, and the roll the settle job does in its
@@ -326,7 +326,10 @@ export async function activeListings(
 export interface ListInstrumentsSummary {
   readonly listings: number;
   readonly listed: readonly ListedInstrument[];
-  /** Questions linked to live instruments listed before the bridge (milestone 7). */
+  /**
+   * Questions linked to live instruments listed before the bridge (milestone
+   * 7), or whose linked question was voided while they were live.
+   */
   readonly linked: readonly string[];
 }
 
@@ -336,8 +339,11 @@ const KINDS: readonly InstrumentKind[] = ["binary", "forward"];
  * The dealer job's list step: every active listing ends it with a live
  * binary and a live forward, listed now. The settle job rolls a successor
  * in the predecessor's own transaction, so this lists epoch 1, or fills a gap
- * an operator left. A live instrument listed before the tournament bridge
- * gets its linked question here, once, while linked questions are on.
+ * an operator left. While linked questions are on, a live instrument listed
+ * before the tournament bridge gets its linked question here, once; one
+ * whose linked question was voided while it was live (by an admin, or by
+ * migration 013 retiring bucket questions) is relinked to a fresh question,
+ * and the voided one stays voided with no link.
  */
 export async function listInstruments(
   db: Transaction<Database>,
@@ -359,14 +365,26 @@ export async function listInstruments(
         "tournament_instrument_links.instrument_id",
         "instruments.id",
       )
+      .leftJoin(
+        "tournament_questions",
+        "tournament_questions.id",
+        "tournament_instrument_links.question_id",
+      )
       .selectAll("instruments")
-      .select("tournament_instrument_links.question_id")
+      .select([
+        "tournament_instrument_links.question_id",
+        "tournament_questions.status as question_status",
+      ])
       .where("instruments.listing_id", "=", listing.id)
       .where("instruments.state", "in", LIVE_STATES)
       .execute();
     for (const instrument of live) {
-      if (instrument.question_id !== null || !linkedQuestionsEnabled()) continue;
-      const question = await linkInstrumentQuestion(db, { listing, instrument, now });
+      if (!linkedQuestionsEnabled()) continue;
+      if (instrument.question_id !== null && instrument.question_status !== "voided") continue;
+      const question =
+        instrument.question_id === null
+          ? await linkInstrumentQuestion(db, { listing, instrument, now })
+          : await relinkVoidedQuestion(db, { listing, instrument, now });
       if (question !== null) linked.push(question.slug);
     }
     for (const kind of KINDS) {

@@ -245,6 +245,30 @@ export async function linkInstrumentQuestion(
   return { question_id: question.id, slug };
 }
 
+/**
+ * Replaces a live instrument's voided linked question (voided by an admin,
+ * or by migration 013 retiring bucket questions) with a fresh one, in the
+ * caller's transaction: the link to the voided question is removed, which
+ * stays voided and unscored, and a new question is created, opened and
+ * linked as at listing. Null, changing nothing, when the linked question is
+ * not voided or the instrument is past its expiry.
+ */
+export async function relinkVoidedQuestion(
+  db: Transaction<Database>,
+  input: Parameters<typeof linkInstrumentQuestion>[1],
+): Promise<LinkedQuestion | null> {
+  if (input.now.getTime() >= input.instrument.expires_at.getTime()) return null;
+  const removed = await db
+    .deleteFrom("tournament_instrument_links")
+    .where("instrument_id", "=", input.instrument.id)
+    .where("question_id", "in", (eb) =>
+      eb.selectFrom("tournament_questions").select("id").where("status", "=", "voided"),
+    )
+    .executeTakeFirst();
+  if (Number(removed.numDeletedRows) === 0) return null;
+  return linkInstrumentQuestion(db, input);
+}
+
 /** How an instrument ended, as its linked question needs it. */
 export type InstrumentEnding =
   | {
