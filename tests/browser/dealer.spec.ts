@@ -230,3 +230,24 @@ test("header sign-in can open the portfolio after a signed-out market visit", as
   await expect(page.getByLabel("Portfolio summary")).toContainText("$100,000.00");
   expect(errors).toEqual([]);
 });
+
+test("portfolio retry recovers a failed identity read", async ({ page, baseURL }, testInfo) => {
+  await signInDev(page, baseURL, uniqueHandle("retry", testInfo));
+  let failIdentity = true;
+  await page.route("**/api/portfolio?offset=0&limit=1", async (route) => {
+    if (failIdentity) {
+      await route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ error: { code: "INTERNAL_ERROR", message: "Unavailable" } }),
+      });
+    } else {
+      await route.continue();
+    }
+  });
+  await page.goto("/portfolio");
+  await expect(page.getByRole("heading", { name: "We could not load your account" })).toBeVisible();
+  failIdentity = false;
+  await page.getByRole("button", { name: "Retry portfolio" }).click();
+  await expect(page.getByLabel("Portfolio summary")).toContainText("$100,000.00");
+});

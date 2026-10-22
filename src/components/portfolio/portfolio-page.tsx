@@ -529,7 +529,7 @@ export function PortfolioPage() {
   async function refreshPortfolio() {
     setRefreshing(true);
     try {
-      await portfolioQuery.refetch();
+      await Promise.all([portfolioQuery.refetch(), identityQuery.refetch()]);
     } finally {
       setRefreshing(false);
     }
