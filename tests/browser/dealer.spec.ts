@@ -208,3 +208,25 @@ test("binary spend rejects exponent and fractional cents before requesting a quo
     await expect(ticket.getByRole("button", { name: "Preview buy" })).toBeDisabled();
   }
 });
+
+test("header sign-in can open the portfolio after a signed-out market visit", async ({
+  page,
+}, testInfo) => {
+  test.skip(isMobile(page), "Header development sign-in is a desktop control.");
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/m/modal");
+  const form = page.getByRole("form", { name: "Development sign-in" });
+  await form
+    .getByRole("textbox", { name: "Development handle" })
+    .fill(uniqueHandle("header", testInfo));
+  await form.getByRole("button", { name: "Dev sign in" }).click();
+  await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeVisible();
+  await page
+    .getByRole("navigation", { name: "Primary navigation" })
+    .getByRole("link", { name: "Portfolio", exact: true })
+    .click();
+  await expect(page.getByRole("heading", { name: "Portfolio", exact: true })).toBeVisible();
+  await expect(page.getByLabel("Portfolio summary")).toContainText("$100,000.00");
+  expect(errors).toEqual([]);
+});

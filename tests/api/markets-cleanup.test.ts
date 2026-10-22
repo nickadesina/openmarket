@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { HomeActivity } from "../../src/components/home-activity/home-activity.js";
 import { HomeDistribution } from "../../src/components/home-distribution/home-distribution.js";
 import { MarketBoard } from "../../src/components/market-board/market-board.js";
 import { PortfolioPage } from "../../src/components/portfolio/portfolio-page.js";
@@ -55,4 +56,37 @@ it("keeps the last confirmed board prices after a poll fails", async () => {
   );
   expect(html).toContain("Saved listing");
   expect(html).toContain("$1B");
+});
+
+it("keeps confirmed trades when activity polling fails", async () => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  client.setQueryData(queryKeys.activity(), {
+    items: [
+      {
+        marketId: "saved",
+        marketSequence: "1",
+        company: { name: "Saved trade", slug: "saved", logoPath: "/logos/modal.svg" },
+        metricKind: "yes_probability",
+        action: "buy",
+        side: "yes",
+        quantity: 2,
+        cashAmountCents: "100",
+        createdAt: "2026-10-22T12:00:00Z",
+        demo: false,
+      },
+    ],
+  });
+  await client
+    .fetchQuery({
+      queryKey: queryKeys.activity(),
+      queryFn: async () => {
+        throw new Error("Offline");
+      },
+    })
+    .catch(() => undefined);
+  const html = renderToStaticMarkup(
+    createElement(QueryClientProvider, { client }, createElement(HomeActivity)),
+  );
+  expect(html).toContain("Saved trade");
+  expect(html).toContain("latest confirmed trades");
 });
