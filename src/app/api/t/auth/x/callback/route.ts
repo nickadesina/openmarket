@@ -12,6 +12,7 @@ import {
 } from "../../../../../../lib/auth/x-oauth.js";
 import { getRuntimeDatabase } from "../../../../../../lib/db/runtime.js";
 import { logUnexpectedError } from "../../../../../../lib/logging/server-log.js";
+import { profileSlug } from "../../../../../../lib/services/tournament/identities.js";
 import { upsertIdentity } from "../../../../../../lib/services/tournament/sign-in.js";
 
 export const runtime = "nodejs";
@@ -22,7 +23,11 @@ function redirect(location: string, cookies: readonly string[]): Response {
   return new Response(null, { status: 302, headers });
 }
 
-/** X redirects here with a code; exchange it, upsert the identity, open a session. */
+/**
+ * X redirects here with a code; exchange it, upsert the identity, open a
+ * session, and land on the forecaster's own page, where they set their
+ * affiliation and restrictions.
+ */
 export async function GET(request: Request): Promise<Response> {
   const clearState = cookieHeader(OAUTH_STATE_COOKIE, "", 0);
   const params = new URL(request.url).searchParams;
@@ -49,7 +54,10 @@ export async function GET(request: Request): Promise<Response> {
       providerCreatedAt: profile.createdAt,
     });
     const token = await createTournamentSession(db, userId);
-    return redirect(state.returnTo, [clearState, sessionCookie(token)]);
+    return redirect(`/t/u/${profileSlug("x", profile.username)}`, [
+      clearState,
+      sessionCookie(token),
+    ]);
   } catch (error) {
     logUnexpectedError(crypto.randomUUID(), error);
     return redirect("/t?sign_in=failed", [clearState]);

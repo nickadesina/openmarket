@@ -187,6 +187,17 @@ async function describeXProblem(response: Response): Promise<string> {
   return fields.length === 0 ? "" : ` ${fields.join(" ")}`;
 }
 
+/**
+ * X's profile_image_url names the 48×48 `_normal` thumbnail, which blurs when
+ * drawn at 48 CSS pixels on a dense screen. Without the size suffix the same
+ * path names the original upload.
+ */
+export function originalXAvatarUrl(url: string): string {
+  const parsed = new URL(url);
+  parsed.pathname = parsed.pathname.replace(/_normal(?=(?:\.[A-Za-z0-9]+)?$)/, "");
+  return parsed.toString();
+}
+
 /** Exchanges the code, fetches the public profile, and drops the token. */
 export async function fetchXProfile(
   config: XClientConfig,
@@ -232,7 +243,8 @@ export async function fetchXProfile(
     id: data.id,
     username: data.username,
     name: data.name,
-    profileImageUrl: data.profile_image_url ?? null,
+    profileImageUrl:
+      data.profile_image_url === undefined ? null : originalXAvatarUrl(data.profile_image_url),
     verified: data.verified ?? false,
     createdAt: createdAt === null || Number.isNaN(createdAt.getTime()) ? null : createdAt,
   };
