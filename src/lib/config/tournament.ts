@@ -11,15 +11,6 @@ export const FORECAST_RATE_LIMIT_MS = 10_000;
 /** Disputes may replace a resolution only inside this window from the first resolution. */
 export const DISPUTE_WINDOW_MS = 72 * 60 * 60 * 1000;
 
-/**
- * Cross-question derived number: implied EV/ARR = median(market cap, USD_T)
- * × 1000 / median(ARR, USD_B).
- */
-export const IMPLIED_EV_ARR = {
-  marketCapSlug: "anthropic-ipo-day1-mcap",
-  arrSlug: "anthropic-s1-arr",
-} as const;
-
 type Environment = Readonly<Record<string, string | undefined>>;
 
 /**

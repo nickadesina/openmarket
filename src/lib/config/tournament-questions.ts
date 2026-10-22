@@ -8,7 +8,7 @@ import type { QuestionInput } from "../api/tournament-schemas.js";
 const RESTATEMENT_RULE =
   "Disputes are accepted for 72 hours after resolution, as replies or DMs to the tournament's X account; the outcome is recorded on the question. A figure restated by the source after that window does not reopen the question.";
 
-/** Distributes over the numeric/binary union so each keeps its own fields. */
+/** Distributes over the question union so each unit keeps its own fields. */
 type LaunchQuestion = QuestionInput extends infer Q
   ? Q extends unknown
     ? Omit<Q, "opens_at">
@@ -17,65 +17,49 @@ type LaunchQuestion = QuestionInput extends infer Q
 
 export const LAUNCH_QUESTIONS: readonly LaunchQuestion[] = [
   {
-    slug: "anthropic-s1-by-nov30",
-    title: "Will Anthropic publicly file a Form S-1 by November 30, 2026?",
-    unit: "bool",
-    description_md:
-      "Whether Anthropic, PBC has a Form S-1 publicly available on SEC EDGAR with a filing date on or before November 30, 2026.",
-    rulebook_md: [
-      "Resolves **Yes** if a Form S-1 filed by Anthropic, PBC (not a DRS, not an S-1/A) is publicly available on SEC EDGAR with a filing date on or before 2026-11-30; otherwise **No**.",
-      "The question closes 2026-11-30 23:59 America/Los_Angeles.",
-      RESTATEMENT_RULE,
+    slug: "anthropic-ipo-day1-mcap",
+    title: "What will Anthropic's market cap be at the close of its first trading day?",
+    unit: "USD_T",
+    description_md: [
+      "Anthropic's basic-shares market capitalization at the official close of its first day of trading, in USD trillions. The last bucket is the timing question folded in: no first trade by December 31, 2026.",
+      "**Note to forecasters:** press “valued at” figures are fully diluted and typically run 5–15% above this basic-shares figure.",
     ].join("\n\n"),
-    rulebook_version: 1,
-    closes_at: "2026-12-01T07:59:00Z",
-  },
-  {
-    slug: "anthropic-s1-arr",
-    title: "What ARR will Anthropic's first S-1 report?",
-    unit: "USD_B",
-    description_md:
-      "The annualized revenue run-rate Anthropic, PBC discloses in its first public Form S-1, in USD billions, by the figure hierarchy in the rulebook.",
     rulebook_md: [
-      "**Resolution document:** the first Form S-1 filed by Anthropic, PBC on EDGAR (not the confidential draft, not an S-1/A, not a 424(b)).",
-      "**Figure**, first rung that applies:",
-      [
-        "1. A number the filing labels annualized revenue run-rate, ARR, or equivalent. The most recent as-of date if several; “more than $X” resolves to X; a range resolves to its midpoint.",
-        "2. Most recent completed fiscal quarter revenue × 4.",
-        "3. Trailing-twelve-month revenue.",
-      ].join("\n"),
-      "The rung that fired is recorded. Rounded to the nearest $0.1B.",
-      "**Floor:** resolves if no such filing exists by 2026-12-31 23:59 America/Los_Angeles. The question closes then, or at the S-1's public timestamp if it appears first.",
+      "**Figure:** the primary listing exchange's official closing price on Anthropic's first day of trading × shares of common stock (all classes) outstanding immediately after the offering as stated in the final prospectus (424(b)), excluding the over-allotment option and all options, RSUs and warrants. Basic, not fully diluted.",
+      "Rounded to the nearest $0.01T.",
+      "**Floor:** resolves if Anthropic's shares have not traded by 2026-12-31 23:59 America/Los_Angeles. The question closes then, or at the first trade if it comes first.",
       RESTATEMENT_RULE,
     ].join("\n\n"),
     rulebook_version: 1,
     closes_at: "2027-01-01T07:59:00Z",
     expiry_at: "2027-01-01T07:59:00Z",
     buckets: {
-      edges: [66, 70, 74, 78, 83, 88, 94],
-      floor_label: "No public S-1 on EDGAR by Dec 31, 2026",
+      edges: [1.25, 1.5, 1.75, 2.0, 2.3],
+      // Edges print as typed by the engine (2, not 2.0); the labels keep one decimal.
+      labels: [null, null, null, "1.75–2.0", "2.0–2.3", null],
+      floor_label: "No first trade by Dec 31, 2026",
     },
   },
   {
-    slug: "anthropic-ipo-day1-mcap",
-    title: "What will Anthropic's market cap be at the close of its first trading day?",
-    unit: "USD_T",
-    description_md: [
-      "Anthropic's basic-shares market capitalization at the Nasdaq official close on its first day of trading, in USD trillions.",
-      "**Note to forecasters:** press “valued at” figures are fully diluted and typically run 5–15% above this basic-shares figure.",
-    ].join("\n\n"),
+    slug: "openai-round-vs-anthropic-ipo",
+    title:
+      "Which comes first: an OpenAI priced round at ≥$1.4T post-money, or Anthropic's first trade?",
+    unit: "choice",
+    description_md:
+      "A race between a private print and a public one: OpenAI announcing a priced primary round at a post-money valuation of at least $1.4 trillion, or Anthropic's shares beginning to trade.",
     rulebook_md: [
-      "**Figure:** Nasdaq official closing price on Anthropic's first day of trading × shares of common stock (all classes) outstanding immediately after the offering as stated in the final prospectus (424(b)(4)), excluding the over-allotment option and all options, RSUs and warrants.",
-      "Rounded to the nearest $0.01T.",
-      "**Floor:** resolves if no first trading day occurs by 2027-01-31 23:59 America/Los_Angeles. The question closes then, or at the first trade if it comes first.",
+      "**OpenAI first:** OpenAI announces a priced primary round at a post-money valuation of at least $1.4T. “Announces” means a company statement, or at least two of Reuters, Bloomberg, the Wall Street Journal, the Financial Times and The Information reporting a signed or closed round. A first close counts; “in talks” and commitments do not. A reported valuation whose basis is not stated is read as post-money.",
+      "**Anthropic first:** the first trade print in Anthropic's shares on its primary listing exchange.",
+      "Each event is dated by its public time: for OpenAI, the earlier of the company statement and the second qualifying report; for Anthropic, the first trade print. The earlier event wins.",
+      "**Floor:** resolves if neither happens by 2026-12-31 23:59 America/Los_Angeles. The question closes then, or at the first of the two events.",
       RESTATEMENT_RULE,
     ].join("\n\n"),
     rulebook_version: 1,
-    closes_at: "2027-02-01T07:59:00Z",
-    expiry_at: "2027-02-01T07:59:00Z",
-    buckets: {
-      edges: [0.8, 0.95, 1.1, 1.3, 1.5, 1.75, 2.0, 2.4, 2.8],
-      floor_label: "No first trading day by Jan 31, 2027",
+    closes_at: "2027-01-01T07:59:00Z",
+    expiry_at: "2027-01-01T07:59:00Z",
+    outcomes: {
+      labels: ["OpenAI first", "Anthropic first"],
+      floor_label: "Neither by Dec 31, 2026",
     },
   },
 ];

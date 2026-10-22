@@ -48,7 +48,7 @@ import { LIVE_STATES, latestMid } from "./dealer-books.js";
 
 const DAY_MS = 86_400_000;
 
-const UNIT_USD: Readonly<Record<Exclude<TournamentUnit, "bool">, number>> = {
+const UNIT_USD: Readonly<Record<Exclude<TournamentUnit, "bool" | "choice">, number>> = {
   USD_B: 1e9,
   USD_T: 1e12,
 };
@@ -137,7 +137,13 @@ export function crowdValue(
     return { reported: p, value: ok ? p : null };
   }
   const median = aggregate.median_value === null ? null : Number(aggregate.median_value);
-  if (unit === "bool" || median === null || !Number.isFinite(median) || median <= 0) {
+  if (
+    unit === "bool" ||
+    unit === "choice" ||
+    median === null ||
+    !Number.isFinite(median) ||
+    median <= 0
+  ) {
     return { reported: median, value: null };
   }
   return { reported: median, value: crowdForwardLn(median * UNIT_USD[unit]) };

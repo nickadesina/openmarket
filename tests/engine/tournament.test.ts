@@ -7,6 +7,7 @@ import {
   BucketError,
   binaryBuckets,
   bucketIndexForValue,
+  choiceBuckets,
   floorIndex,
   numericBuckets,
 } from "../../src/lib/engine/tournament/buckets.js";
@@ -53,7 +54,7 @@ describe("tournament buckets", () => {
       "No public S-1 on EDGAR by Dec 31, 2026",
     ]);
     expect(floorIndex(arrBuckets)).toBe(8);
-    expect(() => assertValidBuckets(arrBuckets, false)).not.toThrow();
+    expect(() => assertValidBuckets(arrBuckets, "numeric")).not.toThrow();
   });
 
   it("assigns lower-inclusive, upper-exclusive buckets", () => {
@@ -68,9 +69,27 @@ describe("tournament buckets", () => {
     expect(() => numericBuckets({ edges: [1, 1], floorLabel: "x" })).toThrow(BucketError);
     expect(() => numericBuckets({ edges: [2, 1], floorLabel: "x" })).toThrow(BucketError);
     expect(() => numericBuckets({ edges: [1], floorLabel: " " })).toThrow(BucketError);
-    expect(() => assertValidBuckets(binaryBuckets(), true)).not.toThrow();
-    expect(() => assertValidBuckets(binaryBuckets(), false)).toThrow(BucketError);
-    expect(() => assertValidBuckets(arrBuckets, true)).toThrow(BucketError);
+    expect(() => assertValidBuckets(binaryBuckets(), "binary")).not.toThrow();
+    expect(() => assertValidBuckets(binaryBuckets(), "numeric")).toThrow(BucketError);
+    expect(() => assertValidBuckets(arrBuckets, "binary")).toThrow(BucketError);
+    expect(() => assertValidBuckets(arrBuckets, "choice")).toThrow(BucketError);
+    expect(() => assertValidBuckets(binaryBuckets(), "choice")).toThrow(BucketError);
+  });
+
+  it("builds choice buckets as named outcomes then the floor", () => {
+    const buckets = choiceBuckets({ outcomes: ["A first", "B first"], floorLabel: "Neither" });
+    expect(buckets.map((bucket) => [bucket.kind, bucket.label])).toEqual([
+      ["range", "A first"],
+      ["range", "B first"],
+      ["floor", "Neither"],
+    ]);
+    expect(() => assertValidBuckets(buckets, "choice")).not.toThrow();
+    expect(() => assertValidBuckets(buckets, "numeric")).toThrow(BucketError);
+    expect(floorIndex(buckets)).toBe(2);
+    expect(bucketMedian(buckets, [0.5, 0.3, 0.2])).toBeNull();
+    expect(() => choiceBuckets({ outcomes: ["A"], floorLabel: "Neither" })).toThrow(BucketError);
+    expect(() => choiceBuckets({ outcomes: ["A", "A"], floorLabel: "N" })).toThrow(BucketError);
+    expect(() => choiceBuckets({ outcomes: ["A", "B"], floorLabel: " " })).toThrow(BucketError);
   });
 
   it("honours label overrides", () => {
@@ -249,23 +268,34 @@ describe("launch question set", async () => {
     const counts: Record<string, number> = {};
     for (const launch of LAUNCH_QUESTIONS) {
       const input = questionInputSchema.parse({ ...launch, opens_at: "2026-10-20T00:00:00Z" });
-      const buckets =
-        input.unit === "bool"
-          ? binaryBuckets()
-          : numericBuckets({ edges: input.buckets.edges, floorLabel: input.buckets.floor_label });
-      assertValidBuckets(buckets, input.unit === "bool");
-      counts[input.slug] = buckets.length;
+      if (input.unit === "bool") {
+        assertValidBuckets(binaryBuckets(), "binary");
+        counts[input.slug] = 2;
+      } else if (input.unit === "choice") {
+        const buckets = choiceBuckets({
+          outcomes: input.outcomes.labels,
+          floorLabel: input.outcomes.floor_label,
+        });
+        assertValidBuckets(buckets, "choice");
+        counts[input.slug] = buckets.length;
+      } else {
+        const buckets = numericBuckets({
+          edges: input.buckets.edges,
+          floorLabel: input.buckets.floor_label,
+          ...(input.buckets.labels === undefined ? {} : { labels: input.buckets.labels }),
+        });
+        assertValidBuckets(buckets, "numeric");
+        counts[input.slug] = buckets.length;
+      }
     }
     expect(counts).toEqual({
-      "anthropic-s1-by-nov30": 2,
-      "anthropic-s1-arr": 9,
-      "anthropic-ipo-day1-mcap": 11,
+      "anthropic-ipo-day1-mcap": 7,
+      "openai-round-vs-anthropic-ipo": 3,
     });
     // 23:59 Pacific Standard Time is 07:59 UTC the next day.
     expect(LAUNCH_QUESTIONS.map((question) => question.closes_at)).toEqual([
-      "2026-12-01T07:59:00Z",
       "2027-01-01T07:59:00Z",
-      "2027-02-01T07:59:00Z",
+      "2027-01-01T07:59:00Z",
     ]);
   });
 });

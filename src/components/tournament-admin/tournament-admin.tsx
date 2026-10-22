@@ -90,8 +90,13 @@ function CloseForm({ question }: { readonly question: AdminQuestion }) {
   );
 }
 
+/** Binary and choice questions resolve by picking a bucket; numeric ones by value. */
+function resolvesByBucket(question: AdminQuestion): boolean {
+  return question.unit === "bool" || question.unit === "choice";
+}
+
 function computedBucket(question: AdminQuestion, value: string): number | null {
-  if (question.unit === "bool") return null;
+  if (resolvesByBucket(question)) return null;
   if (value.trim() === "") return floorIndex(question.buckets);
   try {
     return bucketIndexForValue(question.buckets, Number(value));
@@ -103,7 +108,7 @@ function computedBucket(question: AdminQuestion, value: string): number | null {
 
 function ResolveForm({ question }: { readonly question: AdminQuestion }) {
   const [value, setValue] = useState("");
-  const [binaryIndex, setBinaryIndex] = useState(0);
+  const [pickedIndex, setPickedIndex] = useState(0);
   const [rung, setRung] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
   const [excerpt, setExcerpt] = useState("");
@@ -111,13 +116,14 @@ function ResolveForm({ question }: { readonly question: AdminQuestion }) {
   const resolve = useAdminAction<Record<string, unknown>>(
     `/api/t/admin/questions/${question.slug}/resolve`,
   );
-  const winning = question.unit === "bool" ? binaryIndex : computedBucket(question, value);
+  const byBucket = resolvesByBucket(question);
+  const winning = byBucket ? pickedIndex : computedBucket(question, value);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (winning === null) return;
     resolve.mutate({
-      resolved_value: question.unit === "bool" || value.trim() === "" ? null : Number(value),
+      resolved_value: byBucket || value.trim() === "" ? null : Number(value),
       winning_bucket_index: winning,
       rung_fired: rung === "" ? null : Number(rung),
       source_url: sourceUrl === "" ? null : sourceUrl,
@@ -128,11 +134,11 @@ function ResolveForm({ question }: { readonly question: AdminQuestion }) {
 
   return (
     <form className={styles.form} onSubmit={submit}>
-      {question.unit === "bool" ? (
+      {byBucket ? (
         <Field label="Outcome">
           <select
-            value={binaryIndex}
-            onChange={(event) => setBinaryIndex(Number(event.target.value))}
+            value={pickedIndex}
+            onChange={(event) => setPickedIndex(Number(event.target.value))}
           >
             {question.buckets.map((bucket) => (
               <option key={bucket.index} value={bucket.index}>
@@ -156,7 +162,7 @@ function ResolveForm({ question }: { readonly question: AdminQuestion }) {
           {winning === null ? "—" : `${winning} · ${question.buckets[winning]?.label}`}
         </strong>
       </p>
-      {question.unit === "bool" ? null : (
+      {byBucket ? null : (
         <Field label="Rung fired">
           <input
             inputMode="numeric"

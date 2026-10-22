@@ -129,8 +129,8 @@
   display: none;
 }
 
-/* Two columns leave room to say which is Yes even in a strip. */
-.compact.binary .label {
+/* Named columns (Yes/No, a choice's outcomes) keep their labels even in a strip. */
+.compact.named .label {
   display: grid;
 }
 

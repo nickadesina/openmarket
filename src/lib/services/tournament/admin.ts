@@ -17,8 +17,10 @@ import {
   assertValidBuckets,
   type Bucket,
   BucketError,
+  type BucketShape,
   binaryBuckets,
   bucketIndexForValue,
+  choiceBuckets,
   floorIndex,
   numericBuckets,
 } from "../../engine/tournament/buckets.js";
@@ -35,17 +37,30 @@ import {
 } from "./records.js";
 import { writeScores } from "./scoring.js";
 
+function bucketShape(unit: QuestionInput["unit"]): BucketShape {
+  if (unit === "bool") return "binary";
+  return unit === "choice" ? "choice" : "numeric";
+}
+
+function unvalidatedBuckets(input: QuestionInput): Bucket[] {
+  if (input.unit === "bool") return binaryBuckets();
+  if (input.unit === "choice") {
+    return choiceBuckets({
+      outcomes: input.outcomes.labels,
+      floorLabel: input.outcomes.floor_label,
+    });
+  }
+  return numericBuckets({
+    edges: input.buckets.edges,
+    floorLabel: input.buckets.floor_label,
+    ...(input.buckets.labels === undefined ? {} : { labels: input.buckets.labels }),
+  });
+}
+
 function bucketsFor(input: QuestionInput): Bucket[] {
   try {
-    const buckets =
-      input.unit === "bool"
-        ? binaryBuckets()
-        : numericBuckets({
-            edges: input.buckets.edges,
-            floorLabel: input.buckets.floor_label,
-            ...(input.buckets.labels === undefined ? {} : { labels: input.buckets.labels }),
-          });
-    assertValidBuckets(buckets, input.unit === "bool");
+    const buckets = unvalidatedBuckets(input);
+    assertValidBuckets(buckets, bucketShape(input.unit));
     return buckets;
   } catch (error) {
     if (error instanceof BucketError) throw new ServiceError("INVALID_INPUT", error.message);
@@ -268,6 +283,30 @@ export async function closeQuestionIn(
   return { slug, closedAt: closedAt.toISOString() };
 }
 
+function expectedChoiceBucket(
+  question: QuestionRecord,
+  buckets: readonly Bucket[],
+  input: ResolveQuestionInput,
+  now: Date,
+): number {
+  if (input.resolved_value !== null) {
+    throw new ServiceError("INVALID_INPUT", "A choice question resolves by bucket, with no value.");
+  }
+  const winner = buckets[input.winning_bucket_index];
+  if (winner === undefined) {
+    throw new ServiceError("INVALID_INPUT", "The winning bucket is not one of the question's.");
+  }
+  if (winner.kind === "floor") {
+    if (now.getTime() < question.expiryAt.getTime()) {
+      throw stateError("The floor resolves only once expiry_at has passed with no outcome.");
+    }
+    if (input.rung_fired !== null) {
+      throw new ServiceError("INVALID_INPUT", "A floor resolution has no rung.");
+    }
+  }
+  return winner.index;
+}
+
 function expectedWinningBucket(
   question: QuestionRecord,
   buckets: readonly Bucket[],
@@ -283,6 +322,7 @@ function expectedWinningBucket(
     }
     return input.winning_bucket_index;
   }
+  if (question.unit === "choice") return expectedChoiceBucket(question, buckets, input, now);
   if (input.resolved_value === null) {
     if (now.getTime() < question.expiryAt.getTime()) {
       throw stateError("The floor resolves only once expiry_at has passed with no document.");

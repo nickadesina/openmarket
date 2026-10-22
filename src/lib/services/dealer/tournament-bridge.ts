@@ -357,7 +357,7 @@ export async function resolveLinkedQuestion(
   const winningIndex = expectedWinningBucket(ending, unit, await loadBuckets(db, question.id));
   if (winningIndex === null) throw new RangeError(`question ${slug} cannot take this outcome`);
   const resolvedValue =
-    ending.kind === "forward_settled" && unit !== "bool"
+    ending.kind === "forward_settled" && unit !== "bool" && unit !== "choice"
       ? inLadderUnit(ending.postMoneyUsd, unit)
       : null;
   await resolveQuestionIn(
@@ -382,7 +382,7 @@ export function expectedWinningBucket(
     case "binary_no":
       return unit === "bool" ? 1 - BINARY_YES_INDEX : null;
     case "forward_settled":
-      return unit === "bool"
+      return unit === "bool" || unit === "choice"
         ? null
         : bucketIndexForValue(buckets, inLadderUnit(ending.postMoneyUsd, unit));
     case "forward_void":

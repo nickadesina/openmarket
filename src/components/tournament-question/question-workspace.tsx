@@ -7,6 +7,7 @@ import { apiRequest } from "../../lib/client/api.js";
 import {
   formatCoverage,
   formatForecasterName,
+  formatLeadingOutcome,
   formatProbability,
   formatScore,
   formatTimeUntil,
@@ -33,6 +34,15 @@ import styles from "./tournament-question.module.css";
 function aggregateSummary(question: QuestionDetail, aggregate: AggregateView): string {
   const parts = [`${aggregate.nForecasters} forecasters`];
   if (aggregate.pYes !== null) parts.push(`${formatProbability(aggregate.pYes)} yes`);
+  if (question.unit === "choice" && aggregate.probs !== null) {
+    const probs = aggregate.probs;
+    parts.push(
+      ...question.buckets.map(
+        (bucket) => `${formatProbability(probs[bucket.index] ?? 0)} ${bucket.label}`,
+      ),
+    );
+    return `Crowd distribution: ${parts.join(", ")}.`;
+  }
   if (aggregate.medianValue !== null) {
     parts.push(
       `median ${formatTournamentMedian(aggregate.medianValue, aggregate.medianPosition, question.unit)}`,
@@ -83,6 +93,13 @@ function CrowdModule({
           <div>
             <dt>P(yes)</dt>
             <dd className={styles.priceFigure}>{formatProbability(aggregate.pYes ?? 0)}</dd>
+          </div>
+        ) : question.unit === "choice" ? (
+          <div>
+            <dt>Leading</dt>
+            <dd className={styles.priceFigure}>
+              {formatLeadingOutcome(question.buckets, aggregate.probs)}
+            </dd>
           </div>
         ) : (
           <>
@@ -437,7 +454,9 @@ export function QuestionWorkspace({
         <div className={styles.rulebook}>
           <Markdown source={question.descriptionMd} />
           <Markdown source={question.rulebookMd} />
-          {question.unit === "bool" ? null : <BucketTable buckets={question.buckets} />}
+          {question.unit === "bool" || question.unit === "choice" ? null : (
+            <BucketTable buckets={question.buckets} />
+          )}
           <p className={styles.muted}>
             Scored by time-averaged log score relative to uniform: 0 is uniform, 100 is certain and
             right for the whole window, and time before your first forecast counts as uniform. The

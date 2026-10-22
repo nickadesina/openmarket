@@ -48,7 +48,7 @@ describe("forwardQuestionLadder", () => {
         (midLn, sigma) => {
           const ladder = forwardQuestionLadder(midLn, sigma, VALUATION_BOUNDARIES_USD);
           const buckets = numericBuckets({ edges: ladder.edges, floorLabel: "No print" });
-          assertValidBuckets(buckets, false);
+          assertValidBuckets(buckets, "numeric");
           expect(buckets.length).toBeGreaterThanOrEqual(3);
         },
       ),

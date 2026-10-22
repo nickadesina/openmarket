@@ -5,7 +5,7 @@ import Link from "next/link";
 
 import { apiRequest } from "../../lib/client/api.js";
 import {
-  formatMultiple,
+  formatLeadingOutcome,
   formatProbability,
   formatTimeUntil,
   formatTournamentDateTime,
@@ -15,7 +15,6 @@ import {
 } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
 import { useNow } from "../../lib/client/tournament.js";
-import type { DerivedNumbers } from "../../lib/services/tournament/derived.js";
 import type { QuestionSummary } from "../../lib/services/tournament/get-question.js";
 import styles from "./tournament-board.module.css";
 
@@ -30,6 +29,9 @@ function crowdHeadline(question: QuestionSummary): string {
   if (aggregate === null || !aggregate.published) return "Not enough forecasts";
   if (question.unit === "bool" && aggregate.pYes !== null) {
     return `${formatProbability(aggregate.pYes)} yes`;
+  }
+  if (question.unit === "choice" && aggregate.probs !== null) {
+    return formatLeadingOutcome(question.buckets, aggregate.probs);
   }
   if (aggregate.medianValue !== null) {
     return formatTournamentMedian(aggregate.medianValue, aggregate.medianPosition, question.unit);
@@ -47,42 +49,10 @@ function statusLabel(question: QuestionSummary, now: number | null): string {
   return now === null ? "Open" : `Closes ${formatTimeUntil(question.windowEndsAt, now)}`;
 }
 
-function DerivedStrip({ derived }: { readonly derived: DerivedNumbers }) {
-  if (!derived.marketCap.available && !derived.arr.available) return null;
-  return (
-    <dl className={styles.derived} aria-label="Cross-question derived number">
-      <div>
-        <dt>Implied EV/ARR</dt>
-        <dd className={styles.derivedFigure}>
-          {derived.impliedEvArr === null ? "—" : formatMultiple(derived.impliedEvArr)}
-        </dd>
-      </div>
-      <div>
-        <dt>Day-one market cap</dt>
-        <dd>
-          {derived.marketCap.value === null
-            ? "—"
-            : formatTournamentValue(derived.marketCap.value, "USD_T")}
-          <small>{derived.marketCap.source === "resolution" ? " resolved" : " crowd median"}</small>
-        </dd>
-      </div>
-      <div>
-        <dt>S-1 ARR</dt>
-        <dd>
-          {derived.arr.value === null ? "—" : formatTournamentValue(derived.arr.value, "USD_B")}
-          <small>{derived.arr.source === "resolution" ? " resolved" : " crowd median"}</small>
-        </dd>
-      </div>
-    </dl>
-  );
-}
-
 export function TournamentBoard({
   initialQuestions,
-  initialDerived,
 }: {
   readonly initialQuestions: readonly QuestionSummary[] | undefined;
-  readonly initialDerived: DerivedNumbers | undefined;
 }) {
   const now = useNow();
   const questionsQuery = useQuery({
@@ -92,12 +62,6 @@ export function TournamentBoard({
         (body) => body.questions,
       ),
     ...(initialQuestions === undefined ? {} : { initialData: [...initialQuestions] }),
-    refetchInterval: 30_000,
-  });
-  const derivedQuery = useQuery({
-    queryKey: queryKeys.tournamentDerived,
-    queryFn: () => apiRequest<DerivedNumbers>("/api/t/derived"),
-    ...(initialDerived === undefined ? {} : { initialData: initialDerived }),
     refetchInterval: 30_000,
   });
 
@@ -123,7 +87,6 @@ export function TournamentBoard({
   const questions = questionsQuery.data;
   return (
     <div className={styles.board}>
-      {derivedQuery.data === undefined ? null : <DerivedStrip derived={derivedQuery.data} />}
       {questions.length === 0 ? (
         <div className={styles.statePanel}>
           <strong>No questions are open yet.</strong>
