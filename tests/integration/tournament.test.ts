@@ -518,6 +518,8 @@ postgresDescribe(suiteName, () => {
       voidNoteMd: "No figure in the 424(b).",
       resolution: null,
     });
+    // Off the board, still at its own page.
+    expect(await listQuestions(postgres.db)).toHaveLength(0);
     expect(await verifyTournament(postgres.db)).toMatchObject({ passed: true, findings: [] });
   });
 
