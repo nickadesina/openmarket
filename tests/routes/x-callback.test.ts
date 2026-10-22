@@ -31,6 +31,7 @@ vi.mock("../../src/lib/auth/tournament-session.js", async (importOriginal) => ({
 }));
 
 const { GET } = await import("../../src/app/api/t/auth/x/callback/route.js");
+const { GET: start } = await import("../../src/app/api/t/auth/x/start/route.js");
 
 const PROFILE: XProfile = {
   id: "123456",
@@ -63,6 +64,20 @@ describe("GET /api/t/auth/x/callback", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.clearAllMocks();
+  });
+
+  it("keeps a safe return path when X sign-in is unavailable", () => {
+    vi.stubEnv("X_CLIENT_ID", "");
+    const response = start(
+      new Request("https://openmarket.systems/api/t/auth/x/start?return=%2Fportfolio"),
+    );
+    expect(response.headers.get("location")).toBe(
+      "/t/signin?return=%2Fportfolio&sign_in=unavailable",
+    );
+    const unsafe = start(
+      new Request("https://openmarket.systems/api/t/auth/x/start?return=https://evil.example"),
+    );
+    expect(unsafe.headers.get("location")).toBe("/t/signin?return=%2Ft&sign_in=unavailable");
   });
 
   it("lands a returning sign-in on the page that started it", async () => {
