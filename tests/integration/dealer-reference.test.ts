@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MODEL_VERSION } from "../../src/lib/config/dealer.js";
 import { BLEND_SCHEDULE, BLEND_VERSION } from "../../src/lib/engine/dealer/blend.js";
@@ -44,10 +44,13 @@ postgresDescribe(suiteName, () => {
   }, 30_000);
 
   beforeEach(async () => {
+    vi.stubEnv("TOURNAMENT_LINKED_QUESTIONS", "1");
     await resetPostgresTestDatabase(postgres.db);
     await seedFixtureListings(postgres.db, LISTED_AT);
     await runDealerJob(postgres.db, "reference-1", RUN_AT);
   });
+
+  afterEach(() => vi.unstubAllEnvs());
 
   afterAll(async () => {
     if (postgres !== undefined) await postgres.dispose();

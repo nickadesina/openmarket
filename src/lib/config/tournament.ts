@@ -33,6 +33,17 @@ export function adminKey(provider: "x" | "dev" | "password", providerUserId: str
 }
 
 /**
+ * The tournament bridge's linked questions (milestone 7) are opt-in: the
+ * tournament asks only the questions written for it unless
+ * `TOURNAMENT_LINKED_QUESTIONS=1`. Off, a listed instrument gets no question,
+ * so its blend has no crowd and its name takes no evidence; settlement still
+ * resolves any question an earlier run linked.
+ */
+export function linkedQuestionsEnabled(environment: Environment = process.env): boolean {
+  return environment.TOURNAMENT_LINKED_QUESTIONS === "1";
+}
+
+/**
  * Development sign-in creates a `dev` identity without X. It exists only
  * under `next dev` with the flag set, so it can never run on a deployment.
  */

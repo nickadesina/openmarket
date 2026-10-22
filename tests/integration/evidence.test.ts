@@ -58,6 +58,7 @@ postgresDescribe(suiteName, () => {
   }, 30_000);
 
   beforeEach(async () => {
+    vi.stubEnv("TOURNAMENT_LINKED_QUESTIONS", "1");
     await resetPostgresTestDatabase(postgres.db);
     await seedFixtureListings(postgres.db, LISTED_AT);
     await runDealerJob(postgres.db, "evidence-list", new Date("2026-09-01T00:05:00Z"));

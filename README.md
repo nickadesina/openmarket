@@ -210,7 +210,9 @@ this identity, but cash and positions never enter scoring.
   ("neither by expiry"), and resolves by bucket. Drafts are editable;
   opening pins the record. Close is automatic at `closes_at`, or manual
   and back-dated to a resolution document's public time (later events
-  stay in the log and are never counted).
+  stay in the log and are never counted). A numeric floor resolves after
+  expiry, or earlier on a question closed early on a document that
+  carried no figure (a prospectus with no run-rate).
 - Forecasts: append-only events, renormalized to ten decimals, hashed
   (`event_hash`, phase-2 provenance input), one per user and question
   per 10 seconds, refused for X accounts younger than the question's
@@ -268,7 +270,10 @@ Leaves are append-only and batch commitments immutable; `verify:replay`
 rebuilds every root.
 
 Bridge to the dealer (milestone 7, `services/dealer/tournament-bridge.ts`,
-migration `011_tournament_bridge`):
+migration `011_tournament_bridge`). Off unless `TOURNAMENT_LINKED_QUESTIONS=1`:
+the tournament asks only its launch questions, a listed instrument gets no
+question, its blend has no crowd, and evidence has no linked name to file
+against. Settlement still resolves any question an earlier run linked.
 
 - Every instrument the dealer lists gets a question, created and opened
   through the tournament's own services in the listing's transaction and
@@ -553,7 +558,7 @@ npm run dev              # http://localhost:3000, never 127.0.0.1
   the admins of `/t/admin` and `/admin` (comma separated). For local work without X, `TOURNAMENT_DEV_SIGN_IN=1`
   under `next dev` adds a handle-only sign-in (allowlist it as
   `dev:<handle>`); it is off in every other mode. Launch questions:
-  `npm run seed:tournament` writes the two drafts, `-- --open`
+  `npm run seed:tournament` writes the three drafts, `-- --open`
   (optionally `--opens-at=<ISO>`) opens them.
 - Provenance: `.github/workflows/provenance.yml` calls
   `/api/t/cron/provenance` hourly with `Authorization: Bearer
