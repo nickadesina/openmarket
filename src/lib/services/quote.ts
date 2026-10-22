@@ -5,7 +5,7 @@ import type { QuoteInput } from "../api/schemas.js";
 import type { Database, MetricKind } from "../db/schema.js";
 import { parseRequestedAmount, previewTrade } from "./preview-trade.js";
 import { assertMayTrade } from "./tournament/restrictions.js";
-import { assertBookLive, findTradeBook } from "./trade-book.js";
+import { assertBookLive, tradeBookById } from "./trade-book.js";
 
 export interface QuoteResult {
   readonly market_id: string;
@@ -38,7 +38,7 @@ async function quoteMarketFromSnapshot(
   userId: string | undefined,
   now: Date,
 ): Promise<QuoteResult> {
-  const book = await findTradeBook(db, input, false);
+  const book = await tradeBookById(db, input.market_id, false);
   assertBookLive(book, now);
   if (userId !== undefined) {
     await assertMayTrade(db, { paperUserId: userId }, book.market.company_id);

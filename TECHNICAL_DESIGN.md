@@ -245,7 +245,8 @@ The bridge is off unless `TOURNAMENT_LINKED_QUESTIONS=1` (README D9).
 
 ## 8. Reference price API
 
-Public, read-only, 60 s cache, every payload carrying `model_version`,
+Public, read-only, 60 s anonymous cache (keyed requests are private and
+uncached), every payload carrying `model_version`,
 `rulebook_version`, `blend_version`, `as_of`.
 
 Blend (`src/lib/engine/dealer/blend.ts`):

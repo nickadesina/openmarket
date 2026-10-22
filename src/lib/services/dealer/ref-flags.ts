@@ -1,6 +1,6 @@
 import { type Kysely, sql } from "kysely";
-
 import type { Database, EventFlagConfidence, EventFlagKind, JsonObject } from "../../db/schema.js";
+import { FLAG_KINDS } from "../../engine/dealer/lifecycle.js";
 import {
   afterPosition,
   cursorAfter,
@@ -21,17 +21,9 @@ import {
  * forecast log join without guesswork.
  */
 
-export const FLAGS_STREAMS = ["flags"] as const;
+const FLAGS_STREAMS = ["flags"] as const;
 
-const DEALER_KINDS: readonly EventFlagKind[] = [
-  "form_d",
-  "form_d_amend",
-  "charter",
-  "scoop",
-  "release",
-  "s1_public",
-  "print",
-];
+const DEALER_KINDS = FLAG_KINDS.filter((kind) => kind !== "user_submitted");
 
 export interface RefFlag {
   readonly id: string;

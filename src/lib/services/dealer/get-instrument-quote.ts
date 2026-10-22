@@ -1,5 +1,4 @@
 import type { Kysely, Transaction } from "kysely";
-
 import { ServiceError } from "../../api/errors.js";
 import { parseUsdToCents } from "../../api/money.js";
 import type { ForwardQuoteQuery } from "../../api/schemas.js";
@@ -31,6 +30,7 @@ import {
   latestMid,
   openForwardInventory,
 } from "./dealer-books.js";
+import { listingQuery, listingWithCompany } from "./service-helpers.js";
 
 /**
  * The live quote of one instrument (TECHNICAL_DESIGN.md §6): for a forward,
@@ -78,17 +78,11 @@ export async function loadInstrumentBook(
   }
   let marketQuery = db.selectFrom("markets").selectAll().where("instrument_id", "=", instrumentId);
   if (lock) marketQuery = marketQuery.forUpdate();
-  const market = await marketQuery.executeTakeFirstOrThrow();
-  const listing = await db
-    .selectFrom("listings")
-    .selectAll()
-    .where("id", "=", instrument.listing_id)
-    .executeTakeFirstOrThrow();
-  const company = await db
-    .selectFrom("companies")
-    .select(["id", "name", "slug"])
-    .where("id", "=", listing.company_id)
-    .executeTakeFirstOrThrow();
+  const [market, listingRow] = await Promise.all([
+    marketQuery.executeTakeFirstOrThrow(),
+    listingQuery(db).where("listings.id", "=", instrument.listing_id).executeTakeFirstOrThrow(),
+  ]);
+  const { company, ...listing } = listingWithCompany(listingRow);
   return { instrument, listing, company, market };
 }
 
@@ -244,7 +238,7 @@ export function fillPreview(
   };
 }
 
-export function forwardQuoteView(
+function forwardQuoteView(
   state: ForwardBookState,
   at: Date,
   preview: ForwardFillPreview | null,

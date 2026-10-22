@@ -3,7 +3,7 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { ServiceError } from "../api/errors.js";
 
 /** A configured secret shorter than this refuses every caller. */
-export const CRON_SECRET_MIN_LENGTH = 16;
+const CRON_SECRET_MIN_LENGTH = 16;
 
 /** The scheduler's key for one firing (GitHub: `${run_id}-${run_attempt}`). */
 export const RUN_ID_HEADER = "x-run-id";

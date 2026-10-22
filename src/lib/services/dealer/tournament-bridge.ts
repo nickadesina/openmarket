@@ -1,5 +1,4 @@
 import type { Kysely, Transaction } from "kysely";
-
 import type { QuestionInput, ResolveQuestionInput } from "../../api/tournament-schemas.js";
 import type {
   Database,
@@ -19,6 +18,7 @@ import {
   voidQuestionIn,
 } from "../tournament/admin.js";
 import { effectiveStatus, requireQuestion, windowEnd } from "../tournament/records.js";
+import { isoDay } from "./service-helpers.js";
 
 /**
  * The tournament bridge (milestone 7, CONTRACTS.md → Tournament mapping,
@@ -65,10 +65,6 @@ type BridgeInstrument = Pick<InstrumentRow, "id" | "kind" | "epoch" | "question"
 export interface LinkedQuestionShape {
   readonly kind: TournamentQuestionKind;
   readonly unit: TournamentUnit | null;
-}
-
-function isoDay(at: Date): string {
-  return at.toISOString().slice(0, 10);
 }
 
 /** USD per one of a forward question's units. */
