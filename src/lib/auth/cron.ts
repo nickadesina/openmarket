@@ -26,6 +26,6 @@ export function requireCronSecret(request: Request, job: string): void {
     secret.length < CRON_SECRET_MIN_LENGTH ||
     !timingSafeEqual(digest(supplied), digest(`Bearer ${secret}`))
   ) {
-    throw new ServiceError("ADMIN_REQUIRED", `The ${job} job needs the cron secret.`);
+    throw new ServiceError("CRON_UNAUTHORIZED", `The ${job} job needs the cron secret.`);
   }
 }

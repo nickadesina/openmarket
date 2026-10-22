@@ -74,7 +74,7 @@ export async function loadInstrumentBook(
   if (lock) instrumentQuery = instrumentQuery.forUpdate();
   const instrument = await instrumentQuery.executeTakeFirst();
   if (instrument === undefined) {
-    throw new ServiceError("MARKET_NOT_FOUND", "Instrument not found.");
+    throw new ServiceError("INSTRUMENT_NOT_FOUND", "Instrument not found.");
   }
   let marketQuery = db.selectFrom("markets").selectAll().where("instrument_id", "=", instrumentId);
   if (lock) marketQuery = marketQuery.forUpdate();

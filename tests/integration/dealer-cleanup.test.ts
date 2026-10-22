@@ -1,10 +1,16 @@
+import { randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import { sql } from "kysely";
 import { Client } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { requireCronSecret } from "../../src/lib/auth/cron.js";
 import { beginCronRun, runCronJob } from "../../src/lib/services/dealer/cron-run.js";
 import { getDealerAdmin } from "../../src/lib/services/dealer/get-dealer-admin.js";
-import { getInstrumentQuote } from "../../src/lib/services/dealer/get-instrument-quote.js";
+import {
+  getInstrumentQuote,
+  loadInstrumentBook,
+} from "../../src/lib/services/dealer/get-instrument-quote.js";
+import { loadRefListing } from "../../src/lib/services/dealer/ref-common.js";
 import { requote } from "../../src/lib/services/dealer/requote.js";
 import { runDealerJob } from "../../src/lib/services/dealer/run-dealer-job.js";
 import { runSettleJob } from "../../src/lib/services/dealer/settle-instruments.js";
@@ -36,6 +42,24 @@ const NOW = new Date("2026-09-02T00:00:00Z");
   afterAll(async () => {
     vi.unstubAllEnvs();
     await postgres?.dispose();
+  });
+
+  it("identifies cron authentication failures separately from admin access", () => {
+    expect(() =>
+      requireCronSecret(new Request("https://example.test/api/cron/dealer"), "dealer"),
+    ).toThrow(expect.objectContaining({ code: "CRON_UNAUTHORIZED" }));
+  });
+
+  it("identifies missing listings separately from markets", async () => {
+    await expect(loadRefListing(postgres.db, "missing-listing")).rejects.toMatchObject({
+      code: "LISTING_NOT_FOUND",
+    });
+  });
+
+  it("identifies missing instruments separately from markets", async () => {
+    await expect(loadInstrumentBook(postgres.db, randomUUID())).rejects.toMatchObject({
+      code: "INSTRUMENT_NOT_FOUND",
+    });
   });
 
   it("replays a published crowd reference after its question is voided and relinked", async () => {
