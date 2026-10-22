@@ -73,6 +73,13 @@ export interface KeysetPosition {
 }
 
 const POSITION_PATTERN = /^[0-9a-f-]{1,36}$/;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function validCursorTime(value: string): boolean {
+  if (!TIME_PATTERN.test(value)) return false;
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 23) === value.slice(0, 23);
+}
 /** cursorTime's output: UTC, microseconds, so a page never repeats a row timestamptz rounded. */
 const TIME_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/;
 
@@ -88,6 +95,11 @@ export function afterPosition(
   position: KeysetPosition,
   keyType: "uuid" | "bigint",
 ): RawBuilder<boolean> {
+  const validKey =
+    keyType === "uuid"
+      ? UUID_PATTERN.test(position.key)
+      : /^\d{1,19}$/.test(position.key) && BigInt(position.key) <= 9_223_372_036_854_775_807n;
+  if (!validKey || !validCursorTime(position.at)) throw invalidCursor();
   return sql<boolean>`(${sql.ref(timeColumn)}, ${sql.ref(keyColumn)}) > (${position.at}::timestamptz, ${position.key}::${sql.raw(keyType)})`;
 }
 
@@ -111,7 +123,7 @@ function streamPosition(value: unknown): KeysetPosition | "end" | null {
   if (
     typeof position !== "object" ||
     typeof position.at !== "string" ||
-    !TIME_PATTERN.test(position.at) ||
+    !validCursorTime(position.at) ||
     typeof position.key !== "string" ||
     !POSITION_PATTERN.test(position.key)
   ) {
