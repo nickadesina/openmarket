@@ -1,4 +1,4 @@
-import { assertFinite } from "../assert.js";
+import { assertFinite, assertNonNegative } from "../assert.js";
 /**
  * The published reference price (README D14, TECHNICAL_DESIGN.md §8): a
  * pre-committed blend of the model mid, the 30-day traded price on the
@@ -95,11 +95,6 @@ function assertProbability(value: number, name: string, open: boolean): void {
   assertFinite(value, name);
   const outside = open ? value <= 0 || value >= 1 : value < 0 || value > 1;
   if (outside) throw new RangeError(`${name} must be a probability`);
-}
-
-function assertNonNegative(value: number, name: string): void {
-  assertFinite(value, name);
-  if (value < 0) throw new RangeError(`${name} must not be negative`);
 }
 
 /** w_t from the window's traded volume in USD. */

@@ -13,3 +13,8 @@ export function assertDate(value: Date, name: string): void {
     throw new RangeError(`${name} must be a valid Date`);
   }
 }
+
+export function assertNonNegative(value: number, name: string): void {
+  assertFinite(value, name);
+  if (value < 0) throw new RangeError(`${name} must not be negative`);
+}
