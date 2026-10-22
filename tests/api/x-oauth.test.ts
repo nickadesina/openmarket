@@ -117,6 +117,19 @@ describe("X OAuth 2.0 PKCE", () => {
     });
   });
 
+  it("bounds both X requests with a timeout and preserves missing creation dates", async () => {
+    const signals: AbortSignal[] = [];
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(init?.signal).toBeInstanceOf(AbortSignal);
+      signals.push(init?.signal as AbortSignal);
+      return String(input) === X_TOKEN_URL
+        ? Response.json({ access_token: "token", token_type: "bearer" })
+        : Response.json({ data: { id: "123", username: "Forecaster", name: "Forecaster" } });
+    });
+    expect((await fetchXProfile(CONFIG, "code", "verifier", fetchImpl)).createdAt).toBeNull();
+    expect(signals).toHaveLength(2);
+  });
+
   it("names X's original avatar upload, not the 48-pixel thumbnail", () => {
     expect(originalXAvatarUrl("https://pbs.twimg.com/profile_images/17/Abc_normal.jpg")).toBe(
       "https://pbs.twimg.com/profile_images/17/Abc.jpg",
