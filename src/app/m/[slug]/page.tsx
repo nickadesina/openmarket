@@ -1,8 +1,12 @@
+import { notFound } from "next/navigation";
 import { MarketWorkspace } from "../../../components/market-workspace/market-workspace.js";
+import { isServiceError } from "../../../lib/api/errors.js";
 import { getRuntimeDatabase } from "../../../lib/db/runtime.js";
 import { type ActivityPage, getActivity } from "../../../lib/services/get-activity.js";
 import { getMarket, type ListingDetail } from "../../../lib/services/get-market.js";
 import { getMarks, type MarkHistory } from "../../../lib/services/get-marks.js";
+
+export const metadata = { title: "Market" };
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,7 +35,8 @@ async function loadInitialMarket(slug: string): Promise<InitialMarketData> {
         ? null
         : await getMarks(database, listing.forward.market_id, INITIAL_RANGE);
     return { listing, marks, activity };
-  } catch {
+  } catch (error) {
+    if (isServiceError(error) && error.code === "MARKET_NOT_FOUND") notFound();
     return { listing: null, marks: null, activity: null };
   }
 }

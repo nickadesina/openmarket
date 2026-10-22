@@ -1,8 +1,12 @@
 "use client";
 
 import { Fragment, useState } from "react";
-
-import { formatPrice, formatProbability, formatValuation } from "../../lib/client/format.js";
+import {
+  formatPrice,
+  formatProbability,
+  formatSigma,
+  formatValuation,
+} from "../../lib/client/format.js";
 import type { ImpliedDistribution } from "../market-workspace/types.js";
 import styles from "./strike-ladder.module.css";
 
@@ -94,7 +98,7 @@ export function StrikeLadder({ distribution }: StrikeLadderProps) {
           </h2>
           <p>
             The chance the next print lands above each strike, from a lognormal at the forward mid
-            with the tier&apos;s prior width (σ {distribution.sigma.toFixed(2)}). Read-only: the
+            with the tier&apos;s prior width (σ {formatSigma(distribution.sigma)}). Read-only: the
             shaded bar is the probability mass just below each strike, and tails carry a{" "}
             {formatProbability(distribution.floor)} floor per bucket.
           </p>

@@ -14,6 +14,7 @@ import { errorMessage, formatDateTime, formatForecasterName } from "../../lib/cl
 import { queryKeys } from "../../lib/client/query-keys.js";
 import type { CommentPage, MarketComment } from "../../lib/services/list-comments.js";
 import type { MarketListResult } from "../../lib/services/list-markets.js";
+import { commentsPath } from "../market-comments/use-comment-thread.js";
 import styles from "./admin-page.module.css";
 
 interface ModerationProps {
@@ -21,9 +22,6 @@ interface ModerationProps {
   readonly parentId?: string;
   readonly onAdminRequired: () => void;
 }
-
-const adminCommentsKey = (marketId: string, parentId?: string) =>
-  ["openmarket", "comments", marketId, "admin", parentId ?? null] as const;
 
 function ModerationComment({
   comment,
@@ -44,7 +42,7 @@ function ModerationComment({
       }),
     retry: false,
     onSuccess: async (removedComment) => {
-      const queryKey = adminCommentsKey(comment.marketId, comment.parentId ?? undefined);
+      const queryKey = queryKeys.adminComments(comment.marketId, comment.parentId ?? undefined);
       await queryClient.cancelQueries({ queryKey, exact: true });
       if (articleRef.current?.contains(document.activeElement)) {
         articleRef.current.focus();
@@ -63,7 +61,7 @@ function ModerationComment({
             },
       );
       await queryClient.invalidateQueries({
-        queryKey: ["openmarket", "comments", comment.marketId],
+        queryKey: queryKeys.comments(comment.marketId),
       });
     },
     onError: (error) => {
@@ -139,18 +137,10 @@ function ModerationComment({
 
 function CommentList({ marketId, parentId, onAdminRequired }: ModerationProps) {
   const commentsQuery = useInfiniteQuery({
-    queryKey: adminCommentsKey(marketId, parentId),
+    queryKey: queryKeys.adminComments(marketId, parentId),
     initialPageParam: null as string | null,
-    queryFn: ({ pageParam, signal }) => {
-      const parameters = new URLSearchParams();
-      if (parentId !== undefined) parameters.set("parentId", parentId);
-      if (pageParam !== null) parameters.set("cursor", pageParam);
-      const query = parameters.toString();
-      return apiRequest<CommentPage>(
-        `/api/markets/by-id/${marketId}/comments${query === "" ? "" : `?${query}`}`,
-        { signal },
-      );
-    },
+    queryFn: ({ pageParam, signal }) =>
+      apiRequest<CommentPage>(commentsPath(marketId, parentId ?? null, pageParam), { signal }),
     getNextPageParam: (page) => page.nextCursor,
   });
   const comments = commentsQuery.data?.pages.flatMap((page) => page.items);

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { INITIAL_USER_BALANCE_CENTS } from "../../lib/api/money.js";
 
 import { ApiClientError, apiRequest } from "../../lib/client/api.js";
 import {
@@ -13,9 +14,13 @@ import {
   formatProbability,
   formatQuantity,
   formatVersion,
+  formatWholeUsd,
 } from "../../lib/client/format.js";
 import { signInHref } from "../../lib/client/tournament.js";
 import {
+  BINARY_STRIKE_INDEX,
+  binarySlippageGuard,
+  canonicalDollarAmount,
   type MovedPrice,
   type TradeOutcome,
   useTradeExecution,
@@ -58,6 +63,8 @@ const ERROR_TITLES: Readonly<Record<string, string>> = {
   INSUFFICIENT_HOLDINGS: "Insufficient holdings",
   USER_REQUIRED: "Sign-in required",
   RETRYABLE: "Outcome unknown",
+  MARKET_SETTLED: "Market settled",
+  RESTRICTED_PERSON: "Trading restricted",
 };
 
 /** Every figure the panel shows for a priced order, from /api/quote or from a PRICE_MOVED requote. */
@@ -74,27 +81,6 @@ interface QuoteView {
   /** The bound the wire carries: max cost for buys, min proceeds for sells. */
   readonly guardCents: number;
   readonly moved: boolean;
-}
-
-/**
- * The slippage guard submitted with an order. Spend buys are bounded by the
- * spend itself; quantity buys and sells absorb 1% of movement. The same value
- * is rendered in the quote panel so the bound on the wire is the one on screen.
- */
-function slippageGuard(
-  action: TradeAction,
-  buyMode: BuyInputMode,
-  amount: string,
-  quote: QuoteResult,
-): { readonly usd: string; readonly cents: number } {
-  if (action === "buy" && buyMode === "spend") {
-    return { usd: amount, cents: Math.round(Number(amount) * 100) };
-  }
-  const cents =
-    action === "buy"
-      ? Math.ceil(quote.engine_cost_usd * 1.01 * 100)
-      : Math.floor(Number(quote.cash_amount_cents) * 0.99);
-  return { usd: (cents / 100).toFixed(2), cents };
 }
 
 function quoteView(quote: QuoteResult, guardCents: number): QuoteView {
@@ -135,13 +121,7 @@ function movedView(moved: MovedPrice): QuoteView {
  * on the dealer's two-outcome LMSR book, addressed by market id. A trade
  * that would move YES outside [p_floor, 1 − p_floor] is refused whole.
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: the ticket state machine lives in one component; extract a useBinaryOrder hook before growing.
-export function BinaryTicket({
-  binary,
-  side,
-  onSideChange,
-  onAuthoritativeRefresh,
-}: BinaryTicketProps) {
+function useBinaryOrder({ binary, side, onSideChange, onAuthoritativeRefresh }: BinaryTicketProps) {
   const [action, setAction] = useState<TradeAction>("buy");
   const [buyMode, setBuyMode] = useState<BuyInputMode>("spend");
   const [amount, setAmount] = useState("100.00");
@@ -160,7 +140,8 @@ export function BinaryTicket({
   const amountLabel = spending ? "Spend" : "Quantity";
   const quickAmounts = spending ? QUICK_SPEND_USD : QUICK_QUANTITY;
   const parsedAmount = Number(amount);
-  const validAmount = Number.isFinite(parsedAmount) && parsedAmount > 0;
+  const spend = spending ? canonicalDollarAmount(amount) : null;
+  const validAmount = spending ? spend !== null : Number.isFinite(parsedAmount) && parsedAmount > 0;
   // An order with an unknown outcome pins the ticket: its request key and
   // fields stay held until it is retried to a verdict or explicitly abandoned.
   const orderPending = trade.canRetry;
@@ -170,17 +151,17 @@ export function BinaryTicket({
     market_id: binary.market_id,
     action,
     side,
-    strike_index: 0,
+    strike_index: BINARY_STRIKE_INDEX,
   } as const;
   const requestFields = spending
-    ? { ...requestBase, spend_usd: amount }
+    ? { ...requestBase, spend_usd: spend }
     : { ...requestBase, quantity: parsedAmount };
 
   const view =
     movedPrice !== null
       ? movedView(movedPrice)
       : quote !== null
-        ? quoteView(quote, slippageGuard(action, buyMode, amount, quote).cents)
+        ? quoteView(quote, binarySlippageGuard(action, spend, quote.cash_amount_cents).cents)
         : null;
 
   // Any change to the request invalidates the quote and everything derived
@@ -194,11 +175,12 @@ export function BinaryTicket({
     setMovedPrice(null);
   }
 
-  // A quote is only valid for the side and book it priced.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: reset only when the priced contract changes.
-  useEffect(() => {
+  const orderKey = `${side}:${binary.market_id}`;
+  const [previousOrderKey, setPreviousOrderKey] = useState(orderKey);
+  if (previousOrderKey !== orderKey) {
+    setPreviousOrderKey(orderKey);
     resetTradeState();
-  }, [side, binary.market_id]);
+  }
 
   function changeAction(next: TradeAction) {
     if (next === action) return;
@@ -281,15 +263,66 @@ export function BinaryTicket({
     const guardUsd =
       movedPrice !== null
         ? (Number(movedPrice.cashAmountCents) / 100).toFixed(2)
-        : slippageGuard(action, buyMode, amount, quote).usd;
+        : binarySlippageGuard(action, spend, quote.cash_amount_cents).usd;
     const guard = action === "buy" ? { max_cost_usd: guardUsd } : { min_proceeds_usd: guardUsd };
     return settleOrder(() => trade.execute({ ...requestFields, ...guard }));
   }
 
   const errorTitle = (error === null ? undefined : ERROR_TITLES[error.code]) ?? "Trade unavailable";
 
+  return {
+    binary,
+    side,
+    onSideChange,
+    spending,
+    amountLabel,
+    quickAmounts,
+    busy,
+    action,
+    buyMode,
+    amount,
+    changeAction,
+    changeBuyMode,
+    changeAmount,
+    view,
+    pathname,
+    errorTitle,
+    quote,
+    error,
+    result,
+    refreshStale,
+    needsSignIn,
+    movedPrice,
+    requestQuote,
+    trade,
+    validAmount,
+    orderPending,
+    phase,
+    setError,
+    settleOrder,
+    executeTrade,
+  };
+}
+
+function BinaryControls({ order }: { readonly order: ReturnType<typeof useBinaryOrder> }) {
+  const {
+    binary,
+    side,
+    onSideChange,
+    spending,
+    validAmount,
+    amountLabel,
+    quickAmounts,
+    busy,
+    action,
+    buyMode,
+    amount,
+    changeAction,
+    changeBuyMode,
+    changeAmount,
+  } = order;
   return (
-    <div className={styles.body}>
+    <>
       <p className={styles.question}>
         {binary.question}{" "}
         <span>
@@ -354,12 +387,18 @@ export function BinaryTicket({
             min="0"
             step={spending ? "0.01" : "0.000001"}
             inputMode="decimal"
+            aria-invalid={!validAmount}
             value={amount}
             onChange={(event) => changeAmount(event.target.value)}
             disabled={busy}
           />
         </span>
       </label>
+      {spending && !validAmount ? (
+        <p className={styles.inlineError} role="alert">
+          Enter a dollar amount greater than zero, to the cent.
+        </p>
+      ) : null}
       <div
         className={styles.quickAmounts}
         role="group"
@@ -367,8 +406,8 @@ export function BinaryTicket({
       >
         {quickAmounts.map((value) => {
           const display = spending
-            ? `$${Number(value).toLocaleString("en-US")}`
-            : Number(value).toLocaleString("en-US");
+            ? `${formatWholeUsd(Number(value))}`
+            : formatQuantity(Number(value));
           const normalized = spending ? `${value}.00` : value;
           return (
             <button
@@ -383,7 +422,14 @@ export function BinaryTicket({
           );
         })}
       </div>
+    </>
+  );
+}
 
+function BinaryReview({ order }: { readonly order: ReturnType<typeof useBinaryOrder> }) {
+  const { binary, view, action } = order;
+  return (
+    <>
       {view !== null ? (
         <div className={styles.quote} aria-live="polite">
           <QuoteReview
@@ -435,7 +481,24 @@ export function BinaryTicket({
           </small>
         </div>
       ) : null}
+    </>
+  );
+}
 
+function BinaryNotices({ order }: { readonly order: ReturnType<typeof useBinaryOrder> }) {
+  const {
+    pathname,
+    errorTitle,
+    quote,
+    error,
+    result,
+    refreshStale,
+    needsSignIn,
+    movedPrice,
+    requestQuote,
+  } = order;
+  return (
+    <>
       {error !== null ? (
         <div className={styles.error} role="alert">
           <strong>{errorTitle}</strong>
@@ -452,7 +515,7 @@ export function BinaryTicket({
         <div className={styles.signIn}>
           <p>
             {quote === null ? "Quoting a sale" : "Trading"} needs a signed-in account. Your first
-            trade opens a $100,000 paper balance.
+            trade opens a {formatWholeUsd(Number(INITIAL_USER_BALANCE_CENTS) / 100)} paper balance.
           </p>
           <Link className={styles.primary} href={signInHref(pathname)}>
             Sign in to trade
@@ -474,54 +537,85 @@ export function BinaryTicket({
           </p>
         </div>
       ) : null}
+    </>
+  );
+}
 
-      {orderPending ? (
-        <PendingOrderActions
-          executing={phase === "executing"}
-          onRetry={() => void settleOrder(trade.retry)}
-          onAbandon={() => {
-            trade.reset();
-            setError(null);
-          }}
-        />
-      ) : !needsSignIn ? (
-        quote === null ? (
-          <button
-            type="button"
-            className={styles.primary}
-            onClick={() => void requestQuote()}
-            disabled={!validAmount || busy}
-          >
-            {phase === "quoting"
-              ? "Preparing quote…"
-              : action === "buy"
-                ? "Preview buy"
-                : "Preview sell"}
-          </button>
-        ) : (
-          <button
-            type="button"
-            className={styles.primary}
-            onClick={() => void executeTrade()}
-            disabled={phase === "executing"}
-          >
-            {phase === "executing"
-              ? "Executing…"
-              : movedPrice !== null
-                ? "Confirm new price"
-                : action === "buy"
-                  ? "Confirm buy"
-                  : "Confirm sell"}
-          </button>
-        )
-      ) : null}
+function BinaryOrderButton({ order }: { readonly order: ReturnType<typeof useBinaryOrder> }) {
+  const {
+    trade,
+    orderPending,
+    needsSignIn,
+    quote,
+    phase,
+    action,
+    movedPrice,
+    validAmount,
+    busy,
+    requestQuote,
+    executeTrade,
+    settleOrder,
+    setError,
+  } = order;
+  if (orderPending)
+    return (
+      <PendingOrderActions
+        executing={phase === "executing"}
+        onRetry={() => void settleOrder(trade.retry)}
+        onAbandon={() => {
+          trade.reset();
+          setError(null);
+        }}
+      />
+    );
+  if (needsSignIn) return null;
+  if (quote === null)
+    return (
+      <button
+        type="button"
+        className={styles.primary}
+        onClick={() => void requestQuote()}
+        disabled={!validAmount || busy}
+      >
+        {phase === "quoting" ? "Preparing quote…" : `Preview ${action}`}
+      </button>
+    );
+  const label = movedPrice === null ? `Confirm ${action}` : "Confirm new price";
+  return (
+    <button
+      type="button"
+      className={styles.primary}
+      onClick={() => void executeTrade()}
+      disabled={phase === "executing"}
+    >
+      {phase === "executing" ? "Executing…" : label}
+    </button>
+  );
+}
 
+function BinarySubmit({ order }: { readonly order: ReturnType<typeof useBinaryOrder> }) {
+  const { view, result, orderPending, phase } = order;
+  return (
+    <>
+      <BinaryOrderButton order={order} />
       <ApprovalStrip
         quoted={view !== null || result !== null || orderPending}
         sent={phase === "executing" || orderPending || result !== null}
         filled={result !== null}
         unknown={orderPending}
       />
+    </>
+  );
+}
+
+export function BinaryTicket(props: BinaryTicketProps) {
+  const order = useBinaryOrder(props);
+  return (
+    <div className={styles.body}>
+      <BinaryControls order={order} />
+      <BinaryReview order={order} />
+      <BinaryNotices order={order} />
+      <BinarySubmit order={order} />
     </div>
   );
 }

@@ -4,8 +4,12 @@ import { Group } from "@visx/group";
 import { scaleBand, scaleLinear } from "@visx/scale";
 import { Bar } from "@visx/shape";
 import { useEffect, useMemo, useRef, useState } from "react";
-
-import { formatPrice, formatProbability, formatValuation } from "../../lib/client/format.js";
+import {
+  formatPrice,
+  formatProbability,
+  formatSigma,
+  formatValuation,
+} from "../../lib/client/format.js";
 import type { ImpliedDistribution } from "../market-workspace/types.js";
 import styles from "./distribution-chart.module.css";
 
@@ -74,7 +78,7 @@ export function DistributionChart({ distribution }: DistributionChartProps) {
           <strong className={styles.tab}>Implied distribution</strong>
           <small>
             Lognormal at the forward mid {formatPrice(distribution.centerUsd)}, σ{" "}
-            {distribution.sigma.toFixed(2)}
+            {formatSigma(distribution.sigma)}
           </small>
         </span>
         <span aria-hidden="true">
@@ -127,8 +131,7 @@ export function DistributionChart({ distribution }: DistributionChartProps) {
             {pmf.map((probability, index) => {
               const barY = yScale(probability);
               return (
-                // biome-ignore lint/suspicious/noArrayIndexKey: the index is the bucket's identity.
-                <g key={index}>
+                <g key={labels[index]}>
                   <title>{`${labels[index]!}: ${formatProbability(probability)}`}</title>
                   <Bar
                     x={xScale(index) ?? 0}

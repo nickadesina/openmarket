@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { type SyntheticEvent, useEffect, useRef } from "react";
 
 import styles from "./company-logo.module.css";
@@ -28,18 +29,17 @@ export function CompanyLogo({
 
   // A missing logo on a server-rendered page can 404 before hydration
   // attaches onError; re-check the settled state once mounted.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: re-check the settled image whenever the mark's path changes.
   useEffect(() => {
     const image = imageNode.current;
-    if (image !== null) {
+    if (image !== null && image.getAttribute("src") === logoPath) {
       image.hidden = image.complete && image.naturalWidth === 0;
     }
   }, [logoPath]);
 
   return (
     <span className={`${styles.frame} ${styles[size]}`} aria-hidden="true">
-      {/* biome-ignore lint/performance/noImgElement: static SVG marks with an onError fallback; next/image adds nothing here. */}
-      <img
+      <Image
+        unoptimized
         ref={imageNode}
         className={styles.logo}
         src={logoPath}

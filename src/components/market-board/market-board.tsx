@@ -120,7 +120,7 @@ export function MarketBoard({
     return <MarketBoardSkeleton />;
   }
 
-  if (marketsQuery.isError) {
+  if (marketsQuery.isError && marketsQuery.data === undefined) {
     return (
       <div className={styles.state} role="alert">
         <div>
@@ -134,7 +134,7 @@ export function MarketBoard({
     );
   }
 
-  if (marketsQuery.data.listings.length === 0) {
+  if (marketsQuery.data!.listings.length === 0) {
     return (
       <div className={styles.state}>
         <div>
@@ -151,6 +151,9 @@ export function MarketBoard({
   return (
     <div className={styles.board}>
       <DemoBanner />
+      {marketsQuery.isError ? (
+        <p role="status">Unable to refresh. Showing the latest confirmed prices.</p>
+      ) : null}
       <div className={styles.tableViewport}>
         <table className={styles.table}>
           <caption className={styles.visuallyHidden}>
@@ -171,7 +174,7 @@ export function MarketBoard({
             </tr>
           </thead>
           <tbody>
-            {marketsQuery.data.listings.map((listing) => (
+            {marketsQuery.data!.listings.map((listing) => (
               <ListingRow key={listing.listingId} listing={listing} />
             ))}
           </tbody>

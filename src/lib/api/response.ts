@@ -18,6 +18,9 @@ export interface ErrorEnvelope {
 }
 
 const SERVICE_ERROR_STATUS: Readonly<Record<ErrorCode, number>> = {
+  CRON_UNAUTHORIZED: 401,
+  LISTING_NOT_FOUND: 404,
+  INSTRUMENT_NOT_FOUND: 404,
   INVALID_INPUT: 400,
   USER_REQUIRED: 401,
   MARKET_NOT_FOUND: 404,
@@ -80,11 +83,15 @@ export function jsonSuccess<T>(data: T, init: JsonResponseInit = {}): Response {
 }
 
 export function jsonError(error: ServiceError, requestId: string): Response {
+  // Authentication context is server-only: distinguish forbidden from signed out
+  // without changing the public error code or exposing the guard's metadata.
+  const details = { ...error.details };
+  if (error.code === "ADMIN_REQUIRED") delete details.authenticated;
   const envelope: ErrorEnvelope = {
     error: {
       code: error.code,
       message: error.message,
-      details: error.details,
+      details,
     },
   };
 
@@ -94,7 +101,10 @@ export function jsonError(error: ServiceError, requestId: string): Response {
   }
 
   return new Response(jsonBody(envelope), {
-    status: SERVICE_ERROR_STATUS[error.code],
+    status:
+      error.code === "ADMIN_REQUIRED" && error.details.authenticated === true
+        ? 403
+        : SERVICE_ERROR_STATUS[error.code],
     headers,
   });
 }

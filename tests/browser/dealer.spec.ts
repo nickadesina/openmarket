@@ -195,3 +195,16 @@ test("home and a market page fit a phone width", async ({ page }) => {
     await expectNoHorizontalOverflow(page);
   }
 });
+
+test("binary spend rejects exponent and fractional cents before requesting a quote", async ({
+  page,
+}) => {
+  await page.goto("/m/anduril");
+  const ticket = await openTicket(page);
+  await ticket.getByRole("button", { name: "Binary", exact: true }).click();
+  const spend = ticket.getByRole("spinbutton", { name: /Spend/ });
+  for (const invalid of ["1e2", "10.555"]) {
+    await spend.fill(invalid);
+    await expect(ticket.getByRole("button", { name: "Preview buy" })).toBeDisabled();
+  }
+});
