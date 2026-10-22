@@ -1,26 +1,16 @@
 import type { Kysely, Transaction } from "kysely";
 
 import type { QuestionInput, ResolveQuestionInput } from "../../api/tournament-schemas.js";
-import { DEALER_PARAMS } from "../../config/dealer.js";
 import type {
   Database,
   InstrumentRow,
   JsonObject,
   ListingRow,
+  TournamentQuestionKind,
   TournamentQuestionStatus,
   TournamentUnit,
 } from "../../db/schema.js";
-import {
-  forwardQuestionLadder,
-  inLadderUnit,
-  type QuestionLadder,
-} from "../../engine/dealer/question-ladder.js";
 import { RULEBOOK, RULEBOOK_VERSION } from "../../engine/dealer/rulebook.js";
-import {
-  BINARY_YES_INDEX,
-  type Bucket,
-  bucketIndexForValue,
-} from "../../engine/tournament/buckets.js";
 import {
   closeQuestionIn,
   openQuestionIn,
@@ -28,21 +18,23 @@ import {
   saveDraftQuestionIn,
   voidQuestionIn,
 } from "../tournament/admin.js";
-import { effectiveStatus, loadBuckets, requireQuestion, windowEnd } from "../tournament/records.js";
+import { effectiveStatus, requireQuestion, windowEnd } from "../tournament/records.js";
 
 /**
  * The tournament bridge (milestone 7, CONTRACTS.md → Tournament mapping,
- * TECHNICAL_DESIGN.md §7). A mapping, not a mechanism: every instrument the
- * dealer lists gets a tournament question created and opened through the
- * tournament's own services in the listing's transaction, and the settle job
- * resolves (or voids) it through them in the settlement's transaction.
+ * TECHNICAL_DESIGN.md §7, decision 0004). A mapping, not a mechanism: every
+ * instrument the dealer lists gets a tournament question created and opened
+ * through the tournament's own services in the listing's transaction, and
+ * the settle job resolves (or voids) it through them in the settlement's
+ * transaction.
  *
- * - Binary → a Yes/No question closing at the binary's expiry.
- * - Forward → a numeric ladder in USD_B or USD_T over the edges
- *   question-ladder.ts derives from the listing mid, plus the floor bucket
- *   the tournament requires ("No qualifying print by …"). A forward that
- *   voids voids its question, which writes no scores, so the floor is
- *   never the winning bucket.
+ * - Binary → a `binary` question (one probability of YES) closing at the
+ *   binary's expiry. It resolves YES or NO with the binary.
+ * - Forward → a `forward` question (one level) in USD_T when the
+ *   instrument's listing mid (its first `model_mids` row) is $1T or more,
+ *   else USD_B, closing and expiring at the forward's expiry. It resolves to
+ *   the settling post-money in that unit; a forward that voids voids its
+ *   question, which writes no scores.
  * - A question opens at the listing's clock, so a rolled binary listed at
  *   its predecessor's announcement opens its question when the roll runs.
  * - Resolution: the scoring window is back-dated to the settling
@@ -55,19 +47,49 @@ import { effectiveStatus, loadBuckets, requireQuestion, windowEnd } from "../tou
 
 const SLUG_MAX = 100;
 
+/** A stored forward resolution must equal the settlement's post-money in its unit this closely (relative). */
+const VALUE_TOLERANCE = 1e-12;
+
 export interface LinkedQuestion {
   readonly question_id: string;
   readonly slug: string;
 }
 
-type BridgeListing = Pick<ListingRow, "binary_event" | "tier"> & {
+type BridgeListing = Pick<ListingRow, "binary_event"> & {
   readonly company: { readonly name: string; readonly slug: string };
 };
 
 type BridgeInstrument = Pick<InstrumentRow, "id" | "kind" | "epoch" | "question" | "expires_at">;
 
+/** The linked question's shape, as the bridge resolves and verifies it. */
+export interface LinkedQuestionShape {
+  readonly kind: TournamentQuestionKind;
+  readonly unit: TournamentUnit | null;
+}
+
 function isoDay(at: Date): string {
   return at.toISOString().slice(0, 10);
+}
+
+/** USD per one of a forward question's units. */
+export const UNIT_USD: Readonly<Record<TournamentUnit, number>> = Object.freeze({
+  USD_B: 1e9,
+  USD_T: 1e12,
+});
+
+/** A forward question's unit from its instrument's listing mid in USD: USD_T from $1T up. */
+export function forwardQuestionUnit(midUsd: number): TournamentUnit {
+  if (!Number.isFinite(midUsd) || midUsd <= 0) throw new RangeError("midUsd must be positive");
+  return midUsd >= UNIT_USD.USD_T ? "USD_T" : "USD_B";
+}
+
+/** A value in USD as a value in the question's unit. */
+export function inQuestionUnit(valueUsd: number, unit: TournamentUnit): number {
+  return valueUsd / UNIT_USD[unit];
+}
+
+function unitWords(unit: TournamentUnit): string {
+  return unit === "USD_T" ? "USD trillions" : "USD billions";
 }
 
 /** The question's integer rulebook version: the dealer rulebook's major version. */
@@ -92,28 +114,27 @@ function binaryRulebook(listing: BridgeListing): string {
   ].join("\n\n");
 }
 
-function forwardRulebook(): string {
+function forwardRulebook(unit: TournamentUnit): string {
   const forward = RULEBOOK.forward;
   return [
     `**OpenMarket rulebook ${RULEBOOK_VERSION}**, published at /api/ref/rulebook. This question resolves with the dealer's forward, in the same transaction.`,
     `**Print:** ${RULEBOOK.print.definition} ${RULEBOOK.print.conversions.join(" ")}`,
-    `**Resolves** to the bucket holding the post-money ${forward.settles.charAt(0).toLowerCase()}${forward.settles.slice(1)} ${forward.down_rounds}`,
-    `**Void:** ${forward.void} ${forward.undisclosed_valuation} ${forward.acquisition} A void voids this question: it is unscored, so the floor bucket never wins.`,
+    `**Resolves** to the post-money in ${unitWords(unit)} ${forward.settles.charAt(0).toLowerCase()}${forward.settles.slice(1)} ${forward.down_rounds}`,
+    `**Void:** ${forward.void} ${forward.undisclosed_valuation} ${forward.acquisition} A void voids this question, and nothing is scored.`,
     `**Sources, highest rank first** (the rank is recorded as the rung):\n${sourceRanks()}`,
     "The scoring window ends at the settling print's public time.",
   ].join("\n\n");
 }
 
-function ladderDescription(ladder: QuestionLadder, sigma: number, midLn: number): string {
-  const unit = ladder.unit === "USD_T" ? "trillions" : "billions";
-  return `Buckets in USD ${unit}: the valuation grid's boundaries between the 1st and 99th percentile of the forward's implied distribution at listing (a lognormal at the model mid, ln ${midLn.toFixed(6)}, with σ ${sigma}), rounded to three significant figures (${ladder.version}).`;
-}
-
-/** The question a just-listed instrument asks the tournament, before its slug is made unique. */
+/**
+ * The question a just-listed instrument asks the tournament, before its slug
+ * is made unique. `unit` is a forward's (forwardQuestionUnit); null for a
+ * binary.
+ */
 export function linkedQuestionInput(
   listing: BridgeListing,
   instrument: BridgeInstrument,
-  midLn: number | null,
+  unit: TournamentUnit | null,
   opensAt: Date,
   slug: string,
 ): QuestionInput {
@@ -129,27 +150,19 @@ export function linkedQuestionInput(
   if (instrument.kind === "binary") {
     return {
       ...common,
-      unit: "bool",
+      kind: "binary",
       description_md: `Linked to ${name}'s quarterly binary on OpenMarket (epoch ${instrument.epoch}), which expires ${isoDay(instrument.expires_at)}. The crowd's P(Yes) enters the published reference hazard from ten forecasters.`,
       rulebook_md: binaryRulebook(listing),
     };
   }
-  if (midLn === null) throw new RangeError("a forward's question needs its listing mid");
-  const sigma = DEALER_PARAMS.sigma_tier[listing.tier];
-  const ladder = forwardQuestionLadder(midLn, sigma);
+  if (unit === null) throw new RangeError("a forward's question needs its unit");
   return {
     ...common,
-    unit: ladder.unit,
+    kind: "forward",
+    unit,
     expiry_at: expiry,
-    description_md: [
-      `${name}'s next post-money, linked to its next-print forward on OpenMarket (epoch ${instrument.epoch}), which expires ${isoDay(instrument.expires_at)}. The crowd's median enters the published reference forward from ten forecasters.`,
-      ladderDescription(ladder, sigma, midLn),
-    ].join("\n\n"),
-    rulebook_md: forwardRulebook(),
-    buckets: {
-      edges: [...ladder.edges],
-      floor_label: `No qualifying print by ${isoDay(instrument.expires_at)}`,
-    },
+    description_md: `${name}'s next post-money in ${unitWords(unit)}, linked to its next-print forward on OpenMarket (epoch ${instrument.epoch}), which expires ${isoDay(instrument.expires_at)}. If the forward voids, so does this question. The crowd's median enters the published reference forward from ten forecasters.`,
+    rulebook_md: forwardRulebook(unit),
   };
 }
 
@@ -184,25 +197,41 @@ async function uniqueSlug(db: Transaction<Database>, base: string): Promise<stri
   }
 }
 
+/** A forward question's unit from its listing mid: the instrument's first `model_mids` row. */
+async function forwardUnitOf(
+  db: Transaction<Database>,
+  instrumentId: string,
+): Promise<TournamentUnit> {
+  const first = await db
+    .selectFrom("model_mids")
+    .select("mid_ln")
+    .where("instrument_id", "=", instrumentId)
+    .orderBy("computed_at")
+    .orderBy("id")
+    .executeTakeFirst();
+  if (first?.mid_ln == null) throw new RangeError(`forward ${instrumentId} has no listing mid`);
+  return forwardQuestionUnit(Math.exp(first.mid_ln));
+}
+
 /**
  * Creates, opens and links the instrument's question in the caller's
- * transaction. Null, writing nothing, when the instrument is already past
- * its expiry at `now` (a roll that ran too late leaves nothing to forecast).
+ * transaction, once the instrument has its first mid. Null, writing nothing,
+ * when the instrument is already past its expiry at `now` (a roll that ran
+ * too late leaves nothing to forecast).
  */
 export async function linkInstrumentQuestion(
   db: Transaction<Database>,
   input: {
     readonly listing: BridgeListing;
     readonly instrument: BridgeInstrument;
-    /** The forward's listing mid in ln USD; null for a binary. */
-    readonly midLn: number | null;
     readonly now: Date;
   },
 ): Promise<LinkedQuestion | null> {
   const { listing, instrument, now } = input;
   if (now.getTime() >= instrument.expires_at.getTime()) return null;
+  const unit = instrument.kind === "forward" ? await forwardUnitOf(db, instrument.id) : null;
   const slug = await uniqueSlug(db, baseSlug(listing, instrument));
-  await saveDraftQuestionIn(db, linkedQuestionInput(listing, instrument, input.midLn, now, slug));
+  await saveDraftQuestionIn(db, linkedQuestionInput(listing, instrument, unit, now, slug));
   await openQuestionIn(db, slug, now);
   const question = await db
     .selectFrom("tournament_questions")
@@ -214,6 +243,30 @@ export async function linkInstrumentQuestion(
     .values({ question_id: question.id, instrument_id: instrument.id })
     .execute();
   return { question_id: question.id, slug };
+}
+
+/**
+ * Replaces a live instrument's voided linked question (voided by an admin,
+ * or by migration 013 retiring bucket questions) with a fresh one, in the
+ * caller's transaction: the link to the voided question is removed, which
+ * stays voided and unscored, and a new question is created, opened and
+ * linked as at listing. Null, changing nothing, when the linked question is
+ * not voided or the instrument is past its expiry.
+ */
+export async function relinkVoidedQuestion(
+  db: Transaction<Database>,
+  input: Parameters<typeof linkInstrumentQuestion>[1],
+): Promise<LinkedQuestion | null> {
+  if (input.now.getTime() >= input.instrument.expires_at.getTime()) return null;
+  const removed = await db
+    .deleteFrom("tournament_instrument_links")
+    .where("instrument_id", "=", input.instrument.id)
+    .where("question_id", "in", (eb) =>
+      eb.selectFrom("tournament_questions").select("id").where("status", "=", "voided"),
+    )
+    .executeTakeFirst();
+  if (Number(removed.numDeletedRows) === 0) return null;
+  return linkInstrumentQuestion(db, input);
 }
 
 /** How an instrument ended, as its linked question needs it. */
@@ -264,23 +317,43 @@ export function instrumentEnding(result: JsonObject): InstrumentEnding {
   }
 }
 
-export interface LinkedResolution {
-  readonly slug: string;
-  readonly status: "resolved" | "voided" | "skipped";
-  readonly winning_bucket_index?: number;
-  readonly reason?: string;
+/** What a linked question resolves to: a binary's outcome, or a forward's value in its unit. */
+export type QuestionResult =
+  | { readonly outcome: "yes" | "no" }
+  | { readonly resolved_value: number };
+
+/** The resolution an ending implies on its question; null for a void or a kind mismatch. */
+export function expectedResolution(
+  ending: InstrumentEnding,
+  question: LinkedQuestionShape,
+): QuestionResult | null {
+  switch (ending.kind) {
+    case "binary_yes":
+      return question.kind === "binary" ? { outcome: "yes" } : null;
+    case "binary_no":
+      return question.kind === "binary" ? { outcome: "no" } : null;
+    case "forward_settled":
+      return question.kind === "forward" && question.unit !== null
+        ? { resolved_value: inQuestionUnit(ending.postMoneyUsd, question.unit) }
+        : null;
+    case "forward_void":
+      return null;
+  }
 }
+
+export type LinkedResolution =
+  | ({ readonly slug: string; readonly status: "resolved" } & QuestionResult)
+  | { readonly slug: string; readonly status: "voided" }
+  | { readonly slug: string; readonly status: "skipped"; readonly reason: string };
 
 function resolutionInput(
   ending: Exclude<InstrumentEnding, { kind: "forward_void" }>,
-  winningIndex: number,
-  resolvedValue: number | null,
+  result: QuestionResult,
   note: string,
 ): ResolveQuestionInput {
   const sourced = ending.kind === "binary_no" ? null : ending;
   return {
-    resolved_value: resolvedValue,
-    winning_bucket_index: winningIndex,
+    ...result,
     rung_fired: sourced?.rank ?? null,
     source_url: sourced?.sourceUrl ?? null,
     source_excerpt: null,
@@ -323,7 +396,7 @@ export async function resolveLinkedQuestion(
       "tournament_questions.id",
       "tournament_instrument_links.question_id",
     )
-    .select(["tournament_questions.slug"])
+    .select(["tournament_questions.slug", "tournament_questions.kind", "tournament_questions.unit"])
     .where("tournament_instrument_links.instrument_id", "=", instrumentId)
     .executeTakeFirst();
   if (link === undefined) return null;
@@ -337,6 +410,8 @@ export async function resolveLinkedQuestion(
     await voidQuestionIn(db, slug, { note_md: note });
     return { slug, status: "voided" };
   }
+  const result = expectedResolution(ending, link);
+  if (result === null) throw new RangeError(`question ${slug} cannot take this outcome`);
 
   if (ending.kind !== "binary_no") {
     // The window ends at the document's public time, never before the question opened.
@@ -353,41 +428,35 @@ export async function resolveLinkedQuestion(
     await closeQuestionIn(db, slug, {}, { at: now });
   }
 
-  const { unit } = question;
-  const winningIndex = expectedWinningBucket(ending, unit, await loadBuckets(db, question.id));
-  if (winningIndex === null) throw new RangeError(`question ${slug} cannot take this outcome`);
-  const resolvedValue =
-    ending.kind === "forward_settled" && unit !== "bool" && unit !== "choice"
-      ? inLadderUnit(ending.postMoneyUsd, unit)
-      : null;
   await resolveQuestionIn(
     db,
     slug,
-    resolutionInput(ending, winningIndex, resolvedValue, note),
+    resolutionInput(ending, result, note),
     { settleRunId: runId },
     now,
   );
-  return { slug, status: "resolved", winning_bucket_index: winningIndex };
+  return { slug, status: "resolved", ...result };
 }
 
-/** The winning bucket an ending implies on its question; null for a void or a mismatch. */
-export function expectedWinningBucket(
-  ending: InstrumentEnding,
-  unit: TournamentUnit,
-  buckets: readonly Bucket[],
-): number | null {
-  switch (ending.kind) {
-    case "binary_yes":
-      return unit === "bool" ? BINARY_YES_INDEX : null;
-    case "binary_no":
-      return unit === "bool" ? 1 - BINARY_YES_INDEX : null;
-    case "forward_settled":
-      return unit === "bool" || unit === "choice"
-        ? null
-        : bucketIndexForValue(buckets, inLadderUnit(ending.postMoneyUsd, unit));
-    case "forward_void":
-      return null;
+/** Whether a stored resolution says what the settlement implies. */
+function carriesResult(
+  stored: { readonly outcome: "yes" | "no" | null; readonly resolved_value: string | null },
+  expected: QuestionResult,
+): boolean {
+  if ("outcome" in expected) {
+    return stored.outcome === expected.outcome && stored.resolved_value === null;
   }
+  if (stored.outcome !== null || stored.resolved_value === null) return false;
+  const value = Number(stored.resolved_value);
+  return (
+    Math.abs(value - expected.resolved_value) <=
+    VALUE_TOLERANCE * Math.max(1, Math.abs(expected.resolved_value))
+  );
+}
+
+function describeResult(result: QuestionResult | null): string {
+  if (result === null) return "no resolution";
+  return "outcome" in result ? `outcome ${result.outcome}` : `value ${result.resolved_value}`;
 }
 
 export interface BridgeFinding {
@@ -399,7 +468,8 @@ export interface BridgeFinding {
  * verify:replay's bridge half: every closed instrument whose settlement
  * resolved or voided its linked question left that question so, and the
  * settle run's resolution (the first, before any dispute superseded it)
- * names the bucket the instrument's own outcome implies.
+ * carries the outcome, or the value in the question's unit, that the
+ * instrument's own settlement implies.
  */
 export async function verifyLinkedQuestions(
   db: Kysely<Database>,
@@ -413,6 +483,7 @@ export async function verifyLinkedQuestions(
       "instruments.resolution_json",
       "questions.id as question_id",
       "questions.status",
+      "questions.kind",
       "questions.unit",
     ])
     .where("instruments.state", "in", ["resolved", "expired"])
@@ -431,23 +502,22 @@ export async function verifyLinkedQuestions(
     if (linked.status !== "resolved") continue;
     const first = await db
       .selectFrom("tournament_resolutions")
-      .select(["winning_bucket_index", "settle_run_id"])
+      .select(["outcome", "resolved_value", "settle_run_id"])
       .where("question_id", "=", row.question_id)
       .orderBy("resolved_at")
       .orderBy("id")
       .executeTakeFirst();
-    const expected = expectedWinningBucket(
-      instrumentEnding(record),
-      row.unit,
-      await loadBuckets(db, row.question_id),
-    );
+    const expected = expectedResolution(instrumentEnding(record), row);
     if (
       row.status !== "resolved" ||
       first === undefined ||
       first.settle_run_id === null ||
-      first.winning_bucket_index !== expected
+      expected === null ||
+      !carriesResult(first, expected)
     ) {
-      fail(`question ${row.question_id} does not carry the settlement's bucket ${expected}`);
+      fail(
+        `question ${row.question_id} does not carry the settlement's ${describeResult(expected)}`,
+      );
     }
   }
   return { checked: rows.length, findings };

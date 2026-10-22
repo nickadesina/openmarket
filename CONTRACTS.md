@@ -117,14 +117,24 @@ quoting | widened → expired (T passes) → roll
 
 ## Tournament mapping
 
-| Contract | Question | Score |
-| --- | --- | --- |
-| A | "Does [Name] announce a priced round / file an S-1 by [quarter-end]?" | time-weighted log score |
-| B | "What will [Name]'s next post-money be?" — numeric ladder with a floor bucket | log score over buckets; unscored if the forward voids |
+A tournament question is one of the two contracts, nothing else
+(decision 0004). There are no buckets and no floor: "nothing by
+expiry" is NO on A and a void on B, as the contracts already say.
+
+| Contract | Question | Forecast | Resolves | Score |
+| --- | --- | --- | --- | --- |
+| A | "Does [Name] announce a priced round / file an S-1 by [quarter-end]?" | one probability p of YES | YES, or NO (anything else, including nothing by T) | the n = 2 log score 100/ln 2 · ln(2 · max(p_outcome, ε)), ε = 0.001, time-averaged over the open window |
+| B | "What will [Name]'s next post-money be?" | one level x > 0 in the question's unit ($B, or $T from a $1T listing mid) | the settling post-money y in that unit, or **void** with the forward | max(100 · (1 − \|ln(x/y)\| / ln 2), −896.6), time-averaged over the open window; unscored if the forward voids |
+
+Time before a forecaster's first forecast scores 0 on both (A: "said
+50%"; B: "missed by 2×"); exact is 100 on both.
 
 Forecasts are append-only rows; every score and aggregate is
-recomputable from them. The crowd aggregate is a component of the
-published reference price once ≥ 10 forecasters are on a question.
+recomputable from them. The crowd aggregate is one number: on A the
+pooled P(YES) (geometric mean of odds, extremized), on B the median of
+the forecasters' ln x. It is a component of the published reference
+price (A: P(YES); B: the median as ln USD) once ≥ 10 forecasters are on
+a question.
 
 ## Not open
 

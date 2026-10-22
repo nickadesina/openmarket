@@ -3,11 +3,11 @@ import { sql } from "kysely";
 
 import { ServiceError } from "../../api/errors.js";
 import type { Database } from "../../db/schema.js";
-import { canonicalProbs } from "../../engine/tournament/forecast.js";
+import { forecastCanonical } from "../../engine/tournament/forecast.js";
 import { explorerUrl, memoStatus, postMemo, type SolanaConfig } from "../../solana/memo.js";
 import { identitiesFor } from "./identities.js";
 import { buildMerkleTree, merkleRootFromPath } from "./merkle.js";
-import { type PublicIdentity, toNumbers } from "./records.js";
+import { type PublicIdentity, toForecastPoint, toNumbers } from "./records.js";
 import { forecastEventHash } from "./submit-forecast.js";
 
 /** An hour is batched only once it has been over this long, so late commits land first. */
@@ -173,8 +173,17 @@ export interface ProvenanceProof {
     readonly userId: string;
     readonly forecaster: PublicIdentity | null;
     readonly submittedAt: string;
-    /** The vector exactly as hashed: fixed-precision decimals joined by commas. */
-    readonly probsCanonical: string;
+    /** The binary forecast's P(YES); null otherwise. */
+    readonly p: number | null;
+    /** The forward forecast's level, in the question's unit; null otherwise. */
+    readonly value: number | null;
+    /** A legacy (pre-013) event's bucket vector, from the archive; null otherwise. */
+    readonly archivedProbs: number[] | null;
+    /**
+     * The payload exactly as hashed (`forecastCanonical`): `0.4200000000,0.5800000000`
+     * for a binary, `fwd:412.0000000000` for a forward, the vector for a legacy event.
+     */
+    readonly payloadCanonical: string;
     readonly eventHash: string;
   };
   /** True when the stored event hash recomputes from the fields above. */
@@ -203,13 +212,16 @@ export async function getProvenanceProof(
   const event = await db
     .selectFrom("tournament_forecast_events as events")
     .innerJoin("tournament_questions as questions", "questions.id", "events.question_id")
+    .leftJoin("tournament_archived_forecast_vectors as archived", "archived.event_id", "events.id")
     .select([
       "events.id",
       "events.user_id",
       "events.question_id",
       "events.submitted_at",
-      "events.probs",
+      "events.p",
+      "events.value",
       "events.event_hash",
+      "archived.probs as archived_probs",
       "questions.slug",
       "questions.title",
       "questions.status",
@@ -219,7 +231,10 @@ export async function getProvenanceProof(
   if (event === undefined || event.status === "draft") {
     throw new ServiceError("FORECAST_NOT_FOUND", "No forecast has that id.");
   }
-  const probs = toNumbers(event.probs);
+  const forecast = {
+    ...toForecastPoint(event),
+    archivedProbs: event.archived_probs === null ? null : toNumbers(event.archived_probs),
+  };
   const leaf = await db
     .selectFrom("tournament_provenance_leaves as leaves")
     .innerJoin("tournament_provenance_batches as batches", "batches.id", "leaves.batch_id")
@@ -238,11 +253,12 @@ export async function getProvenanceProof(
       userId: event.user_id,
       forecaster: identity ?? null,
       submittedAt: event.submitted_at.toISOString(),
-      probsCanonical: canonicalProbs(probs),
+      ...forecast,
+      payloadCanonical: forecastCanonical(forecast),
       eventHash: event.event_hash,
     },
     hashMatches:
-      forecastEventHash(event.question_id, event.user_id, event.submitted_at, probs) ===
+      forecastEventHash(event.question_id, event.user_id, event.submitted_at, forecast) ===
       event.event_hash,
     batch:
       leaf === undefined

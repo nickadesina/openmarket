@@ -1,9 +1,12 @@
+import { forecastCanonical } from "../engine/tournament/forecast.js";
 import type { ProvenanceProof } from "../services/tournament/provenance.js";
 
 /**
  * In-browser re-verification of a provenance proof with Web Crypto, so the
- * page checks the server rather than repeating its word. Mirrors
- * `services/tournament/merkle.ts` and `forecastEventHash`; keep them in step.
+ * page checks the server rather than repeating its word: the payload is
+ * rebuilt from the event's own fields with the server's `forecastCanonical`,
+ * not taken from `payloadCanonical`. Mirrors `services/tournament/merkle.ts`
+ * and `forecastEventHash`; keep them in step.
  */
 
 function toHex(buffer: ArrayBuffer): string {
@@ -29,6 +32,8 @@ async function sha256(...parts: Uint8Array[]): Promise<string> {
 }
 
 export interface BrowserVerification {
+  /** The payload the browser rebuilt from the event's fields and hashed. */
+  readonly payload: string;
   readonly eventHash: string;
   readonly hashMatches: boolean;
   /** Null when the event is not batched yet. */
@@ -39,12 +44,12 @@ export interface BrowserVerification {
 export async function verifyProofInBrowser(proof: ProvenanceProof): Promise<BrowserVerification> {
   const { event, batch } = proof;
   const encoder = new TextEncoder();
+  const payload = forecastCanonical(event);
   const eventHash = await sha256(
-    encoder.encode(`${event.questionId}${event.userId}${event.submittedAt}${event.probsCanonical}`),
+    encoder.encode(`${event.questionId}${event.userId}${event.submittedAt}${payload}`),
   );
-  if (batch === null) {
-    return { eventHash, hashMatches: eventHash === event.eventHash, root: null, rootMatches: null };
-  }
+  const hashMatches = eventHash === event.eventHash;
+  if (batch === null) return { payload, eventHash, hashMatches, root: null, rootMatches: null };
   let hash = await sha256(new Uint8Array([0]), fromHex(eventHash));
   for (const step of batch.path) {
     const [side, sibling = ""] = step.split(":");
@@ -54,8 +59,9 @@ export async function verifyProofInBrowser(proof: ProvenanceProof): Promise<Brow
         : await sha256(new Uint8Array([1]), fromHex(hash), fromHex(sibling));
   }
   return {
+    payload,
     eventHash,
-    hashMatches: eventHash === event.eventHash,
+    hashMatches,
     root: hash,
     rootMatches: hash === batch.root,
   };

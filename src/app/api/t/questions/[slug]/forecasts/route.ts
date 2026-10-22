@@ -34,7 +34,7 @@ export function POST(request: Request, routeContext: ForecastsRouteContext): Pro
     const stored = await submitForecast(context.db, {
       slug: parseSlug(slug),
       userId,
-      probs: input.probs,
+      ...("p" in input ? { p: input.p } : { value: input.value }),
       clientHash: input.client_hash,
     });
     return jsonSuccess(stored, { requestId: context.requestId });

@@ -7,19 +7,16 @@ import type {
   TournamentQuestionStatus,
   TournamentUnit,
 } from "../../db/schema.js";
-import type { Bucket } from "../../engine/tournament/buckets.js";
-import { type BucketMedian, bucketMedian } from "../../engine/tournament/median.js";
 import { identitiesFor, userIdForHandle } from "./identities.js";
 import {
   type AggregateView,
   effectiveStatus,
   latestAggregateRow,
-  loadBuckets,
   nullableNumber,
   type PublicIdentity,
   type TournamentDb,
   toAggregateView,
-  toNumbers,
+  toForecastPoint,
   toQuestionRecord,
   windowEnd,
 } from "./records.js";
@@ -95,7 +92,6 @@ export async function getForecaster(
   const open: OpenPosition[] = [];
   const resolved: ResolvedPosition[] = [];
   for (const question of await positionsFor(db, userId)) {
-    const buckets = await loadBuckets(db, question.id);
     if (question.storedStatus === "resolved") {
       const score = await db
         .selectFrom("tournament_scores as scores")
@@ -109,7 +105,7 @@ export async function getForecaster(
           "scores.final_log_score",
           "scores.coverage",
           "resolutions.resolved_at",
-          "resolutions.winning_bucket_index",
+          "resolutions.outcome",
           "resolutions.resolved_value",
         ])
         .where("scores.question_id", "=", question.id)
@@ -120,10 +116,10 @@ export async function getForecaster(
       resolved.push({
         slug: question.slug,
         title: question.title,
+        kind: question.kind,
         unit: question.unit,
         resolvedAt: score.resolved_at.toISOString(),
-        winningBucketIndex: score.winning_bucket_index,
-        winningBucketLabel: buckets[score.winning_bucket_index]!.label,
+        outcome: score.outcome,
         resolvedValue: nullableNumber(score.resolved_value),
         timeAvgLogScore: score.time_avg_log_score,
         finalLogScore: score.final_log_score,
@@ -134,29 +130,27 @@ export async function getForecaster(
 
     const events = await db
       .selectFrom("tournament_forecast_events")
-      .select(["probs", "submitted_at"])
+      .select(["p", "value", "submitted_at"])
       .where("question_id", "=", question.id)
       .where("user_id", "=", userId)
+      .where(question.kind === "binary" ? "p" : "value", "is not", null)
       .where("submitted_at", "<", windowEnd(question))
       .orderBy("submitted_at", "desc")
       .execute();
     const latest = events[0];
     if (latest === undefined) continue;
-    const probs = toNumbers(latest.probs);
     const aggregate = await latestAggregateRow(db, question.id);
     open.push({
       slug: question.slug,
       title: question.title,
+      kind: question.kind,
       unit: question.unit,
       status: effectiveStatus(question, now),
       windowEndsAt: windowEnd(question).toISOString(),
-      buckets,
-      probs,
-      median: question.unit === "bool" ? null : bucketMedian(buckets, probs),
+      ...toForecastPoint(latest),
       submissionCount: events.length,
       lastUpdatedAt: latest.submitted_at.toISOString(),
-      aggregate:
-        aggregate === undefined ? null : toAggregateView(aggregate, question.unit, buckets),
+      aggregate: aggregate === undefined ? null : toAggregateView(aggregate),
     });
   }
 
@@ -192,18 +186,20 @@ export async function getViewer(db: Kysely<Database>, userId: string): Promise<V
   const rows = await db
     .selectFrom("tournament_forecast_events as events")
     .innerJoin("tournament_questions as questions", "questions.id", "events.question_id")
-    .select(["questions.slug", "events.probs", "events.submitted_at"])
+    .select(["questions.slug", "events.p", "events.value", "events.submitted_at"])
     .where("events.user_id", "=", userId)
     .orderBy("questions.slug")
     .orderBy("events.submitted_at", "desc")
     .execute();
   const forecasts: Record<string, ViewerForecast> = {};
   for (const row of rows) {
+    // Legacy (pre-013) events sit on voided questions and are no one's forecast in force.
+    if (row.p === null && row.value === null) continue;
     const existing = forecasts[row.slug];
     forecasts[row.slug] =
       existing === undefined
         ? {
-            probs: toNumbers(row.probs),
+            ...toForecastPoint(row),
             submittedAt: row.submitted_at.toISOString(),
             submissionCount: 1,
           }

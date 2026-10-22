@@ -236,7 +236,7 @@ postgresDescribe(suiteName, () => {
       description_md: "Description.",
       rulebook_md: "Rulebook.",
       rulebook_version: 1,
-      unit: "bool",
+      kind: "binary",
       opens_at: new Date(Date.now() - 60_000).toISOString(),
       closes_at: new Date(Date.now() + 86_400_000).toISOString(),
     });
