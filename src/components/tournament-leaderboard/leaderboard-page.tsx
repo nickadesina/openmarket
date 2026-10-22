@@ -35,10 +35,9 @@ export function LeaderboardPage({
         <div>
           <h1>Leaderboard</h1>
           <p>
-            Sum of time-averaged scores over questions resolved in the period, so taking part
-            counts: a log score on each binary, a distance score on each forward, 100 at best on
-            either. Ties break on mean coverage, the share of each question's window a forecast was
-            on file.
+            Your total adds up your score on every question resolved in the period: at most 100
+            each, 0 for 50% on a binary or a forward missed by 2×, below 0 for worse; ties go to the
+            higher mean coverage.
           </p>
         </div>
         <label className={styles.periodField}>

@@ -10,7 +10,7 @@ import {
   formatTournamentForecast,
   formatTournamentOutcome,
   formatTournamentValue,
-  tournamentKindCaption,
+  tournamentSettleCue,
 } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
 import { useNow } from "../../lib/client/tournament.js";
@@ -106,7 +106,7 @@ export function TournamentBoard({
                     <Link className={styles.questionLink} href={`/t/q/${question.slug}`}>
                       {question.title}
                     </Link>
-                    <span className={styles.unit}>{tournamentKindCaption(question)}</span>
+                    <span className={styles.unit}>{tournamentSettleCue(question)}</span>
                   </div>
                 </td>
                 <td
