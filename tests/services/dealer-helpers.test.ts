@@ -221,6 +221,7 @@ describe("rulebookEvents", () => {
       promoted_from: null,
       run_id: null,
       submitted_by: null,
+      submitted_kind: null,
       created_at: new Date(0),
       promoted_from_kind: null,
       ...overrides,

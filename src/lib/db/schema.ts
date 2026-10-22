@@ -361,10 +361,14 @@ export interface EventFlagsTable {
   run_id: Immutable<string | null>;
   /** The tournament user behind a `user_submitted` flag; null on every other kind (011). */
   submitted_by: GeneratedImmutable<string | null>;
+  /** What a `user_submitted` flag claims to be; null on every other kind (011). */
+  submitted_kind: GeneratedImmutable<EvidenceKind | null>;
   created_at: GeneratedImmutable<Date>;
 }
 
 export type EventFlagReviewDecision = "confirmed" | "rejected";
+/** The kinds a forecaster may submit evidence as (POST /api/t/questions/[slug]/evidence). */
+export type EvidenceKind = "scoop" | "release" | "s1_public";
 
 /** An admin's review of user-submitted evidence (migration 011); append-only, one per flag. */
 export interface EventFlagReviewsTable {

@@ -8,6 +8,7 @@ import type {
   JsonValue,
   MarketStatus,
 } from "../../db/schema.js";
+import { listPendingEvidence, type PendingEvidence } from "../tournament/evidence.js";
 import type { CronJob } from "./cron-run.js";
 import { LIVE_STATES } from "./dealer-books.js";
 import { type DealerHealth, getDealerHealth } from "./get-dealer-health.js";
@@ -18,7 +19,8 @@ import type { PendingPromotion } from "./settle-instruments.js";
  * the dealer's P&L per listing and epoch from `dealer_pnl`, the live
  * instruments and their widening, the recent runs of each scheduled job,
  * the resolution queue (rank 3–4 promotions the last settle run left
- * pending; read-only until the admin queue is built) and `source_health`
+ * pending; read-only until the admin queue is built), the evidence
+ * forecasters submitted that no admin has reviewed yet, and `source_health`
  * as ingest writes it. Every figure is computed here; the page formats.
  */
 
@@ -98,6 +100,8 @@ export interface DealerAdminPayload {
     readonly finished_at: Date | null;
     readonly pending: readonly AdminPendingPromotion[];
   };
+  /** User-submitted evidence awaiting an admin's confirm or reject. */
+  readonly evidence_queue: readonly PendingEvidence[];
   readonly sources: readonly AdminSource[];
   readonly health: DealerHealth;
 }
@@ -264,6 +268,7 @@ export async function getDealerAdmin(db: Kysely<Database>, now: Date): Promise<D
     instruments,
     cron_runs: cronRuns,
     resolution_queue: await resolutionQueue(db),
+    evidence_queue: await listPendingEvidence(db),
     sources,
     health: await getDealerHealth(db, now),
   };

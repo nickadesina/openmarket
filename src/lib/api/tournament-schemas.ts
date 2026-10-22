@@ -127,6 +127,55 @@ export const adminAffiliationSchema = z
   .object({ handle: profileSlugSchema, affiliation: affiliationSchema })
   .strict();
 
+const plainTextSchema = (maximum: number) =>
+  z
+    .string()
+    .trim()
+    .min(1)
+    .max(maximum)
+    .refine((value) => !/[\p{Cc}\p{Cf}]/u.test(value), "Text has invalid characters");
+
+/**
+ * Evidence a forecaster submits on a linked question: the `event_flags`
+ * terms shape (decision 0001) minus the fields only ingest fills.
+ */
+export const evidenceInputSchema = z
+  .object({
+    source_url: httpUrlSchema,
+    kind: z.enum(["scoop", "release", "s1_public"]),
+    published_at: instantSchema.optional(),
+    terms: z
+      .object({
+        valuation_usd: z.number().finite().positive().max(1e15).optional(),
+        valuation_basis: z.enum(["pre", "post", "unknown"]),
+        amount_usd: z.number().finite().positive().max(1e15).optional(),
+        outlet: plainTextSchema(100).optional(),
+      })
+      .strict()
+      .refine((terms) => terms.valuation_basis === "unknown" || terms.valuation_usd !== undefined, {
+        message: "A pre- or post-money basis needs a valuation",
+        path: ["valuation_usd"],
+      })
+      .optional(),
+  })
+  .strict();
+
+export const evidenceReviewSchema = z
+  .object({
+    decision: z.enum(["confirmed", "rejected"]),
+    /** The later independent flag that confirms the evidence; required to confirm. */
+    confirming_flag_id: z.uuid().optional(),
+    note: plainTextSchema(1_000).optional(),
+  })
+  .strict()
+  .refine(
+    (input) => (input.decision === "confirmed") === (input.confirming_flag_id !== undefined),
+    {
+      message: "A confirmation names the confirming flag; a rejection names none",
+      path: ["confirming_flag_id"],
+    },
+  );
+
 export const PASSWORD_MIN_LENGTH = 10;
 export const PASSWORD_MAX_LENGTH = 200;
 
@@ -154,3 +203,5 @@ export type FlagUserInput = z.infer<typeof flagUserSchema>;
 export type AdminAffiliationInput = z.infer<typeof adminAffiliationSchema>;
 export type PasswordAccountInput = z.infer<typeof passwordAccountSchema>;
 export type PasswordSignInInput = z.infer<typeof passwordSignInSchema>;
+export type EvidenceInput = z.infer<typeof evidenceInputSchema>;
+export type EvidenceReviewInput = z.infer<typeof evidenceReviewSchema>;

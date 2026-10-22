@@ -7,8 +7,9 @@ import { type Kysely, sql } from "kysely";
  * - A linked question is resolved by the settle job, which is not a person:
  *   `tournament_resolutions.settle_run_id` names its run, and a resolution
  *   carries exactly one of a resolver and a run.
- * - `user_submitted` evidence records its submitter in its own column, so
- *   `terms_json` keeps the shape decision 0001 pins; every other kind has none.
+ * - `user_submitted` evidence records its submitter and what it claims to be
+ *   (scoop, release, public S-1) in their own columns, so `terms_json` keeps
+ *   the shape decision 0001 pins; every other kind has neither.
  * - An admin's review of a submission is an append-only row: confirmed,
  *   citing the later independent flag that confirms it, or rejected.
  * - Restricted persons (CONTRACTS.md): a forecaster's self-attestation of the
@@ -36,12 +37,16 @@ export async function up(db: Kysely<unknown>): Promise<void> {
   await db.schema
     .alterTable("event_flags")
     .addColumn("submitted_by", "uuid", (column) => column.references("tournament_users.id"))
+    // What the submitter says the evidence is; the row's own kind stays user_submitted.
+    .addColumn("submitted_kind", "text")
     .execute();
   await db.schema
     .alterTable("event_flags")
     .addCheckConstraint(
       "event_flags_submitter",
-      sql`(kind = 'user_submitted') = (submitted_by is not null)`,
+      sql`(kind = 'user_submitted') = (submitted_by is not null)
+        and (kind = 'user_submitted') = (submitted_kind is not null)
+        and (submitted_kind is null or submitted_kind in ('scoop', 'release', 's1_public'))`,
     )
     .execute();
   await db.schema
@@ -144,7 +149,11 @@ export async function down(db: Kysely<unknown>): Promise<void> {
 
   await db.schema.dropIndex("event_flags_submitted_by").execute();
   await db.schema.alterTable("event_flags").dropConstraint("event_flags_submitter").execute();
-  await db.schema.alterTable("event_flags").dropColumn("submitted_by").execute();
+  await db.schema
+    .alterTable("event_flags")
+    .dropColumn("submitted_kind")
+    .dropColumn("submitted_by")
+    .execute();
 
   // A run-resolved row has no resolver to restore; down refuses rather than invent one.
   await db.schema
