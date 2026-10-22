@@ -1,12 +1,12 @@
+import { assertFinite, assertPositive } from "../assert.js";
 /**
  * The quarterly timing binary on the existing LMSR (CONTRACTS.md → Contract
  * A, README D12): two outcomes, NO at index 0 and YES at index 1 as
- * seedBinaryMarket lays them out, seeded once per quarter at the model p with
+ * the binary seed lays them out, seeded once per quarter at the model p with
  * a fixed b and never re-centred or re-scaled mid-quarter. The only rule the
  * binary adds to lmsr.ts is the price clamp [p_floor, 1 − p_floor].
  */
 import { probabilities } from "../lmsr.js";
-import { seedBinaryMarket } from "../seed.js";
 
 export const BINARY_NO_INDEX = 0;
 export const BINARY_YES_INDEX = 1;
@@ -26,19 +26,6 @@ export type BinaryClampCheck =
       readonly reason: "below_floor" | "above_ceiling";
       readonly yesProbabilityAfter: number;
     };
-
-function assertFinite(value: number, name: string): void {
-  if (!Number.isFinite(value)) {
-    throw new RangeError(`${name} must be finite`);
-  }
-}
-
-function assertPositive(value: number, name: string): void {
-  assertFinite(value, name);
-  if (value <= 0) {
-    throw new RangeError(`${name} must be greater than zero`);
-  }
-}
 
 function assertPFloor(pFloor: number): void {
   assertFinite(pFloor, "pFloor");
@@ -62,15 +49,20 @@ function assertTwoOutcomes(vector: readonly number[], name: string): void {
 
 /** Seeds the binary's LMSR so P(YES) = p at liquidity b (USD). */
 export function seedBinary(p: number, bUsd: number): SeededBinary {
-  const seeded = seedBinaryMarket(p, bUsd);
-  return {
-    q: [seeded.q[BINARY_NO_INDEX]!, seeded.q[BINARY_YES_INDEX]!],
-    probabilities: [
-      seeded.probabilities[BINARY_NO_INDEX]!,
-      seeded.probabilities[BINARY_YES_INDEX]!,
-    ],
-    yesProbability: seeded.currentMetric,
-  };
+  assertProbability(p, "p");
+  assertPositive(bUsd, "bUsd");
+  // Preserve the original seed's rounding and operation order: stored q vectors
+  // and their replay must remain bit-identical, including residual centering.
+  const no = Number((1 - p).toPrecision(15));
+  const logs = [Math.log(no), Math.log(p)];
+  const mean = (logs[0]! + logs[1]!) / 2;
+  const qNo = bUsd * (logs[0]! - mean);
+  const qYes = bUsd * (logs[1]! - mean);
+  const centeredYes = qYes - (qNo + qYes);
+  if (!Number.isFinite(qNo) || !Number.isFinite(centeredYes)) {
+    throw new RangeError("b is too large to produce finite quantities");
+  }
+  return { q: [qNo, centeredYes], probabilities: [no, p], yesProbability: p };
 }
 
 /** Whether a YES price sits inside [p_floor, 1 − p_floor], edges included. */

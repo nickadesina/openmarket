@@ -1,3 +1,5 @@
+import { assertFinite, assertNonNegative, assertPositive } from "../assert.js";
+import { CENT_TOLERANCE } from "../types.js";
 /**
  * The next-print forward's quoter and payout (CONTRACTS.md → Contract B and
  * The dealer). Pure: every parameter arrives as an argument, so the services
@@ -81,22 +83,6 @@ export interface ForwardPosition {
   readonly kappa: number;
 }
 
-/** Same tolerance as lmsr.ts's quantizeEntitlementCents, for float noise around a whole cent. */
-const CENT_TOLERANCE = 1e-6;
-
-function assertFinite(value: number, name: string): void {
-  if (!Number.isFinite(value)) {
-    throw new RangeError(`${name} must be finite`);
-  }
-}
-
-function assertPositive(value: number, name: string): void {
-  assertFinite(value, name);
-  if (value <= 0) {
-    throw new RangeError(`${name} must be greater than zero`);
-  }
-}
-
 function assertSafeInteger(value: number, name: string): void {
   if (!Number.isSafeInteger(value)) {
     throw new RangeError(`${name} must be a safe integer`);
@@ -115,11 +101,9 @@ function validateQuoteParams(params: ForwardQuoteParams): void {
   assertSafeInteger(params.capCents, "capCents");
   assertPositive(params.capCents, "capCents");
   assertPositive(params.kappa, "kappa");
-  assertFinite(params.gamma, "gamma");
-  if (params.gamma < 0) throw new RangeError("gamma must not be negative");
+  assertNonNegative(params.gamma, "gamma");
   assertPositive(params.sFloor, "sFloor");
-  assertFinite(params.sigmaTier, "sigmaTier");
-  if (params.sigmaTier < 0) throw new RangeError("sigmaTier must not be negative");
+  assertNonNegative(params.sigmaTier, "sigmaTier");
   if (typeof params.widened !== "boolean") throw new RangeError("widened must be boolean");
   assertPositive(params.flagSpreadMult, "flagSpreadMult");
   assertPositive(params.flagCapMult, "flagCapMult");
@@ -178,9 +162,31 @@ export function quote(params: ForwardQuoteParams): ForwardQuote {
   };
 }
 
+function validateQuote(forwardQuote: ForwardQuote): void {
+  for (const field of ["mid", "adjustedMid", "halfSpread", "bid", "ask"] as const) {
+    assertFinite(forwardQuote[field], field);
+  }
+  if (forwardQuote.halfSpread < 0 || forwardQuote.bid > forwardQuote.ask) {
+    throw new RangeError("quote spread must not be negative");
+  }
+  assertSafeInteger(forwardQuote.inventoryCents, "inventoryCents");
+  for (const field of ["effectiveCapCents", "maxLongCents", "maxShortCents"] as const) {
+    assertSafeInteger(forwardQuote[field], field);
+    assertNonNegative(forwardQuote[field], field);
+  }
+  const { effectiveCapCents: cap, inventoryCents: inventory } = forwardQuote;
+  if (
+    forwardQuote.maxLongCents !== Math.max(0, cap + inventory) ||
+    forwardQuote.maxShortCents !== Math.max(0, cap - inventory)
+  ) {
+    throw new RangeError("quote availability must agree with its cap and inventory");
+  }
+}
+
 /** How much notional a user can take on a side of this quote; 0 means the side is pulled. */
 export function maxFillCents(side: ForwardSide, forwardQuote: ForwardQuote): number {
   assertSide(side);
+  validateQuote(forwardQuote);
   return side === "long" ? forwardQuote.maxLongCents : forwardQuote.maxShortCents;
 }
 
@@ -195,9 +201,8 @@ export function fill(
 ): ForwardFill {
   assertSide(side);
   assertSafeInteger(notionalCents, "notionalCents");
-  if (notionalCents <= 0) return { ok: false, reason: "non_positive" };
-
   const maxCents = maxFillCents(side, forwardQuote);
+  if (notionalCents <= 0) return { ok: false, reason: "non_positive" };
   if (maxCents === 0) return { ok: false, reason: "side_pulled" };
   if (notionalCents > maxCents) return { ok: false, reason: "exceeds_cap", maxCents };
 
@@ -205,6 +210,7 @@ export function fill(
     side === "long"
       ? forwardQuote.inventoryCents - notionalCents
       : forwardQuote.inventoryCents + notionalCents;
+  assertSafeInteger(inventoryAfterCents, "inventoryAfterCents");
   return {
     ok: true,
     side,
