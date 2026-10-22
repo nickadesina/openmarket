@@ -24,7 +24,7 @@ Institutional, analytical, restrained. Probability and execution evidence lead. 
 - Price-moved responses show the new authoritative quote and require confirmation.
 - Desktop market layout: chart, implied ladder and distribution in the main region; persistent trade rail; lower comments/activity/resolution region.
 - Mobile: single column; a fixed bar opens the ticket in an accessible Radix Dialog bottom sheet.
-- All surfaces implement layout-matched loading, retryable error, empty, disabled/executing, insufficient-cash/holdings, and reduced-motion states. (Known gaps: the Distribution tab renders nothing on error or empty; the market page shows live epochs only, so it has no settled state.)
+- All surfaces implement layout-matched loading, retryable error, empty, disabled/executing, insufficient-cash/holdings, and reduced-motion states. (Known gap: the market page shows live epochs only, so it has no settled state.)
 
 ## Visual contracts
 
