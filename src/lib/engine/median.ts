@@ -1,6 +1,4 @@
-import { EPS } from "./types.js";
-
-const SQRT_TWO = Math.sqrt(2);
+import { EPS, SQRT_TWO } from "./types.js";
 
 /**
  * Returns the valuation at which the cumulative probability first reaches

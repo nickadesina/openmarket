@@ -12,7 +12,7 @@ import { assertDate } from "../assert.js";
  */
 export const RULEBOOK_VERSION = "1.0.0";
 
-const DAY_MS = 86_400_000;
+import { DAY_MS, utcMidnight } from "../time.js";
 
 export type SourceRank = 1 | 2 | 3 | 4;
 
@@ -208,10 +208,6 @@ export function binaryExpiry(listedAt: Date): Date {
   return quarterEndCutoff(new Date(cutoff.getTime() + 1));
 }
 
-function utcMidnight(at: Date): number {
-  return Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate());
-}
-
 export type BinaryResolution =
   | { readonly status: "open" }
   | { readonly status: "no" }
@@ -319,7 +315,9 @@ function isPositiveFinite(value: number | undefined): value is number {
   return value !== undefined && Number.isFinite(value) && value > 0;
 }
 
-function afterGrace(deadline: Date, asOf: Date): boolean {
+export function afterGrace(deadline: Date, asOf: Date): boolean {
+  assertDate(deadline, "deadline");
+  assertDate(asOf, "asOf");
   return asOf.getTime() > deadline.getTime() + RULEBOOK.observation_grace_days * DAY_MS;
 }
 

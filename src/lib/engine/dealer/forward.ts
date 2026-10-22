@@ -1,3 +1,5 @@
+import { assertFinite, assertNonNegative, assertPositive } from "../assert.js";
+import { CENT_TOLERANCE } from "../types.js";
 /**
  * The next-print forward's quoter and payout (CONTRACTS.md → Contract B and
  * The dealer). Pure: every parameter arrives as an argument, so the services
@@ -81,22 +83,6 @@ export interface ForwardPosition {
   readonly kappa: number;
 }
 
-/** Same tolerance as lmsr.ts's quantizeEntitlementCents, for float noise around a whole cent. */
-const CENT_TOLERANCE = 1e-6;
-
-function assertFinite(value: number, name: string): void {
-  if (!Number.isFinite(value)) {
-    throw new RangeError(`${name} must be finite`);
-  }
-}
-
-function assertPositive(value: number, name: string): void {
-  assertFinite(value, name);
-  if (value <= 0) {
-    throw new RangeError(`${name} must be greater than zero`);
-  }
-}
-
 function assertSafeInteger(value: number, name: string): void {
   if (!Number.isSafeInteger(value)) {
     throw new RangeError(`${name} must be a safe integer`);
@@ -115,11 +101,9 @@ function validateQuoteParams(params: ForwardQuoteParams): void {
   assertSafeInteger(params.capCents, "capCents");
   assertPositive(params.capCents, "capCents");
   assertPositive(params.kappa, "kappa");
-  assertFinite(params.gamma, "gamma");
-  if (params.gamma < 0) throw new RangeError("gamma must not be negative");
+  assertNonNegative(params.gamma, "gamma");
   assertPositive(params.sFloor, "sFloor");
-  assertFinite(params.sigmaTier, "sigmaTier");
-  if (params.sigmaTier < 0) throw new RangeError("sigmaTier must not be negative");
+  assertNonNegative(params.sigmaTier, "sigmaTier");
   if (typeof params.widened !== "boolean") throw new RangeError("widened must be boolean");
   assertPositive(params.flagSpreadMult, "flagSpreadMult");
   assertPositive(params.flagCapMult, "flagCapMult");
@@ -188,7 +172,7 @@ function validateQuote(forwardQuote: ForwardQuote): void {
   assertSafeInteger(forwardQuote.inventoryCents, "inventoryCents");
   for (const field of ["effectiveCapCents", "maxLongCents", "maxShortCents"] as const) {
     assertSafeInteger(forwardQuote[field], field);
-    if (forwardQuote[field] < 0) throw new RangeError(`${field} must not be negative`);
+    assertNonNegative(forwardQuote[field], field);
   }
   const { effectiveCapCents: cap, inventoryCents: inventory } = forwardQuote;
   if (

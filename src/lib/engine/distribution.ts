@@ -1,3 +1,5 @@
+import { assertNonNegative, assertPositive } from "./assert.js";
+import { SQRT_TWO } from "./types.js";
 /**
  * The read-only implied distribution (README D11, TECHNICAL_DESIGN.md §6):
  * a lognormal centred on the forward's model mid with the tier's prior width
@@ -10,14 +12,6 @@
  */
 
 export const MIN_BUCKET_PROBABILITY = 0.001;
-
-const SQRT_TWO = Math.sqrt(2);
-
-function assertPositive(value: number, name: string): void {
-  if (!Number.isFinite(value) || value <= 0) {
-    throw new RangeError(`${name} must be finite and greater than zero`);
-  }
-}
 
 function validateBoundaries(boundaries: readonly number[]): void {
   if (!Array.isArray(boundaries) || boundaries.length < 1) {
@@ -89,9 +83,7 @@ export function probabilitiesAbove(probabilities: readonly number[]): number[] {
     throw new RangeError("probabilities must contain at least two buckets");
   }
   for (const mass of probabilities) {
-    if (!Number.isFinite(mass) || mass < 0) {
-      throw new RangeError("probabilities must be finite and non-negative");
-    }
+    assertNonNegative(mass, "probability");
   }
   const above = new Array<number>(probabilities.length - 1);
   let tail = 0;

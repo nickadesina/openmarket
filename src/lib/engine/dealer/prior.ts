@@ -11,7 +11,7 @@
 
 import { assertDate, assertFinite, assertPositive } from "../assert.js";
 
-const DAY_MS = 86_400_000;
+import { DAY_MS, utcMidnight } from "../time.js";
 
 export type Tier = "mega" | "redhot";
 
@@ -139,9 +139,4 @@ export function forwardMid(input: ForwardMidInput): number {
     return Math.log(leak.postMoneyUsd);
   }
   return Math.log(input.lastPostMoneyUsd) + input.mu;
-}
-
-function utcMidnight(at: Date): number {
-  assertDate(at, "at");
-  return Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate());
 }
