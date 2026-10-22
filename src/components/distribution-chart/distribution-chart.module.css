@@ -66,19 +66,8 @@
   opacity: 0.55;
 }
 
-.winningBar {
-  fill: var(--color-primary);
-  opacity: 1;
-}
-
 .axisLabel {
   fill: var(--color-ink-muted);
-  font-family: var(--font-sans);
-  font-size: var(--font-size-xs);
-}
-
-.winnerMarker {
-  fill: var(--color-ink);
   font-family: var(--font-sans);
   font-size: var(--font-size-xs);
 }

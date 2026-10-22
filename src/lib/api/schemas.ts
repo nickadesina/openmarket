@@ -1,38 +1,15 @@
 import { z } from "zod";
 
-import { VALUATION_BOUNDARIES_USD } from "../engine/buckets.js";
 import { MAX_QUANTITY, MAX_TRADE_SPEND_CENTS, MIN_QUANTITY } from "../engine/types.js";
 import { parseUsdToCents, USD_MAX_LENGTH } from "./money.js";
 
-const slugSchema = z
-  .string()
-  .min(1)
-  .max(100)
-  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*(?![\s\S])/);
 const quantitySchema = z.number().finite().min(MIN_QUANTITY).max(MAX_QUANTITY);
 const idempotencyKeySchema = z
   .string()
   .uuid()
   .transform((value) => value.toLowerCase());
-const strikeIndexSchema = z
-  .number()
-  .int()
-  .min(0)
-  .max(VALUATION_BOUNDARIES_USD.length - 1);
-
-function isUsd(value: string, allowZero: boolean): boolean {
-  try {
-    const cents = parseUsdToCents(value);
-    return allowZero ? cents >= 0 : cents > 0;
-  } catch {
-    return false;
-  }
-}
-
-const nonnegativeUsdSchema = z
-  .string()
-  .max(USD_MAX_LENGTH)
-  .refine((value) => isUsd(value, true), "Must be a non-negative USD amount");
+/** A dealer binary has one strike: its two outcomes split at index 0. */
+const strikeIndexSchema = z.literal(0);
 
 function isTradeUsd(value: string, allowZero: boolean): boolean {
   try {
@@ -58,37 +35,15 @@ const nonnegativeTradeUsdSchema = z
     (value) => isTradeUsd(value, true),
     "Must be a non-negative USD amount within the trade ceiling",
   );
-const httpUrlSchema = z
-  .string()
-  .max(4_096)
-  .url()
-  .refine((value) => {
-    const protocol = new URL(value).protocol;
-    return protocol === "http:" || protocol === "https:";
-  }, "Must be an HTTP(S) URL");
-
-/**
- * A book is addressed by `market_id` (a dealer binary) or by `slug` (a
- * company's ladder market, which has no instrument); exactly one of them.
- */
+/** An LMSR quote or trade addresses a dealer binary's book by `market_id`. */
 const quoteFields = {
-  slug: slugSchema.optional(),
   market_id: z
     .string()
     .uuid()
-    .transform((value) => value.toLowerCase())
-    .optional(),
+    .transform((value) => value.toLowerCase()),
   side: z.enum(["yes", "no"]),
   strike_index: strikeIndexSchema,
 } as const;
-
-function oneBook(input: {
-  readonly slug?: string | undefined;
-  readonly market_id?: string | undefined;
-}): boolean {
-  return (input.slug === undefined) !== (input.market_id === undefined);
-}
-const ONE_BOOK = { message: "Give exactly one of slug or market_id" } as const;
 
 const buyQuantityQuoteSchema = z
   .object({
@@ -112,9 +67,11 @@ const sellQuoteSchema = z
   })
   .strict();
 
-export const quoteInputSchema = z
-  .union([buyQuantityQuoteSchema, buySpendQuoteSchema, sellQuoteSchema])
-  .refine(oneBook, ONE_BOOK);
+export const quoteInputSchema = z.union([
+  buyQuantityQuoteSchema,
+  buySpendQuoteSchema,
+  sellQuoteSchema,
+]);
 
 const tradeFields = {
   ...quoteFields,
@@ -146,12 +103,15 @@ const sellTradeSchema = z
   })
   .strict();
 
-export const tradeInputSchema = z
-  .union([buyQuantityTradeSchema, buySpendTradeSchema, sellTradeSchema])
-  .refine(oneBook, ONE_BOOK);
+export const tradeInputSchema = z.union([
+  buyQuantityTradeSchema,
+  buySpendTradeSchema,
+  sellTradeSchema,
+]);
 
 /** A dealer book or instrument id: a UUID, compared lower-case. */
 const bookIdSchema = idempotencyKeySchema;
+export const marketIdSchema = bookIdSchema;
 const entryLnSchema = z.number().finite();
 
 /** `GET /api/instruments/[instrumentId]/quote`: a side and notional preview a fill, or neither. */
@@ -184,20 +144,6 @@ export const forwardTradeInputSchema = z.discriminatedUnion("side", [
     .strict(),
 ]);
 
-export const settlementInputSchema = z
-  .object({
-    slug: slugSchema,
-    confirm_slug: slugSchema,
-    settled_value_usd: nonnegativeUsdSchema,
-    source_url: httpUrlSchema,
-    source_description: z.string().trim().min(1).max(1_000).optional(),
-  })
-  .strict()
-  .refine((input) => input.slug === input.confirm_slug, {
-    message: "Confirmation slug must match slug",
-    path: ["confirm_slug"],
-  });
-
 export const commentIdSchema = idempotencyKeySchema;
 
 export const commentInputSchema = z
@@ -220,6 +166,5 @@ export type CommentInput = z.infer<typeof commentInputSchema>;
 
 export type QuoteInput = z.infer<typeof quoteInputSchema>;
 export type TradeInput = z.infer<typeof tradeInputSchema>;
-export type SettlementInput = z.infer<typeof settlementInputSchema>;
 export type ForwardQuoteQuery = z.infer<typeof forwardQuoteQuerySchema>;
 export type ForwardTradeInput = z.infer<typeof forwardTradeInputSchema>;

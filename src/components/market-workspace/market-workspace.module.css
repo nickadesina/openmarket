@@ -32,10 +32,6 @@
   align-self: start;
 }
 
-.railTab {
-  composes: moduleTab from "../../styles/shared.module.css";
-}
-
 .ticketPrompt {
   display: grid;
   gap: var(--space-2);

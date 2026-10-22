@@ -7,11 +7,8 @@ import type { TradeInput } from "../../src/lib/api/schemas.js";
 import { TOURNAMENT_SESSION_COOKIE } from "../../src/lib/auth/tournament-session.js";
 import { createMigrator } from "../../src/lib/db/migrator.js";
 import type { Database } from "../../src/lib/db/schema.js";
-import { VALUATION_BOUNDARIES_USD, VALUATION_BUCKET_COUNT } from "../../src/lib/engine/buckets.js";
-import { seedValuationMarket } from "../../src/lib/engine/seed.js";
 import { createComment } from "../../src/lib/services/create-comment.js";
 import { executeTrade } from "../../src/lib/services/execute-trade.js";
-import { settleMarket } from "../../src/lib/services/settle-market.js";
 import { upsertIdentity } from "../../src/lib/services/tournament/sign-in.js";
 import { ensurePaperAccount, INITIAL_USER_BALANCE_CENTS } from "../../src/lib/services/user.js";
 import { verifyReplay } from "../../src/lib/services/verify-replay.js";
@@ -22,6 +19,7 @@ import {
   type PostgresTestDatabase,
   resetPostgresTestDatabase,
   sessionCookie,
+  settleBinaryBook,
   TEST_DATABASE_SKIP_REASON,
   testDatabaseUrl,
 } from "./postgres.js";
@@ -217,7 +215,7 @@ postgresDescribe(suiteName, () => {
   });
 });
 
-/** The pre-008 shape: username accounts trading the 41-bucket ladders. */
+/** The pre-008 shape: username accounts trading books that have no dealer instrument. */
 async function insertUsernameAccount(db: Kysely<Database>, username: string): Promise<string> {
   const { rows } = await sql<{ id: string }>`
     insert into users (username, username_normalized, cash_balance_cents)
@@ -227,44 +225,13 @@ async function insertUsernameAccount(db: Kysely<Database>, username: string): Pr
   return rows[0]!.id;
 }
 
-async function insertLadder(db: Kysely<Database>, slug: string, anchorUsd: number) {
-  const company = await db
-    .insertInto("companies")
-    .values({ name: slug, slug, logo_path: `/logos/${slug}.svg` })
-    .onConflict((conflict) => conflict.column("slug").doUpdateSet({ name: slug }))
-    .returning("id")
-    .executeTakeFirstOrThrow();
-  const seeded = seedValuationMarket(anchorUsd, 0.5, 15_000, VALUATION_BOUNDARIES_USD);
-  const market = await db
-    .insertInto("markets")
-    .values({
-      company_id: company.id,
-      status: "open",
-      n_buckets: VALUATION_BUCKET_COUNT,
-      bucket_grid_version: "valuation-v1",
-      metric_kind: "valuation_median",
-      anchor_valuation: anchorUsd.toFixed(2),
-      anchor_date: "2025-09-02",
-      anchor_description: "Last priced round.",
-      b: 15_000,
-      sigma: 0.5,
-      initial_q: [...seeded.q],
-      q: [...seeded.q],
-      current_metric: seeded.currentMetric,
-      settled_at: null,
-    })
-    .returning("id")
-    .executeTakeFirstOrThrow();
-  await db
-    .insertInto("marks")
-    .values({
-      market_id: market.id,
-      market_sequence: "0",
-      trade_id: null,
-      ts: new Date(),
-      value: seeded.currentMetric,
-    })
-    .execute();
+/**
+ * A pre-dealer book: no instrument, the shape 008 deletes. The ladders were
+ * 41-bucket books; their trading code is gone, so the fixture trades the
+ * two-outcome shape the remaining LMSR path prices, which 008 treats the same.
+ */
+async function insertLadder(db: Kysely<Database>, slug: string) {
+  const { company, market } = await createBinaryBook(db, { slug, name: slug, b: 1_000 });
   return { companyId: company.id, marketId: market.id };
 }
 
@@ -343,13 +310,13 @@ async function insertDealerBook(db: Kysely<Database>, slug: string) {
   return { companyId: company.id, bookId: book.id };
 }
 
-function buy(slug: string, spendUsd: string, strikeIndex: number, side: "yes" | "no"): TradeInput {
+function buy(marketId: string, spendUsd: string, side: "yes" | "no"): TradeInput {
   return {
     idempotency_key: randomUUID(),
-    slug,
+    market_id: marketId,
     action: "buy",
     side,
-    strike_index: strikeIndex,
+    strike_index: 0,
     spend_usd: spendUsd,
     max_cost_usd: spendUsd,
   };
@@ -377,34 +344,29 @@ postgresDescribe(`${suiteName}: 008 on a populated 007 database`, () => {
 
   it("removes the ladders, Stripe and every username account, and replay still reconciles", async () => {
     const db = postgres.db;
-    const anthropic = await insertLadder(db, "anthropic", 183_000_000_000);
-    const stripe = await insertLadder(db, "stripe", 91_500_000_000);
+    const anthropic = await insertLadder(db, "anthropic");
+    const stripe = await insertLadder(db, "stripe");
     const alice = await insertUsernameAccount(db, "Alice");
     const bob = await insertUsernameAccount(db, "bob_2");
     await insertUsernameAccount(db, "Idle_Carol");
     for (const [user, input] of [
-      [alice, buy("anthropic", "250.00", 30, "yes")],
-      [bob, buy("anthropic", "120.00", 32, "no")],
-      [alice, buy("stripe", "75.00", 28, "yes")],
-      [bob, buy("stripe", "40.00", 29, "yes")],
+      [alice, buy(anthropic.marketId, "250.00", "yes")],
+      [bob, buy(anthropic.marketId, "120.00", "no")],
+      [alice, buy(stripe.marketId, "75.00", "yes")],
+      [bob, buy(stripe.marketId, "40.00", "yes")],
     ] as const) {
       await executeTrade(db, user, input);
     }
     await executeTrade(db, alice, {
       idempotency_key: randomUUID(),
-      slug: "anthropic",
+      market_id: anthropic.marketId,
       action: "sell",
       side: "yes",
-      strike_index: 30,
+      strike_index: 0,
       quantity: 10,
       min_proceeds_usd: "0.00",
     });
-    await settleMarket(db, {
-      slug: "stripe",
-      confirm_slug: "stripe",
-      settled_value_usd: "106700000000.00",
-      source_url: "https://example.test/stripe",
-    });
+    await settleBinaryBook(db, stripe.marketId, "yes", "https://example.test/stripe");
     await sql`
       insert into market_comments (market_id, user_id, body, client_request_id, request_fingerprint)
       values (${anthropic.marketId}, ${alice}, 'A ladder comment', ${randomUUID()}, ${"a".repeat(64)})
@@ -421,7 +383,8 @@ postgresDescribe(`${suiteName}: 008 on a populated 007 database`, () => {
         ('trade', 'network:abc', now(), 2),
         ('tournament_login', 'net', now(), 1)
     `.execute(db);
-    // Listed after the ladder traded, so trades by slug above hit the ladder.
+    // One open book per company and kind: the pre-dealer book closes before the dealer lists.
+    await settleBinaryBook(db, anthropic.marketId, "no", "https://example.test/anthropic");
     const dealer = await insertDealerBook(db, "anthropic");
     await db
       .insertInto("companies")
@@ -524,8 +487,7 @@ postgresDescribe(`${suiteName}: 008 after dealer trading`, () => {
     const db = postgres.db;
     const { bookId } = await insertDealerBook(db, "modal");
     const trader = await insertUsernameAccount(db, "EarlyDealer");
-    const { slug: _slug, ...order } = buy("modal", "10.00", 0, "yes");
-    await executeTrade(db, trader, { ...order, market_id: bookId });
+    await executeTrade(db, trader, buy(bookId, "10.00", "yes"));
 
     const migration = await createMigrator(db, postgres.schema).migrateToLatest();
     expect(String(migration.error)).toMatch(/008 runs before dealer trading/);

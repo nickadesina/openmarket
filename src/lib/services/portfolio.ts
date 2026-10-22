@@ -1,20 +1,31 @@
-import type { Kysely } from "kysely";
+import type { Kysely, Transaction } from "kysely";
 
 import { ServiceError } from "../api/errors.js";
 import type {
+  ClaimSide,
   ContractSide,
   Database,
+  ForwardSide,
+  InstrumentState,
   MarketStatus,
   MetricKind,
   TradeAction,
 } from "../db/schema.js";
-import { VALUATION_BOUNDARIES_USD, VALUATION_BUCKET_COUNT } from "../engine/buckets.js";
-import { contractMask, sellableQuantity } from "../engine/contracts.js";
-import { decomposeHoldings } from "../engine/decomposition.js";
+import { settlementCreditCents } from "../engine/dealer/forward.js";
 import { probabilities } from "../engine/lmsr.js";
 import { EPS } from "../engine/types.js";
+import { latestMid } from "./dealer/dealer-books.js";
 import { identitiesFor } from "./tournament/identities.js";
 import type { PublicIdentity } from "./tournament/records.js";
+
+/**
+ * `GET /api/portfolio`: the signed-in paper account's cash, its binary
+ * holdings marked at the book's YES price, its open forward positions marked
+ * at the latest model mid, and its trade history. A forward is held to
+ * settlement or void (README D11); its marked value is what settlement would
+ * credit at the mid now: collateral plus N·clip(mid − F₀, ±κ), quantized as
+ * settlement quantizes it.
+ */
 
 export const PORTFOLIO_DEFAULT_TRADE_LIMIT = 25;
 export const PORTFOLIO_MAX_TRADE_LIMIT = 100;
@@ -22,80 +33,89 @@ export const PORTFOLIO_MAX_TRADE_LIMIT = 100;
 export interface PortfolioOptions {
   readonly offset?: number;
   readonly limit?: number;
+  readonly now?: Date;
 }
 
-export interface PortfolioExposurePosition {
-  readonly side: ContractSide;
-  readonly strikeIndex: number;
+export interface PortfolioCompany {
+  readonly name: string;
+  readonly slug: string;
+  readonly logoPath: string;
+}
+
+export interface PortfolioBinaryPosition {
+  readonly side: ClaimSide;
   readonly quantity: number;
+  /** The side's price now: YES or NO probability on the book. */
   readonly markPriceUsd: number;
   readonly markedValueUsd: number;
   readonly sellableQuantity: number;
-}
-
-export interface PortfolioResidualExposure {
-  readonly buckets: number[];
-  readonly markedValueUsd: number;
-}
-
-export interface PortfolioExposure {
-  readonly probabilities: number[];
-  readonly holdingsMarkedValueUsd: number;
-  readonly positions: PortfolioExposurePosition[];
-  readonly residualExposure: PortfolioResidualExposure;
+  readonly approximateCostBasis: PortfolioCostBasis | null;
 }
 
 export interface PortfolioCostBasis {
-  readonly side: ContractSide;
-  readonly strikeIndex: number;
-  readonly strikeValueUsd: string | null;
+  readonly side: ClaimSide;
   readonly netQuantity: number;
-  /** Buys minus sell proceeds. Redemptions and cross-strike attribution make this approximate. */
+  /** Buys minus sell proceeds. Full-set redemptions make this approximate. */
   readonly approximateNetCostCents: string;
   readonly approximateAveragePriceUsd: number | null;
 }
 
-export interface PortfolioPosition extends PortfolioExposurePosition {
-  readonly strikeValueUsd: string | null;
-  readonly approximateCostBasis: PortfolioCostBasis | null;
-}
-
+/** One binary book the account holds shares in. */
 export interface PortfolioMarket {
   readonly marketId: string;
-  readonly company: {
-    readonly name: string;
-    readonly slug: string;
-    readonly logoPath: string;
-  };
+  readonly instrumentId: string | null;
+  readonly company: PortfolioCompany;
   readonly status: MarketStatus;
-  readonly metricKind: MetricKind;
-  readonly probabilities: number[];
+  readonly question: string | null;
+  readonly expiresAt: string | null;
+  readonly yesProbability: number;
   readonly holdingsMarkedValueUsd: number;
-  readonly positions: PortfolioPosition[];
-  readonly residualExposure: PortfolioResidualExposure;
-  readonly costBasis: PortfolioCostBasis[];
+  readonly positions: PortfolioBinaryPosition[];
+}
+
+export interface PortfolioForwardPosition {
+  readonly positionId: string;
+  readonly instrumentId: string;
+  readonly marketId: string;
+  readonly company: PortfolioCompany;
+  readonly question: string;
+  readonly state: InstrumentState;
+  readonly side: ForwardSide;
+  readonly notionalCents: string;
+  /** F₀, ln USD and USD. */
+  readonly entryLn: number;
+  readonly entryUsd: number;
+  /** The latest model mid, ln USD and USD. */
+  readonly midLn: number;
+  readonly midUsd: number;
+  /** N·κ, posted at open: the most the position can lose, and the most it can gain. */
+  readonly collateralCents: string;
+  readonly maxLossCents: string;
+  readonly maxGainCents: string;
+  /** Settlement credit at the mid minus collateral; signed cents. */
+  readonly unrealisedCents: string;
+  /** Settlement credit at the mid: collateral plus unrealised. */
+  readonly markedValueCents: string;
+  readonly openedAt: string;
+  readonly expiresAt: string;
 }
 
 export interface PortfolioTrade {
   readonly id: string;
   readonly marketId: string;
-  readonly company: {
-    readonly name: string;
-    readonly slug: string;
-  };
+  readonly company: { readonly name: string; readonly slug: string };
+  readonly metricKind: MetricKind;
   readonly marketSequence: string;
   readonly action: TradeAction;
   readonly side: ContractSide;
-  readonly strikeIndex: number;
-  readonly strikeValueUsd: string | null;
+  /** Binary shares, or a forward's notional in dollars. */
   readonly quantity: number;
-  readonly requestedSpendCents: string | null;
-  readonly engineCostUsd: number;
+  /** Binary cost or proceeds; a forward's collateral. */
   readonly cashAmountCents: string;
   readonly redemptionQuantity: number;
   readonly redemptionCents: string;
-  readonly metricBefore: number;
-  readonly metricAfter: number;
+  /** A forward's F₀ in USD; null for a binary. */
+  readonly entryUsd: number | null;
   readonly createdAt: string;
 }
 
@@ -112,265 +132,70 @@ export interface Portfolio {
   readonly identity: PublicIdentity;
   readonly cashBalanceCents: string;
   readonly holdingsMarkedValueUsd: number;
+  readonly forwardPositions: PortfolioForwardPosition[];
+  /** Σ collateral of open forward positions. */
+  readonly forwardCollateralCents: string;
+  /** Σ unrealised of open forward positions, signed. */
+  readonly forwardUnrealisedCents: string;
+  /** Cash + binary holdings mark + open forwards' marked value (collateral + unrealised). */
   readonly accountValueUsd: number;
   readonly markets: PortfolioMarket[];
   readonly tradeHistory: PortfolioTradePage;
+  readonly asOf: string;
 }
 
 interface CostBasisTrade {
   readonly market_id: string;
   readonly action: TradeAction;
   readonly contract_side: ContractSide;
-  readonly strike_index: number;
   readonly quantity: number;
   readonly cash_amount_cents: string;
 }
 
-interface MutableCostBasis {
-  readonly marketId: string;
-  readonly side: ContractSide;
-  readonly strikeIndex: number;
-  netQuantity: number;
-  netCostCents: bigint;
-}
-
 /**
- * Marks and deterministically decomposes one canonical holdings vector.
- * Every returned array is newly allocated; the supplied market and holdings vectors are untouched.
+ * A binary holding [NO, YES] marked at the book's probabilities. A full set
+ * redeems at trade time, so at most one side is normally held.
  */
-export function calculatePortfolioExposure(
+export function calculateBinaryExposure(
   holdings: readonly number[],
   marketQ: readonly number[],
   b: number,
-): PortfolioExposure {
-  if (holdings.length !== marketQ.length) {
-    throw new RangeError("holdings and market q must have equal lengths");
+): {
+  readonly yesProbability: number;
+  readonly holdingsMarkedValueUsd: number;
+  readonly positions: Omit<PortfolioBinaryPosition, "approximateCostBasis">[];
+} {
+  if (holdings.length !== 2 || marketQ.length !== 2) {
+    throw new RangeError("a binary holding and its book have two outcomes");
   }
-
-  const currentProbabilities = probabilities(marketQ, b);
-  const normalizedHoldings = new Array<number>(holdings.length);
+  const [noProbability, yesProbability] = probabilities(marketQ, b) as [number, number];
+  const positions: Omit<PortfolioBinaryPosition, "approximateCostBasis">[] = [];
   let holdingsMarkedValueUsd = 0;
-  for (let bucket = 0; bucket < holdings.length; bucket += 1) {
-    const quantity = holdings[bucket];
-    if (quantity === undefined || !Number.isFinite(quantity) || quantity < -EPS) {
+  for (const [side, index, price] of [
+    ["yes", 1, yesProbability],
+    ["no", 0, noProbability],
+  ] as const) {
+    const quantity = holdings[index]!;
+    if (!Number.isFinite(quantity) || quantity < -EPS) {
       throw new RangeError("holdings must contain finite, non-negative values");
     }
-    const normalizedQuantity = quantity > EPS ? quantity : 0;
-    normalizedHoldings[bucket] = normalizedQuantity;
-    holdingsMarkedValueUsd += normalizedQuantity * currentProbabilities[bucket]!;
-  }
-
-  const decomposition = decomposeHoldings(normalizedHoldings);
-  const positions = decomposition.positions.map((position) => {
-    const mask = contractMask(holdings.length, position.strikeIndex, position.side);
-    let markPriceUsd = 0;
-    for (let bucket = 0; bucket < mask.length; bucket += 1) {
-      if (mask[bucket]) {
-        markPriceUsd += currentProbabilities[bucket]!;
-      }
-    }
-
-    return {
-      ...position,
-      markPriceUsd,
-      markedValueUsd: position.quantity * markPriceUsd,
-      sellableQuantity: sellableQuantity(normalizedHoldings, mask),
-    };
-  });
-
-  let residualMarkedValueUsd = 0;
-  for (let bucket = 0; bucket < decomposition.residual.length; bucket += 1) {
-    residualMarkedValueUsd += decomposition.residual[bucket]! * currentProbabilities[bucket]!;
-  }
-
-  return {
-    probabilities: currentProbabilities,
-    holdingsMarkedValueUsd,
-    positions,
-    residualExposure: {
-      buckets: decomposition.residual,
-      markedValueUsd: residualMarkedValueUsd,
-    },
-  };
-}
-
-export async function getPortfolio(
-  db: Kysely<Database>,
-  userId: string,
-  options: PortfolioOptions = {},
-): Promise<Portfolio> {
-  const { offset, limit } = normalizeOptions(options);
-
-  return db
-    .transaction()
-    .setIsolationLevel("repeatable read")
-    .setAccessMode("read only")
-    .execute(async (transaction) => {
-      const user = await transaction
-        .selectFrom("users")
-        .select(["id", "tournament_user_id", "cash_balance_cents"])
-        .where("id", "=", userId)
-        .executeTakeFirst();
-
-      if (user === undefined) {
-        throw new ServiceError("USER_REQUIRED", "A valid user is required.");
-      }
-      const identity = (await identitiesFor(transaction, [user.tournament_user_id])).get(
-        user.tournament_user_id,
-      );
-      if (identity === undefined) {
-        throw new ServiceError("USER_REQUIRED", "A valid user is required.");
-      }
-
-      const [holdingRows, costBasisTrades, historyRows] = await Promise.all([
-        transaction
-          .selectFrom("holdings")
-          .innerJoin("markets", "markets.id", "holdings.market_id")
-          .innerJoin("companies", "companies.id", "markets.company_id")
-          .select([
-            "holdings.market_id as market_id",
-            "holdings.h as h",
-            "markets.n_buckets as n_buckets",
-            "markets.bucket_grid_version as bucket_grid_version",
-            "markets.metric_kind as metric_kind",
-            "markets.q as q",
-            "markets.b as b",
-            "markets.status as market_status",
-            "companies.name as company_name",
-            "companies.slug as company_slug",
-            "companies.logo_path as company_logo_path",
-          ])
-          .where("holdings.user_id", "=", userId)
-          .orderBy("companies.slug", "asc")
-          .orderBy("markets.id", "asc")
-          .execute(),
-        transaction
-          .selectFrom("trades")
-          .select([
-            "market_id",
-            "action",
-            "contract_side",
-            "strike_index",
-            "quantity",
-            "cash_amount_cents",
-          ])
-          .where("user_id", "=", userId)
-          .execute(),
-        transaction
-          .selectFrom("trades")
-          .innerJoin("markets", "markets.id", "trades.market_id")
-          .innerJoin("companies", "companies.id", "markets.company_id")
-          .select([
-            "trades.id as id",
-            "trades.market_id as market_id",
-            "trades.market_sequence as market_sequence",
-            "trades.action as action",
-            "trades.contract_side as contract_side",
-            "trades.strike_index as strike_index",
-            "trades.strike_value as strike_value",
-            "trades.quantity as quantity",
-            "trades.requested_spend_cents as requested_spend_cents",
-            "trades.engine_cost_usd as engine_cost_usd",
-            "trades.cash_amount_cents as cash_amount_cents",
-            "trades.redemption_quantity as redemption_quantity",
-            "trades.redemption_cents as redemption_cents",
-            "trades.metric_before as metric_before",
-            "trades.metric_after as metric_after",
-            "trades.created_at as created_at",
-            "companies.name as company_name",
-            "companies.slug as company_slug",
-          ])
-          .where("trades.user_id", "=", userId)
-          .orderBy("trades.created_at", "desc")
-          .orderBy("trades.market_sequence", "desc")
-          .orderBy("trades.id", "desc")
-          .offset(offset)
-          .limit(limit + 1)
-          .execute(),
-      ]);
-
-      const groupedCostBasis = groupCostBasis(costBasisTrades);
-      let holdingsMarkedValueUsd = 0;
-      const markets = holdingRows.map((row): PortfolioMarket => {
-        assertMarketShape(row.metric_kind, row.bucket_grid_version, row.n_buckets, row.h, row.q);
-        const exposure = calculatePortfolioExposure(row.h, row.q, row.b);
-        const marketCostBasis = (groupedCostBasis.get(row.market_id) ?? []).map(
-          (basis): PortfolioCostBasis => ({
-            ...basis,
-            strikeValueUsd: strikeValue(row.metric_kind, basis.strikeIndex),
-          }),
-        );
-        const costBasisByContract = new Map(
-          marketCostBasis.map((basis) => [contractKey(basis.side, basis.strikeIndex), basis]),
-        );
-        holdingsMarkedValueUsd += exposure.holdingsMarkedValueUsd;
-
-        return {
-          marketId: row.market_id,
-          company: {
-            name: row.company_name,
-            slug: row.company_slug,
-            logoPath: row.company_logo_path,
-          },
-          status: row.market_status,
-          metricKind: row.metric_kind,
-          probabilities: exposure.probabilities,
-          holdingsMarkedValueUsd: exposure.holdingsMarkedValueUsd,
-          positions: exposure.positions.map((position) => ({
-            ...position,
-            strikeValueUsd: strikeValue(row.metric_kind, position.strikeIndex),
-            approximateCostBasis:
-              costBasisByContract.get(contractKey(position.side, position.strikeIndex)) ?? null,
-          })),
-          residualExposure: exposure.residualExposure,
-          costBasis: marketCostBasis,
-        };
-      });
-
-      const hasMore = historyRows.length > limit;
-      const pageRows = hasMore ? historyRows.slice(0, limit) : historyRows;
-      const items = pageRows.map(
-        (row): PortfolioTrade => ({
-          id: row.id,
-          marketId: row.market_id,
-          company: { name: row.company_name, slug: row.company_slug },
-          marketSequence: row.market_sequence,
-          action: row.action,
-          side: row.contract_side,
-          strikeIndex: row.strike_index,
-          strikeValueUsd: row.strike_value,
-          quantity: row.quantity,
-          requestedSpendCents: row.requested_spend_cents,
-          engineCostUsd: row.engine_cost_usd,
-          cashAmountCents: row.cash_amount_cents,
-          redemptionQuantity: row.redemption_quantity,
-          redemptionCents: row.redemption_cents,
-          metricBefore: row.metric_before,
-          metricAfter: row.metric_after,
-          createdAt: row.created_at.toISOString(),
-        }),
-      );
-
-      return {
-        userId: user.id,
-        identity,
-        cashBalanceCents: user.cash_balance_cents,
-        holdingsMarkedValueUsd,
-        accountValueUsd: Number(user.cash_balance_cents) / 100 + holdingsMarkedValueUsd,
-        markets,
-        tradeHistory: {
-          items,
-          offset,
-          limit,
-          nextOffset: hasMore ? offset + limit : null,
-        },
-      };
+    if (quantity <= EPS) continue;
+    holdingsMarkedValueUsd += quantity * price;
+    positions.push({
+      side,
+      quantity,
+      markPriceUsd: price,
+      markedValueUsd: quantity * price,
+      sellableQuantity: quantity,
     });
+  }
+  return { yesProbability, holdingsMarkedValueUsd, positions };
 }
 
 function normalizeOptions(options: PortfolioOptions): {
-  offset: number;
-  limit: number;
+  readonly offset: number;
+  readonly limit: number;
+  readonly now: Date;
 } {
   const offset = options.offset ?? 0;
   const limit = options.limit ?? PORTFOLIO_DEFAULT_TRADE_LIMIT;
@@ -386,91 +211,285 @@ function normalizeOptions(options: PortfolioOptions): {
       `Portfolio trade limit must be from 1 to ${PORTFOLIO_MAX_TRADE_LIMIT}.`,
     );
   }
-  return { offset, limit };
+  const now = options.now === undefined ? new Date() : new Date(options.now.getTime());
+  if (!Number.isFinite(now.getTime())) {
+    throw new ServiceError("INVALID_INPUT", "Read clock must be a valid date.");
+  }
+  return { offset, limit, now };
 }
 
-function assertMarketShape(
-  metricKind: MetricKind,
-  bucketGridVersion: string,
-  bucketCount: number,
-  holdings: readonly number[],
-  marketQ: readonly number[],
-): void {
-  const expectedBucketCount = metricKind === "valuation_median" ? VALUATION_BUCKET_COUNT : 2;
-  if (
-    bucketCount !== expectedBucketCount ||
-    holdings.length !== bucketCount ||
-    marketQ.length !== bucketCount
-  ) {
-    throw new RangeError("portfolio market vectors do not match the market shape");
-  }
-  if (metricKind === "valuation_median" && bucketGridVersion !== "valuation-v1") {
-    throw new RangeError("portfolio market uses an unsupported valuation grid");
-  }
-}
-
-function groupCostBasis(trades: readonly CostBasisTrade[]): Map<string, PortfolioCostBasis[]> {
-  const groups = new Map<string, MutableCostBasis>();
+function groupCostBasis(trades: readonly CostBasisTrade[]): Map<string, PortfolioCostBasis> {
+  const groups = new Map<string, { side: ClaimSide; netQuantity: number; netCostCents: bigint }>();
   for (const trade of trades) {
-    const key = `${trade.market_id}:${contractKey(trade.contract_side, trade.strike_index)}`;
-    let group = groups.get(key);
-    if (group === undefined) {
-      group = {
-        marketId: trade.market_id,
-        side: trade.contract_side,
-        strikeIndex: trade.strike_index,
-        netQuantity: 0,
-        netCostCents: 0n,
-      };
-      groups.set(key, group);
-    }
+    if (trade.contract_side !== "yes" && trade.contract_side !== "no") continue;
+    const key = `${trade.market_id}:${trade.contract_side}`;
+    const group = groups.get(key) ?? {
+      side: trade.contract_side,
+      netQuantity: 0,
+      netCostCents: 0n,
+    };
+    groups.set(key, group);
     const direction = trade.action === "buy" ? 1 : -1;
     group.netQuantity += direction * trade.quantity;
     group.netCostCents += BigInt(trade.cash_amount_cents) * BigInt(direction);
   }
+  return new Map(
+    [...groups].map(([key, group]) => [
+      key,
+      {
+        side: group.side,
+        netQuantity: group.netQuantity,
+        approximateNetCostCents: group.netCostCents.toString(),
+        approximateAveragePriceUsd:
+          Math.abs(group.netQuantity) > EPS
+            ? Number(group.netCostCents) / 100 / group.netQuantity
+            : null,
+      },
+    ]),
+  );
+}
 
-  const byMarket = new Map<string, PortfolioCostBasis[]>();
-  for (const group of groups.values()) {
-    const basis: PortfolioCostBasis = {
-      side: group.side,
-      strikeIndex: group.strikeIndex,
-      strikeValueUsd: null,
-      netQuantity: group.netQuantity,
-      approximateNetCostCents: group.netCostCents.toString(),
-      approximateAveragePriceUsd:
-        Math.abs(group.netQuantity) > EPS
-          ? Number(group.netCostCents) / 100 / group.netQuantity
-          : null,
-    };
-    const marketGroups = byMarket.get(group.marketId);
-    if (marketGroups === undefined) {
-      byMarket.set(group.marketId, [basis]);
-    } else {
-      marketGroups.push(basis);
-    }
-  }
+async function forwardPositionsOf(
+  transaction: Transaction<Database>,
+  userId: string,
+  now: Date,
+): Promise<PortfolioForwardPosition[]> {
+  const rows = await transaction
+    .selectFrom("forward_positions")
+    .innerJoin("instruments", "instruments.id", "forward_positions.instrument_id")
+    .innerJoin("listings", "listings.id", "instruments.listing_id")
+    .innerJoin("companies", "companies.id", "listings.company_id")
+    .innerJoin("markets", "markets.instrument_id", "instruments.id")
+    .select([
+      "forward_positions.id as position_id",
+      "forward_positions.instrument_id",
+      "forward_positions.side",
+      "forward_positions.notional_cents",
+      "forward_positions.entry_ln",
+      "forward_positions.collateral_cents",
+      "forward_positions.opened_at",
+      "instruments.question",
+      "instruments.state",
+      "instruments.expires_at",
+      "listings.kappa",
+      "markets.id as market_id",
+      "companies.name as company_name",
+      "companies.slug as company_slug",
+      "companies.logo_path as company_logo_path",
+    ])
+    .where("forward_positions.user_id", "=", userId)
+    .where("forward_positions.settled_at", "is", null)
+    .where("forward_positions.voided_at", "is", null)
+    .orderBy("forward_positions.opened_at", "desc")
+    .orderBy("forward_positions.id", "desc")
+    .execute();
 
-  for (const marketGroups of byMarket.values()) {
-    marketGroups.sort(
-      (left, right) =>
-        left.strikeIndex - right.strikeIndex ||
-        (left.side === right.side ? 0 : left.side === "yes" ? -1 : 1),
+  const positions: PortfolioForwardPosition[] = [];
+  for (const row of rows) {
+    const mid = await latestMid(transaction, row.instrument_id, now);
+    const midLn = mid?.mid_ln ?? row.entry_ln;
+    const notionalCents = Number(row.notional_cents);
+    const credit = settlementCreditCents(
+      { side: row.side, notionalCents, entryLn: row.entry_ln, kappa: row.kappa },
+      midLn,
     );
+    const collateral = BigInt(row.collateral_cents);
+    positions.push({
+      positionId: row.position_id,
+      instrumentId: row.instrument_id,
+      marketId: row.market_id,
+      company: {
+        name: row.company_name,
+        slug: row.company_slug,
+        logoPath: row.company_logo_path,
+      },
+      question: row.question,
+      state: row.state,
+      side: row.side,
+      notionalCents: row.notional_cents,
+      entryLn: row.entry_ln,
+      entryUsd: Math.exp(row.entry_ln),
+      midLn,
+      midUsd: Math.exp(midLn),
+      collateralCents: row.collateral_cents,
+      maxLossCents: row.collateral_cents,
+      maxGainCents: row.collateral_cents,
+      unrealisedCents: (BigInt(credit) - collateral).toString(),
+      markedValueCents: String(credit),
+      openedAt: row.opened_at.toISOString(),
+      expiresAt: row.expires_at.toISOString(),
+    });
   }
-  return byMarket;
+  return positions;
 }
 
-function contractKey(side: ContractSide, strikeIndex: number): string {
-  return `${side}:${strikeIndex}`;
-}
+export async function getPortfolio(
+  db: Kysely<Database>,
+  userId: string,
+  options: PortfolioOptions = {},
+): Promise<Portfolio> {
+  const { offset, limit, now } = normalizeOptions(options);
 
-function strikeValue(metricKind: MetricKind, strikeIndex: number): string | null {
-  if (metricKind === "yes_probability") {
-    return null;
-  }
-  const boundary = VALUATION_BOUNDARIES_USD[strikeIndex];
-  if (boundary === undefined) {
-    throw new RangeError("valuation strike index is outside the canonical grid");
-  }
-  return boundary.toString();
+  return db
+    .transaction()
+    .setIsolationLevel("repeatable read")
+    .setAccessMode("read only")
+    .execute(async (transaction) => {
+      const user = await transaction
+        .selectFrom("users")
+        .select(["id", "tournament_user_id", "cash_balance_cents"])
+        .where("id", "=", userId)
+        .executeTakeFirst();
+      if (user === undefined) {
+        throw new ServiceError("USER_REQUIRED", "A valid user is required.");
+      }
+      const identity = (await identitiesFor(transaction, [user.tournament_user_id])).get(
+        user.tournament_user_id,
+      );
+      if (identity === undefined) {
+        throw new ServiceError("USER_REQUIRED", "A valid user is required.");
+      }
+
+      const [holdingRows, costBasisTrades, historyRows, forwardPositions] = await Promise.all([
+        transaction
+          .selectFrom("holdings")
+          .innerJoin("markets", "markets.id", "holdings.market_id")
+          .innerJoin("companies", "companies.id", "markets.company_id")
+          .leftJoin("instruments", "instruments.id", "markets.instrument_id")
+          .select([
+            "holdings.market_id as market_id",
+            "holdings.h as h",
+            "markets.metric_kind as metric_kind",
+            "markets.q as q",
+            "markets.b as b",
+            "markets.status as market_status",
+            "markets.instrument_id as instrument_id",
+            "instruments.question as question",
+            "instruments.expires_at as expires_at",
+            "companies.name as company_name",
+            "companies.slug as company_slug",
+            "companies.logo_path as company_logo_path",
+          ])
+          .where("holdings.user_id", "=", userId)
+          .orderBy("companies.slug", "asc")
+          .orderBy("markets.id", "asc")
+          .execute(),
+        transaction
+          .selectFrom("trades")
+          .select(["market_id", "action", "contract_side", "quantity", "cash_amount_cents"])
+          .where("user_id", "=", userId)
+          .execute(),
+        transaction
+          .selectFrom("trades")
+          .innerJoin("markets", "markets.id", "trades.market_id")
+          .innerJoin("companies", "companies.id", "markets.company_id")
+          .select([
+            "trades.id as id",
+            "trades.market_id as market_id",
+            "trades.market_sequence as market_sequence",
+            "trades.action as action",
+            "trades.contract_side as contract_side",
+            "trades.quantity as quantity",
+            "trades.cash_amount_cents as cash_amount_cents",
+            "trades.redemption_quantity as redemption_quantity",
+            "trades.redemption_cents as redemption_cents",
+            "trades.execution_result as execution_result",
+            "trades.created_at as created_at",
+            "markets.metric_kind as metric_kind",
+            "companies.name as company_name",
+            "companies.slug as company_slug",
+          ])
+          .where("trades.user_id", "=", userId)
+          .orderBy("trades.created_at", "desc")
+          .orderBy("trades.market_sequence", "desc")
+          .orderBy("trades.id", "desc")
+          .offset(offset)
+          .limit(limit + 1)
+          .execute(),
+        forwardPositionsOf(transaction, userId, now),
+      ]);
+
+      const costBasis = groupCostBasis(costBasisTrades);
+      let holdingsMarkedValueUsd = 0;
+      const markets: PortfolioMarket[] = [];
+      for (const row of holdingRows) {
+        if (row.metric_kind !== "yes_probability") continue;
+        const exposure = calculateBinaryExposure(row.h, row.q, row.b);
+        if (exposure.positions.length === 0) continue;
+        holdingsMarkedValueUsd += exposure.holdingsMarkedValueUsd;
+        markets.push({
+          marketId: row.market_id,
+          instrumentId: row.instrument_id,
+          company: {
+            name: row.company_name,
+            slug: row.company_slug,
+            logoPath: row.company_logo_path,
+          },
+          status: row.market_status,
+          question: row.question,
+          expiresAt: row.expires_at?.toISOString() ?? null,
+          yesProbability: exposure.yesProbability,
+          holdingsMarkedValueUsd: exposure.holdingsMarkedValueUsd,
+          positions: exposure.positions.map((position) => ({
+            ...position,
+            approximateCostBasis: costBasis.get(`${row.market_id}:${position.side}`) ?? null,
+          })),
+        });
+      }
+
+      const hasMore = historyRows.length > limit;
+      const pageRows = hasMore ? historyRows.slice(0, limit) : historyRows;
+      const items = pageRows.map((row): PortfolioTrade => {
+        const result = row.execution_result;
+        const entryUsd =
+          row.metric_kind === "forward_ln" &&
+          result !== null &&
+          typeof result === "object" &&
+          !Array.isArray(result) &&
+          typeof result.entry_usd === "number"
+            ? result.entry_usd
+            : null;
+        return {
+          id: row.id,
+          marketId: row.market_id,
+          company: { name: row.company_name, slug: row.company_slug },
+          metricKind: row.metric_kind,
+          marketSequence: row.market_sequence,
+          action: row.action,
+          side: row.contract_side,
+          quantity: row.quantity,
+          cashAmountCents: row.cash_amount_cents,
+          redemptionQuantity: row.redemption_quantity,
+          redemptionCents: row.redemption_cents,
+          entryUsd,
+          createdAt: row.created_at.toISOString(),
+        };
+      });
+
+      let forwardCollateral = 0n;
+      let forwardUnrealised = 0n;
+      let forwardMarked = 0n;
+      for (const position of forwardPositions) {
+        forwardCollateral += BigInt(position.collateralCents);
+        forwardUnrealised += BigInt(position.unrealisedCents);
+        forwardMarked += BigInt(position.markedValueCents);
+      }
+
+      return {
+        userId: user.id,
+        identity,
+        cashBalanceCents: user.cash_balance_cents,
+        holdingsMarkedValueUsd,
+        forwardPositions,
+        forwardCollateralCents: forwardCollateral.toString(),
+        forwardUnrealisedCents: forwardUnrealised.toString(),
+        accountValueUsd:
+          Number(user.cash_balance_cents) / 100 +
+          holdingsMarkedValueUsd +
+          Number(forwardMarked) / 100,
+        markets,
+        tradeHistory: { items, offset, limit, nextOffset: hasMore ? offset + limit : null },
+        asOf: now.toISOString(),
+      };
+    });
 }

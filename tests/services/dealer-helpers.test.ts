@@ -428,10 +428,10 @@ describe("dealer request schemas", () => {
     expect(forwardQuoteQuerySchema.safeParse({ side: "short" }).success).toBe(false);
   });
 
-  it("addresses an LMSR book by exactly one of slug or market_id", () => {
+  it("addresses an LMSR book by market_id only", () => {
     const buy = { action: "buy", side: "yes", strike_index: 0, quantity: 1 } as const;
     expect(quoteInputSchema.safeParse({ ...buy, market_id: instrumentId }).success).toBe(true);
-    expect(quoteInputSchema.safeParse({ ...buy, slug: "anthropic" }).success).toBe(true);
+    expect(quoteInputSchema.safeParse({ ...buy, slug: "anthropic" }).success).toBe(false);
     expect(quoteInputSchema.safeParse(buy).success).toBe(false);
     expect(
       quoteInputSchema.safeParse({ ...buy, slug: "anthropic", market_id: instrumentId }).success,

@@ -1,351 +1,378 @@
-import { type Kysely, sql } from "kysely";
+import { type Kysely, sql, type Transaction } from "kysely";
 
-import { ServiceError } from "../api/errors.js";
+import { isServiceError, ServiceError } from "../api/errors.js";
+import { DEALER_PARAMS, MODEL_VERSION } from "../config/dealer.js";
 import type {
-  ContractSide,
+  BinaryEventKind,
+  CompanyRow,
   Database,
+  InstrumentKind,
+  InstrumentState,
+  ListingRow,
+  ListingTier,
   MarketStatus,
-  MetricKind,
-  TradeAction,
 } from "../db/schema.js";
+import { VALUATION_BOUNDARIES_USD, VALUATION_GRID_VERSION } from "../engine/buckets.js";
+import { RULEBOOK_VERSION } from "../engine/dealer/rulebook.js";
 import {
-  VALUATION_BOUNDARIES_USD,
-  VALUATION_BUCKET_COUNT,
-  VALUATION_GRID_VERSION,
-} from "../engine/buckets.js";
-import { probabilities } from "../engine/lmsr.js";
-import { calculateTimeWeightedAverage } from "../engine/twap.js";
-import type { OrderedMark } from "../engine/types.js";
+  lognormalBucketProbabilities,
+  MIN_BUCKET_PROBABILITY,
+  probabilitiesAbove,
+} from "../engine/distribution.js";
+import { impliedValuationQuantile } from "../engine/median.js";
+import { LIVE_STATES, openForwardInventory } from "./dealer/dealer-books.js";
+import {
+  type BinaryInstrumentQuote,
+  type ForwardInstrumentQuote,
+  type InstrumentBook,
+  quoteBook,
+} from "./dealer/get-instrument-quote.js";
 import { openInterestSql } from "./open-interest.js";
+
+/**
+ * The read model of one listed name (README D10–D11): its live binary and
+ * forward quoted exactly as `GET /api/instruments/[id]/quote` quotes them,
+ * the read-only implied distribution from the forward mid, open interest,
+ * and every epoch of both contracts by market id. `listMarkets` reads every
+ * active listing through `readListing`.
+ */
+
+export interface ListingCompany {
+  readonly name: string;
+  readonly slug: string;
+  readonly logoPath: string;
+}
+
+export interface ListingAnchor {
+  readonly round: string;
+  readonly date: string;
+  /** The last print, decimal USD as published. */
+  readonly postMoneyUsd: string;
+  readonly sourceUrl: string;
+  readonly sourceRank: number | null;
+}
+
+export interface ImpliedStrike {
+  readonly strikeIndex: number;
+  /** Grid boundary, decimal USD. */
+  readonly strikeValueUsd: string;
+  /** P(next print > strike) under the implied distribution. */
+  readonly probabilityAbove: number;
+}
+
+/**
+ * A lognormal at the forward mid with σ = params.json → sigma_tier[tier],
+ * over the 41-bucket valuation grid, every bucket floored at `floor` (D5).
+ * Read-only: nothing trades on it.
+ */
+export interface ImpliedDistribution {
+  readonly gridVersion: typeof VALUATION_GRID_VERSION;
+  readonly centerUsd: number;
+  readonly sigma: number;
+  readonly floor: number;
+  readonly pmf: number[];
+  readonly strikes: ImpliedStrike[];
+  /** Grid quantiles, the same log interpolation the tournament's median uses. */
+  readonly band: { readonly p10: number; readonly p50: number; readonly p90: number };
+  /** The most likely bucket; a null edge is the grid's open end. */
+  readonly mode: {
+    readonly fromUsd: string | null;
+    readonly toUsd: string | null;
+    readonly mass: number;
+  };
+}
+
+export interface ListingOpenInterest {
+  /** Open forward notional, long plus short, dollars; each dollar carries at most κ of payout. */
+  readonly forwardNotionalUsd: number;
+  /** The binary's maximum payout liability, dollars (D4). */
+  readonly binaryUsd: number;
+  readonly totalUsd: number;
+}
+
+export interface ListingEpoch {
+  readonly instrumentId: string;
+  readonly marketId: string;
+  readonly kind: InstrumentKind;
+  readonly epoch: number;
+  readonly state: InstrumentState;
+  readonly marketStatus: MarketStatus;
+  readonly question: string;
+  readonly opensAt: string;
+  readonly expiresAt: string;
+  readonly closedAt: string | null;
+}
+
+export interface ListingView {
+  readonly listingId: string;
+  readonly company: ListingCompany;
+  readonly tier: ListingTier;
+  readonly binaryEvent: BinaryEventKind;
+  readonly forwardTDays: number;
+  readonly anchor: ListingAnchor;
+  readonly listedAt: string;
+  readonly delistedAt: string | null;
+  /** The live forward's quote; null while none is live (between expiry and its roll). */
+  readonly forward: ForwardInstrumentQuote | null;
+  /** The live binary's quote; null while none is live. */
+  readonly binary: BinaryInstrumentQuote | null;
+  /** Forward mid against the last print: mid / post-money − 1. */
+  readonly vsLastRound: number | null;
+  readonly distribution: ImpliedDistribution | null;
+  readonly openInterest: ListingOpenInterest;
+  readonly lastTradeAt: string | null;
+  readonly modelVersion: string;
+  readonly rulebookVersion: string;
+}
+
+export interface ListingDetail extends ListingView {
+  /** Every epoch of both contracts, newest first; settled ones stay readable by market id. */
+  readonly epochs: ListingEpoch[];
+  readonly asOf: string;
+}
 
 export interface GetMarketOptions {
   readonly now?: Date;
-  readonly activityLimit?: number;
 }
 
-export interface MarketContract {
-  readonly strikeIndex: number;
-  readonly strikeValueUsd: string | null;
-  readonly yesProbability: number;
-  readonly noProbability: number;
-}
+export type ListingWithCompany = ListingRow & {
+  readonly company: Pick<CompanyRow, "id" | "name" | "slug" | "logo_path">;
+};
 
-export interface MarketActivitySummary {
-  readonly marketSequence: string;
-  readonly action: TradeAction;
-  readonly side: ContractSide;
-  readonly strikeIndex: number;
-  readonly strikeValueUsd: string | null;
-  readonly quantity: number;
-  readonly cashAmountCents: string;
-  readonly metricBefore: number;
-  readonly metricAfter: number;
-  readonly createdAt: string;
-}
-
-export interface MarketDetail {
-  readonly marketId: string;
-  readonly company: {
-    readonly name: string;
-    readonly slug: string;
-    readonly logoPath: string;
-  };
-  readonly status: MarketStatus;
-  readonly metric: {
-    readonly kind: MetricKind;
-    readonly label: "Implied valuation" | "YES probability";
-    readonly format: "usd" | "probability";
-    readonly current: number;
-    readonly change24Hours: number;
-    readonly mark60Minutes: number;
-  };
-  readonly anchor: {
-    readonly valuationUsd: string;
-    readonly date: string;
-    readonly description: string;
-  } | null;
-  readonly bucketGridVersion: string;
-  readonly pmf: number[];
-  readonly contracts: MarketContract[];
-  /** Open interest in dollars (D4), the same figure the market board shows. */
-  readonly openInterest: number;
-  readonly sequence: string;
-  readonly recentActivity: MarketActivitySummary[];
-  readonly settlement: {
-    readonly settledValueUsd: string;
-    readonly winningBucket: number;
-    readonly sourceUrl: string;
-    readonly sourceDescription: string | null;
-    readonly timestamp: string;
-  } | null;
-  readonly createdAt: string;
-  readonly settledAt: string | null;
-}
-
-interface MarkRow {
-  readonly market_sequence: string;
-  readonly ts: Date;
-  readonly value: number;
-}
-
-const DEFAULT_ACTIVITY_LIMIT = 20;
-const MAX_ACTIVITY_LIMIT = 100;
-const TWAP_WINDOW_MS = 60 * 60 * 1_000;
-const CHANGE_WINDOW_MS = 24 * 60 * 60 * 1_000;
-
-function normalizeOptions(options: GetMarketOptions): {
-  readonly now: Date;
-  readonly activityLimit: number;
-} {
-  const now = options.now === undefined ? new Date() : new Date(options.now.getTime());
-  if (!Number.isFinite(now.getTime())) {
+function readClock(now: Date | undefined): Date {
+  const at = now === undefined ? new Date() : new Date(now.getTime());
+  if (!Number.isFinite(at.getTime())) {
     throw new ServiceError("INVALID_INPUT", "Read clock must be a valid date.");
   }
-  const activityLimit = options.activityLimit ?? DEFAULT_ACTIVITY_LIMIT;
-  if (
-    !Number.isSafeInteger(activityLimit) ||
-    activityLimit < 1 ||
-    activityLimit > MAX_ACTIVITY_LIMIT
-  ) {
-    throw new ServiceError(
-      "INVALID_INPUT",
-      `activityLimit must be an integer from 1 through ${MAX_ACTIVITY_LIMIT}.`,
-    );
-  }
-  return { now, activityLimit };
+  return at;
 }
 
-function orderedMark(row: MarkRow): OrderedMark {
-  if (!/^\d+$/.test(row.market_sequence)) {
-    throw new ServiceError("INVALID_INPUT", "Stored mark sequence is invalid.");
-  }
-  const marketSequence = Number(row.market_sequence);
-  if (!Number.isSafeInteger(marketSequence)) {
-    throw new ServiceError("INVALID_INPUT", "Stored mark sequence is too large.");
-  }
+/** The implied distribution centred on a forward mid. */
+export function impliedDistribution(centerUsd: number, sigma: number): ImpliedDistribution {
+  const pmf = lognormalBucketProbabilities(centerUsd, sigma, VALUATION_BOUNDARIES_USD);
+  const above = probabilitiesAbove(pmf);
+  let modeIndex = 0;
+  pmf.forEach((mass, index) => {
+    if (mass > pmf[modeIndex]!) modeIndex = index;
+  });
+  const edge = (index: number) => VALUATION_BOUNDARIES_USD[index]?.toFixed(2) ?? null;
   return {
-    marketSequence,
-    timestamp: new Date(row.ts.getTime()),
-    value: row.value,
+    gridVersion: VALUATION_GRID_VERSION,
+    centerUsd,
+    sigma,
+    floor: MIN_BUCKET_PROBABILITY,
+    pmf,
+    strikes: VALUATION_BOUNDARIES_USD.map((boundary, strikeIndex) => ({
+      strikeIndex,
+      strikeValueUsd: boundary.toFixed(2),
+      probabilityAbove: above[strikeIndex]!,
+    })),
+    band: {
+      p10: impliedValuationQuantile(pmf, VALUATION_BOUNDARIES_USD, 0.1),
+      p50: impliedValuationQuantile(pmf, VALUATION_BOUNDARIES_USD, 0.5),
+      p90: impliedValuationQuantile(pmf, VALUATION_BOUNDARIES_USD, 0.9),
+    },
+    mode: {
+      fromUsd: modeIndex === 0 ? null : edge(modeIndex - 1),
+      toUsd: edge(modeIndex),
+      mass: pmf[modeIndex]!,
+    },
   };
 }
 
-function buildContracts(
-  metricKind: MetricKind,
-  bucketGridVersion: string,
-  bucketCount: number,
-  pmf: readonly number[],
-): MarketContract[] {
-  if (metricKind === "yes_probability") {
-    if (bucketGridVersion !== "binary-v1" || bucketCount !== 2) {
-      throw new ServiceError("INVALID_INPUT", "Stored binary market shape is invalid.");
-    }
-    return [
-      {
-        strikeIndex: 0,
-        strikeValueUsd: null,
-        yesProbability: pmf[1]!,
-        noProbability: pmf[0]!,
-      },
-    ];
+/** The live instrument's quote, or null when it is not trading at `at`. */
+async function liveQuote(
+  db: Transaction<Database>,
+  book: InstrumentBook,
+  at: Date,
+): Promise<BinaryInstrumentQuote | ForwardInstrumentQuote | null> {
+  try {
+    return await quoteBook(db, book, at);
+  } catch (error) {
+    if (isServiceError(error) && error.code === "INSTRUMENT_CLOSED") return null;
+    throw error;
   }
-  if (bucketGridVersion !== VALUATION_GRID_VERSION || bucketCount !== VALUATION_BUCKET_COUNT) {
-    throw new ServiceError("INVALID_INPUT", "Stored valuation market shape is invalid.");
-  }
-
-  const contracts = new Array<MarketContract>(VALUATION_BOUNDARIES_USD.length);
-  let noProbability = 0;
-  for (let strikeIndex = 0; strikeIndex < contracts.length; strikeIndex += 1) {
-    noProbability += pmf[strikeIndex]!;
-    const boundedNoProbability = Math.min(1, Math.max(0, noProbability));
-    contracts[strikeIndex] = {
-      strikeIndex,
-      strikeValueUsd: VALUATION_BOUNDARIES_USD[strikeIndex]!.toFixed(2),
-      yesProbability: 1 - boundedNoProbability,
-      noProbability: boundedNoProbability,
-    };
-  }
-  return contracts;
 }
 
+/** One listing's view at `at`, inside the caller's read transaction. */
+export async function readListing(
+  db: Transaction<Database>,
+  listing: ListingWithCompany,
+  at: Date,
+): Promise<ListingView> {
+  const live = await db
+    .selectFrom("instruments")
+    .innerJoin("markets", "markets.instrument_id", "instruments.id")
+    .selectAll("instruments")
+    .select("markets.id as book_id")
+    .where("instruments.listing_id", "=", listing.id)
+    .where("instruments.state", "in", LIVE_STATES)
+    .orderBy("instruments.epoch", "desc")
+    .execute();
+  const { company: listingCompany, ...listingRow } = listing;
+  const company = { id: listingCompany.id, name: listingCompany.name, slug: listingCompany.slug };
+
+  let forward: ForwardInstrumentQuote | null = null;
+  let binary: BinaryInstrumentQuote | null = null;
+  for (const kind of ["forward", "binary"] as const) {
+    const row = live.find((instrument) => instrument.kind === kind);
+    if (row === undefined) continue;
+    const { book_id: bookId, ...instrument } = row;
+    const market = await db
+      .selectFrom("markets")
+      .selectAll()
+      .where("id", "=", bookId)
+      .executeTakeFirstOrThrow();
+    const quote = await liveQuote(db, { instrument, listing: listingRow, company, market }, at);
+    if (quote?.kind === "forward") forward = quote;
+    if (quote?.kind === "binary") binary = quote;
+  }
+
+  const [forwardInventory, binaryInterest, lastTrade] = await Promise.all([
+    forward === null ? null : openForwardInventory(db, forward.instrument_id),
+    binary === null
+      ? null
+      : db.selectNoFrom(openInterestSql(binary.market_id).as("value")).executeTakeFirstOrThrow(),
+    db
+      .selectFrom("trades")
+      .innerJoin("markets", "markets.id", "trades.market_id")
+      .select(sql<Date | null>`max(trades.created_at)`.as("at"))
+      .where("markets.company_id", "=", listing.company_id)
+      .executeTakeFirstOrThrow(),
+  ]);
+  const forwardNotionalUsd =
+    forwardInventory === null
+      ? 0
+      : (forwardInventory.longCents + forwardInventory.shortCents) / 100;
+  const binaryUsd = binaryInterest?.value ?? 0;
+  const anchorUsd = Number(listing.anchor_post_money_usd);
+
+  return {
+    listingId: listing.id,
+    company: { name: company.name, slug: company.slug, logoPath: listingCompany.logo_path },
+    tier: listing.tier,
+    binaryEvent: listing.binary_event,
+    forwardTDays: listing.forward_t_days,
+    anchor: {
+      round: listing.anchor_round,
+      date: listing.anchor_date,
+      postMoneyUsd: listing.anchor_post_money_usd,
+      sourceUrl: listing.anchor_source_url,
+      sourceRank: listing.anchor_source_rank,
+    },
+    listedAt: listing.listed_at.toISOString(),
+    delistedAt: listing.delisted_at?.toISOString() ?? null,
+    forward,
+    binary,
+    vsLastRound: forward === null || !(anchorUsd > 0) ? null : forward.mid_usd / anchorUsd - 1,
+    distribution:
+      forward === null
+        ? null
+        : impliedDistribution(forward.mid_usd, DEALER_PARAMS.sigma_tier[listing.tier]),
+    openInterest: {
+      forwardNotionalUsd,
+      binaryUsd,
+      totalUsd: forwardNotionalUsd + binaryUsd,
+    },
+    lastTradeAt: lastTrade.at === null ? null : new Date(lastTrade.at).toISOString(),
+    modelVersion: MODEL_VERSION,
+    rulebookVersion: RULEBOOK_VERSION,
+  };
+}
+
+/** Listings with their companies: `active` ones (listed by `at`, not delisted), or a company's latest. */
+export async function loadListings(
+  db: Transaction<Database>,
+  filter: { readonly active: Date } | { readonly slug: string },
+): Promise<ListingWithCompany[]> {
+  let query = db
+    .selectFrom("listings")
+    .innerJoin("companies", "companies.id", "listings.company_id")
+    .selectAll("listings")
+    .select([
+      "companies.name as company_name",
+      "companies.slug as company_slug",
+      "companies.logo_path as company_logo_path",
+    ]);
+  query =
+    "active" in filter
+      ? query
+          .where("listings.delisted_at", "is", null)
+          .where("listings.listed_at", "<=", filter.active)
+          .orderBy("companies.name")
+      : query
+          .where("companies.slug", "=", filter.slug)
+          .orderBy(sql`listings.delisted_at is null`, "desc")
+          .orderBy("listings.listed_at", "desc")
+          .limit(1);
+  const rows = await query.execute();
+  return rows.map(({ company_name, company_slug, company_logo_path, ...listing }) => ({
+    ...listing,
+    company: {
+      id: listing.company_id,
+      name: company_name,
+      slug: company_slug,
+      logo_path: company_logo_path,
+    },
+  }));
+}
+
+async function loadEpochs(db: Transaction<Database>, companyId: string): Promise<ListingEpoch[]> {
+  const rows = await db
+    .selectFrom("instruments")
+    .innerJoin("listings", "listings.id", "instruments.listing_id")
+    .innerJoin("markets", "markets.instrument_id", "instruments.id")
+    .select([
+      "instruments.id as instrument_id",
+      "markets.id as market_id",
+      "markets.status as market_status",
+      "instruments.kind",
+      "instruments.epoch",
+      "instruments.state",
+      "instruments.question",
+      "instruments.opens_at",
+      "instruments.expires_at",
+      "instruments.closed_at",
+    ])
+    .where("listings.company_id", "=", companyId)
+    .orderBy("instruments.opens_at", "desc")
+    .orderBy("instruments.kind")
+    .orderBy("instruments.epoch", "desc")
+    .execute();
+  return rows.map((row) => ({
+    instrumentId: row.instrument_id,
+    marketId: row.market_id,
+    kind: row.kind,
+    epoch: row.epoch,
+    state: row.state,
+    marketStatus: row.market_status,
+    question: row.question,
+    opensAt: row.opens_at.toISOString(),
+    expiresAt: row.expires_at.toISOString(),
+    closedAt: row.closed_at?.toISOString() ?? null,
+  }));
+}
+
+/** `GET /api/markets/[slug]`: the listed name's page data. */
 export async function getMarket(
   db: Kysely<Database>,
   slug: string,
   options: GetMarketOptions = {},
-): Promise<MarketDetail> {
-  const { now, activityLimit } = normalizeOptions(options);
-  const twapStart = new Date(now.getTime() - TWAP_WINDOW_MS);
-
+): Promise<ListingDetail> {
+  const at = readClock(options.now);
   return db
     .transaction()
     .setIsolationLevel("repeatable read")
     .setAccessMode("read only")
     .execute(async (transaction) => {
-      const market = await transaction
-        .selectFrom("markets")
-        .innerJoin("companies", "companies.id", "markets.company_id")
-        .select([
-          "markets.id as market_id",
-          "markets.status as status",
-          "markets.n_buckets as n_buckets",
-          "markets.bucket_grid_version as bucket_grid_version",
-          "markets.metric_kind as metric_kind",
-          "markets.anchor_valuation as anchor_valuation",
-          "markets.anchor_date as anchor_date",
-          "markets.anchor_description as anchor_description",
-          "markets.b as b",
-          "markets.q as q",
-          "markets.current_metric as current_metric",
-          "markets.last_market_sequence as last_market_sequence",
-          "markets.created_at as created_at",
-          "markets.settled_at as settled_at",
-          "companies.name as company_name",
-          "companies.slug as company_slug",
-          "companies.logo_path as company_logo_path",
-        ])
-        .where("companies.slug", "=", slug)
-        .orderBy("markets.status", "asc")
-        .orderBy("markets.created_at", "desc")
-        .orderBy("markets.id", "desc")
-        .executeTakeFirst();
-
-      if (market === undefined) {
-        throw new ServiceError("MARKET_NOT_FOUND", "Market was not found.");
+      const [listing] = await loadListings(transaction, { slug });
+      if (listing === undefined) {
+        throw new ServiceError("MARKET_NOT_FOUND", "No listed name matches this address.");
       }
-      if (market.q.length !== market.n_buckets) {
-        throw new ServiceError("INVALID_INPUT", "Stored market state has invalid length.");
-      }
-
-      const changeCutoff = new Date(now.getTime() - CHANGE_WINDOW_MS);
-      const [openInterestRow, changeRow, priorMark, markRows, activityRows, settlement] =
-        await Promise.all([
-          transaction
-            .selectNoFrom(openInterestSql(market.market_id).as("open_interest"))
-            .executeTakeFirstOrThrow(),
-          transaction
-            .selectNoFrom(
-              sql<number>`coalesce(
-                (select value from marks as prior_mark where prior_mark.market_id = ${market.market_id} and prior_mark.ts <= ${changeCutoff} order by prior_mark.ts desc, prior_mark.market_sequence desc limit 1),
-                (select value from marks as first_mark where first_mark.market_id = ${market.market_id} and first_mark.ts <= ${now} order by first_mark.ts asc, first_mark.market_sequence asc limit 1),
-                ${market.current_metric}::double precision
-              )`.as("change_baseline"),
-            )
-            .executeTakeFirstOrThrow(),
-          transaction
-            .selectFrom("marks")
-            .select(["market_sequence", "ts", "value"])
-            .where("market_id", "=", market.market_id)
-            .where("ts", "<=", twapStart)
-            .orderBy("ts", "desc")
-            .orderBy("market_sequence", "desc")
-            .executeTakeFirst(),
-          transaction
-            .selectFrom("marks")
-            .select(["market_sequence", "ts", "value"])
-            .where("market_id", "=", market.market_id)
-            .where("ts", ">=", twapStart)
-            .where("ts", "<=", now)
-            .orderBy("ts", "asc")
-            .orderBy("market_sequence", "asc")
-            .execute(),
-          transaction
-            .selectFrom("trades")
-            .select([
-              "market_sequence",
-              "action",
-              "contract_side",
-              "strike_index",
-              "strike_value",
-              "quantity",
-              "cash_amount_cents",
-              "metric_before",
-              "metric_after",
-              "created_at",
-            ])
-            .where("market_id", "=", market.market_id)
-            .orderBy("created_at", "desc")
-            .orderBy("market_sequence", "desc")
-            .orderBy("id", "desc")
-            .limit(activityLimit)
-            .execute(),
-          transaction
-            .selectFrom("settlements")
-            .select(["settled_value", "winning_bucket", "source_url", "source_description", "ts"])
-            .where("market_id", "=", market.market_id)
-            .executeTakeFirst(),
-        ]);
-
-      const pmf = probabilities(market.q, market.b);
-      const contracts = buildContracts(
-        market.metric_kind,
-        market.bucket_grid_version,
-        market.n_buckets,
-        pmf,
-      );
-      const mark60Minutes = calculateTimeWeightedAverage({
-        priorMark: priorMark === undefined ? null : orderedMark(priorMark),
-        marks: markRows.map(orderedMark),
-        currentMetric: market.current_metric,
-        now,
-      });
-      const anchor =
-        market.metric_kind === "valuation_median"
-          ? {
-              valuationUsd: market.anchor_valuation!,
-              date: market.anchor_date!,
-              description: market.anchor_description!,
-            }
-          : null;
-
-      return {
-        marketId: market.market_id,
-        company: {
-          name: market.company_name,
-          slug: market.company_slug,
-          logoPath: market.company_logo_path,
-        },
-        status: market.status,
-        metric: {
-          kind: market.metric_kind,
-          label:
-            market.metric_kind === "valuation_median" ? "Implied valuation" : "YES probability",
-          format: market.metric_kind === "valuation_median" ? "usd" : "probability",
-          current: market.current_metric,
-          change24Hours: Number.isFinite(changeRow.change_baseline)
-            ? market.current_metric - changeRow.change_baseline
-            : 0,
-          mark60Minutes,
-        },
-        anchor,
-        bucketGridVersion: market.bucket_grid_version,
-        pmf,
-        contracts,
-        openInterest: openInterestRow.open_interest,
-        sequence: market.last_market_sequence,
-        recentActivity: activityRows.map((row) => ({
-          marketSequence: row.market_sequence,
-          action: row.action,
-          side: row.contract_side,
-          strikeIndex: row.strike_index,
-          strikeValueUsd: row.strike_value,
-          quantity: row.quantity,
-          cashAmountCents: row.cash_amount_cents,
-          metricBefore: row.metric_before,
-          metricAfter: row.metric_after,
-          createdAt: row.created_at.toISOString(),
-        })),
-        settlement:
-          settlement === undefined
-            ? null
-            : {
-                settledValueUsd: settlement.settled_value,
-                winningBucket: settlement.winning_bucket,
-                sourceUrl: settlement.source_url,
-                sourceDescription: settlement.source_description,
-                timestamp: settlement.ts.toISOString(),
-              },
-        createdAt: market.created_at.toISOString(),
-        settledAt: market.settled_at?.toISOString() ?? null,
-      };
+      const [view, epochs] = await Promise.all([
+        readListing(transaction, listing, at),
+        loadEpochs(transaction, listing.company_id),
+      ]);
+      return { ...view, epochs, asOf: at.toISOString() };
     });
 }

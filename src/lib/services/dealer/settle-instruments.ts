@@ -29,10 +29,10 @@ import {
   resolveForward,
   type SourceRank,
 } from "../../engine/dealer/rulebook.js";
-import { settleLmsrBook } from "../settle-market.js";
 import { beginCronRun, type CronRunOutcome, finishCronRun } from "./cron-run.js";
 import { LIVE_STATES, latestMid, RULEBOOK_SOURCE_URL } from "./dealer-books.js";
 import { type ListingWithCompany, listInstrument } from "./list-instruments.js";
+import { settleLmsrBook } from "./settle-lmsr-book.js";
 
 /**
  * /api/cron/settle (TECHNICAL_DESIGN.md §6, §9): every live instrument in its

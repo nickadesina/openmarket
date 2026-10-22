@@ -1,6 +1,5 @@
 import { HomeActivity } from "../components/home-activity/home-activity.js";
 import { HomeDistribution } from "../components/home-distribution/home-distribution.js";
-import { HomeQuoteSheet } from "../components/home-quote-sheet/home-quote-sheet.js";
 import { HomeStats } from "../components/home-stats/home-stats.js";
 import { HomeTabs } from "../components/home-tabs/home-tabs.js";
 import { MarketBoard } from "../components/market-board/market-board.js";
@@ -47,20 +46,14 @@ export default async function HomePage() {
             {
               key: "board",
               label: "Board",
-              caption: "Open markets first, ordered by open interest",
+              caption: "Each listed name's forward and quarterly binary, by open interest",
               content: <MarketBoard initialData={data.markets} />,
             },
             {
               key: "distribution",
               label: "Distribution",
-              caption: "80% probability band, median, and the last public round on one log axis",
+              caption: "Implied 80% band and median from each forward mid, against the last round",
               content: <HomeDistribution initialData={data.markets} />,
-            },
-            {
-              key: "quotes",
-              label: "Quotes",
-              caption: "Change, high, and low over the past hour, day, week, and all time",
-              content: <HomeQuoteSheet initialData={data.markets} />,
             },
           ]}
         />
@@ -74,8 +67,9 @@ export default async function HomePage() {
       </div>
 
       <p className={styles.disclosure}>
-        <strong>Paper trading only.</strong> Market values reflect participant positions and do not
-        represent an investment, offer, or verified company valuation.
+        <strong>Paper trading only.</strong> Prices are the venue&apos;s own model quotes on paper
+        money and do not represent an investment, offer, or verified company valuation. Forward
+        positions are held to settlement or void.
       </p>
     </div>
   );

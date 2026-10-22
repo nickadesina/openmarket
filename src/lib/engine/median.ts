@@ -3,17 +3,6 @@ import { EPS } from "./types.js";
 const SQRT_TWO = Math.sqrt(2);
 
 /**
- * Returns the median implied by a bucket PMF, interpolating uniformly in log
- * space within the bucket that contains the 50th percentile.
- */
-export function impliedValuationMedian(
-  probabilities: readonly number[],
-  boundaries: readonly number[],
-): number {
-  return impliedValuationQuantile(probabilities, boundaries, 0.5);
-}
-
-/**
  * Returns the valuation at which the cumulative probability first reaches
  * `quantile` (0 < quantile < 1), interpolating uniformly in log space within
  * the containing bucket. The open-ended end buckets use virtual edges half an

@@ -1,10 +1,14 @@
 import type { ColumnType, Generated, Insertable, Selectable, Updateable } from "kysely";
 
 export type MarketStatus = "open" | "settled";
-/** `forward_ln` is a dealer forward's book: q = [open long, open short] notional in USD. */
-export type MetricKind = "valuation_median" | "yes_probability" | "forward_ln";
+/**
+ * A dealer book: `yes_probability` a binary's two-outcome LMSR, `forward_ln` a
+ * forward's (q = [open long, open short] notional in USD). The ladder's
+ * `valuation_median` books went with migration 008; the column still admits it.
+ */
+export type MetricKind = "yes_probability" | "forward_ln";
 export type TradeAction = "buy" | "sell";
-/** An LMSR claim side; the ladder and the binary trade these. */
+/** An LMSR claim side: a binary trades these. */
 export type ClaimSide = "yes" | "no";
 export type ForwardSide = "long" | "short";
 export type ContractSide = ClaimSide | ForwardSide;

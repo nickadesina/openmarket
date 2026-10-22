@@ -1,4 +1,4 @@
-import type { MarketDetail } from "../services/get-market.js";
+import type { ContractSide, ListingTier, MetricKind } from "../db/schema.js";
 
 const usdFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -85,13 +85,14 @@ export function formatPercent(value: number): string {
   return probabilityFormatter.format(value);
 }
 
-/** The level against the last public round: never empty, unlike a quiet day's 24h change. */
-export function roundChange(
-  current: number,
-  anchorUsd: string | number,
-): { readonly direction: "up" | "down" | "flat"; readonly label: string } {
-  const change = current / Number(anchorUsd) - 1;
-  if (!Number.isFinite(change) || change === 0) return { direction: "flat", label: "Level" };
+/** The level against the last public round, from the API's ratio − 1; never empty, unlike a quiet day's change. */
+export function roundChange(change: number | null): {
+  readonly direction: "up" | "down" | "flat";
+  readonly label: string;
+} {
+  if (change === null || !Number.isFinite(change) || change === 0) {
+    return { direction: "flat", label: "Level" };
+  }
   return {
     direction: change > 0 ? "up" : "down",
     label: `${change > 0 ? "Up" : "Down"} ${formatPercent(Math.abs(change))}`,
@@ -104,10 +105,6 @@ export function formatValuation(value: number | string): string {
   return compactValuationFormatter.format(numericValue);
 }
 
-export function formatMetric(value: number, kind: MarketDetail["metric"]["kind"]): string {
-  return kind === "yes_probability" ? formatProbability(value) : formatValuation(value);
-}
-
 /** A traded valuation level: four significant digits. */
 export function formatPrice(value: number | string): string {
   const numericValue = typeof value === "string" ? Number(value) : value;
@@ -115,8 +112,8 @@ export function formatPrice(value: number | string): string {
   return priceValuationFormatter.format(numericValue);
 }
 
-/** A traded metric level: probabilities as usual, valuations at price precision. */
-export function formatMetricPrice(value: number, kind: MarketDetail["metric"]["kind"]): string {
+/** A book's level: a binary's YES probability, a forward's mid at price precision. */
+export function formatMetricPrice(value: number, kind: MetricKind): string {
   return kind === "yes_probability" ? formatProbability(value) : formatPrice(value);
 }
 
@@ -129,28 +126,19 @@ export function formatDate(value: string): string {
   return dateFormatter.format(new Date(value));
 }
 
-export function movementGlyph(direction: "up" | "down" | "flat"): string {
-  return direction === "up" ? "↑" : direction === "down" ? "↓" : "→";
+/** A contract side as the tape and the ticket name it: YES, NO, LONG, SHORT. */
+export function sideLabel(side: ContractSide): string {
+  return side.toUpperCase();
 }
 
-/** A forward side (long/short) has no strike; it labels as the side alone. */
-export function contractLabel(
-  side: "yes" | "no" | "long" | "short",
-  strikeLabel: string | null,
-): string {
-  const sideLabel = side.toUpperCase();
-  if (strikeLabel === null || side === "long" || side === "short") return sideLabel;
-  return side === "yes"
-    ? `${sideLabel} above ${strikeLabel}`
-    : `${sideLabel} at or below ${strikeLabel}`;
+/** The tier as published (README D10): mega-cap from a $10B print, red-hot below. */
+export function tierLabel(tier: ListingTier): string {
+  return tier === "mega" ? "Mega-cap" : "Red-hot";
 }
 
-export function strikeLabel(market: MarketDetail, strikeIndex: number): string {
-  const contract = market.contracts.find((item) => item.strikeIndex === strikeIndex);
-  if (market.metric.kind === "yes_probability") return "Outcome";
-  return contract?.strikeValueUsd === null || contract === undefined
-    ? "Unknown strike"
-    : formatValuation(contract.strikeValueUsd);
+/** A model or rulebook version as stamped on a published price. */
+export function formatVersion(version: string): string {
+  return `v${version}`;
 }
 
 export function errorMessage(error: unknown, fallback: string): string {

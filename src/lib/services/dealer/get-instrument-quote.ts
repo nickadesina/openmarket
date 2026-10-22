@@ -294,6 +294,16 @@ async function binaryQuote(
   };
 }
 
+/** A live instrument's quote without a fill preview; INSTRUMENT_CLOSED when it is not live. */
+export async function quoteBook(
+  db: Kysely<Database>,
+  book: InstrumentBook,
+  at: Date,
+): Promise<InstrumentQuote> {
+  if (book.instrument.kind === "binary") return binaryQuote(db, book, at);
+  return forwardQuoteView(await loadForwardBook(db, book, at), at, null);
+}
+
 /**
  * `GET /api/instruments/[instrumentId]/quote`. A forward with `side` and
  * `notional_usd` also previews that fill; a binary takes neither (its trade

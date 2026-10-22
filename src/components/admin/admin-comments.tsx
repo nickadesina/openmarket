@@ -223,6 +223,12 @@ export function AdminComments({ onAdminRequired }: { readonly onAdminRequired: (
     queryKey: queryKeys.markets,
     queryFn: () => apiRequest<MarketListResult>("/api/markets"),
   });
+  const threads = (marketsQuery.data?.listings ?? []).flatMap((listing) => {
+    const marketId = listing.forward?.market_id ?? listing.binary?.market_id;
+    return marketId === undefined
+      ? []
+      : [{ marketId, name: listing.company.name, slug: listing.company.slug }];
+  });
 
   return (
     <section className={styles.operation} aria-labelledby="moderation-heading">
@@ -243,9 +249,10 @@ export function AdminComments({ onAdminRequired }: { readonly onAdminRequired: (
             disabled={marketsQuery.isPending}
           >
             <option value="">Choose a market</option>
-            {marketsQuery.data?.markets.map((market) => (
-              <option key={market.marketId} value={market.marketId}>
-                {market.company.name} ({market.company.slug}) — {market.status}
+            {/* A name's discussion lives on its live forward's book, as the market page shows it. */}
+            {threads.map((thread) => (
+              <option key={thread.marketId} value={thread.marketId}>
+                {thread.name} ({thread.slug})
               </option>
             ))}
           </select>
@@ -266,7 +273,7 @@ export function AdminComments({ onAdminRequired }: { readonly onAdminRequired: (
             </button>
           </div>
         ) : null}
-        {marketsQuery.data?.markets.length === 0 ? (
+        {marketsQuery.data !== undefined && threads.length === 0 ? (
           <p className={styles.commentHelp}>No markets are available for moderation.</p>
         ) : null}
         {marketId !== "" ? (

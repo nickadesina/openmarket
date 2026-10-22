@@ -6,15 +6,16 @@ import { useState } from "react";
 
 import { ApiClientError, apiRequest } from "../../lib/client/api.js";
 import {
-  contractLabel,
   errorMessage,
   formatCents,
   formatContractPrice,
+  formatDate,
   formatDateTime,
   formatForecasterName,
+  formatPrice,
   formatQuantity,
   formatUsd,
-  formatValuation,
+  sideLabel,
 } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
 import { signInHref } from "../../lib/client/tournament.js";
@@ -22,8 +23,9 @@ import { type TradeOutcome, useTradeExecution } from "../../lib/client/use-trade
 import type { ExecutionResult } from "../../lib/services/execute-trade.js";
 import type {
   Portfolio,
+  PortfolioBinaryPosition,
+  PortfolioForwardPosition,
   PortfolioMarket,
-  PortfolioPosition,
   PortfolioTrade,
 } from "../../lib/services/portfolio.js";
 import type { QuoteResult } from "../../lib/services/quote.js";
@@ -36,7 +38,7 @@ const FALLBACK_ERROR = "Something went wrong. Please try again.";
 
 interface SellSelection {
   readonly market: PortfolioMarket;
-  readonly position: PortfolioPosition;
+  readonly position: PortfolioBinaryPosition;
 }
 
 interface SellFlowProps extends SellSelection {
@@ -47,19 +49,19 @@ interface SellFlowProps extends SellSelection {
 interface ReviewedSale {
   readonly quote: QuoteResult;
   readonly positionQuantity: number;
-  readonly sellableQuantity: number;
   readonly markPriceUsd: number;
 }
 
-function positionLabel(
-  metricKind: PortfolioMarket["metricKind"],
-  side: PortfolioPosition["side"],
-  strikeValue: string | null,
-): string {
-  return contractLabel(
-    side,
-    metricKind === "yes_probability" || strikeValue === null ? null : formatValuation(strikeValue),
-  );
+/** Signed cash with the Gain/Loss word (DESIGN.md → The Arrow-and-Word Rule); zero stays muted. */
+function pnl(valueUsd: number | null): {
+  readonly className?: string | undefined;
+  readonly text: string;
+} {
+  if (valueUsd === null) return { text: "Not available" };
+  if (valueUsd === 0) return { className: styles.flat, text: formatUsd(0) };
+  return valueUsd > 0
+    ? { className: styles.positive, text: `+${formatUsd(valueUsd)}` }
+    : { className: styles.negative, text: `−${formatUsd(Math.abs(valueUsd))}` };
 }
 
 function PortfolioSkeleton() {
@@ -144,50 +146,50 @@ function SaleReview({
   );
 }
 
+/** Selling binary shares back to the dealer's book, by market id. */
 function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
   const queryClient = useQueryClient();
   const [quantityText, setQuantityText] = useState(String(position.sellableQuantity));
   const [review, setReview] = useState<ReviewedSale | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [selling, setSelling] = useState(false);
-  const trade = useTradeExecution();
+  const trade = useTradeExecution("/api/trade");
   const quantity = Number(quantityText);
   const quantityValid =
     Number.isFinite(quantity) &&
     quantity >= MIN_QUANTITY &&
     quantity <= position.sellableQuantity + Number.EPSILON;
-  // A review is valid only for the live position and contract price it quoted.
-  // An unknown-outcome order is exempt because retry must preserve its request.
+  // A review is valid only for the live position and price it quoted. An
+  // unknown-outcome order is exempt because retry must preserve its request.
   const settled = market.status !== "open";
   const quoteStale =
     review !== null &&
     (review.positionQuantity !== position.quantity ||
-      review.sellableQuantity !== position.sellableQuantity ||
       review.markPriceUsd !== position.markPriceUsd);
   const blocked = settled
-    ? "This market has settled. Positions are paid out at settlement, not sold."
+    ? "This binary has settled. Shares are paid out at settlement, not sold."
     : quoteStale
-      ? "Your position or market price changed since this quote. Review a fresh quote."
+      ? "Your position or the price changed since this quote. Review a fresh quote."
       : null;
   const quote = review === null || (blocked !== null && !trade.canRetry) ? null : review.quote;
+  const label = `${sideLabel(position.side)} · ${market.company.name}`;
+  const fields = {
+    market_id: market.marketId,
+    action: "sell",
+    side: position.side,
+    strike_index: 0,
+  } as const;
 
   const quoteMutation = useMutation({
     mutationFn: () =>
       apiRequest<QuoteResult>("/api/quote", {
         method: "POST",
-        body: JSON.stringify({
-          slug: market.company.slug,
-          action: "sell",
-          side: position.side,
-          strike_index: position.strikeIndex,
-          quantity,
-        }),
+        body: JSON.stringify({ ...fields, quantity }),
       }),
     onSuccess: (nextQuote) => {
       setReview({
         quote: nextQuote,
         positionQuantity: position.quantity,
-        sellableQuantity: position.sellableQuantity,
         markPriceUsd: position.markPriceUsd,
       });
       setNotice(null);
@@ -202,7 +204,7 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
   const minProceedsCents =
     quote === null ? null : Math.floor(Number(quote.cash_amount_cents) * 0.99);
 
-  async function settleOrder(send: () => Promise<TradeOutcome>) {
+  async function settleOrder(send: () => Promise<TradeOutcome<ExecutionResult>>) {
     setSelling(true);
     const outcome = await send();
     if (outcome.status === "executed") {
@@ -223,8 +225,8 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
         outcome.movedPrice === null ? null : formatCents(outcome.movedPrice.cashAmountCents);
       setNotice(
         movedProceeds === null
-          ? "The market moved. Review a fresh quote before confirming the sale."
-          : `The market moved. New authoritative proceeds: ${movedProceeds}. Review a fresh quote before confirming.`,
+          ? "The price moved. Review a fresh quote before confirming the sale."
+          : `The price moved. New authoritative proceeds: ${movedProceeds}. Review a fresh quote before confirming.`,
       );
       return;
     }
@@ -236,10 +238,7 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
     if (quote === null || minProceedsCents === null || blocked !== null) return;
     return settleOrder(() =>
       trade.execute({
-        slug: market.company.slug,
-        action: "sell",
-        side: position.side,
-        strike_index: position.strikeIndex,
+        ...fields,
         quantity: quote.quantity,
         min_proceeds_usd: (minProceedsCents / 100).toFixed(2),
       }),
@@ -248,17 +247,14 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
 
   // Inputs lock while an order's outcome is unknown; only "Abandon order" releases it.
   const busy = quoteMutation.isPending || selling || trade.canRetry;
+  const supportId = `sellable-${market.marketId}-${position.side}`;
 
   return (
-    <div
-      className={styles.sellFlow}
-      role="group"
-      aria-label={`Sell ${positionLabel(market.metricKind, position.side, position.strikeValueUsd)}`}
-    >
+    <div className={styles.sellFlow} role="group" aria-label={`Sell ${label}`}>
       <div className={styles.sellFlowHeader}>
         <div>
           <h4>Sell shares</h4>
-          <p>{positionLabel(market.metricKind, position.side, position.strikeValueUsd)}</p>
+          <p>{label}</p>
         </div>
         <button
           type="button"
@@ -285,13 +281,10 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
             setNotice(null);
           }}
           disabled={busy}
-          aria-describedby={`sellable-${market.marketId}-${position.side}-${position.strikeIndex}`}
+          aria-describedby={supportId}
         />
       </label>
-      <div
-        className={styles.fieldSupport}
-        id={`sellable-${market.marketId}-${position.side}-${position.strikeIndex}`}
-      >
+      <div className={styles.fieldSupport} id={supportId}>
         <span>Sellable: {formatQuantity(position.sellableQuantity)} shares</span>
         <button
           type="button"
@@ -344,7 +337,7 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
   );
 }
 
-function PositionRow({
+function BinaryPositionRow({
   market,
   position,
   selected,
@@ -353,38 +346,29 @@ function PositionRow({
   onComplete,
 }: {
   readonly market: PortfolioMarket;
-  readonly position: PortfolioPosition;
+  readonly position: PortfolioBinaryPosition;
   readonly selected: boolean;
   readonly onSell: () => void;
   readonly onClose: () => void;
   readonly onComplete: (result: ExecutionResult) => void;
 }) {
   const basis = position.approximateCostBasis;
-  const approximatePnl =
-    basis === null ? null : position.markedValueUsd - Number(basis.approximateNetCostCents) / 100;
-  const pnlDisplay =
-    approximatePnl === null
-      ? { className: undefined, text: "Not available" }
-      : approximatePnl === 0
-        ? { className: styles.flat, text: formatUsd(0) }
-        : approximatePnl > 0
-          ? { className: styles.positive, text: `+${formatUsd(Math.abs(approximatePnl))}` }
-          : { className: styles.negative, text: `−${formatUsd(Math.abs(approximatePnl))}` };
+  const approximatePnl = pnl(
+    basis === null ? null : position.markedValueUsd - Number(basis.approximateNetCostCents) / 100,
+  );
   const canSell = market.status === "open" && position.sellableQuantity >= MIN_QUANTITY;
 
   return (
     <li className={styles.positionRow}>
       <div className={styles.positionMain}>
         <div>
-          <strong>
-            {positionLabel(market.metricKind, position.side, position.strikeValueUsd)}
-          </strong>
+          <strong>{sideLabel(position.side)}</strong>
           <span>{formatQuantity(position.quantity)} shares</span>
         </div>
         <dl className={styles.positionMetrics}>
           <div>
             <dt>Mark</dt>
-            <dd>{formatUsd(position.markPriceUsd)}</dd>
+            <dd>{formatContractPrice(position.markPriceUsd)}</dd>
           </div>
           <div>
             <dt>Marked value</dt>
@@ -404,7 +388,7 @@ function PositionRow({
           </div>
           <div>
             <dt>Approx. P&L</dt>
-            <dd className={pnlDisplay.className}>{pnlDisplay.text}</dd>
+            <dd className={approximatePnl.className}>{approximatePnl.text}</dd>
           </div>
         </dl>
         <div className={styles.positionAction}>
@@ -427,27 +411,79 @@ function PositionRow({
   );
 }
 
-function HistoryRow({ trade }: { readonly trade: PortfolioTrade }) {
-  const direction = trade.action === "buy" ? "Bought" : "Sold";
-  const marketLabel = contractLabel(
-    trade.side,
-    trade.strikeValueUsd === null ? null : formatValuation(trade.strikeValueUsd),
+function ForwardPositionRow({ position }: { readonly position: PortfolioForwardPosition }) {
+  const unrealised = pnl(Number(position.unrealisedCents) / 100);
+  return (
+    <li className={styles.positionRow}>
+      <div className={styles.positionMain}>
+        <div>
+          <strong>
+            {sideLabel(position.side)} · {formatCents(position.notionalCents)} notional
+          </strong>
+          <span>
+            <Link href={`/m/${position.company.slug}`}>{position.company.name}</Link> next
+            post-money
+          </span>
+        </div>
+        <dl className={styles.positionMetrics}>
+          <div>
+            <dt>Entry</dt>
+            <dd>{formatPrice(position.entryUsd)}</dd>
+          </div>
+          <div>
+            <dt>Mid now</dt>
+            <dd>{formatPrice(position.midUsd)}</dd>
+          </div>
+          <div>
+            <dt>Collateral</dt>
+            <dd>{formatCents(position.collateralCents)}</dd>
+          </div>
+          <div>
+            <dt>Max gain / loss</dt>
+            <dd>
+              {formatCents(position.maxGainCents)} / {formatCents(position.maxLossCents)}
+            </dd>
+          </div>
+          <div>
+            <dt>Unrealised</dt>
+            <dd className={unrealised.className}>{unrealised.text}</dd>
+          </div>
+        </dl>
+        <div className={styles.positionAction}>
+          <span>
+            Expires <time dateTime={position.expiresAt}>{formatDate(position.expiresAt)}</time>
+          </span>
+          <span>Held to settlement or void</span>
+        </div>
+      </div>
+    </li>
   );
+}
+
+function HistoryRow({ trade }: { readonly trade: PortfolioTrade }) {
+  const forward = trade.metricKind === "forward_ln";
   const cash = formatCents(trade.cashAmountCents);
+  const title = forward
+    ? `${sideLabel(trade.side)} ${formatCents(String(Math.round(trade.quantity * 100)))} forward${trade.entryUsd === null ? "" : ` at ${formatPrice(trade.entryUsd)}`}`
+    : `${trade.action === "buy" ? "Bought" : "Sold"} ${formatQuantity(trade.quantity)} ${sideLabel(trade.side)}`;
 
   return (
     <li className={styles.historyRow}>
       <div>
-        <strong>
-          {direction} {formatQuantity(trade.quantity)} {marketLabel}
-        </strong>
+        <strong>{title}</strong>
         <span>
-          {trade.company.name} · Sequence {trade.marketSequence}
+          {trade.company.name} · {forward ? "Forward" : "Binary"} · Sequence {trade.marketSequence}
         </span>
       </div>
       <div className={styles.historyValues}>
-        <strong>{trade.action === "buy" ? `Cash debit ${cash}` : `Cash proceeds ${cash}`}</strong>
-        <span>
+        <strong>
+          {forward
+            ? `Collateral ${cash}`
+            : trade.action === "buy"
+              ? `Cash debit ${cash}`
+              : `Cash proceeds ${cash}`}
+        </strong>
+        <span suppressHydrationWarning>
           {trade.redemptionQuantity > 0
             ? `${formatCents(trade.redemptionCents)} redeemed · ${formatDateTime(trade.createdAt)}`
             : formatDateTime(trade.createdAt)}
@@ -474,11 +510,6 @@ export function PortfolioPage() {
   }).data;
 
   const portfolio = portfolioQuery.data;
-  const hasPositions =
-    portfolio?.markets.some(
-      (market) =>
-        market.positions.length > 0 || market.residualExposure.buckets.some((value) => value > 0),
-    ) ?? false;
 
   if (
     portfolioQuery.isLoading ||
@@ -523,6 +554,8 @@ export function PortfolioPage() {
     );
   }
 
+  const unrealised = pnl(Number(portfolio.forwardUnrealisedCents) / 100);
+
   return (
     <div className={styles.page}>
       <header className={styles.pageHeader}>
@@ -530,8 +563,8 @@ export function PortfolioPage() {
           <p className={styles.stateLabel}>Account · {formatForecasterName(portfolio.identity)}</p>
           <h1>Portfolio</h1>
           <p>
-            Marked values use the latest market distribution. Cost basis and P&amp;L are
-            approximate.
+            Forwards are marked at the model mid as settlement would credit them; binary shares at
+            the book&apos;s price. Binary cost basis and P&amp;L are approximate.
           </p>
         </div>
         <button
@@ -559,7 +592,15 @@ export function PortfolioPage() {
           <dd>{formatCents(portfolio.cashBalanceCents)}</dd>
         </div>
         <div>
-          <dt>Holdings mark</dt>
+          <dt>Forward collateral</dt>
+          <dd>{formatCents(portfolio.forwardCollateralCents)}</dd>
+        </div>
+        <div>
+          <dt>Forward unrealised</dt>
+          <dd className={unrealised.className}>{unrealised.text}</dd>
+        </div>
+        <div>
+          <dt>Binary holdings</dt>
           <dd>{formatUsd(portfolio.holdingsMarkedValueUsd)}</dd>
         </div>
         <div className={styles.accountValue}>
@@ -568,95 +609,92 @@ export function PortfolioPage() {
         </div>
       </dl>
 
-      <section className={styles.section} aria-labelledby="positions-heading">
+      <section className={styles.section} aria-labelledby="forwards-heading">
         <div className={styles.sectionHeader}>
           <div>
-            <h2 id="positions-heading" className={styles.tab}>
-              Positions
+            <h2 id="forwards-heading" className={styles.tab}>
+              Forward positions
             </h2>
-            <p>Canonical holdings decomposed into recognizable contracts.</p>
+            <p>
+              Open forwards, held to settlement or void; there is no early close. A void refunds the
+              collateral.
+            </p>
           </div>
         </div>
-
-        {!hasPositions ? (
+        {portfolio.forwardPositions.length === 0 ? (
           <div className={styles.emptyState}>
-            <h3>No open exposure</h3>
-            <p>
-              Buy shares from a market to build a position. Trades will appear here after execution.
-            </p>
+            <h3>No open forwards</h3>
+            <p>Go long or short a name&apos;s next post-money from its market page.</p>
             <Link href="/" className={styles.secondaryLink}>
               Browse markets
             </Link>
           </div>
         ) : (
+          <ul className={`${styles.positionList} ${styles.marketList}`}>
+            {portfolio.forwardPositions.map((position) => (
+              <ForwardPositionRow key={position.positionId} position={position} />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className={styles.section} aria-labelledby="positions-heading">
+        <div className={styles.sectionHeader}>
+          <div>
+            <h2 id="positions-heading" className={styles.tab}>
+              Binary holdings
+            </h2>
+            <p>YES and NO shares in each name&apos;s quarterly binary.</p>
+          </div>
+        </div>
+
+        {portfolio.markets.length === 0 ? (
+          <div className={styles.emptyState}>
+            <h3>No binary shares</h3>
+            <p>Buy YES or NO from a market page. Shares appear here after execution.</p>
+          </div>
+        ) : (
           <div className={styles.marketList}>
-            {portfolio.markets.map((market) => {
-              const residualBuckets = market.residualExposure.buckets.filter((value) => value > 0);
-              if (market.positions.length === 0 && residualBuckets.length === 0) return null;
-              return (
-                <article key={market.marketId} className={styles.marketSection}>
-                  <header className={styles.marketHeader}>
-                    <div>
-                      <Link href={`/m/${market.company.slug}`}>{market.company.name}</Link>
-                      <span>{market.status === "settled" ? "Settled market" : "Open market"}</span>
-                    </div>
-                    <strong>{formatUsd(market.holdingsMarkedValueUsd)} marked value</strong>
-                  </header>
-                  {market.positions.length > 0 ? (
-                    <ul className={styles.positionList}>
-                      {market.positions.map((position) => {
-                        const selected =
-                          selection?.market.marketId === market.marketId &&
-                          selection.position.side === position.side &&
-                          selection.position.strikeIndex === position.strikeIndex;
-                        return (
-                          <PositionRow
-                            key={`${position.side}-${position.strikeIndex}`}
-                            market={market}
-                            position={position}
-                            selected={selected}
-                            onSell={() => {
-                              setCompletion(null);
-                              setSelection({ market, position });
-                            }}
-                            onClose={() => setSelection(null)}
-                            onComplete={(result) => {
-                              setSelection(null);
-                              setCompletion(
-                                `Sale completed: ${formatQuantity(result.shares)} shares at ${formatContractPrice(result.average_price)} average.`,
-                              );
-                            }}
-                          />
-                        );
-                      })}
-                    </ul>
-                  ) : null}
-                  {residualBuckets.length > 0 ? (
-                    <details className={styles.residual}>
-                      <summary>
-                        <span>Other bucket exposure</span>
-                        <strong>{formatUsd(market.residualExposure.markedValueUsd)}</strong>
-                      </summary>
-                      <p>
-                        Residual vector exposure that cannot be represented as a single YES or NO
-                        contract.
-                      </p>
-                      <ol>
-                        {market.residualExposure.buckets.map((quantity, index) =>
-                          quantity > 0 ? (
-                            // biome-ignore lint/suspicious/noArrayIndexKey: the index is the bucket's identity.
-                            <li key={index}>
-                              <span>Bucket {index + 1}</span>
-                              <span>{formatQuantity(quantity)} shares</span>
-                            </li>
-                          ) : null,
-                        )}
-                      </ol>
-                    </details>
-                  ) : null}
-                </article>
-              );
-            })}
+            {portfolio.markets.map((market) => (
+              <article key={market.marketId} className={styles.marketSection}>
+                <header className={styles.marketHeader}>
+                  <div>
+                    <Link href={`/m/${market.company.slug}`}>{market.company.name}</Link>
+                    <span>
+                      {market.question ?? "Binary"}
+                      {market.status === "settled" ? " · Settled" : ""}
+                    </span>
+                  </div>
+                  <strong>{formatUsd(market.holdingsMarkedValueUsd)} marked value</strong>
+                </header>
+                <ul className={styles.positionList}>
+                  {market.positions.map((position) => {
+                    const selected =
+                      selection?.market.marketId === market.marketId &&
+                      selection.position.side === position.side;
+                    return (
+                      <BinaryPositionRow
+                        key={position.side}
+                        market={market}
+                        position={position}
+                        selected={selected}
+                        onSell={() => {
+                          setCompletion(null);
+                          setSelection({ market, position });
+                        }}
+                        onClose={() => setSelection(null)}
+                        onComplete={(result) => {
+                          setSelection(null);
+                          setCompletion(
+                            `Sale completed: ${formatQuantity(result.shares)} shares at ${formatContractPrice(result.average_price)} average.`,
+                          );
+                        }}
+                      />
+                    );
+                  })}
+                </ul>
+              </article>
+            ))}
           </div>
         )}
       </section>
@@ -677,7 +715,7 @@ export function PortfolioPage() {
             <h3>{offset === 0 ? "No trades yet" : "No more trades"}</h3>
             <p>
               {offset === 0
-                ? "Completed buys and sells will be recorded here."
+                ? "Completed forwards, buys and sells will be recorded here."
                 : "Return to the previous page to review newer activity."}
             </p>
           </div>

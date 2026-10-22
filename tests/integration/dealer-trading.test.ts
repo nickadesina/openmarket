@@ -395,9 +395,9 @@ postgresDescribe(suiteName, () => {
       "PRICE_CLAMPED",
     );
 
-    // The slug names a company's ladder book; a dealer book is reached by id only.
+    // A book is reached by id only; an unknown id is not found.
     await expectServiceError(
-      quoteMarket(postgres.db, { ...buy, market_id: undefined, slug: "modal" }, userId, TRADE_AT),
+      quoteMarket(postgres.db, { ...buy, market_id: randomUUID() }, userId, TRADE_AT),
       "MARKET_NOT_FOUND",
     );
     const forward = await instrumentOf("modal", "forward");

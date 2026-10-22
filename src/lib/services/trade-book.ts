@@ -5,47 +5,20 @@ import type { Database, InstrumentRow, MarketRow } from "../db/schema.js";
 import { assertLive } from "./dealer/get-instrument-quote.js";
 
 /**
- * The book an LMSR quote or trade addresses: a dealer binary by `market_id`,
- * or a company's ladder market (no instrument) by `slug`. A dealer book also
- * brings its instrument, so the caller can refuse a closed one and clamp the
- * price to [p_floor, 1 − p_floor].
+ * The book an LMSR quote or trade addresses: a dealer binary by `market_id`.
+ * A dealer book brings its instrument, so the caller can refuse a closed one
+ * and clamp the price to [p_floor, 1 − p_floor]. (A book with no instrument
+ * exists only in test fixtures; it trades unclamped.)
  */
 
 export interface BookReference {
-  readonly slug?: string | undefined;
-  readonly market_id?: string | undefined;
+  readonly market_id: string;
 }
 
 export interface TradeBook {
   readonly market: MarketRow;
   /** Set when the book is a dealer instrument's. */
   readonly dealer: { readonly instrument: InstrumentRow; readonly pFloor: number } | null;
-}
-
-async function bySlug(db: Transaction<Database>, slug: string, lock: boolean): Promise<MarketRow> {
-  let query = db
-    .selectFrom("markets")
-    .innerJoin("companies", "companies.id", "markets.company_id")
-    .selectAll("markets")
-    .where("companies.slug", "=", slug)
-    .where("markets.status", "=", "open")
-    .where("markets.instrument_id", "is", null)
-    .orderBy("markets.created_at", "desc");
-  if (lock) query = query.forUpdate("markets");
-  const market = await query.executeTakeFirst();
-  if (market !== undefined) return market;
-  const latest = await db
-    .selectFrom("markets")
-    .innerJoin("companies", "companies.id", "markets.company_id")
-    .select("markets.status")
-    .where("companies.slug", "=", slug)
-    .where("markets.instrument_id", "is", null)
-    .orderBy("markets.created_at", "desc")
-    .executeTakeFirst();
-  if (latest?.status === "settled") {
-    throw new ServiceError("MARKET_SETTLED", "Market is settled.");
-  }
-  throw new ServiceError("MARKET_NOT_FOUND", "Open market not found.");
 }
 
 /**
@@ -91,9 +64,7 @@ export async function findTradeBook(
   reference: BookReference,
   lock: boolean,
 ): Promise<TradeBook> {
-  return reference.market_id !== undefined
-    ? byId(db, reference.market_id, lock)
-    : { market: await bySlug(db, reference.slug!, lock), dealer: null };
+  return byId(db, reference.market_id, lock);
 }
 
 /** Refuses a dealer book whose instrument is not live at `at`. */

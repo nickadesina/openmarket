@@ -2,16 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { USD_MAX_LENGTH } from "../../src/lib/api/money.js";
 
-import {
-  quoteInputSchema,
-  settlementInputSchema,
-  tradeInputSchema,
-} from "../../src/lib/api/schemas.js";
+import { quoteInputSchema, tradeInputSchema } from "../../src/lib/api/schemas.js";
 
 const quoteBase = {
-  slug: "anthropic",
+  market_id: "0f8a0c1e-6c1d-4f7a-9d2b-3c4e5f607182",
   side: "yes" as const,
-  strike_index: 31,
+  strike_index: 0,
 };
 const idempotencyKey = "6ba7b810-9dad-41d1-80b4-00c04fd430c8";
 const lineTerminators = ["\n", "\r\n", "\u2028", "\u2029"];
@@ -22,7 +18,7 @@ describe("service input schemas", () => {
       expect(
         quoteInputSchema.safeParse({
           ...quoteBase,
-          slug: `anthropic${terminator}`,
+          market_id: `${quoteBase.market_id}${terminator}`,
           action: "buy",
           quantity: 1,
         }).success,
@@ -149,30 +145,19 @@ describe("service input schemas", () => {
     }
   });
 
-  it("requires exact settlement confirmation and an HTTP(S) source", () => {
-    const valid = {
-      slug: "anthropic",
-      confirm_slug: "anthropic",
-      settled_value_usd: "70000000000.00",
-      source_url: "https://example.com/source",
-    };
-    expect(settlementInputSchema.safeParse(valid).success).toBe(true);
-    expect(
-      settlementInputSchema.safeParse({
-        ...valid,
-        settled_value_usd: "0.00",
-      }).success,
-    ).toBe(true);
-    expect(settlementInputSchema.safeParse({ ...valid, confirm_slug: "openai" }).success).toBe(
-      false,
-    );
-    expect(settlementInputSchema.safeParse({ ...valid, source_url: "file:///tmp/x" }).success).toBe(
-      false,
-    );
-    expect(settlementInputSchema.safeParse({ ...valid, admin: true }).success).toBe(false);
+  it("addresses a binary by market id alone, at strike index 0", () => {
+    const { market_id: _marketId, ...noBook } = quoteBase;
+    for (const input of [
+      { ...noBook, action: "buy", quantity: 1 },
+      { ...quoteBase, slug: "anthropic", action: "buy", quantity: 1 },
+      { ...noBook, slug: "anthropic", action: "buy", quantity: 1 },
+      { ...quoteBase, strike_index: 31, action: "buy", quantity: 1 },
+    ]) {
+      expect(quoteInputSchema.safeParse(input).success).toBe(false);
+    }
   });
 
-  it("caps trade quantity and spend while leaving settlement values uncapped", () => {
+  it("caps trade quantity and spend", () => {
     expect(
       quoteInputSchema.safeParse({ ...quoteBase, action: "buy", quantity: 1e308 }).success,
     ).toBe(false);

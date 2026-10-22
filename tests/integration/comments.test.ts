@@ -7,7 +7,6 @@ import type { CommentInput } from "../../src/lib/api/schemas.js";
 import { createComment } from "../../src/lib/services/create-comment.js";
 import { listComments } from "../../src/lib/services/list-comments.js";
 import { removeComment } from "../../src/lib/services/remove-comment.js";
-import { settleMarket } from "../../src/lib/services/settle-market.js";
 import {
   createBinaryBook,
   createPostgresTestDatabase,
@@ -15,6 +14,7 @@ import {
   type PostgresTestDatabase,
   resetPostgresTestDatabase,
   sessionCookie,
+  settleBinaryBook,
   TEST_DATABASE_SKIP_REASON,
   type TestTrader,
   testDatabaseUrl,
@@ -415,12 +415,7 @@ postgresDescribe(suiteName, () => {
   });
 
   it("posts after settlement without modifying market, cash, holdings, ledger or marks", async () => {
-    await settleMarket(postgres.db, {
-      slug: "comment-market",
-      confirm_slug: "comment-market",
-      settled_value_usd: "1.00",
-      source_url: "https://example.com/result",
-    });
+    await settleBinaryBook(postgres.db, marketId, "yes", "https://example.com/result");
     const snapshot = async () => ({
       market: await postgres.db
         .selectFrom("markets")
