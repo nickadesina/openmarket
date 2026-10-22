@@ -7,120 +7,88 @@ import { apiRequest } from "../../lib/client/api.js";
 import {
   formatCoverage,
   formatForecasterName,
-  formatLeadingOutcome,
   formatProbability,
   formatScore,
   formatTimeUntil,
   formatTournamentDateTime,
-  formatTournamentMedian,
+  formatTournamentForecast,
+  formatTournamentOutcome,
   formatTournamentValue,
-  tournamentUnitCaption,
+  tournamentKindCaption,
+  usdInTournamentUnit,
 } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
-import { useNow, useTournamentViewer } from "../../lib/client/tournament.js";
-import type { Bucket } from "../../lib/engine/tournament/buckets.js";
+import { useNow } from "../../lib/client/tournament.js";
 import type {
   PublicForecast,
   QuestionDetail,
   ResolutionDetail,
 } from "../../lib/services/tournament/get-question.js";
 import type { AggregateView } from "../../lib/services/tournament/records.js";
-import { TournamentDistribution } from "../tournament-distribution/tournament-distribution.js";
 import { ForecasterName } from "../tournament-forecaster-name/forecaster-name.js";
 import { Markdown } from "../tournament-markdown/markdown.js";
+import { CrowdHistory } from "./crowd-history.js";
 import { ForecastEditor } from "./forecast-editor.js";
 import styles from "./tournament-question.module.css";
 
-function aggregateSummary(question: QuestionDetail, aggregate: AggregateView): string {
-  const parts = [`${aggregate.nForecasters} forecasters`];
-  if (aggregate.pYes !== null) parts.push(`${formatProbability(aggregate.pYes)} yes`);
-  if (question.unit === "choice" && aggregate.probs !== null) {
-    const probs = aggregate.probs;
-    parts.push(
-      ...question.buckets.map(
-        (bucket) => `${formatProbability(probs[bucket.index] ?? 0)} ${bucket.label}`,
-      ),
-    );
-    return `Crowd distribution: ${parts.join(", ")}.`;
+/** The crowd's one figure: "42.0% YES" on a binary, "$412B median" on a forward. */
+function crowdFigure(question: QuestionDetail, aggregate: AggregateView): string | null {
+  if (!aggregate.published) return null;
+  if (question.kind === "binary") {
+    return aggregate.p === null ? null : `${formatProbability(aggregate.p)} YES`;
   }
-  if (aggregate.medianValue !== null) {
-    parts.push(
-      `median ${formatTournamentMedian(aggregate.medianValue, aggregate.medianPosition, question.unit)}`,
-    );
-  }
-  if (aggregate.pFloor !== null) parts.push(`${formatProbability(aggregate.pFloor)} on the floor`);
-  return `Crowd distribution: ${parts.join(", ")}.`;
+  if (question.unit === null || aggregate.value === null) return null;
+  return `${formatTournamentValue(aggregate.value, question.unit)} median`;
 }
 
-function CrowdModule({
-  question,
-  viewerProbs,
-}: {
-  readonly question: QuestionDetail;
-  readonly viewerProbs: readonly number[] | null;
-}) {
+/** The linked contract's latest figure: the binary's YES price, or the forward's dealer mid. */
+function marketFigure(question: QuestionDetail): string | null {
+  const instrument = question.instrument;
+  if (instrument === null) return null;
+  if (question.kind === "binary") {
+    return instrument.yesPrice === null ? null : formatProbability(instrument.yesPrice);
+  }
+  if (question.unit === null || instrument.midUsd === null) return null;
+  return formatTournamentValue(
+    usdInTournamentUnit(instrument.midUsd, question.unit),
+    question.unit,
+  );
+}
+
+function CrowdModule({ question }: { readonly question: QuestionDetail }) {
   const aggregate = question.aggregate;
-  if (aggregate === null || !aggregate.published || aggregate.probs === null) {
+  const figure = aggregate === null ? null : crowdFigure(question, aggregate);
+  const market = marketFigure(question);
+  const marketRow =
+    market === null ? null : (
+      <div>
+        <dt>{question.kind === "binary" ? "Market" : "Dealer mid"}</dt>
+        <dd>{market}</dd>
+      </div>
+    );
+  if (aggregate === null || figure === null) {
     const count = aggregate?.nForecasters ?? 0;
     return (
-      <div className={styles.statePanel}>
-        <strong>Not enough forecasts yet.</strong>
-        <p>
-          The crowd distribution is published once {question.rules.minPublishedForecasters}{" "}
-          forecasters are on file; {count} {count === 1 ? "is" : "are"} so far. Individual forecasts
-          are public below.
-        </p>
+      <div className={styles.crowdPending}>
+        <div className={styles.statePanel}>
+          <strong>Not enough forecasts yet.</strong>
+          <p>
+            The crowd&apos;s {question.kind === "binary" ? "chance of YES" : "median level"} is
+            published once {question.rules.minPublishedForecasters} forecasters are on file; {count}{" "}
+            {count === 1 ? "is" : "are"} so far. Individual forecasts are public below.
+          </p>
+        </div>
+        {marketRow === null ? null : <dl className={styles.specTable}>{marketRow}</dl>}
       </div>
     );
   }
   return (
     <div className={styles.crowd}>
-      <TournamentDistribution
-        buckets={question.buckets}
-        unit={question.unit}
-        primary={{ label: "Crowd", probs: aggregate.probs }}
-        overlay={viewerProbs === null ? null : { label: "You", probs: viewerProbs }}
-        median={
-          aggregate.medianValue === null || aggregate.medianPosition === null
-            ? null
-            : { value: aggregate.medianValue, position: aggregate.medianPosition }
-        }
-        winningIndex={question.resolution?.winningBucketIndex ?? null}
-        summary={aggregateSummary(question, aggregate)}
-      />
       <dl className={styles.specTable}>
-        {question.unit === "bool" ? (
-          <div>
-            <dt>P(yes)</dt>
-            <dd className={styles.priceFigure}>{formatProbability(aggregate.pYes ?? 0)}</dd>
-          </div>
-        ) : question.unit === "choice" ? (
-          <div>
-            <dt>Leading</dt>
-            <dd className={styles.priceFigure}>
-              {formatLeadingOutcome(question.buckets, aggregate.probs)}
-            </dd>
-          </div>
-        ) : (
-          <>
-            <div>
-              <dt>Median</dt>
-              <dd className={styles.priceFigure}>
-                {aggregate.medianValue === null
-                  ? "—"
-                  : formatTournamentMedian(
-                      aggregate.medianValue,
-                      aggregate.medianPosition,
-                      question.unit,
-                    )}
-              </dd>
-            </div>
-            <div>
-              <dt>P(floor)</dt>
-              <dd>{aggregate.pFloor === null ? "—" : formatProbability(aggregate.pFloor)}</dd>
-            </div>
-          </>
-        )}
+        <div>
+          <dt>Crowd</dt>
+          <dd className={styles.priceFigure}>{figure}</dd>
+        </div>
         <div>
           <dt>Forecasters</dt>
           <dd>{aggregate.nForecasters}</dd>
@@ -129,7 +97,9 @@ function CrowdModule({
           <dt>Updated</dt>
           <dd>{formatTournamentDateTime(aggregate.computedAt)}</dd>
         </div>
+        {marketRow}
       </dl>
+      <CrowdHistory question={question} />
     </div>
   );
 }
@@ -141,27 +111,41 @@ function ResolutionModule({
   readonly question: QuestionDetail;
   readonly resolution: ResolutionDetail;
 }) {
-  const winner = question.buckets[resolution.winningBucketIndex]!;
   const final = resolution.finalAggregate;
+  const finalFigure = final === null ? null : crowdFigure(question, final);
   return (
     <div className={styles.resolution}>
       <dl className={styles.specTable}>
+        {question.kind === "binary" ? (
+          <div>
+            <dt>Outcome</dt>
+            <dd className={styles.priceFigure}>
+              {resolution.outcome === null ? "—" : formatTournamentOutcome(resolution.outcome)}
+            </dd>
+          </div>
+        ) : (
+          <div>
+            <dt>Settled value</dt>
+            <dd className={styles.priceFigure}>
+              {resolution.resolvedValue === null || question.unit === null
+                ? "—"
+                : formatTournamentValue(resolution.resolvedValue, question.unit)}
+            </dd>
+          </div>
+        )}
         <div>
-          <dt>Winning bucket</dt>
-          <dd className={styles.priceFigure}>{winner.label}</dd>
-        </div>
-        <div>
-          <dt>Resolved value</dt>
-          <dd>
-            {resolution.resolvedValue === null
-              ? "—"
-              : formatTournamentValue(resolution.resolvedValue, question.unit)}
-          </dd>
-        </div>
-        <div>
-          <dt>Rung fired</dt>
+          <dt>Source rank</dt>
           <dd>{resolution.rungFired ?? "—"}</dd>
         </div>
+        {final === null ? null : (
+          <div>
+            <dt>Crowd at close</dt>
+            <dd>
+              {finalFigure ??
+                `Not published · ${final.nForecasters} forecaster${final.nForecasters === 1 ? "" : "s"}`}
+            </dd>
+          </div>
+        )}
         <div>
           <dt>Resolved</dt>
           <dd>{formatTournamentDateTime(resolution.resolvedAt)}</dd>
@@ -202,20 +186,6 @@ function ResolutionModule({
           <Markdown source={note.noteMd} />
         </div>
       ))}
-      {final?.probs == null ? null : (
-        <TournamentDistribution
-          buckets={question.buckets}
-          unit={question.unit}
-          primary={{ label: "Crowd at close", probs: final.probs }}
-          median={
-            final.medianValue === null || final.medianPosition === null
-              ? null
-              : { value: final.medianValue, position: final.medianPosition }
-          }
-          winningIndex={resolution.winningBucketIndex}
-          summary={`Crowd at close across ${final.nForecasters} forecasters; ${winner.label} won with ${formatProbability(final.probs[resolution.winningBucketIndex] ?? 0)}.`}
-        />
-      )}
       <h3 className={styles.subheading}>Top forecasters</h3>
       {resolution.topForecasters.length === 0 ? (
         <p className={styles.muted}>Nobody forecast this question.</p>
@@ -257,41 +227,6 @@ function ResolutionModule({
   );
 }
 
-function BucketTable({ buckets }: { readonly buckets: readonly Bucket[] }) {
-  return (
-    <table className={styles.table}>
-      <thead>
-        <tr>
-          <th scope="col" className={styles.figureCell}>
-            #
-          </th>
-          <th scope="col">Bucket</th>
-          <th scope="col" className={styles.figureCell}>
-            From (inclusive)
-          </th>
-          <th scope="col" className={styles.figureCell}>
-            To (exclusive)
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {buckets.map((bucket) => (
-          <tr key={bucket.index}>
-            <td className={styles.figureCell}>{bucket.index}</td>
-            <td>{bucket.label}</td>
-            <td className={styles.figureCell}>
-              {bucket.kind === "floor" ? "Floor" : (bucket.lower ?? "−∞")}
-            </td>
-            <td className={styles.figureCell}>
-              {bucket.kind === "floor" ? "—" : (bucket.upper ?? "+∞")}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
-
 function ForecastsTable({
   question,
   forecasts,
@@ -300,17 +235,38 @@ function ForecastsTable({
   readonly forecasts: readonly PublicForecast[];
 }) {
   if (forecasts.length === 0) {
-    return <p className={styles.muted}>No forecasts yet. The first one opens the record.</p>;
+    return <p className={styles.emptyNote}>No forecasts yet. The first one opens the record.</p>;
   }
   return (
-    <ul className={styles.forecastList}>
-      {forecasts.map((forecast) => (
-        <li key={forecast.profileSlug}>
-          <div className={styles.forecastMeta}>
-            <ForecasterName identity={forecast} />
-            <span className={styles.muted}>
-              {formatTournamentDateTime(forecast.submittedAt)} · {forecast.submissionCount}{" "}
-              submission{forecast.submissionCount === 1 ? "" : "s"} ·{" "}
+    <table className={`${styles.table} ${styles.forecastTable}`}>
+      <caption className={styles.visuallyHidden}>Latest forecast per forecaster</caption>
+      <thead>
+        <tr>
+          <th scope="col">Forecaster</th>
+          <th scope="col" className={styles.figureCell}>
+            Forecast
+          </th>
+          <th scope="col">Updated</th>
+          <th scope="col" className={styles.figureCell}>
+            Revisions
+          </th>
+          <th scope="col">Proof</th>
+        </tr>
+      </thead>
+      <tbody>
+        {forecasts.map((forecast) => (
+          <tr key={forecast.profileSlug}>
+            <td data-label="Forecaster">
+              <ForecasterName identity={forecast} />
+            </td>
+            <td data-label="Forecast" className={styles.figureCell}>
+              {formatTournamentForecast(question, forecast) ?? "—"}
+            </td>
+            <td data-label="Updated">{formatTournamentDateTime(forecast.submittedAt)}</td>
+            <td data-label="Revisions" className={styles.figureCell}>
+              {forecast.submissionCount}
+            </td>
+            <td data-label="Proof">
               <Link
                 className={styles.proofLink}
                 href={`/t/provenance/${forecast.eventId}`}
@@ -318,23 +274,40 @@ function ForecastsTable({
               >
                 Proof
               </Link>
-            </span>
-          </div>
-          <TournamentDistribution
-            compact
-            buckets={question.buckets}
-            unit={question.unit}
-            primary={{ label: formatForecasterName(forecast), probs: forecast.probs }}
-            summary={forecast.probs
-              .map(
-                (probability, index) =>
-                  `${question.buckets[index]!.label} ${formatProbability(probability)}`,
-              )
-              .join(" · ")}
-          />
-        </li>
-      ))}
-    </ul>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function ScoringNote({ question }: { readonly question: QuestionDetail }) {
+  const { rules } = question;
+  const ageRule =
+    question.minAccountAgeDays > 0
+      ? ` X accounts must be at least ${question.minAccountAgeDays} days old to forecast.`
+      : "";
+  if (question.kind === "binary") {
+    return (
+      <p className={styles.muted}>
+        Scored by time-averaged log score on the chance you held on the outcome, 100 / ln 2 ·
+        ln(2p): 100 is certain and right for the whole window, 0 is 50%, and a chance below{" "}
+        {formatProbability(rules.epsilon)} counts as {formatProbability(rules.epsilon)}, which
+        scores {formatScore(rules.clampScore)}. Time before your first forecast counts as 0. The
+        crowd is the geometric mean of odds across forecasters, extremized at a ={" "}
+        {rules.extremization} ({rules.weightingVersion}).{ageRule}
+      </p>
+    );
+  }
+  return (
+    <p className={styles.muted}>
+      Scored by time-averaged distance from the settling value y, 100 · (1 − |ln(x / y)| / ln 2) for
+      a level x: exact is 100, 10% off about 86, 2× off 0 and 4× off −100, never below{" "}
+      {formatScore(rules.clampScore)}. Time before your first forecast counts as 0. If the question
+      voids, nothing is scored. The crowd is the median of forecasters&apos; levels, taken in logs.
+      {ageRule}
+    </p>
   );
 }
 
@@ -359,7 +332,6 @@ export function QuestionWorkspace({
   readonly initialForecasts: readonly PublicForecast[] | null;
 }) {
   const now = useNow();
-  const viewer = useTournamentViewer();
   const questionQuery = useQuery({
     queryKey: queryKeys.tournamentQuestion(slug),
     queryFn: () => apiRequest<QuestionDetail>(`/api/t/questions/${slug}`),
@@ -392,13 +364,12 @@ export function QuestionWorkspace({
   }
 
   const question = questionQuery.data;
-  const viewerProbs = viewer.data?.viewer?.forecasts[question.slug]?.probs ?? null;
   return (
     <article className={styles.page}>
       <header className={styles.header}>
         <h1>{question.title}</h1>
         <p className={styles.headerMeta}>
-          <span>{tournamentUnitCaption(question.unit)}</span>
+          <span>{tournamentKindCaption(question)}</span>
           <span>{windowLine(question, now)}</span>
           {question.xThreadUrl === null ? null : (
             <a href={question.xThreadUrl} target="_blank" rel="noopener noreferrer">
@@ -431,9 +402,9 @@ export function QuestionWorkspace({
         {question.resolutionDetail === null ? (
           <section className={styles.module} aria-labelledby="crowd-title">
             <h2 className={styles.tab} id="crowd-title">
-              Crowd distribution
+              Crowd
             </h2>
-            <CrowdModule question={question} viewerProbs={viewerProbs} />
+            <CrowdModule question={question} />
           </section>
         ) : null}
 
@@ -454,19 +425,7 @@ export function QuestionWorkspace({
         <div className={styles.rulebook}>
           <Markdown source={question.descriptionMd} />
           <Markdown source={question.rulebookMd} />
-          {question.unit === "bool" || question.unit === "choice" ? null : (
-            <BucketTable buckets={question.buckets} />
-          )}
-          <p className={styles.muted}>
-            Scored by time-averaged log score relative to uniform: 0 is uniform, 100 is certain and
-            right for the whole window, and time before your first forecast counts as uniform. The
-            crowd is the geometric mean of odds across forecasters, extremized at a ={" "}
-            {question.rules.extremization} ({question.rules.weightingVersion}), with each vector
-            clamped at {formatProbability(question.rules.epsilon)}.
-            {question.minAccountAgeDays > 0
-              ? ` X accounts must be at least ${question.minAccountAgeDays} days old to forecast.`
-              : ""}
-          </p>
+          <ScoringNote question={question} />
         </div>
       </section>
 

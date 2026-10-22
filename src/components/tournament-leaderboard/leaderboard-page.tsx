@@ -35,8 +35,9 @@ export function LeaderboardPage({
         <div>
           <h1>Leaderboard</h1>
           <p>
-            Sum of time-averaged log scores over questions resolved in the period, so taking part
-            counts. Ties break on mean coverage, the share of each question's window a forecast was
+            Sum of time-averaged scores over questions resolved in the period, so taking part
+            counts: a log score on each binary, a distance score on each forward, 100 at best on
+            either. Ties break on mean coverage, the share of each question's window a forecast was
             on file.
           </p>
         </div>
