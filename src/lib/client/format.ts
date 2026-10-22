@@ -263,6 +263,159 @@ export function formatScore(value: number): string {
   return scoreFormatter.format(value).replace("-", "−");
 }
 
+const wholeScoreFormatter = new Intl.NumberFormat("en-US", {
+  maximumFractionDigits: 0,
+  signDisplay: "exceptZero",
+});
+
+/** A score in a sentence: whole, signed, true minus ("+86", "0", "−58"); never green. */
+export function formatScoreWhole(value: number): string {
+  // Round first so −0.4 reads "0", not "−0".
+  return wholeScoreFormatter.format(Math.round(value) || 0).replace("-", "−");
+}
+
+/** A level's first letter lowered for a sentence ("First-day market cap" → "first-day market cap"), unless it opens an acronym. */
+function levelInSentence(label: string): string {
+  const [first = "", second = ""] = label;
+  return second !== second.toLowerCase() ? label : `${first.toLowerCase()}${label.slice(1)}`;
+}
+
+/** What a tournament question is about, as its settle sentences need it. */
+export interface TournamentSettleShape extends TournamentQuestionShape {
+  readonly levelLabel: string | null;
+  readonly expiryAt: string;
+}
+
+/** The board's one-line cue: "Binary · settles by Dec 31, 2026" or "First-day market cap · settles at the print". */
+export function tournamentSettleCue(question: TournamentSettleShape): string {
+  if (question.kind === "binary" || question.unit === null) {
+    return `Binary · settles by ${formatTournamentDate(question.expiryAt)}`;
+  }
+  return `${question.levelLabel ?? "Forward"} · settles at the print`;
+}
+
+/**
+ * "How this settles", in two sentences from the question's own fields: what
+ * settles it, then what happens otherwise. The condition itself is the
+ * rulebook's, which the block links to rather than paraphrases.
+ */
+export function tournamentSettleSentences(
+  question: TournamentSettleShape,
+): readonly [string, string] {
+  const by = formatTournamentDate(question.expiryAt);
+  if (question.kind === "binary" || question.unit === null) {
+    return [
+      `Settles YES if what the question asks happens by ${by}, as the rulebook defines it.`,
+      `Anything else, including nothing by ${by}, is NO.`,
+    ];
+  }
+  const level =
+    question.levelLabel === null
+      ? `figure the rulebook names, in ${tournamentUnitName(question.unit)},`
+      : levelInSentence(question.levelLabel);
+  return [
+    `Settles at the ${level} when it prints.`,
+    `If nothing prints by ${by}, the question voids and nobody is scored.`,
+  ];
+}
+
+/** A forward's score at the level typed and at fixed misses either side; every score from the engine. */
+export interface ForwardScoreLadder {
+  readonly level: number;
+  /** Exact, then each miss ratio: the levels above and below at that ratio and their score. */
+  readonly rungs: readonly {
+    readonly above: number;
+    readonly below: number;
+    readonly score: number;
+  }[];
+}
+
+/** "You enter $1.3T. If it settles at $1.3T you score +100; at $1.43T or $1.182T, +86; at $2.6T or $0.65T, 0." */
+export function formatForwardScoreLadder(
+  ladder: ForwardScoreLadder,
+  unit: TournamentUnitLabel,
+): string {
+  const level = formatTournamentValue(ladder.level, unit);
+  const clauses = ladder.rungs.map((rung, index) => {
+    const at =
+      rung.above === rung.below
+        ? formatTournamentValue(rung.above, unit)
+        : `${formatTournamentValue(rung.above, unit)} or ${formatTournamentValue(rung.below, unit)}`;
+    return index === 0
+      ? `If it settles at ${at} you score ${formatScoreWhole(rung.score)}`
+      : `at ${at}, ${formatScoreWhole(rung.score)}`;
+  });
+  return `You enter ${level}. ${clauses.join("; ")}.`;
+}
+
+/** "If it settles at the crowd median, $1.25T, you score +94." */
+export function formatScoreAtFigure(
+  name: string,
+  level: number,
+  score: number,
+  unit: TournamentUnitLabel,
+): string {
+  return `If it settles at the ${name}, ${formatTournamentValue(level, unit)}, you score ${formatScoreWhole(score)}.`;
+}
+
+/** The binary's two reference points: what 50% and the most certain chance allowed score. */
+export interface BinaryScoreBounds {
+  /** The score of 50%, either way. */
+  readonly even: number;
+  /** The most certain chance the field takes, and what it scores right and wrong. */
+  readonly sure: number;
+  readonly sureRight: number;
+  readonly sureWrong: number;
+}
+
+/** "50% scores 0 either way; 99.9% scores +99.9 if right and −896.6 if wrong." */
+export function formatBinaryScoreBounds(bounds: BinaryScoreBounds): string {
+  return `50% scores ${formatScore(bounds.even)} either way; ${formatProbability(bounds.sure)} scores ${formatScore(bounds.sureRight)} if right and ${formatScore(bounds.sureWrong)} if wrong.`;
+}
+
+/** The span a window is counted in: days, or hours under two days, or minutes under two hours. */
+export type WindowSpanUnit = "day" | "hour" | "minute";
+
+/** How much of a question's open window a forecast counts for, in whole units of the window's span. */
+export interface WindowCoverage {
+  readonly unit: WindowSpanUnit;
+  readonly total: number;
+  readonly covered: number;
+  /** When the forecast in force started counting; null when the viewer has none (it would start now). */
+  readonly since: string | null;
+  /** A revision hides when the first forecast came, so `covered` is a lower bound. */
+  readonly atLeast: boolean;
+}
+
+/** "41 days", "1 day", "36 hours", "61 minutes". */
+export function formatWindowSpan(count: number, unit: WindowSpanUnit): string {
+  return `${count} ${unit}${count === 1 ? "" : "s"}`;
+}
+
+/**
+ * The time-averaging rule said once, with the viewer's own numbers: what
+ * counts, then how much of the window their forecast covers.
+ */
+export function formatTimeAverageNote(
+  kind: "binary" | "forward",
+  coverage: WindowCoverage,
+): readonly [string, string] {
+  const total = formatWindowSpan(coverage.total, coverage.unit);
+  const zero = kind === "binary" ? "the score of 50%" : "the score of a 2× miss";
+  const rule = `Your score is averaged over the whole open window, ${total}; time before your first forecast counts as 0, ${zero}.`;
+  const covered = `${coverage.covered} of those ${total}`;
+  if (coverage.since === null) {
+    return [rule, `Forecast now and your number counts for ${covered}.`];
+  }
+  const since = formatTournamentDate(coverage.since);
+  return [
+    rule,
+    coverage.atLeast
+      ? `Your forecasts count from ${since} or earlier to the close: at least ${covered}.`
+      : `Your forecast counts from ${since} to the close: ${covered}.`,
+  ];
+}
+
 /** Share of a window with a forecast on file; a sliver never rounds down to 0%. */
 export function formatCoverage(value: number): string {
   if (value > 0 && value < 0.01) return "<1%";
