@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   beginAuthorization,
   fetchXProfile,
+  originalXAvatarUrl,
   safeReturnPath,
   verifyAuthorizationState,
   X_TOKEN_URL,
@@ -99,6 +100,7 @@ describe("X OAuth 2.0 PKCE", () => {
           id: "123456",
           username: "Forecaster",
           name: "A Forecaster",
+          profile_image_url: "https://pbs.twimg.com/profile_images/17/Abc_normal.jpg",
           verified: true,
           created_at: "2012-03-04T05:06:07.000Z",
         },
@@ -109,10 +111,27 @@ describe("X OAuth 2.0 PKCE", () => {
       id: "123456",
       username: "Forecaster",
       name: "A Forecaster",
-      profileImageUrl: null,
+      profileImageUrl: "https://pbs.twimg.com/profile_images/17/Abc.jpg",
       verified: true,
       createdAt: new Date("2012-03-04T05:06:07.000Z"),
     });
+  });
+
+  it("names X's original avatar upload, not the 48-pixel thumbnail", () => {
+    expect(originalXAvatarUrl("https://pbs.twimg.com/profile_images/17/Abc_normal.jpg")).toBe(
+      "https://pbs.twimg.com/profile_images/17/Abc.jpg",
+    );
+    expect(originalXAvatarUrl("https://pbs.twimg.com/profile_images/17/Abc_normal")).toBe(
+      "https://pbs.twimg.com/profile_images/17/Abc",
+    );
+    expect(originalXAvatarUrl("https://pbs.twimg.com/profile_images/17/my_normal_pic.png")).toBe(
+      "https://pbs.twimg.com/profile_images/17/my_normal_pic.png",
+    );
+    expect(
+      originalXAvatarUrl(
+        "https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png",
+      ),
+    ).toBe("https://abs.twimg.com/sticky/default_profile_images/default_profile.png");
   });
 
   it("fails closed on an X error", async () => {
