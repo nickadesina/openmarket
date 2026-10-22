@@ -142,6 +142,93 @@ postgresDescribe(suiteName, () => {
     if (postgres !== undefined) await postgres.dispose();
   });
 
+  it("protects aggregates, resolution notes, and an established void note", async () => {
+    const question = await postgres.db
+      .selectFrom("tournament_questions")
+      .select("id")
+      .where("slug", "=", "proof-q")
+      .executeTakeFirstOrThrow();
+    await postgres.db
+      .insertInto("tournament_aggregates")
+      .values({
+        question_id: question.id,
+        computed_at: new Date(),
+        n_forecasters: 0,
+        p: null,
+        value: null,
+        extremization: 1.5,
+        weighting_version: "v1",
+      })
+      .execute();
+    await postgres.db
+      .insertInto("tournament_resolution_notes")
+      .values({ question_id: question.id, note_md: "A note" })
+      .execute();
+    await postgres.db
+      .updateTable("tournament_questions")
+      .set({ status: "voided", void_note_md: "Void reason" })
+      .where("id", "=", question.id)
+      .execute();
+    await expect(
+      sql`update tournament_aggregates set extremization = 2`.execute(postgres.db),
+    ).rejects.toThrow(/append-only/);
+    await expect(sql`delete from tournament_resolution_notes`.execute(postgres.db)).rejects.toThrow(
+      /append-only/,
+    );
+    await expect(
+      sql`update tournament_questions set void_note_md = 'Changed' where id = ${question.id}`.execute(
+        postgres.db,
+      ),
+    ).rejects.toThrow(/immutable/);
+  });
+
+  it("reports completed hours that have never been batched", async () => {
+    const result = await verifyTournament(postgres.db);
+    expect(result.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          check: "provenance",
+          detail: expect.stringContaining("has no batch"),
+        }),
+      ]),
+    );
+    expect(result.passed).toBe(false);
+  });
+
+  it("detects a late committed event missing from an immutable batch", async () => {
+    await batchCompletedHours(postgres.db);
+    const existing = await postgres.db
+      .selectFrom("tournament_forecast_events")
+      .selectAll()
+      .where("id", "=", eventIds[0]!)
+      .executeTakeFirstOrThrow();
+    const submittedAt = new Date(hourOne.getTime() + 240_000);
+    await postgres.db
+      .insertInto("tournament_forecast_events")
+      .values({
+        question_id: existing.question_id,
+        user_id: userId,
+        submitted_at: submittedAt,
+        p: "0.6000000000",
+        event_hash: forecastEventHash(existing.question_id, userId, submittedAt, {
+          p: 0.6,
+          value: null,
+        }),
+      })
+      .execute();
+    expect(await batchCompletedHours(postgres.db)).toEqual([]);
+    const result = await verifyTournament(postgres.db);
+    expect(result.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          check: "provenance",
+          detail: expect.stringContaining("missing from batch"),
+        }),
+      ]),
+    );
+    expect(result.passed).toBe(false);
+  });
+
   it("commits each completed hour once and proves every event in it", async () => {
     const created = await batchCompletedHours(postgres.db);
     expect(created.map((batch) => [batch.hourStart, batch.leafCount])).toEqual([
@@ -218,6 +305,7 @@ postgresDescribe(suiteName, () => {
     expect(
       (await verifyProofInBrowser({ ...proof, event: { ...proof.event, value: 413 } })).hashMatches,
     ).toBe(false);
+    await batchCompletedHours(postgres.db);
     expect(await verifyTournament(postgres.db)).toMatchObject({ passed: true, findings: [] });
   });
 

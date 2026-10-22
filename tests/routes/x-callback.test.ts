@@ -93,11 +93,19 @@ describe("GET /api/t/auth/x/callback", () => {
     expect(fromQuestions.headers.get("location")).toBe("/t/welcome");
   });
 
+  it("preserves the return path when X times out", async () => {
+    mocks.fetchXProfile.mockRejectedValue(new DOMException("Timed out", "TimeoutError"));
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const response = await GET(callback("/portfolio"));
+    expect(response.headers.get("location")).toBe("/t/signin?return=%2Fportfolio&sign_in=failed");
+    expect(mocks.createTournamentSession).not.toHaveBeenCalled();
+  });
+
   it("still fails closed without opening a session", async () => {
     mocks.fetchXProfile.mockRejectedValue(new Error("X profile lookup failed (403)."));
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     const response = await GET(callback("/t"));
-    expect(response.headers.get("location")).toBe("/t?sign_in=failed");
+    expect(response.headers.get("location")).toBe("/t/signin?return=%2Ft&sign_in=failed");
     expect(response.headers.getSetCookie().map((cookie) => cookie.split("=")[0])).toEqual([
       OAUTH_STATE_COOKIE,
     ]);

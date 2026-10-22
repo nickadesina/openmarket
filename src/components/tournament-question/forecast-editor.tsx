@@ -25,16 +25,21 @@ import { queryKeys } from "../../lib/client/query-keys.js";
 import {
   binaryScoreBounds,
   forwardScoreLadder,
+  PUBLIC_FORECAST_HEADING,
   signInHref,
+  tournamentCrowdValue,
+  tournamentMarketValue,
   useNow,
   useTournamentViewer,
   windowCoverage,
 } from "../../lib/client/tournament.js";
+import { FORECAST_RATE_LIMIT_MS } from "../../lib/config/tournament.js";
 import { binaryScore, forwardScore } from "../../lib/engine/tournament/score.js";
 import type { ListingDetail } from "../../lib/services/get-market.js";
 import type { ViewerForecast } from "../../lib/services/tournament/forecaster.js";
 import type { QuestionDetail } from "../../lib/services/tournament/get-question.js";
 import type { StoredForecast } from "../../lib/services/tournament/submit-forecast.js";
+import { SignInExplanation } from "../tournament-nav/sign-in-callout.js";
 import styles from "./tournament-question.module.css";
 
 /** The binary field's range in percent: 0.1–99.9, so a stored p is strictly inside (0, 1). */
@@ -89,7 +94,7 @@ function TimeNote({
 function submitError(error: unknown): string {
   if (error instanceof ApiClientError && error.code === "RATE_LIMITED") {
     const seconds = error.details.retryAfterSeconds;
-    return `One revision per question every 10 seconds. Try again in ${typeof seconds === "number" ? seconds : 10} s.`;
+    return `One revision per question every ${FORECAST_RATE_LIMIT_MS / 1000} seconds. Try again in ${typeof seconds === "number" ? seconds : FORECAST_RATE_LIMIT_MS / 1000} s.`;
   }
   return errorMessage(error, "The forecast was not saved. Try again.");
 }
@@ -114,12 +119,12 @@ function useSubmitForecast(slug: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: { p: number } | { value: number }) =>
-      apiRequest<StoredForecast>(`/api/t/questions/${slug}/forecasts`, {
+      apiRequest<StoredForecast>(`/api/t/questions/${encodeURIComponent(slug)}/forecasts`, {
         method: "POST",
         body: JSON.stringify(body),
       }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["openmarket", "tournament"] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tournament });
     },
   });
 }
@@ -243,14 +248,8 @@ function BinaryEditor({
   const valid = percent !== null && percent >= PERCENT_MIN && percent <= PERCENT_MAX;
   const p = valid ? percent / 100 : null;
 
-  const crowd =
-    question.aggregate?.published === true && question.aggregate.p !== null
-      ? question.aggregate.p
-      : null;
-  const market =
-    question.instrument?.kind === "binary" && question.instrument.yesPrice !== null
-      ? question.instrument.yesPrice
-      : null;
+  const crowd = tournamentCrowdValue(question, question.aggregate);
+  const market = tournamentMarketValue(question);
   const figures: Figure[] = [];
   if (crowd !== null) {
     const display = formatProbability(crowd);
@@ -389,18 +388,8 @@ function ForwardEditor({
       fill: levelText(level),
     });
   };
-  pushLevel(
-    "Crowd median",
-    "Crowd",
-    question.aggregate?.published === true ? question.aggregate.value : null,
-  );
-  pushLevel(
-    "Dealer mid",
-    "Dealer",
-    question.instrument?.kind === "forward" && question.instrument.midUsd !== null
-      ? usdInTournamentUnit(question.instrument.midUsd, unit)
-      : null,
-  );
+  pushLevel("Crowd median", "Crowd", tournamentCrowdValue(question, question.aggregate));
+  pushLevel("Dealer mid", "Dealer", tournamentMarketValue(question));
   // The crowd and the dealer are where it might settle; the last round is a reference, not a forecast.
   const settleFigures = [...figures];
   pushLevel(
@@ -498,10 +487,7 @@ export function ForecastEditor({ question }: { readonly question: QuestionDetail
   if (viewer === null) {
     return (
       <div className={styles.signInPanel}>
-        <p>
-          <strong>Sign in to forecast.</strong> Use your X account, or a username and password; your
-          name is how the leaderboard shows you.
-        </p>
+        <SignInExplanation />
         <Link className={styles.primaryButton} href={signInHref(pathname)}>
           Sign in
         </Link>
@@ -512,8 +498,8 @@ export function ForecastEditor({ question }: { readonly question: QuestionDetail
   const previous = viewer.forecasts[question.slug];
   const notice = viewer.firstSubmission ? (
     <p className={styles.publicNotice}>
-      <strong>Forecasts are public.</strong> Every forecast you submit is shown under your name on
-      this page, your profile and the leaderboard, and stays in the record after you revise it.
+      <strong>{PUBLIC_FORECAST_HEADING}</strong> Every forecast you submit is shown under your name
+      on this page, your profile and the leaderboard, and stays in the record after you revise it.
     </p>
   ) : null;
   return question.kind === "forward" && question.unit !== null ? (

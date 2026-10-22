@@ -14,13 +14,20 @@ export function SignInCallout({ returnTo }: { readonly returnTo: string }) {
   if (!viewer.isSuccess || viewer.data.viewer !== null) return null;
   return (
     <div className={styles.callout}>
-      <p>
-        <strong>Sign in to forecast.</strong> Use your X account, or a username and password; your
-        name is how the leaderboard shows you.
-      </p>
+      <SignInExplanation />
       <Link className={styles.signInButton} href={signInHref(returnTo)}>
         Sign in to forecast
       </Link>
     </div>
+  );
+}
+
+/** Shared explanation; the surrounding call to action keeps each page's existing label. */
+export function SignInExplanation() {
+  return (
+    <p>
+      <strong>Sign in to forecast.</strong> Use your X account, or a username and password; your
+      name is how the leaderboard shows you.
+    </p>
   );
 }
