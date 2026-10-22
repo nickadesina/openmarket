@@ -1,4 +1,4 @@
-import { signInLanding } from "../../../../../../lib/auth/return-path.js";
+import { signInFailure, signInLanding } from "../../../../../../lib/auth/return-path.js";
 import {
   cookieHeader,
   createTournamentSession,
@@ -38,7 +38,7 @@ export async function GET(request: Request): Promise<Response> {
   );
   const code = params.get("code");
   if (config === null || state === null || code === null || code.length > 2_048) {
-    return redirect("/t?sign_in=failed", [clearState]);
+    return redirect(signInFailure(state?.returnTo ?? null, "failed"), [clearState]);
   }
 
   try {
@@ -57,6 +57,6 @@ export async function GET(request: Request): Promise<Response> {
     return redirect(signInLanding(state.returnTo, created), [clearState, sessionCookie(token)]);
   } catch (error) {
     logUnexpectedError(crypto.randomUUID(), error);
-    return redirect("/t?sign_in=failed", [clearState]);
+    return redirect(signInFailure(state?.returnTo ?? null, "failed"), [clearState]);
   }
 }
