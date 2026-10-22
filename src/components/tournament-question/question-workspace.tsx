@@ -389,14 +389,14 @@ export function QuestionWorkspace({
   const now = useNow();
   const questionQuery = useQuery({
     queryKey: queryKeys.tournamentQuestion(slug),
-    queryFn: () => apiRequest<QuestionDetail>(`/api/t/questions/${slug}`),
+    queryFn: () => apiRequest<QuestionDetail>(`/api/t/questions/${encodeURIComponent(slug)}`),
     ...(initialQuestion === null ? {} : { initialData: initialQuestion }),
     refetchInterval: 15_000,
   });
   const forecastsQuery = useQuery({
     queryKey: queryKeys.tournamentForecasts(slug),
     queryFn: () =>
-      apiRequest<{ forecasts: PublicForecast[] }>(`/api/t/questions/${slug}/forecasts`).then(
+      apiRequest<{ forecasts: PublicForecast[] }>(`/api/t/questions/${encodeURIComponent(slug)}/forecasts`).then(
         (body) => body.forecasts,
       ),
     ...(initialForecasts === null ? {} : { initialData: [...initialForecasts] }),

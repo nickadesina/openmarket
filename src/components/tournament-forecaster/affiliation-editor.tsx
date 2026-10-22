@@ -1,3 +1,4 @@
+import { queryKeys } from "../../lib/client/query-keys.js";
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -38,7 +39,7 @@ export function AffiliationEditor({
       }),
     onSuccess: async (result) => {
       setValue(result.affiliation ?? "");
-      await queryClient.invalidateQueries({ queryKey: ["openmarket", "tournament"] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.tournament });
       onContinue?.();
     },
   });

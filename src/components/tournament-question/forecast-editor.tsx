@@ -114,12 +114,12 @@ function useSubmitForecast(slug: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: { p: number } | { value: number }) =>
-      apiRequest<StoredForecast>(`/api/t/questions/${slug}/forecasts`, {
+      apiRequest<StoredForecast>(`/api/t/questions/${encodeURIComponent(slug)}/forecasts`, {
         method: "POST",
         body: JSON.stringify(body),
       }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["openmarket", "tournament"] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tournament });
     },
   });
 }

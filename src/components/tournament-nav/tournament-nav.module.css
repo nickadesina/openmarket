@@ -124,10 +124,6 @@ button.link {
   background: var(--color-primary-subtle);
 }
 
-.accountMuted {
-  color: var(--color-ink-muted);
-  font-size: var(--font-size-xs);
-}
 
 .accountError {
   color: var(--color-primary);

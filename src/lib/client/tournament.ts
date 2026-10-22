@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 import { binaryScore, forwardScore } from "../engine/tournament/score.js";
@@ -121,4 +121,13 @@ export function signInHref(returnTo: string): string {
 /** A forecaster's profile page; password accounts live under `~`. */
 export function forecasterHref(identity: { readonly profileSlug: string }): string {
   return `/t/u/${identity.profileSlug}`;
+}
+
+/** Sign-out invalidates every identity-dependent read, including paper cash. */
+export function useTournamentSignOut() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiRequest("/api/t/auth/logout", { method: "POST", body: "{}" }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.all }),
+  });
 }
