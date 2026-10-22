@@ -203,32 +203,41 @@ this identity, but cash and positions never enter scoring.
   `src/lib/config/tournament-affiliations.ts`). It is self-reported,
   never verified, shown in gray beside the name everywhere, and an admin
   can override or clear it.
-- Questions: a discrete distribution over buckets that tile the line
-  (lower inclusive, upper exclusive) plus one floor bucket ("nothing by
-  expiry") on numeric ladders; binaries are Yes/No; a choice question
-  (migration `012_tournament_choice`) names its outcomes, then the floor
-  ("neither by expiry"), and resolves by bucket. Drafts are editable;
-  opening pins the record. Close is automatic at `closes_at`, or manual
-  and back-dated to a resolution document's public time (later events
-  stay in the log and are never counted). A numeric floor resolves after
-  expiry, or earlier on a question closed early on a document that
-  carried no figure (a prospectus with no run-rate).
-- Forecasts: append-only events, renormalized to ten decimals, hashed
-  (`event_hash`, phase-2 provenance input), one per user and question
-  per 10 seconds, refused for X accounts younger than the question's
-  `min_account_age_days` (default 90).
-- Aggregate: geometric mean of odds over each non-flagged forecaster's
-  latest vector, clamped at ε = 0.001, extremized (a = 1.5, stored per
-  question and per row with weighting `equal-v1`), recomputed on every
-  write. Published only from five forecasters; derived median (floor
-  excluded, log-linear inside the crossing bucket, open ends report
-  their edge), P(floor), P(yes).
-- Scoring: time-averaged log score relative to uniform, 100 / ln n ×
-  mean of ln(n · max(p, ε)) on the winning bucket over the open window;
-  uniform before a first forecast; coverage recorded, not ranked. Written
-  once per resolution as immutable rows. A correction inside the 72-hour
-  dispute window supersedes the live resolution and rescoring writes a
-  new set; afterwards nothing changes. Voided questions write no scores.
+- Questions (decision `docs/decisions/0004`, migration
+  `013_tournament_contract_models`): each is one of the dealer's two
+  contracts and nothing else. A **binary** asks one probability p of
+  YES and resolves YES, or NO on any other outcome, including nothing by
+  expiry. A **forward** asks one level x > 0 in its unit (`USD_B` or
+  `USD_T`) and resolves to the settling value y, or voids (no print, no
+  figure by expiry), which writes no scores. There are no buckets.
+  Drafts are editable; opening pins the record. Close is automatic at
+  `closes_at`, or manual and back-dated to a resolution document's
+  public time (later events stay in the log and are never counted). A
+  resolution inside its 72-hour dispute window can still be voided (a
+  forward that turns out to have no figure).
+- Forecasts: append-only events carrying `p` or `value` at ten
+  decimals, hashed (`event_hash` = sha256(question ‖ user ‖ time ‖
+  payload); the payload is `[p, 1 − p]` as before for a binary,
+  `fwd:<x>` for a forward), one per user and question per 10 seconds,
+  refused for X accounts younger than the question's
+  `min_account_age_days` (default 90). Bucket vectors written before 013
+  are kept in `tournament_archived_forecast_vectors` so their hashes and
+  Merkle leaves still verify; they are never scored or aggregated.
+- Aggregate over each non-flagged forecaster's latest forecast,
+  recomputed on every write and published only from five forecasters
+  (weighting `equal-v1`): a binary's crowd is the geometric mean of
+  odds, clamped at ε = 0.001 and extremized (a = 1.5, stored per question
+  and per row), one P(YES); a forward's is the median of the
+  forecasters' ln x, one level in the question's unit.
+- Scoring, time-averaged over the open window; time before a first
+  forecast scores 0; coverage recorded, not ranked. A binary scores
+  100 / ln 2 · ln(2 · max(p, ε)) on the outcome (0 is "said 50%"). A
+  forward scores max(100 · (1 − |ln(x/y)| / ln 2), −896.6): exact 100,
+  10% off ≈ 86, 2× off 0, 4× off −100, floored at the binary's clamp
+  past a 1,000× miss. Written once per resolution as immutable rows. A
+  correction inside the 72-hour dispute window supersedes the live
+  resolution and rescoring writes a new set; afterwards nothing changes.
+  Voided questions write no scores.
 - Leaderboard: sum of scores over live resolutions in the period (all
   time, or a calendar month in America/Los_Angeles); ties break on mean
   coverage. Flagged accounts are scored and shown, marked, and excluded
@@ -275,27 +284,35 @@ the tournament asks only its launch questions, a listed instrument gets no
 question, its blend has no crowd, and evidence has no linked name to file
 against. Settlement still resolves any question an earlier run linked.
 
-- Every instrument the dealer lists gets a question, created and opened
-  through the tournament's own services in the listing's transaction and
-  linked in `tournament_instrument_links`; live instruments listed before
-  the bridge are linked on the next dealer run. A binary asks its own
-  question as Yes/No, closing at its expiry. A forward asks for the next
-  post-money on a ladder in USD_B (USD_T from a $1T mid): the valuation
-  grid's boundaries strictly between the 1st and 99th percentile of the
-  implied lognormal at the listing mid and σ_tier, to three significant
-  figures (`engine/dealer/question-ladder.ts`), plus the floor bucket "No
-  qualifying print by {expiry}". Slugs are
+- Every instrument the dealer lists gets a question of its own kind,
+  created and opened through the tournament's own services in the
+  listing's transaction and linked in `tournament_instrument_links`;
+  live instruments listed before the bridge are linked on the next
+  dealer run. A binary links a `binary` question closing at its expiry.
+  A forward links a `forward` question for the next post-money, one
+  level in USD_B (USD_T when the listing's first model mid is $1T or
+  more), expiring with it; it has no edges. Slugs are
   `{name}-{round|s1|next-print}-by-{expiry}`; the question's integer
   rulebook version is the dealer rulebook's major version, its text cites
   the full one.
+- Relink: the list step gives a live instrument whose linked question
+  was voided (by an admin, or by migration 013 retiring bucket
+  questions) a fresh linked question of its kind, as at listing; the
+  voided one stays voided and unscored. A question 013 renamed `-v1`
+  frees the canonical slug, so its replacement takes it; an
+  admin-voided one keeps its slug and the replacement gets `-2`.
+  Nothing is relinked past expiry.
 - The settle job resolves the question in the settlement's transaction,
   as its run (`tournament_resolutions.settle_run_id`; a resolution has a
   resolver or a run): the scoring window is back-dated to the settling
   announcement, even one observed in the grace day after the scheduled
   close; the rung is the settling flag's source rank, the document its
-  URL; a NO has neither. A forward void voids the question, so the floor
-  never wins. A question an admin already resolved or voided is left as
-  it stands; `verify:replay` checks every settled link's bucket.
+  URL; a NO has neither. A binary's YES or NO becomes its `outcome`; a
+  settled forward's post-money, in the question's unit, its
+  `resolved_value`; a forward void voids the question. A question an
+  admin already resolved or voided is left as it stands; `verify:replay`
+  checks that every settled link's resolution carries the outcome or
+  value its instrument's settlement implies.
 - Evidence: `POST /api/t/questions/[slug]/evidence` (signed in, 10 an
   hour per forecaster and 30 per network) files a low-confidence
   `user_submitted` flag for the linked name, its submitter and claimed
@@ -480,14 +497,17 @@ settled while a higher rank could still supersede it is recorded with
   key the same day; nothing is gated at launch.
 
 Current code: `src/lib/engine/dealer/blend.ts` (`BLEND_VERSION`
-1.0.0) is the blend; the dealer job's last step, `reference`
+1.1.0; 1.0.0's schedule is kept frozen so its rows still recompute) is
+the blend; the dealer job's last step, `reference`
 (`services/dealer/reference-prices.ts`), appends a `reference_prices`
 row per listing and kind when its value, weights, versions or
 instrument move, with `components_json` citing the model mid by id,
 the 30-day traded average on the instrument's own book
 (notional-weighted entry for the forward, cash-weighted YES price for
 the binary) and the latest aggregate of the instrument's linked question
-(D9: P(yes), or the median in its unit as ln USD), which carries
+(D9: a binary's P(YES), or a forward's median of forecasters' levels as
+ln USD; 1.1.0 is the first version under this crowd, 1.0.0 read a
+median off a bucket vector), which carries
 w_c = 0.3 from ten forecasters (`tests/integration/crowd-gate.test.ts`);
 `verify:replay` recomputes every row from its components and each
 component from the table it cites. `GET /api/ref/listings`,
@@ -558,8 +578,9 @@ npm run dev              # http://localhost:3000, never 127.0.0.1
   the admins of `/t/admin` and `/admin` (comma separated). For local work without X, `TOURNAMENT_DEV_SIGN_IN=1`
   under `next dev` adds a handle-only sign-in (allowlist it as
   `dev:<handle>`); it is off in every other mode. Launch questions:
-  `npm run seed:tournament` writes the three drafts, `-- --open`
-  (optionally `--opens-at=<ISO>`) opens them.
+  `npm run seed:tournament` writes the four drafts (two binaries, two
+  forwards; decision 0004), `-- --open` (optionally `--opens-at=<ISO>`)
+  opens them.
 - Provenance: `.github/workflows/provenance.yml` calls
   `/api/t/cron/provenance` hourly with `Authorization: Bearer
   $CRON_SECRET`; the route refuses anything else. Set the same
@@ -581,7 +602,9 @@ npm run dev              # http://localhost:3000, never 127.0.0.1
   `005_tournament_provenance` before serving this version,
   `006_tournament_accounts` for affiliations and username accounts, and
   `011_tournament_bridge` for linked questions, evidence and restricted
-  persons, and `012_tournament_choice` before seeding the launch questions.
+  persons, and `013_tournament_contract_models` before seeding the
+  launch questions (it voids and renames every open bucket question;
+  decision 0004 → Release).
 
 ### Backtest
 

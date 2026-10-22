@@ -33,13 +33,13 @@ const affiliationSchema = z
   .transform((value) => (value.length === 0 ? null : value))
   .nullable();
 
-/** Up to 64 buckets; every entry a finite non-negative number. */
-export const forecastInputSchema = z
-  .object({
-    probs: z.array(z.number().finite().min(0).max(1.000001)).min(2).max(64),
-    client_hash: z.string().min(1).max(128).optional(),
-  })
-  .strict();
+const clientHashSchema = z.string().min(1).max(128).optional();
+
+/** One number, by the question's kind: a binary's P(YES), or a forward's level in its unit. */
+export const forecastInputSchema = z.union([
+  z.object({ p: z.number().finite().gt(0).lt(1), client_hash: clientHashSchema }).strict(),
+  z.object({ value: z.number().finite().positive(), client_hash: clientHashSchema }).strict(),
+]);
 
 const questionFields = {
   slug: slugSchema,
@@ -54,47 +54,29 @@ const questionFields = {
   x_thread_url: httpUrlSchema.optional(),
 } as const;
 
-const numericQuestionSchema = z
-  .object({
-    ...questionFields,
-    unit: z.enum(["USD_B", "USD_T"]),
-    expiry_at: instantSchema,
-    buckets: z
-      .object({
-        edges: z.array(z.number().finite()).min(1).max(62),
-        floor_label: z.string().trim().min(1).max(200),
-        labels: z.array(z.string().trim().min(1).max(60).nullable()).max(63).optional(),
-      })
-      .strict(),
-  })
-  .strict();
-
+/** Resolves YES or NO; its expiry is its close. */
 const binaryQuestionSchema = z
   .object({
     ...questionFields,
-    unit: z.literal("bool"),
+    kind: z.literal("binary"),
   })
   .strict();
 
-/** Named outcomes, then the floor; resolved by bucket, never by value. */
-const choiceQuestionSchema = z
+/** Resolves to a level in its unit, or voids. */
+const forwardQuestionSchema = z
   .object({
     ...questionFields,
-    unit: z.literal("choice"),
+    kind: z.literal("forward"),
+    unit: z.enum(["USD_B", "USD_T"]),
+    /** The level's short name, the heading of the forecast field. */
+    level_label: z.string().trim().min(1).max(60).optional(),
     expiry_at: instantSchema,
-    outcomes: z
-      .object({
-        labels: z.array(z.string().trim().min(1).max(60)).min(2).max(63),
-        floor_label: z.string().trim().min(1).max(200),
-      })
-      .strict(),
   })
   .strict();
 
-export const questionInputSchema = z.discriminatedUnion("unit", [
-  numericQuestionSchema,
+export const questionInputSchema = z.discriminatedUnion("kind", [
   binaryQuestionSchema,
-  choiceQuestionSchema,
+  forwardQuestionSchema,
 ]);
 
 export const emptyBodySchema = z.object({}).strict();
@@ -106,18 +88,25 @@ export const closeQuestionSchema = z
   })
   .strict();
 
-export const resolveQuestionSchema = z
-  .object({
-    /** After the rulebook's rounding; null resolves the floor (or a binary or choice by index). */
-    resolved_value: z.number().finite().nullable(),
-    /** The bucket the resolver confirms; must equal the one the system computes. */
-    winning_bucket_index: z.number().int().min(0).max(63),
-    rung_fired: z.number().int().min(1).max(9).nullable(),
-    source_url: httpUrlSchema.nullable(),
-    source_excerpt: z.string().trim().min(1).max(500).nullable(),
-    note_md: markdownSchema(10_000),
-  })
-  .strict();
+const resolutionSourceFields = {
+  /** The source rank. */
+  rung_fired: z.number().int().min(1).max(9).nullable(),
+  source_url: httpUrlSchema.nullable(),
+  source_excerpt: z.string().trim().min(1).max(500).nullable(),
+  note_md: markdownSchema(10_000),
+} as const;
+
+/** A binary by its outcome, a forward by its settling value; a void goes through the void form. */
+export const resolveQuestionSchema = z.union([
+  z.object({ outcome: z.enum(["yes", "no"]), ...resolutionSourceFields }).strict(),
+  z
+    .object({
+      /** After the rulebook's rounding, in the question's unit. */
+      resolved_value: z.number().finite().positive(),
+      ...resolutionSourceFields,
+    })
+    .strict(),
+]);
 
 export const voidQuestionSchema = z.object({ note_md: markdownSchema(10_000) }).strict();
 

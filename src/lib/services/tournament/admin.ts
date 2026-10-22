@@ -12,66 +12,28 @@ import type {
   VoidQuestionInput,
 } from "../../api/tournament-schemas.js";
 import { DISPUTE_WINDOW_MS } from "../../config/tournament.js";
-import type { Database, TournamentQuestionStatus } from "../../db/schema.js";
-import {
-  assertValidBuckets,
-  type Bucket,
-  BucketError,
-  type BucketShape,
-  binaryBuckets,
-  bucketIndexForValue,
-  choiceBuckets,
-  floorIndex,
-  numericBuckets,
-} from "../../engine/tournament/buckets.js";
+import type {
+  Database,
+  TournamentQuestionKind,
+  TournamentQuestionStatus,
+  TournamentUnit,
+} from "../../db/schema.js";
 import { recomputeAggregate } from "./aggregate.js";
 import { userIdForHandle } from "./identities.js";
 import {
   databaseNow,
   effectiveStatus,
-  loadBuckets,
   type QuestionRecord,
   requireQuestion,
   type TournamentDb,
   windowEnd,
 } from "./records.js";
-import { writeScores } from "./scoring.js";
-
-function bucketShape(unit: QuestionInput["unit"]): BucketShape {
-  if (unit === "bool") return "binary";
-  return unit === "choice" ? "choice" : "numeric";
-}
-
-function unvalidatedBuckets(input: QuestionInput): Bucket[] {
-  if (input.unit === "bool") return binaryBuckets();
-  if (input.unit === "choice") {
-    return choiceBuckets({
-      outcomes: input.outcomes.labels,
-      floorLabel: input.outcomes.floor_label,
-    });
-  }
-  return numericBuckets({
-    edges: input.buckets.edges,
-    floorLabel: input.buckets.floor_label,
-    ...(input.buckets.labels === undefined ? {} : { labels: input.buckets.labels }),
-  });
-}
-
-function bucketsFor(input: QuestionInput): Bucket[] {
-  try {
-    const buckets = unvalidatedBuckets(input);
-    assertValidBuckets(buckets, bucketShape(input.unit));
-    return buckets;
-  } catch (error) {
-    if (error instanceof BucketError) throw new ServiceError("INVALID_INPUT", error.message);
-    throw error;
-  }
-}
+import { type ResolvedAs, writeScores } from "./scoring.js";
 
 export interface SavedQuestion {
   readonly slug: string;
   readonly status: TournamentQuestionStatus;
-  readonly bucketCount: number;
+  readonly kind: TournamentQuestionKind;
 }
 
 /**
@@ -98,27 +60,26 @@ export async function saveDraftQuestionIn(
 }
 
 interface ValidatedDraft {
-  readonly buckets: Bucket[];
   readonly opensAt: Date;
   readonly closesAt: Date;
   readonly expiryAt: Date;
 }
 
+/** A binary's expiry is its close; a forward names its own, at or after the close. */
 function validatedDraft(input: QuestionInput): ValidatedDraft {
-  const buckets = bucketsFor(input);
   const opensAt = new Date(input.opens_at);
   const closesAt = new Date(input.closes_at);
-  const expiryAt = input.unit === "bool" ? closesAt : new Date(input.expiry_at);
+  const expiryAt = input.kind === "binary" ? closesAt : new Date(input.expiry_at);
   if (!(opensAt < closesAt && closesAt <= expiryAt)) {
     throw new ServiceError("INVALID_INPUT", "Times must satisfy opens_at < closes_at ≤ expiry_at.");
   }
-  return { buckets, opensAt, closesAt, expiryAt };
+  return { opensAt, closesAt, expiryAt };
 }
 
 async function writeDraft(
   transaction: Transaction<Database>,
   input: QuestionInput,
-  { buckets, opensAt, closesAt, expiryAt }: ValidatedDraft,
+  { opensAt, closesAt, expiryAt }: ValidatedDraft,
 ): Promise<SavedQuestion> {
   const existing = await transaction
     .selectFrom("tournament_questions")
@@ -139,8 +100,9 @@ async function writeDraft(
     description_md: input.description_md,
     rulebook_md: input.rulebook_md,
     rulebook_version: input.rulebook_version,
-    unit: input.unit,
-    bucket_count: buckets.length,
+    kind: input.kind,
+    unit: input.kind === "forward" ? input.unit : null,
+    level_label: input.kind === "forward" ? (input.level_label ?? null) : null,
     opens_at: opensAt,
     closes_at: closesAt,
     expiry_at: expiryAt,
@@ -149,40 +111,16 @@ async function writeDraft(
     extremization: input.extremization ?? 1.5,
     x_thread_url: input.x_thread_url ?? null,
   };
-  let questionId: string;
   if (existing === undefined) {
-    const inserted = await transaction
-      .insertInto("tournament_questions")
-      .values(values)
-      .returning("id")
-      .executeTakeFirstOrThrow();
-    questionId = inserted.id;
+    await transaction.insertInto("tournament_questions").values(values).execute();
   } else {
-    questionId = existing.id;
-    await transaction
-      .deleteFrom("tournament_buckets")
-      .where("question_id", "=", questionId)
-      .execute();
     await transaction
       .updateTable("tournament_questions")
       .set(values)
-      .where("id", "=", questionId)
+      .where("id", "=", existing.id)
       .execute();
   }
-  await transaction
-    .insertInto("tournament_buckets")
-    .values(
-      buckets.map((bucket) => ({
-        question_id: questionId,
-        index: bucket.index,
-        kind: bucket.kind,
-        lower: bucket.lower === null ? null : String(bucket.lower),
-        upper: bucket.upper === null ? null : String(bucket.upper),
-        label: bucket.label,
-      })),
-    )
-    .execute();
-  return { slug: input.slug, status: "draft", bucketCount: buckets.length };
+  return { slug: input.slug, status: "draft", kind: input.kind };
 }
 
 function stateError(message: string): ServiceError {
@@ -216,7 +154,7 @@ export async function openQuestionIn(
     .set({ status: "open" })
     .where("id", "=", question.id)
     .execute();
-  return { slug, status: "open", bucketCount: question.bucketCount };
+  return { slug, status: "open", kind: question.kind };
 }
 
 /**
@@ -273,81 +211,59 @@ export async function closeQuestionIn(
     .where("id", "=", question.id)
     .execute();
   const closed: QuestionRecord = { ...question, storedStatus: "closed", closedAt };
-  await recomputeAggregate(
-    transaction,
-    closed,
-    await loadBuckets(transaction, question.id),
-    now,
-    closedAt,
-  );
+  await recomputeAggregate(transaction, closed, now, closedAt);
   return { slug, closedAt: closedAt.toISOString() };
 }
 
-function expectedChoiceBucket(
-  question: QuestionRecord,
-  buckets: readonly Bucket[],
-  input: ResolveQuestionInput,
-  now: Date,
-): number {
-  if (input.resolved_value !== null) {
-    throw new ServiceError("INVALID_INPUT", "A choice question resolves by bucket, with no value.");
-  }
-  const winner = buckets[input.winning_bucket_index];
-  if (winner === undefined) {
-    throw new ServiceError("INVALID_INPUT", "The winning bucket is not one of the question's.");
-  }
-  if (winner.kind === "floor") {
-    if (now.getTime() < question.expiryAt.getTime()) {
-      throw stateError("The floor resolves only once expiry_at has passed with no outcome.");
+/** The resolution the input states, checked against the question's kind. */
+function resolvedFrom(question: QuestionRecord, input: ResolveQuestionInput): ResolvedAs {
+  if (question.kind === "binary") {
+    if (!("outcome" in input)) {
+      throw new ServiceError("INVALID_INPUT", "A binary resolves YES or NO, by its outcome.");
     }
-    if (input.rung_fired !== null) {
-      throw new ServiceError("INVALID_INPUT", "A floor resolution has no rung.");
-    }
+    return { outcome: input.outcome };
   }
-  return winner.index;
+  if (!("resolved_value" in input)) {
+    throw new ServiceError(
+      "INVALID_INPUT",
+      "A forward resolves to its settling value; a forward with no figure is voided.",
+    );
+  }
+  if (!(input.resolved_value > 0) || !Number.isFinite(input.resolved_value)) {
+    throw new ServiceError("INVALID_INPUT", "A forward's settling value must be greater than 0.");
+  }
+  return { value: input.resolved_value };
 }
 
-function expectedWinningBucket(
-  question: QuestionRecord,
-  buckets: readonly Bucket[],
-  input: ResolveQuestionInput,
-  now: Date,
-): number {
-  if (question.unit === "bool") {
-    if (input.resolved_value !== null) {
-      throw new ServiceError("INVALID_INPUT", "A binary resolves by bucket, with no value.");
-    }
-    if (input.winning_bucket_index > 1) {
-      throw new ServiceError("INVALID_INPUT", "A binary resolves to Yes (0) or No (1).");
-    }
-    return input.winning_bucket_index;
-  }
-  if (question.unit === "choice") return expectedChoiceBucket(question, buckets, input, now);
-  if (input.resolved_value === null) {
-    // Early, the floor needs the question closed on its resolution document:
-    // the document arrived without the figure (a prospectus with no run-rate).
-    if (question.closedAt === null && now.getTime() < question.expiryAt.getTime()) {
-      throw stateError(
-        "Before expiry_at the floor resolves only on a question closed early on its document.",
-      );
-    }
-    if (input.rung_fired !== null) {
-      throw new ServiceError("INVALID_INPUT", "A floor resolution has no rung.");
-    }
-    return floorIndex(buckets)!;
-  }
-  try {
-    return bucketIndexForValue(buckets, input.resolved_value);
-  } catch (error) {
-    if (error instanceof BucketError) throw new ServiceError("INVALID_INPUT", error.message);
-    throw error;
-  }
+/** The first resolution's time; the dispute window runs from it. */
+async function firstResolvedAt(db: TournamentDb, questionId: string): Promise<Date> {
+  const first = await db
+    .selectFrom("tournament_resolutions")
+    .select("resolved_at")
+    .where("question_id", "=", questionId)
+    .orderBy("resolved_at", "asc")
+    .limit(1)
+    .executeTakeFirstOrThrow();
+  return first.resolved_at;
+}
+
+async function liveResolutionId(db: TournamentDb, questionId: string): Promise<string> {
+  const live = await db
+    .selectFrom("tournament_resolutions")
+    .select("id")
+    .where("question_id", "=", questionId)
+    .where("superseded_by", "is", null)
+    .executeTakeFirstOrThrow();
+  return live.id;
 }
 
 export interface ResolutionOutcome {
   readonly slug: string;
   readonly resolutionId: string;
-  readonly winningBucketIndex: number;
+  /** A binary's outcome; null for a forward. */
+  readonly outcome: "yes" | "no" | null;
+  /** A forward's settling value in its unit; null for a binary. */
+  readonly resolvedValue: number | null;
   readonly scoresWritten: number;
   readonly supersededResolutionId: string | null;
   readonly resolvedAt: string;
@@ -388,34 +304,14 @@ export async function resolveQuestionIn(
   if (status === "open") throw stateError("Close the question before resolving it.");
   if (status === "voided") throw stateError("A voided question cannot be resolved.");
 
-  let live: { id: string } | undefined;
+  const resolved = resolvedFrom(question, input);
+  let live: string | undefined;
   if (status === "resolved") {
-    const first = await transaction
-      .selectFrom("tournament_resolutions")
-      .select("resolved_at")
-      .where("question_id", "=", question.id)
-      .orderBy("resolved_at", "asc")
-      .limit(1)
-      .executeTakeFirstOrThrow();
-    if (now.getTime() - first.resolved_at.getTime() > DISPUTE_WINDOW_MS) {
+    const first = await firstResolvedAt(transaction, question.id);
+    if (now.getTime() - first.getTime() > DISPUTE_WINDOW_MS) {
       throw stateError("The 72-hour dispute window has closed; the resolution is final.");
     }
-    live = await transaction
-      .selectFrom("tournament_resolutions")
-      .select("id")
-      .where("question_id", "=", question.id)
-      .where("superseded_by", "is", null)
-      .executeTakeFirstOrThrow();
-  }
-
-  const buckets = await loadBuckets(transaction, question.id);
-  const computed = expectedWinningBucket(question, buckets, input, now);
-  if (computed !== input.winning_bucket_index) {
-    throw new ServiceError(
-      "INVALID_INPUT",
-      `The resolved value falls in bucket ${computed} (${buckets[computed]!.label}); confirm that bucket.`,
-      { computedWinningBucketIndex: computed },
-    );
+    live = await liveResolutionId(transaction, question.id);
   }
 
   const resolutionId = randomUUID();
@@ -424,23 +320,24 @@ export async function resolveQuestionIn(
     await transaction
       .updateTable("tournament_resolutions")
       .set({ superseded_by: resolutionId })
-      .where("id", "=", live.id)
+      .where("id", "=", live)
       .execute();
   }
-  await insertResolution(transaction, question, input, resolver, now, computed, resolutionId);
+  await insertResolution(transaction, question, input, resolved, resolver, now, resolutionId);
 
   await transaction
     .updateTable("tournament_questions")
     .set({ status: "resolved" })
     .where("id", "=", question.id)
     .execute();
-  const scoresWritten = await writeScores(transaction, question, resolutionId, computed, now);
+  const scoresWritten = await writeScores(transaction, question, resolutionId, resolved, now);
   return {
     slug,
     resolutionId,
-    winningBucketIndex: computed,
+    outcome: "outcome" in resolved ? resolved.outcome : null,
+    resolvedValue: "value" in resolved ? resolved.value : null,
     scoresWritten,
-    supersededResolutionId: live?.id ?? null,
+    supersededResolutionId: live ?? null,
     resolvedAt: now.toISOString(),
   };
 }
@@ -449,9 +346,9 @@ async function insertResolution(
   db: TournamentDb,
   question: QuestionRecord,
   input: ResolveQuestionInput,
+  resolved: ResolvedAs,
   resolver: Resolver,
   now: Date,
-  winningIndex: number,
   id: string,
 ): Promise<void> {
   await db
@@ -460,8 +357,8 @@ async function insertResolution(
       id,
       question_id: question.id,
       resolved_at: now,
-      winning_bucket_index: winningIndex,
-      resolved_value: input.resolved_value === null ? null : String(input.resolved_value),
+      outcome: "outcome" in resolved ? resolved.outcome : null,
+      resolved_value: "value" in resolved ? String(resolved.value) : null,
       rung_fired: input.rung_fired,
       source_url: input.source_url,
       source_excerpt: input.source_excerpt,
@@ -480,18 +377,38 @@ export async function voidQuestion(
   return db.transaction().execute((transaction) => voidQuestionIn(transaction, slug, input));
 }
 
-/** voidQuestion inside the caller's transaction. A voided question writes no scores. */
+/**
+ * voidQuestion inside the caller's transaction. A voided question writes no
+ * scores. A resolved question is voidable inside its 72-hour dispute window
+ * (a forward resolved on a figure that turns out to be a void): the void
+ * supersedes its live resolution, which the supersede-only resolutions table
+ * records as the row naming itself (`superseded_by = id`). No resolution
+ * stays live, so its scores leave the leaderboard, which counts only live
+ * resolutions of resolved questions. `at` as for closeQuestionIn.
+ */
 export async function voidQuestionIn(
   transaction: Transaction<Database>,
   slug: string,
   input: VoidQuestionInput,
+  at?: Date,
 ): Promise<{ readonly slug: string; readonly status: "voided" }> {
   const question = await requireQuestion(transaction, slug, {
     includeDrafts: true,
     forUpdate: true,
   });
-  if (question.storedStatus === "resolved" || question.storedStatus === "voided") {
-    throw stateError("Only an unresolved question can be voided.");
+  if (question.storedStatus === "voided") throw stateError("This question is already voided.");
+  if (question.storedStatus === "resolved") {
+    const now = at ?? (await databaseNow(transaction));
+    const first = await firstResolvedAt(transaction, question.id);
+    if (now.getTime() - first.getTime() > DISPUTE_WINDOW_MS) {
+      throw stateError("The 72-hour dispute window has closed; the resolution is final.");
+    }
+    const live = await liveResolutionId(transaction, question.id);
+    await transaction
+      .updateTable("tournament_resolutions")
+      .set({ superseded_by: live })
+      .where("id", "=", live)
+      .execute();
   }
   await transaction
     .updateTable("tournament_questions")
@@ -559,13 +476,7 @@ export async function setUserFlag(
     for (const row of questions) {
       const question = await requireQuestion(transaction, row.slug);
       if (effectiveStatus(question, now) !== "open") continue;
-      await recomputeAggregate(
-        transaction,
-        question,
-        await loadBuckets(transaction, question.id),
-        now,
-        windowEnd(question),
-      );
+      await recomputeAggregate(transaction, question, now, windowEnd(question));
       recomputed += 1;
     }
     return { handle: identity.handle, flagged: input.flagged, recomputed };
@@ -575,14 +486,14 @@ export async function setUserFlag(
 export interface AdminQuestion {
   readonly slug: string;
   readonly title: string;
-  readonly unit: QuestionRecord["unit"];
+  readonly kind: TournamentQuestionKind;
+  readonly unit: TournamentUnit | null;
   readonly storedStatus: TournamentQuestionStatus;
   readonly status: TournamentQuestionStatus;
   readonly opensAt: string;
   readonly closesAt: string;
   readonly windowEndsAt: string;
   readonly expiryAt: string;
-  readonly buckets: readonly Bucket[];
   readonly forecastEvents: number;
   readonly forecasters: number;
   readonly disputeWindowEndsAt: string | null;
@@ -617,6 +528,7 @@ export async function listAdminQuestions(db: Kysely<Database>): Promise<AdminQue
     questions.push({
       slug: question.slug,
       title: question.title,
+      kind: question.kind,
       unit: question.unit,
       storedStatus: question.storedStatus,
       status: effectiveStatus(question, now),
@@ -624,7 +536,6 @@ export async function listAdminQuestions(db: Kysely<Database>): Promise<AdminQue
       closesAt: question.closesAt.toISOString(),
       windowEndsAt: windowEnd(question).toISOString(),
       expiryAt: question.expiryAt.toISOString(),
-      buckets: await loadBuckets(db, question.id),
       forecastEvents: Number(counts.events),
       forecasters: Number(counts.forecasters),
       disputeWindowEndsAt:

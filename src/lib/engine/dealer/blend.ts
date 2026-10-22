@@ -15,10 +15,18 @@
  *
  * The constants below are policy, not backtest parameters: they are the
  * published schedule, versioned by BLEND_VERSION, and every payload that
- * carries a reference carries them. Changing one is a new BLEND_VERSION;
- * stored rows keep the version that produced them.
+ * carries a reference carries them. Changing one, or what an input means,
+ * is a new BLEND_VERSION; stored rows keep the version that produced them,
+ * and a published schedule is never edited.
+ *
+ * History:
+ * - 1.0.0: the crowd is the linked question's bucket aggregate: P(YES) for
+ *   a binary, the median read off the bucket vector for a forward.
+ * - 1.1.0 (decision 0004): the same constants; the crowd is the linked
+ *   question's one-number aggregate: the pooled P(YES) for a binary, the
+ *   median of the forecasters' levels for a forward.
  */
-export const BLEND_VERSION = "1.0.0";
+export const BLEND_VERSION = "1.1.0";
 
 export interface BlendSchedule {
   readonly version: string;
@@ -48,6 +56,11 @@ export const BLEND_SCHEDULE: BlendSchedule = Object.freeze({
 
 /** Every schedule ever published, so a stored row recomputes under its own version. */
 export const BLEND_SCHEDULES_BY_VERSION: Readonly<Record<string, BlendSchedule>> = Object.freeze({
+  "1.0.0": Object.freeze({
+    version: "1.0.0",
+    traded: Object.freeze({ max_weight: 0.6, v0_usd: 50_000, window_days: 30 }),
+    crowd: Object.freeze({ max_weight: 0.3, n0: 20, n_min: 10 }),
+  }),
   [BLEND_VERSION]: BLEND_SCHEDULE,
 });
 

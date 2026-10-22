@@ -95,6 +95,12 @@ export function ProvenancePage({
               <Check ok={verification?.hashMatches} />
             </dd>
           </div>
+          {verification === undefined ? null : (
+            <div>
+              <dt>Payload rebuilt here</dt>
+              <dd className={styles.hash}>{verification.payload}</dd>
+            </div>
+          )}
           {batch === null ? (
             <div>
               <dt>Batch</dt>
@@ -169,10 +175,14 @@ export function ProvenancePage({
         <div className={styles.recipe}>
           <p>
             event_hash = sha256 of the UTF-8 concatenation question_id ‖ user_id ‖ submitted_at ‖
-            probs. The four inputs, one per line here, are joined with no separators:
+            payload. The payload is the forecast as canonical text: a binary&apos;s chance of YES
+            and of NO, comma-separated; a forward&apos;s level as &quot;fwd:&quot; and the level to
+            ten decimal places; a forecast from before questions took one number, its archived
+            probabilities, comma-separated. The four inputs, one per line here, are joined with no
+            separators:
           </p>
           <pre className={styles.code}>
-            {`${event.questionId}\n${event.userId}\n${event.submittedAt}\n${event.probsCanonical}`}
+            {`${event.questionId}\n${event.userId}\n${event.submittedAt}\n${event.payloadCanonical}`}
           </pre>
           <p>
             leaf = sha256(0x00 ‖ event_hash). For each path step, node = sha256(0x01 ‖ left ‖

@@ -173,48 +173,79 @@ const wholePercentFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
 });
 
-export type TournamentUnitLabel = "USD_B" | "USD_T" | "bool" | "choice";
+const tournamentDateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  timeZone: "America/Los_Angeles",
+});
 
-/** A ladder value in its question's unit: $74.2B, $1.25T. */
+/** A forward question's unit: dollars in billions or trillions. */
+export type TournamentUnitLabel = "USD_B" | "USD_T";
+
+/** What a question asks for and how it is shown; the service's `kind` and `unit`. */
+export interface TournamentQuestionShape {
+  readonly kind: "binary" | "forward";
+  readonly unit: TournamentUnitLabel | null;
+}
+
+/** A forward level in its question's unit at four significant digits: $412.5B, $1.25T. */
 export function formatTournamentValue(value: number, unit: TournamentUnitLabel): string {
   if (!Number.isFinite(value)) return "Unavailable";
-  if (unit === "bool") return formatProbability(value);
-  return `$${tournamentValueFormatter.format(value)}${unit === "USD_T" ? "T" : "B"}`;
+  return `$${tournamentValueFormatter.format(value)}${tournamentUnitSuffix(unit)}`;
 }
 
-/** A median that falls in an open-ended end bucket reads as a bound, never a point. */
-export function formatTournamentMedian(
-  value: number,
-  position: "within" | "below" | "above" | null,
-  unit: TournamentUnitLabel,
+/** The suffix a forward's field and figures carry: B or T. */
+export function tournamentUnitSuffix(unit: TournamentUnitLabel): "B" | "T" {
+  return unit === "USD_T" ? "T" : "B";
+}
+
+/** Dollars into a forward's unit: a dealer mid or a round's post-money read beside a level. */
+export function usdInTournamentUnit(usd: number, unit: TournamentUnitLabel): number {
+  return usd / (unit === "USD_T" ? 1e12 : 1e9);
+}
+
+export function tournamentUnitName(unit: TournamentUnitLabel): string {
+  return unit === "USD_T" ? "USD trillions" : "USD billions";
+}
+
+/** The board's and the page's caption: "Binary · by Dec 31, 2026" or "Forward · USD billions". */
+export function tournamentKindCaption(
+  question: TournamentQuestionShape & { readonly expiryAt: string },
 ): string {
-  const formatted = formatTournamentValue(value, unit);
-  if (position === "below") return `<${formatted}`;
-  if (position === "above") return `>${formatted}`;
-  return formatted;
+  if (question.kind === "binary" || question.unit === null) {
+    return `Binary · by ${formatTournamentDate(question.expiryAt)}`;
+  }
+  return `Forward · ${tournamentUnitName(question.unit)}`;
 }
 
-export function tournamentUnitCaption(unit: TournamentUnitLabel): string {
-  if (unit === "USD_B") return "USD billions";
-  if (unit === "USD_T") return "USD trillions";
-  if (unit === "choice") return "One of the outcomes";
-  return "Yes or no";
+/**
+ * One forecast or crowd figure by kind: "42.0% yes" for a binary's P(YES),
+ * "$412B" for a forward's level. Null when the figure for the kind is absent.
+ */
+export function formatTournamentForecast(
+  question: TournamentQuestionShape,
+  figure: { readonly p: number | null; readonly value: number | null },
+): string | null {
+  if (question.kind === "binary") {
+    return figure.p === null ? null : `${formatProbability(figure.p)} yes`;
+  }
+  if (question.unit === null || figure.value === null) return null;
+  return formatTournamentValue(figure.value, question.unit);
 }
 
-/** A choice question's headline: the most likely outcome and its probability, "48% OpenAI first". */
-export function formatLeadingOutcome(
-  buckets: readonly { readonly label: string }[],
-  probs: readonly number[],
-): string {
-  let leader = 0;
-  probs.forEach((probability, index) => {
-    if (probability > probs[leader]!) leader = index;
-  });
-  return `${formatProbability(probs[leader] ?? 0)} ${buckets[leader]?.label ?? ""}`.trim();
+/** A binary's outcome as resolved: YES or NO. */
+export function formatTournamentOutcome(outcome: "yes" | "no"): string {
+  return outcome.toUpperCase();
 }
 
 export function formatTournamentDateTime(value: string): string {
   return tournamentDateTimeFormatter.format(new Date(value));
+}
+
+/** A calendar date in the tournament's home zone, where its deadlines are written. */
+export function formatTournamentDate(value: string): string {
+  return tournamentDateFormatter.format(new Date(value));
 }
 
 /** A leaderboard period: "all" or "YYYY-MM". */
@@ -223,9 +254,13 @@ export function formatTournamentPeriod(period: string): string {
   return tournamentMonthFormatter.format(new Date(`${period}-01T00:00:00Z`));
 }
 
-/** Baseline-relative log score: 0 is uniform, 100 is certain and right. */
+/**
+ * A tournament score, signed at one decimal with a true minus: 100 is a
+ * binary held certain and right or a forward level exact; 0 is a binary
+ * held at 50% or a forward missed by 2×.
+ */
 export function formatScore(value: number): string {
-  return scoreFormatter.format(value);
+  return scoreFormatter.format(value).replace("-", "−");
 }
 
 /** Share of a window with a forecast on file; a sliver never rounds down to 0%. */

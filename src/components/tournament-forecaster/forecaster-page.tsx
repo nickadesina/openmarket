@@ -7,47 +7,45 @@ import { apiRequest } from "../../lib/client/api.js";
 import {
   formatCoverage,
   formatForecasterName,
-  formatLeadingOutcome,
-  formatProbability,
   formatScore,
   formatTournamentDateTime,
-  formatTournamentMedian,
+  formatTournamentForecast,
+  formatTournamentOutcome,
   formatTournamentValue,
 } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
 import { useTournamentViewer } from "../../lib/client/tournament.js";
-import type { ForecasterProfile, OpenPosition } from "../../lib/services/tournament/forecaster.js";
-import { TournamentDistribution } from "../tournament-distribution/tournament-distribution.js";
+import type {
+  ForecasterProfile,
+  OpenPosition,
+  ResolvedPosition,
+} from "../../lib/services/tournament/forecaster.js";
 import { AffiliationEditor } from "./affiliation-editor.js";
 import styles from "./forecaster-page.module.css";
 import { RestrictionsEditor } from "./restrictions-editor.js";
 
-function positionHeadline(position: OpenPosition): string {
-  if (position.unit === "bool") return `${formatProbability(position.probs[0] ?? 0)} yes`;
-  if (position.unit === "choice") return formatLeadingOutcome(position.buckets, position.probs);
-  if (position.median === null) return "All on the floor";
-  return formatTournamentMedian(position.median.value, position.median.position, position.unit);
-}
-
 function crowdHeadline(position: OpenPosition): string {
   const aggregate = position.aggregate;
   if (aggregate === null || !aggregate.published) return "Not published";
-  if (position.unit === "bool") return `${formatProbability(aggregate.pYes ?? 0)} yes`;
-  if (position.unit === "choice") {
-    return formatLeadingOutcome(position.buckets, aggregate.probs ?? []);
+  return formatTournamentForecast(position, aggregate) ?? "Not published";
+}
+
+/** A resolved question's outcome: YES or NO, or the settled level. */
+function outcomeLabel(position: ResolvedPosition): string {
+  if (position.outcome !== null) return formatTournamentOutcome(position.outcome);
+  if (position.resolvedValue !== null && position.unit !== null) {
+    return formatTournamentValue(position.resolvedValue, position.unit);
   }
-  if (aggregate.medianValue === null) return "All on the floor";
-  return formatTournamentMedian(aggregate.medianValue, aggregate.medianPosition, position.unit);
+  return "—";
 }
 
 function OpenPositionRow({
   position,
-  name,
+  ownLabel,
 }: {
   readonly position: OpenPosition;
-  readonly name: string;
+  readonly ownLabel: string;
 }) {
-  const crowd = position.aggregate?.published === true ? position.aggregate.probs : null;
   return (
     <li className={styles.position}>
       <div className={styles.positionHeader}>
@@ -58,8 +56,8 @@ function OpenPositionRow({
       </div>
       <dl className={styles.figures}>
         <div>
-          <dt>{name}</dt>
-          <dd className={styles.own}>{positionHeadline(position)}</dd>
+          <dt>{ownLabel}</dt>
+          <dd className={styles.own}>{formatTournamentForecast(position, position) ?? "—"}</dd>
         </div>
         <div>
           <dt>Crowd</dt>
@@ -70,20 +68,7 @@ function OpenPositionRow({
           <dd>{position.submissionCount}</dd>
         </div>
       </dl>
-      <TournamentDistribution
-        compact
-        buckets={position.buckets}
-        unit={position.unit}
-        primary={
-          crowd === null ? { label: name, probs: position.probs } : { label: "Crowd", probs: crowd }
-        }
-        overlay={crowd === null ? null : { label: name, probs: position.probs }}
-        summary={`Updated ${formatTournamentDateTime(position.lastUpdatedAt)}. ${position.buckets
-          .map(
-            (bucket) => `${bucket.label} ${formatProbability(position.probs[bucket.index] ?? 0)}`,
-          )
-          .join(" · ")}`}
-      />
+      <p className={styles.updated}>Updated {formatTournamentDateTime(position.lastUpdatedAt)}</p>
     </li>
   );
 }
@@ -177,7 +162,11 @@ export function ForecasterPage({
         ) : (
           <ul className={styles.positions}>
             {profile.open.map((position) => (
-              <OpenPositionRow key={position.slug} position={position} name={name} />
+              <OpenPositionRow
+                key={position.slug}
+                position={position}
+                ownLabel={ownProfile ? "You" : name}
+              />
             ))}
           </ul>
         )}
@@ -211,12 +200,7 @@ export function ForecasterPage({
                       {position.title}
                     </Link>
                   </td>
-                  <td>
-                    {position.winningBucketLabel}
-                    {position.resolvedValue === null
-                      ? ""
-                      : ` (${formatTournamentValue(position.resolvedValue, position.unit)})`}
-                  </td>
+                  <td>{outcomeLabel(position)}</td>
                   <td className={styles.figureCell}>{formatScore(position.timeAvgLogScore)}</td>
                   <td className={styles.figureCell}>{formatCoverage(position.coverage)}</td>
                 </tr>

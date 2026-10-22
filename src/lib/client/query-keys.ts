@@ -19,6 +19,8 @@ export const queryKeys = {
   tournamentQuestion: (slug: string) => ["openmarket", "tournament", "question", slug] as const,
   tournamentForecasts: (slug: string) =>
     ["openmarket", "tournament", "question", slug, "forecasts"] as const,
+  tournamentAggregateHistory: (slug: string) =>
+    ["openmarket", "tournament", "question", slug, "aggregate-history"] as const,
   tournamentLeaderboard: (period: string) =>
     ["openmarket", "tournament", "leaderboard", period] as const,
   tournamentForecaster: (handle: string) =>

@@ -79,47 +79,7 @@
 
 /* The dealer's two-way quote in dollars; the side a fill takes is ruled red. */
 .twoWay {
-  display: grid;
-  margin: 0;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  border: 1px solid var(--color-border);
-}
-
-.twoWay > div {
-  display: grid;
-  gap: var(--space-1);
-  padding: var(--space-2) var(--space-3);
-  border-top: 2px solid transparent;
-}
-
-.twoWay > div + div {
-  border-left: 1px solid var(--color-border-subtle);
-}
-
-.twoWay > div[data-active="true"] {
-  border-top-color: var(--color-primary);
-}
-
-.twoWay dt {
-  color: var(--color-ink-muted);
-  font-family: var(--font-caps);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--caps-tracking);
-  text-transform: uppercase;
-}
-
-.twoWay dd {
-  margin: 0;
-  color: var(--color-ink);
-  font-family: var(--font-num);
-  font-size: var(--font-size-lg);
-  font-weight: 700;
-  line-height: 1;
-}
-
-.twoWay > div[data-active="true"] dd {
-  color: var(--color-primary);
+  composes: twoWay from "../../styles/shared.module.css";
 }
 
 .caution {
@@ -220,39 +180,10 @@
   box-shadow: var(--focus-ring);
 }
 
+/* The chips sit closer to the field above than the ticket's grid gap. */
 .quickAmounts {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-1);
+  composes: quickAmounts from "../../styles/shared.module.css";
   margin-top: calc(var(--space-2) * -1);
-}
-
-.quickAmounts button {
-  min-height: var(--control-height-sm);
-  border: 1px solid var(--color-border);
-  background: var(--color-bg);
-  color: var(--color-ink);
-  cursor: pointer;
-  font: inherit;
-  font-family: var(--font-num);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.quickAmounts button:hover:not(:disabled) {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-.quickAmounts button[aria-pressed="true"] {
-  border-color: var(--color-ink);
-  background: var(--color-ink);
-  color: #ffffff;
-}
-
-.quickAmounts button:focus-visible {
-  box-shadow: var(--focus-ring);
 }
 
 .segmented,
@@ -304,38 +235,7 @@
 }
 
 .inputFrame {
-  display: flex;
-  align-items: center;
-  min-height: var(--control-height);
-  padding-inline: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  color: var(--color-ink-muted);
-  background: var(--color-bg);
-}
-
-.inputFrame:focus-within {
-  outline: none;
-  box-shadow: var(--focus-ring);
-}
-
-.inputFrame input {
-  width: 100%;
-  min-width: 0;
-  border: 0;
-  outline: 0;
-  color: var(--color-ink);
-  background: transparent;
-  font: inherit;
-  font-variant-numeric: tabular-nums;
-}
-
-.inputFrame input::placeholder {
-  color: var(--color-ink-muted);
-}
-
-.inputFrame input:disabled {
-  opacity: 0.55;
+  composes: inputFrame from "../../styles/shared.module.css";
 }
 
 .quote {

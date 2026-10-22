@@ -1,20 +1,54 @@
-/** Probability floor applied before taking a log; bounds the worst segment. */
+/** ε: the least probability a log is taken of; bounds the worst segment. */
 export const SCORE_EPSILON = 1e-3;
 
-export interface TimedForecast {
-  /** Server submission time, epoch milliseconds. */
-  readonly at: number;
-  readonly probs: readonly number[];
+/**
+ * Baseline-relative log score of one probability on the outcome that
+ * happened: 0 for uniform over `outcomeCount` outcomes, 100 for certainty.
+ * A binary is `outcomeCount = 2`: 0 is "said 50%".
+ */
+export function pointLogScore(probability: number, outcomeCount: number): number {
+  return (
+    (100 / Math.log(outcomeCount)) * Math.log(outcomeCount * Math.max(probability, SCORE_EPSILON))
+  );
 }
 
-export interface ScoreInput {
-  readonly bucketCount: number;
-  readonly winningIndex: number;
+/**
+ * The lowest score a forecast can take (decision 0004): a binary at ε on the
+ * outcome that happened, and the forward's floor. About −896.6.
+ */
+export const CLAMP_SCORE = pointLogScore(SCORE_EPSILON, 2);
+
+export type BinaryOutcome = "yes" | "no";
+
+/** The n = 2 log score of a P(YES) forecast once the binary resolves. */
+export function binaryScore(p: number, outcome: BinaryOutcome): number {
+  return pointLogScore(outcome === "yes" ? p : 1 - p, 2);
+}
+
+/**
+ * The forward score of a level `x` against the settling value `y` (same
+ * unit): 100 when exact, 0 at a 2× miss either way, affine in −|ln x − ln y|,
+ * floored at CLAMP_SCORE (which binds past a 1/ε = 1000× miss).
+ */
+export function forwardScore(x: number, y: number): number {
+  if (!(x > 0 && y > 0)) throw new RangeError("a forward score needs two positive levels");
+  return Math.max(100 * (1 - Math.abs(Math.log(x / y)) / Math.LN2), CLAMP_SCORE);
+}
+
+export interface TimedForecast<T> {
+  /** Server submission time, epoch milliseconds. */
+  readonly at: number;
+  readonly forecast: T;
+}
+
+export interface ScoreInput<T> {
   /** Open window [t0, t1] in epoch milliseconds. */
   readonly opensAt: number;
   readonly closesAt: number;
   /** One forecaster's submissions in any order; those outside the window are ignored. */
-  readonly forecasts: readonly TimedForecast[];
+  readonly forecasts: readonly TimedForecast<T>[];
+  /** The score of holding one forecast, given the resolution. */
+  readonly score: (forecast: T) => number;
 }
 
 export interface ScoreResult {
@@ -25,33 +59,12 @@ export interface ScoreResult {
 }
 
 /**
- * Baseline-relative log score of one probability on the winning bucket:
- * 0 for uniform, 100 for certainty, about −200 at the clamp for n = 9.
+ * Time-averaged score. The forecast held at t is the latest submitted at or
+ * before t; time before the first submission contributes 0, so the integral
+ * is an exact sum over the segments between submissions.
  */
-export function pointLogScore(probability: number, bucketCount: number): number {
-  return (
-    (100 / Math.log(bucketCount)) * Math.log(bucketCount * Math.max(probability, SCORE_EPSILON))
-  );
-}
-
-/** The score of a zero (clamped) probability on the bucket that wins. */
-export function clampedFloorScore(bucketCount: number): number {
-  return pointLogScore(0, bucketCount);
-}
-
-/**
- * Time-averaged log score. p(t) is the latest forecast submitted at or
- * before t, uniform before the first submission, so the integral is an
- * exact sum over the segments between submissions.
- */
-export function timeAveragedScore(input: ScoreInput): ScoreResult | null {
-  const { bucketCount, winningIndex, opensAt, closesAt } = input;
-  if (!Number.isInteger(bucketCount) || bucketCount < 2) {
-    throw new RangeError("bucketCount must be an integer of at least 2");
-  }
-  if (!Number.isInteger(winningIndex) || winningIndex < 0 || winningIndex >= bucketCount) {
-    throw new RangeError("winningIndex is out of range");
-  }
+export function timeAveragedScore<T>(input: ScoreInput<T>): ScoreResult | null {
+  const { opensAt, closesAt, score } = input;
   if (!(closesAt > opensAt)) throw new RangeError("the open window must have positive length");
 
   const inWindow = input.forecasts
@@ -62,20 +75,16 @@ export function timeAveragedScore(input: ScoreInput): ScoreResult | null {
 
   let integral = 0;
   for (let index = 0; index < inWindow.length; index += 1) {
-    const forecast = inWindow[index]!;
-    if (forecast.probs.length !== bucketCount) {
-      throw new RangeError("forecast length does not match bucketCount");
-    }
+    const held = inWindow[index]!;
     const segmentEnd = index + 1 < inWindow.length ? inWindow[index + 1]!.at : closesAt;
-    integral +=
-      (segmentEnd - forecast.at) * pointLogScore(forecast.probs[winningIndex]!, bucketCount);
+    integral += (segmentEnd - held.at) * score(held.forecast);
   }
 
   const window = closesAt - opensAt;
   const last = inWindow[inWindow.length - 1]!;
   return {
     timeAvgLogScore: integral / window,
-    finalLogScore: pointLogScore(last.probs[winningIndex]!, bucketCount),
+    finalLogScore: score(last.forecast),
     coverage: (closesAt - inWindow[0]!.at) / window,
   };
 }
