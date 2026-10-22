@@ -580,7 +580,10 @@ npm run dev              # http://localhost:3000, never 127.0.0.1
   `dev:<handle>`); it is off in every other mode. Launch questions:
   `npm run seed:tournament` writes the four drafts (two binaries, two
   forwards; decision 0004), `-- --open` (optionally `--opens-at=<ISO>`)
-  opens them.
+  opens them. Every production and preview build runs it with `--open`
+  after `db:migrate` (`scripts/vercel-build.ts`): it opens only launch
+  questions that are missing, leaves open, resolved and voided ones
+  alone, and skips any whose close has passed.
 - Provenance: `.github/workflows/provenance.yml` calls
   `/api/t/cron/provenance` hourly with `Authorization: Bearer
   $CRON_SECRET`; the route refuses anything else. Set the same

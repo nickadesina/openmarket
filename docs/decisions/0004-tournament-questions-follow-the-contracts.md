@@ -249,7 +249,9 @@ production.
    Old instances 500 on tournament pages for the minute between commit
    and promotion; acceptable.
 4. Immediately `npm run seed:tournament -- --open` against production:
-   the canonical slugs 404 until then.
+   the canonical slugs 404 until then. (Since the release, the Vercel
+   build runs this seed after `db:migrate`, so a merge needs no manual
+   step.)
 5. Check `/t`, each question, and `/t/provenance/<legacy event>` still
    verifying.
 

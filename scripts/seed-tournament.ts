@@ -6,7 +6,9 @@
  *   npm run seed:tournament -- --open               # drafts, then open at now
  *   npm run seed:tournament -- --open --opens-at=2026-10-20T16:00:00Z
  *
- * A question that is already open is pinned and reported as such.
+ * A question that is already open is pinned and reported as such. With
+ * --open, a question whose close has passed is skipped rather than written,
+ * so the production build can run this on every deploy (scripts/vercel-build.ts).
  */
 import { questionInputSchema } from "../src/lib/api/tournament-schemas.js";
 import { LAUNCH_QUESTIONS } from "../src/lib/config/tournament-questions.js";
@@ -34,6 +36,10 @@ async function main(): Promise<void> {
         .executeTakeFirst();
       if (existing !== undefined && existing.status !== "draft") {
         console.log(`pinned: ${input.slug} is ${existing.status}; left unchanged`);
+        continue;
+      }
+      if (open && Date.parse(input.closes_at) <= Date.now()) {
+        console.log(`skipped: ${input.slug} closed at ${input.closes_at}; not opened`);
         continue;
       }
       await saveDraftQuestion(db, input);
