@@ -12,11 +12,7 @@ import type {
   MarketRow,
 } from "../../db/schema.js";
 import { settlementCreditCents, voidCreditCents } from "../../engine/dealer/forward.js";
-import {
-  type InstrumentSnapshot,
-  type LifecycleEffect,
-  transition,
-} from "../../engine/dealer/lifecycle.js";
+import { type LifecycleEffect, transition } from "../../engine/dealer/lifecycle.js";
 import {
   type BinaryResolution,
   type FlagTerms,
@@ -29,9 +25,16 @@ import {
   resolveForward,
   type SourceRank,
 } from "../../engine/dealer/rulebook.js";
-import { beginCronRun, type CronRunOutcome, finishCronRun } from "./cron-run.js";
+import { type CronRunOutcome, CronWorkFailure, runCronJob } from "./cron-run.js";
 import { LIVE_STATES, latestMid, RULEBOOK_SOURCE_URL } from "./dealer-books.js";
 import { type ListingWithCompany, listInstrument } from "./list-instruments.js";
+import {
+  lifecycleSnapshot,
+  listingQuery,
+  listingWithCompany,
+  lockCron,
+  lockListing,
+} from "./service-helpers.js";
 import { settleLmsrBook } from "./settle-lmsr-book.js";
 import {
   instrumentEnding,
@@ -176,9 +179,12 @@ async function promoteFlags(
         promoted_from: flag.id,
         run_id: runId,
       })
+      .onConflict((conflict) =>
+        conflict.column("promoted_from").where("promoted_from", "is not", null).doNothing(),
+      )
       .returning("id")
-      .executeTakeFirstOrThrow();
-    promoted.push(print.id);
+      .executeTakeFirst();
+    if (print !== undefined) promoted.push(print.id);
   }
   return { promoted, pending };
 }
@@ -263,14 +269,7 @@ function terminalEffects(
   now: Date,
   flagHours: number,
 ): { state: "resolved" | "expired"; effects: readonly LifecycleEffect[] } | null {
-  const until = instrument.state === "widened" ? instrument.widened_until : null;
-  const snapshot: InstrumentSnapshot = {
-    kind: instrument.kind,
-    state: instrument.state,
-    expiresAt: instrument.expires_at,
-    widenedAt: until === null ? null : new Date(until.getTime() - flagHours * 3_600_000),
-    widenedUntil: until,
-  };
+  const snapshot = lifecycleSnapshot(instrument, flagHours);
   const params = { flagHours };
   let next = transition(snapshot, { type: "resolve", at: now, resolution }, params);
   if (next.instrument.state !== "resolved" && next.instrument.state !== "expired") {
@@ -390,6 +389,7 @@ async function settleForward(context: SettleContext, effect: LifecycleEffect): P
     })
     .where("id", "=", market.id)
     .where("status", "=", "open")
+    .returning("id")
     .executeTakeFirstOrThrow();
 
   const counts = { positions: positions.length, credited_cents: total.toString() };
@@ -428,18 +428,8 @@ async function loadListing(
   db: Transaction<Database>,
   listingId: string,
 ): Promise<ListingWithCompany> {
-  const row = await db
-    .selectFrom("listings")
-    .innerJoin("companies", "companies.id", "listings.company_id")
-    .selectAll("listings")
-    .select(["companies.name as company_name", "companies.slug as company_slug"])
-    .where("listings.id", "=", listingId)
-    .executeTakeFirstOrThrow();
-  const { company_name, company_slug, ...listing } = row;
-  return {
-    ...listing,
-    company: { id: listing.company_id, name: company_name, slug: company_slug },
-  };
+  const row = await listingQuery(db).where("listings.id", "=", listingId).executeTakeFirstOrThrow();
+  return listingWithCompany(row);
 }
 
 /** One instrument, in the caller's transaction: promote, resolve, settle, roll. */
@@ -454,9 +444,13 @@ async function settleInstrument(
   promoted: string[];
   pending: PendingPromotion[];
 }> {
-  await sql`select pg_advisory_xact_lock(hashtext('openmarket_cron'), hashtext('settle'))`.execute(
-    db,
-  );
+  await lockCron(db, "settle");
+  const identity = await db
+    .selectFrom("instruments")
+    .select("listing_id")
+    .where("id", "=", instrumentId)
+    .executeTakeFirstOrThrow();
+  await lockListing(db, identity.listing_id);
   const instrument = await db
     .selectFrom("instruments")
     .selectAll()
@@ -515,9 +509,6 @@ async function settleInstrument(
 
   let successorId: string | null = null;
   if (roll?.type === "list_successor" && listing.delisted_at === null) {
-    await sql`select pg_advisory_xact_lock(hashtext('openmarket_listing'), hashtext(${listing.id}))`.execute(
-      db,
-    );
     const terms = await successorTerms(context, effect!);
     const listed = await listInstrument(db, {
       listing,
@@ -559,7 +550,7 @@ async function settleInstrument(
 /**
  * One firing of /api/cron/settle: claims the run id, then settles every live
  * instrument in its own transaction, and records the run's summary. A failed
- * instrument fails the run; the ones before it stay settled.
+ * instrument fails the run after all remaining instruments are attempted.
  */
 export async function runSettleJob(
   db: Kysely<Database>,
@@ -567,43 +558,50 @@ export async function runSettleJob(
   now: Date = new Date(),
   flagHours: number = DEALER_PARAMS.dealer.flag_hours,
 ): Promise<SettleJobOutcome> {
-  const begun = await beginCronRun(db, "settle", runId);
-  if (begun.status === "already_ran") return begun;
-  try {
-    const live = await db
-      .selectFrom("instruments")
-      .select("id")
-      .where("state", "in", LIVE_STATES)
-      .where("opens_at", "<=", now)
-      .orderBy("listing_id")
-      .orderBy("kind")
-      .execute();
-    const outcomes: InstrumentOutcome[] = [];
-    const promoted = new Set<string>();
-    const pending = new Map<string, PendingPromotion>();
-    for (const { id } of live) {
-      const settled = await db
-        .transaction()
-        .execute((transaction) => settleInstrument(transaction, id, runId, now, flagHours));
-      outcomes.push(settled.outcome);
-      for (const flagId of settled.promoted) promoted.add(flagId);
-      for (const flag of settled.pending) pending.set(flag.flag_id, flag);
-    }
-    const summary: SettleRunSummary = {
-      run_id: runId,
-      instruments: live.length,
-      resolved: outcomes.filter((row) => row.outcome !== "open" && row.outcome !== "skipped")
-        .length,
-      outcomes,
-      promoted: [...promoted],
-      pending: [...pending.values()],
-    };
-    await finishCronRun(db, runId, "succeeded", summary);
-    return { status: "succeeded", runId, result: summary };
-  } catch (error) {
-    await finishCronRun(db, runId, "failed", {
-      error: error instanceof Error ? error.message : "the job failed",
-    });
-    throw error;
-  }
+  return runCronJob(db, "settle", runId, {
+    run: async () => {
+      const live = await db
+        .selectFrom("instruments")
+        .select("id")
+        .where("state", "in", LIVE_STATES)
+        .where("opens_at", "<=", now)
+        .orderBy("listing_id")
+        .orderBy("kind")
+        .execute();
+      const outcomes: InstrumentOutcome[] = [];
+      const failures: { instrument_id: string; error: string }[] = [];
+      const promoted = new Set<string>();
+      const pending = new Map<string, PendingPromotion>();
+      for (const { id } of live) {
+        try {
+          const settled = await db
+            .transaction()
+            .execute((transaction) => settleInstrument(transaction, id, runId, now, flagHours));
+          outcomes.push(settled.outcome);
+          for (const flagId of settled.promoted) promoted.add(flagId);
+          for (const flag of settled.pending) pending.set(flag.flag_id, flag);
+        } catch (error) {
+          failures.push({
+            instrument_id: id,
+            error: error instanceof Error ? error.name : "UnknownError",
+          });
+        }
+      }
+      const summary: SettleRunSummary = {
+        run_id: runId,
+        instruments: live.length,
+        resolved: outcomes.filter((row) => row.outcome !== "open" && row.outcome !== "skipped")
+          .length,
+        outcomes,
+        promoted: [...promoted],
+        pending: [...pending.values()],
+      };
+      if (failures.length > 0)
+        throw new CronWorkFailure("One or more instruments failed settlement.", {
+          ...summary,
+          failures,
+        });
+      return summary;
+    },
+  });
 }

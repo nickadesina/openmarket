@@ -1,6 +1,5 @@
 import type { Transaction } from "kysely";
 
-import { ServiceError } from "../../api/errors.js";
 import type { Database } from "../../db/schema.js";
 import { quantizeEntitlementCents } from "../../engine/lmsr.js";
 
@@ -52,10 +51,7 @@ export async function settleLmsrBook(
 
   for (const holding of holdings) {
     if (holding.h.length !== market.n_buckets) {
-      throw new ServiceError(
-        "INVALID_INPUT",
-        "Stored holdings do not match the market bucket count.",
-      );
+      throw new Error("Stored holdings do not match the market bucket count.");
     }
 
     const entitlementUsd = holding.h[book.winningBucket]!;
@@ -63,7 +59,7 @@ export async function settleLmsrBook(
     try {
       payoutCents = quantizeEntitlementCents(entitlementUsd);
     } catch {
-      throw new ServiceError("INVALID_INPUT", "Stored settlement entitlement is invalid.");
+      throw new Error("Stored settlement entitlement is invalid.");
     }
 
     totalEntitlementUsd += entitlementUsd;
@@ -76,6 +72,7 @@ export async function settleLmsrBook(
         cash_balance_cents: (BigInt(holding.cash_balance_cents) + BigInt(payoutCents)).toString(),
       })
       .where("id", "=", holding.user_id)
+      .returning("id")
       .executeTakeFirstOrThrow();
 
     await transaction
@@ -83,6 +80,7 @@ export async function settleLmsrBook(
       .set({ h: zeroHoldings, updated_at: book.ts })
       .where("user_id", "=", holding.user_id)
       .where("market_id", "=", market.market_id)
+      .returning("user_id")
       .executeTakeFirstOrThrow();
   }
 
@@ -90,7 +88,7 @@ export async function settleLmsrBook(
   try {
     aggregatePayoutCents = quantizeEntitlementCents(totalEntitlementUsd);
   } catch {
-    throw new ServiceError("INVALID_INPUT", "Aggregate settlement entitlement is invalid.");
+    throw new Error("Aggregate settlement entitlement is invalid.");
   }
   const rawRoundingReserveDeltaCents = BigInt(aggregatePayoutCents) - totalPayoutCents;
   const roundingReserveDeltaCents =
@@ -120,6 +118,7 @@ export async function settleLmsrBook(
     })
     .where("id", "=", market.market_id)
     .where("status", "=", "open")
+    .returning("id")
     .executeTakeFirstOrThrow();
 
   return { creditedUsers, totalPayoutCents, roundingReserveDeltaCents };
