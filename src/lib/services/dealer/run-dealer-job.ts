@@ -64,7 +64,7 @@ export async function runDealerJob(
       instruments: steps.mids.instruments,
       mids_written: steps.mids.mids_written,
       steps,
-      health: await getDealerHealth(transaction),
+      health: await getDealerHealth(transaction, now),
     };
   });
 }

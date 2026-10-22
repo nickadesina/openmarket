@@ -256,3 +256,16 @@ export function formatForecasterName(identity: {
 }): string {
   return identity.provider === "password" ? identity.handle : `@${identity.handle}`;
 }
+
+/** A job's run time: milliseconds under a second, seconds under a minute, then minutes. */
+export function formatDuration(milliseconds: number): string {
+  if (!Number.isFinite(milliseconds) || milliseconds < 0) return "Unavailable";
+  if (milliseconds < 1_000) return `${Math.round(milliseconds)} ms`;
+  if (milliseconds < 60_000) return `${(milliseconds / 1_000).toFixed(1)} s`;
+  return `${(milliseconds / 60_000).toFixed(1)} min`;
+}
+
+/** Elapsed hours at one decimal ("74.5 h"): how long an instrument has been widened. */
+export function formatHours(hours: number): string {
+  return Number.isFinite(hours) ? `${hours.toFixed(1)} h` : "Unavailable";
+}
