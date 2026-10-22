@@ -77,7 +77,6 @@ export function timeAveragedScore<T>(input: ScoreInput<T>): ScoreResult | null {
 
   const inWindow = input.forecasts
     .filter((forecast) => forecast.at >= opensAt && forecast.at < closesAt)
-    .slice()
     .sort((left, right) => left.at - right.at);
   if (inWindow.length === 0) return null;
 

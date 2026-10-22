@@ -159,7 +159,7 @@ describe("aggregate", () => {
     expect(aggregateBinary([0.5, 0.5])).toBeCloseTo(0.5, 12);
   });
 
-  it("matches the bucket engine's n = 2 aggregate", () => {
+  it("matches the two-outcome geometric mean of odds", () => {
     // The vector aggregate on [p, 1 − p] pairs, as the old engine computed it.
     const old = (ps: number[], a: number) => {
       const logit = (p: number) => Math.log(p) - Math.log1p(-p);

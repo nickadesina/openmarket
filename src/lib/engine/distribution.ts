@@ -7,7 +7,7 @@ import { SQRT_TWO } from "./types.js";
  * forward mid restated as bucket masses and as P(valuation > strike).
  *
  * Every bucket is floored at MIN_BUCKET_PROBABILITY before normalizing, the
- * rule the ladder's seed used. README D5 keeps that floor open as a display
+ * display convention retained by README D5. That floor remains an open display
  * question, so the tails it creates are a grid artifact, not a view.
  */
 
