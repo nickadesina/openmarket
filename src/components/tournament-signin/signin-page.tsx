@@ -31,7 +31,7 @@ export function SignInPage({
   signIn,
 }: {
   readonly returnTo: string | null;
-  readonly signIn?: string;
+  readonly signIn?: string | undefined;
 }) {
   const returnTo = safeReturnPath(rawReturn);
   const router = useRouter();
