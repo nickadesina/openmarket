@@ -1,9 +1,10 @@
-import type { Kysely } from "kysely";
+import { type Kysely, sql } from "kysely";
 
 import type { Database } from "../../db/schema.js";
 import type { ForecastPoint } from "../../engine/tournament/forecast.js";
 import { computeAggregate, latestForecasts } from "./aggregate.js";
 import { buildMerkleTree, merkleRootFromPath } from "./merkle.js";
+import { BATCH_GRACE_MS } from "./provenance.js";
 import {
   effectiveStatus,
   type QuestionRecord,
@@ -197,11 +198,27 @@ async function checkProvenance(db: Kysely<Database>, fail: Fail): Promise<number
     .select(["id", "root", "leaf_count", "hour_start"])
     .orderBy("hour_start")
     .execute();
+  const missing = await db
+    .selectFrom("tournament_forecast_events as events")
+    .leftJoin("tournament_provenance_leaves as leaves", "leaves.event_id", "events.id")
+    .leftJoin("tournament_provenance_batches as batches", (join) => join.onRef("batches.hour_start", "=", sql<Date>`date_trunc('hour', events.submitted_at)`))
+    .select(["events.id", "batches.id as batch_id"])
+    .where("leaves.event_id", "is", null)
+    .where(({ or, eb }) => or([
+      eb("batches.id", "is not", null),
+      sql<boolean>`date_trunc('hour', events.submitted_at) + interval '1 hour' <= clock_timestamp() - ${`${BATCH_GRACE_MS} milliseconds`}::interval`,
+    ]))
+    .execute();
+  for (const event of missing) {
+    fail("provenance", event.batch_id === null
+      ? `event ${event.id}'s completed hour has no batch`
+      : `event ${event.id} is missing from batch ${event.batch_id}`);
+  }
   for (const batch of batches) {
     const leaves = await db
       .selectFrom("tournament_provenance_leaves as leaves")
       .innerJoin("tournament_forecast_events as events", "events.id", "leaves.event_id")
-      .select(["leaves.leaf_index", "leaves.path", "events.event_hash"])
+      .select(["leaves.leaf_index", "leaves.path", "events.event_hash", "events.submitted_at"])
       .where("leaves.batch_id", "=", batch.id)
       .orderBy("leaves.leaf_index")
       .execute();
@@ -215,6 +232,9 @@ async function checkProvenance(db: Kysely<Database>, fail: Fail): Promise<number
       continue;
     }
     for (const leaf of leaves) {
+      if (leaf.submitted_at < batch.hour_start || leaf.submitted_at.getTime() >= batch.hour_start.getTime() + 60 * 60_000) {
+        fail("provenance", `batch ${hour} leaf ${leaf.leaf_index} belongs to a different hour`);
+      }
       if (merkleRootFromPath(leaf.event_hash, leaf.path) !== batch.root) {
         fail("provenance", `batch ${hour} leaf ${leaf.leaf_index} path does not fold to the root`);
       }

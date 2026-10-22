@@ -1,3 +1,4 @@
+import { batchCompletedHours } from "../../src/lib/services/tournament/provenance.js";
 import { sql } from "kysely";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -304,6 +305,7 @@ postgresDescribe(suiteName, () => {
     await expect(
       submitForecast(postgres.db, { slug: "binary-q", userId: users[0]!, p: 0.1 }),
     ).rejects.toMatchObject({ code: "RATE_LIMITED" });
+    await batchCompletedHours(postgres.db);
     expect(await verifyTournament(postgres.db)).toMatchObject({ passed: true, findings: [] });
   });
 
@@ -330,6 +332,7 @@ postgresDescribe(suiteName, () => {
     expect(question.aggregate!.value).toBeCloseTo(412.5, 9);
     const viewer = await getForecaster(postgres.db, "forecaster1");
     expect(viewer.open[0]).toMatchObject({ kind: "forward", unit: "USD_B", p: null, value: 412.5 });
+    await batchCompletedHours(postgres.db);
     expect(await verifyTournament(postgres.db)).toMatchObject({ passed: true, findings: [] });
   });
 
@@ -418,6 +421,7 @@ postgresDescribe(suiteName, () => {
     expect(board.entries[0]!.handle).toBe("Forecaster1");
     expect((await getQuestion(postgres.db, "binary-q")).resolutionDetail!.supersededCount).toBe(1);
 
+    await batchCompletedHours(postgres.db);
     expect(await verifyTournament(postgres.db)).toMatchObject({ passed: true, findings: [] });
 
     const positions = await getForecaster(postgres.db, "forecaster1");
@@ -496,6 +500,7 @@ postgresDescribe(suiteName, () => {
       resolvedValue: 400,
     });
     expect(positions.resolved[0]!.timeAvgLogScore).toBeCloseTo(100, 9);
+    await batchCompletedHours(postgres.db);
     expect(await verifyTournament(postgres.db)).toMatchObject({ passed: true, findings: [] });
   });
 
@@ -521,6 +526,7 @@ postgresDescribe(suiteName, () => {
     // Off the board and the admin console, still at its own page.
     expect(await listQuestions(postgres.db)).toHaveLength(0);
     expect(await listAdminQuestions(postgres.db)).toHaveLength(0);
+    await batchCompletedHours(postgres.db);
     expect(await verifyTournament(postgres.db)).toMatchObject({ passed: true, findings: [] });
   });
 
@@ -553,6 +559,7 @@ postgresDescribe(suiteName, () => {
       resolutionDetail: null,
     });
     expect((await getForecaster(postgres.db, "forecaster0")).resolved).toHaveLength(0);
+    await batchCompletedHours(postgres.db);
     expect(await verifyTournament(postgres.db)).toMatchObject({ passed: true, findings: [] });
 
     // Past the window, the resolution is final.
@@ -598,6 +605,7 @@ postgresDescribe(suiteName, () => {
     const profile = await getForecaster(postgres.db, "forecaster0");
     expect(profile.resolved.map((position) => position.kind).sort()).toEqual(["binary", "forward"]);
     expect(profile.totalScore).toBeCloseTo(first.totalScore, 9);
+    await batchCompletedHours(postgres.db);
     expect(await verifyTournament(postgres.db)).toMatchObject({ passed: true, findings: [] });
   });
 
@@ -618,6 +626,7 @@ postgresDescribe(suiteName, () => {
     expect(flagged.recomputed).toBe(1);
     const question = await getQuestion(postgres.db, "anthropic-ipo-day1-mcap");
     expect(question.aggregate!.nForecasters).toBe(5);
+    await batchCompletedHours(postgres.db);
     expect(await verifyTournament(postgres.db)).toMatchObject({ passed: true, findings: [] });
   });
 
