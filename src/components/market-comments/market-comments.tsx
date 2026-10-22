@@ -3,12 +3,16 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useRef, useState } from "react";
 
-import { ApiClientError, apiRequest, requestPortfolioIdentity } from "../../lib/client/api.js";
+import { ApiClientError, requestPortfolioIdentity } from "../../lib/client/api.js";
 import { formatDateTime, formatForecasterName } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
 import type { MarketComment } from "../../lib/services/list-comments.js";
 import { ForecasterName } from "../tournament-forecaster-name/forecaster-name.js";
-import { CommentComposer, type CommentIdentityState } from "./comment-composer.js";
+import {
+  CommentComposer,
+  type CommentIdentity,
+  type CommentIdentityState,
+} from "./comment-composer.js";
 import styles from "./market-comments.module.css";
 import { type CommentThread, useCommentThread } from "./use-comment-thread.js";
 

@@ -4,10 +4,12 @@ import {
   formatCents,
   formatDate,
   formatDateTime,
+  formatForwardNotional,
   formatPrice,
   formatProbability,
   formatQuantityShort,
   formatValuation,
+  formatVersion,
   sideLabel,
 } from "../../lib/client/format.js";
 import { DemoTag } from "../market-demo/market-demo.js";
@@ -30,7 +32,7 @@ function ActivityRow({ item }: { readonly item: ActivityItem }) {
       <div>
         <strong>
           {forward
-            ? `${sideLabel(item.side)} ${formatCents(String(Math.round(item.quantity * 100)))} forward${item.entryUsd === null ? "" : ` at ${formatPrice(item.entryUsd)}`}`
+            ? `${sideLabel(item.side)} ${formatForwardNotional(item.quantity)} forward${item.entryUsd === null ? "" : ` at ${formatPrice(item.entryUsd)}`}`
             : `${item.action === "buy" ? "Bought" : "Sold"} ${formatQuantityShort(item.quantity)} ${sideLabel(item.side)}`}
         </strong>
         <span className={styles.meta}>
@@ -145,7 +147,7 @@ export function MarketActivity({
           ) : null}
         </dl>
         <a href="/api/ref/rulebook" target="_blank" rel="noreferrer">
-          Rulebook v{listing.rulebookVersion}
+          Rulebook {formatVersion(listing.rulebookVersion)}
         </a>{" "}
         ·{" "}
         <a href={listing.anchor.sourceUrl} target="_blank" rel="noreferrer">

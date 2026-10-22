@@ -7,6 +7,7 @@ import { apiRequest, POLL_INTERVAL_MS } from "../../lib/client/api.js";
 import {
   formatCents,
   formatDateTime,
+  formatForwardNotional,
   formatPrice,
   formatQuantityShort,
   formatUsd,
@@ -34,7 +35,7 @@ function ActivityRow({ item }: { readonly item: ActivityItem }) {
         {forward ? (
           <p>
             <span className={styles.buy}>{sideLabel(item.side)}</span>{" "}
-            <strong>{formatCents(String(Math.round(item.quantity * 100)))}</strong>{" "}
+            <strong>{formatForwardNotional(item.quantity)}</strong>{" "}
             <span className={styles.muted}>forward at</span>{" "}
             <strong>{item.entryUsd === null ? "—" : formatPrice(item.entryUsd)}</strong>
           </p>
