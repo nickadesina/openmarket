@@ -151,6 +151,12 @@ export function validateDeploymentConfig(
     fail("OpenMarket deployments require Node.js 22.x");
   }
 
+  if ((environment.CRON_SECRET?.trim().length ?? 0) < 16) {
+    const message = "CRON_SECRET must contain at least 16 characters";
+    if (target === "production") fail(message);
+    console.warn(`${message}; preview cron routes will be unavailable`);
+  }
+
   const directHostname = validateDatabaseUrls(environment);
   validateAppOrigin(environment);
   validateBranchAssignment(environment, target, directHostname);
