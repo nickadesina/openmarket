@@ -16,7 +16,28 @@ import params from "../../../backtest/out/params.json";
 export const PARAMS_SHA256_BY_MODEL_VERSION: Readonly<Record<string, string>> = {
   "1.0.0": "594d29a5a7bcfa216d7acd18ebdf0dd777bb667bd835f7383928252873c23074",
 };
-export const MODEL_VERSION = Object.keys(PARAMS_SHA256_BY_MODEL_VERSION).at(-1)!;
+/** Published model versions are stable semver; insertion order is not version order. */
+export function latestModelVersion(versions: readonly string[]): string {
+  if (versions.length === 0) throw new RangeError("model version registry must not be empty");
+  const parsed = versions.map((version) => {
+    if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version)) {
+      throw new RangeError(`invalid stable model version: ${version}`);
+    }
+    const parts = version.split(".").map(Number);
+    if (!parts.every(Number.isSafeInteger))
+      throw new RangeError("model version parts must be safe integers");
+    return { version, parts };
+  });
+  parsed.sort(
+    (left, right) =>
+      right.parts[0]! - left.parts[0]! ||
+      right.parts[1]! - left.parts[1]! ||
+      right.parts[2]! - left.parts[2]!,
+  );
+  return parsed[0]!.version;
+}
+
+export const MODEL_VERSION = latestModelVersion(Object.keys(PARAMS_SHA256_BY_MODEL_VERSION));
 
 const tierSchema = z.object({ mega: z.number().finite(), redhot: z.number().finite() }).strict();
 const positive = z.number().finite().positive();
