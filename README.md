@@ -1,4 +1,6 @@
-# Cleanup visual review evidence
+# Cleanup review evidence
+
+The [combined validation and complexity report](validation.md) records the final tested tree, dependencies, results and tradeoffs.
 
 These browser screenshots document the C3 tournament and C4 markets cleanup PRs. They are review artifacts only; this orphan branch has no application or deployment workflow and is not intended to merge into master.
 
