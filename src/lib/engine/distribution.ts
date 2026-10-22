@@ -88,13 +88,15 @@ export function probabilitiesAbove(probabilities: readonly number[]): number[] {
   if (probabilities.length < 2) {
     throw new RangeError("probabilities must contain at least two buckets");
   }
+  for (const mass of probabilities) {
+    if (!Number.isFinite(mass) || mass < 0) {
+      throw new RangeError("probabilities must be finite and non-negative");
+    }
+  }
   const above = new Array<number>(probabilities.length - 1);
   let tail = 0;
   for (let index = probabilities.length - 1; index >= 1; index -= 1) {
     const mass = probabilities[index]!;
-    if (!Number.isFinite(mass) || mass < 0) {
-      throw new RangeError("probabilities must be finite and non-negative");
-    }
     tail += mass;
     above[index - 1] = Math.min(1, tail);
   }

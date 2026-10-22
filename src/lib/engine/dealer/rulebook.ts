@@ -1,3 +1,5 @@
+import { assertDate } from "../assert.js";
+
 /**
  * The settlement rulebook as code (README D13, CONTRACTS.md). Pure: it says
  * what counts, how sources rank, and how an instrument resolves from the
@@ -190,6 +192,7 @@ export interface RulebookEvent {
 
 /** The last millisecond of the calendar quarter containing `at`, UTC. */
 export function quarterEndCutoff(at: Date): Date {
+  assertDate(at, "at");
   const quarter = Math.floor(at.getUTCMonth() / 3);
   return new Date(Date.UTC(at.getUTCFullYear(), quarter * 3 + 3, 0, 23, 59, 59, 999));
 }
@@ -225,6 +228,7 @@ export function resolveBinary(
   events: readonly RulebookEvent[],
   asOf: Date,
 ): BinaryResolution {
+  validateResolutionDates(terms.opensAt, terms.cutoff, events, asOf);
   const first = earliest(
     events.filter(
       (event) =>
@@ -262,6 +266,7 @@ export function resolveForward(
   events: readonly RulebookEvent[],
   asOf: Date,
 ): ForwardResolution {
+  validateResolutionDates(terms.opensAt, terms.expiresAt, events, asOf);
   const observed = events.filter(
     (event) => event.announcedAt > terms.opensAt && event.announcedAt <= asOf,
   );
@@ -324,4 +329,16 @@ function earliest(events: readonly RulebookEvent[]): RulebookEvent | undefined {
     if (first === undefined || event.announcedAt < first.announcedAt) first = event;
   }
   return first;
+}
+
+function validateResolutionDates(
+  opensAt: Date,
+  expiresAt: Date,
+  events: readonly RulebookEvent[],
+  asOf: Date,
+): void {
+  assertDate(opensAt, "opensAt");
+  assertDate(expiresAt, "expiresAt");
+  assertDate(asOf, "asOf");
+  for (const event of events) assertDate(event.announcedAt, "announcedAt");
 }

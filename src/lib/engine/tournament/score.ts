@@ -1,3 +1,5 @@
+import { assertFinite, assertPositive } from "../assert.js";
+
 /** ε: the least probability a log is taken of; bounds the worst segment. */
 export const SCORE_EPSILON = 1e-3;
 
@@ -7,6 +9,11 @@ export const SCORE_EPSILON = 1e-3;
  * A binary is `outcomeCount = 2`: 0 is "said 50%".
  */
 export function pointLogScore(probability: number, outcomeCount: number): number {
+  assertFinite(probability, "probability");
+  if (probability < 0 || probability > 1)
+    throw new RangeError("probability must be between zero and one");
+  if (!Number.isSafeInteger(outcomeCount) || outcomeCount <= 1)
+    throw new RangeError("outcomeCount must be an integer greater than one");
   return (
     (100 / Math.log(outcomeCount)) * Math.log(outcomeCount * Math.max(probability, SCORE_EPSILON))
   );
@@ -31,7 +38,8 @@ export function binaryScore(p: number, outcome: BinaryOutcome): number {
  * floored at CLAMP_SCORE (which binds past a 1/ε = 1000× miss).
  */
 export function forwardScore(x: number, y: number): number {
-  if (!(x > 0 && y > 0)) throw new RangeError("a forward score needs two positive levels");
+  assertPositive(x, "x");
+  assertPositive(y, "y");
   return Math.max(100 * (1 - Math.abs(Math.log(x / y)) / Math.LN2), CLAMP_SCORE);
 }
 

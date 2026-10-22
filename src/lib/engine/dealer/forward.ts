@@ -178,9 +178,31 @@ export function quote(params: ForwardQuoteParams): ForwardQuote {
   };
 }
 
+function validateQuote(forwardQuote: ForwardQuote): void {
+  for (const field of ["mid", "adjustedMid", "halfSpread", "bid", "ask"] as const) {
+    assertFinite(forwardQuote[field], field);
+  }
+  if (forwardQuote.halfSpread < 0 || forwardQuote.bid > forwardQuote.ask) {
+    throw new RangeError("quote spread must not be negative");
+  }
+  assertSafeInteger(forwardQuote.inventoryCents, "inventoryCents");
+  for (const field of ["effectiveCapCents", "maxLongCents", "maxShortCents"] as const) {
+    assertSafeInteger(forwardQuote[field], field);
+    if (forwardQuote[field] < 0) throw new RangeError(`${field} must not be negative`);
+  }
+  const { effectiveCapCents: cap, inventoryCents: inventory } = forwardQuote;
+  if (
+    forwardQuote.maxLongCents !== Math.max(0, cap + inventory) ||
+    forwardQuote.maxShortCents !== Math.max(0, cap - inventory)
+  ) {
+    throw new RangeError("quote availability must agree with its cap and inventory");
+  }
+}
+
 /** How much notional a user can take on a side of this quote; 0 means the side is pulled. */
 export function maxFillCents(side: ForwardSide, forwardQuote: ForwardQuote): number {
   assertSide(side);
+  validateQuote(forwardQuote);
   return side === "long" ? forwardQuote.maxLongCents : forwardQuote.maxShortCents;
 }
 
@@ -195,9 +217,8 @@ export function fill(
 ): ForwardFill {
   assertSide(side);
   assertSafeInteger(notionalCents, "notionalCents");
-  if (notionalCents <= 0) return { ok: false, reason: "non_positive" };
-
   const maxCents = maxFillCents(side, forwardQuote);
+  if (notionalCents <= 0) return { ok: false, reason: "non_positive" };
   if (maxCents === 0) return { ok: false, reason: "side_pulled" };
   if (notionalCents > maxCents) return { ok: false, reason: "exceeds_cap", maxCents };
 
@@ -205,6 +226,7 @@ export function fill(
     side === "long"
       ? forwardQuote.inventoryCents - notionalCents
       : forwardQuote.inventoryCents + notionalCents;
+  assertSafeInteger(inventoryAfterCents, "inventoryAfterCents");
   return {
     ok: true,
     side,
