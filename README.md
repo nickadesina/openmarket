@@ -559,7 +559,8 @@ DATABASE_URL_TEST=postgresql://... npx playwright test
 npm run dev              # http://localhost:3000, never 127.0.0.1
 ```
 
-- `.env.local` needs `DATABASE_URL` and `DATABASE_URL_UNPOOLED`; sign-in
+- The `tsx` npm scripts load `.env.local` when it exists; exported variables
+  take precedence. `.env.local` needs `DATABASE_URL` and `DATABASE_URL_UNPOOLED`; sign-in
   and admin are the tournament's (below). Dev data: `npm run db:migrate
   && npm run seed:listings -- --listed-at=<ISO>`. Apply
   `008_retire_ladder_and_username_accounts` before serving this version:
