@@ -208,7 +208,7 @@ postgresDescribe(suiteName, () => {
       post(path, {}, await sessionCookie(postgres.db, author.tournamentUserId)),
       context,
     );
-    expect([signedOut.status, ordinary.status]).toEqual([401, 401]);
+    expect([signedOut.status, ordinary.status]).toEqual([401, 403]);
     expect(await ordinary.json()).toMatchObject({ error: { code: "ADMIN_REQUIRED" } });
     expect(
       (await postgres.db.selectFrom("market_comments").select("body").executeTakeFirstOrThrow())

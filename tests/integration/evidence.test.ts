@@ -314,7 +314,7 @@ postgresDescribe(suiteName, () => {
       { decision: "confirmed", confirming_flag_id: print.id },
       cookie,
     );
-    expect(await codeOf(forecasterReview)).toEqual({ status: 401, code: "ADMIN_REQUIRED" });
+    expect(await codeOf(forecasterReview)).toEqual({ status: 403, code: "ADMIN_REQUIRED" });
 
     const admin = await createTrader(postgres.db, "admin");
     const adminCookie = await sessionCookie(postgres.db, admin.tournamentUserId);
