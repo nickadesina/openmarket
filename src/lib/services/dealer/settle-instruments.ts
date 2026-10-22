@@ -443,7 +443,7 @@ async function loadListing(
 }
 
 /** One instrument, in the caller's transaction: promote, resolve, settle, roll. */
-export async function settleInstrument(
+async function settleInstrument(
   db: Transaction<Database>,
   instrumentId: string,
   runId: string,

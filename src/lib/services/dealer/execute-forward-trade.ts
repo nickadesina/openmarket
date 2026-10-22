@@ -68,7 +68,7 @@ export interface ForwardTradeOptions {
 }
 
 /** Hashes the caller and the canonical request, binding an idempotency key to both. */
-export function deriveForwardTradeFingerprint(userId: string, input: ForwardTradeInput): string {
+function deriveForwardTradeFingerprint(userId: string, input: ForwardTradeInput): string {
   const canonical = {
     kind: "forward",
     user_id: userId.toLowerCase(),

@@ -420,7 +420,7 @@ export interface ComputeMidsSummary {
 }
 
 /** Instruments (live ones by default) with their listing, anchored on the last print by `now`. */
-export async function instrumentsForMid(
+async function instrumentsForMid(
   db: Kysely<Database>,
   now: Date,
   instrumentIds?: readonly string[],

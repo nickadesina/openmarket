@@ -8,9 +8,9 @@ import { verifyReferencePrices } from "./reference-prices.js";
 import { verifyLinkedQuestions } from "./tournament-bridge.js";
 
 /** A stored mid must recompute from its inputs this closely. */
-export const MID_TOLERANCE = 1e-12;
+const MID_TOLERANCE = 1e-12;
 /** A stored quote must recompute from its inputs this closely, in log units or probability. */
-export const QUOTE_TOLERANCE = 1e-12;
+const QUOTE_TOLERANCE = 1e-12;
 
 export interface DealerFinding {
   readonly id: string;

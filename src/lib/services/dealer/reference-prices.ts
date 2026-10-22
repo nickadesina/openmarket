@@ -184,7 +184,7 @@ interface InstrumentBookRef {
 }
 
 /** The traded component of a book over (to − window, to], counting trades through `throughSequence`. */
-export async function loadTradedComponent(
+async function loadTradedComponent(
   db: Kysely<Database>,
   book: InstrumentBookRef,
   to: Date,
@@ -232,7 +232,7 @@ export async function loadTradedComponent(
 }
 
 /** The linked question's latest aggregate at `at`, or null with no link or no aggregate yet. */
-export async function loadCrowdComponent(
+async function loadCrowdComponent(
   db: Kysely<Database>,
   instrumentId: string,
   kind: InstrumentKind,
@@ -326,7 +326,7 @@ function instrumentOf(components: JsonValue): string | null {
 }
 
 /** Whether a fresh row would repeat the latest: same instrument, versions, value and weights. */
-export function sameReference(
+function sameReference(
   previous: ReferencePriceRow | undefined,
   next: ReferencePriceInsert,
   instrumentId: string,
@@ -415,7 +415,7 @@ export async function writeReferencePrices(
 }
 
 /** A stored reference must recompute from its components this closely. */
-export const REFERENCE_TOLERANCE = 1e-12;
+const REFERENCE_TOLERANCE = 1e-12;
 
 export interface ReferenceFinding {
   readonly id: string;

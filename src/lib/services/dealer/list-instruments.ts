@@ -304,10 +304,7 @@ async function insertBook(
 }
 
 /** Active listings (listed by `now`, not delisted) with their companies. */
-export async function activeListings(
-  db: Transaction<Database>,
-  now: Date,
-): Promise<ListingWithCompany[]> {
+async function activeListings(db: Transaction<Database>, now: Date): Promise<ListingWithCompany[]> {
   const rows = await db
     .selectFrom("listings")
     .innerJoin("companies", "companies.id", "listings.company_id")

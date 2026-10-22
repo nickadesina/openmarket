@@ -21,7 +21,7 @@ import {
  * forecast log join without guesswork.
  */
 
-export const FLAGS_STREAMS = ["flags"] as const;
+const FLAGS_STREAMS = ["flags"] as const;
 
 const DEALER_KINDS: readonly EventFlagKind[] = [
   "form_d",

@@ -244,7 +244,7 @@ export function fillPreview(
   };
 }
 
-export function forwardQuoteView(
+function forwardQuoteView(
   state: ForwardBookState,
   at: Date,
   preview: ForwardFillPreview | null,
