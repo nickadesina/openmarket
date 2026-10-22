@@ -98,7 +98,10 @@ export async function resolveTournamentSession(
   }
   // Only a caller that reissues the browser cookie may slide the row.
   const remaining = session.expires_at.getTime() - now;
-  if (!options.refresh || TOURNAMENT_SESSION_MAX_AGE_MS - remaining < TOURNAMENT_SESSION_REFRESH_MS) {
+  if (
+    !options.refresh ||
+    TOURNAMENT_SESSION_MAX_AGE_MS - remaining < TOURNAMENT_SESSION_REFRESH_MS
+  ) {
     return { userId: session.user_id, refreshedToken: null };
   }
   await db
@@ -147,9 +150,11 @@ export async function requireTournamentAdmin(
   db: Kysely<Database>,
   request: Request,
 ): Promise<string> {
-  const userId = await requireTournamentUserId(db, request);
-  if (!(await isTournamentAdmin(db, userId))) {
-    throw new ServiceError("ADMIN_REQUIRED", "A tournament admin session is required.");
+  const session = await resolveTournamentSession(db, request);
+  if (session === null || !(await isTournamentAdmin(db, session.userId))) {
+    throw new ServiceError("ADMIN_REQUIRED", "A tournament admin session is required.", {
+      authenticated: session !== null,
+    });
   }
-  return userId;
+  return session.userId;
 }

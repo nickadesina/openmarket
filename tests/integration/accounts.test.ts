@@ -1,6 +1,9 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { hashPassword, verifyPassword } from "../../src/lib/auth/tournament-password.js";
-import { resolveTournamentSession, TOURNAMENT_SESSION_COOKIE } from "../../src/lib/auth/tournament-session.js";
+import {
+  resolveTournamentSession,
+  TOURNAMENT_SESSION_COOKIE,
+} from "../../src/lib/auth/tournament-session.js";
 import { openQuestion, saveDraftQuestion } from "../../src/lib/services/tournament/admin.js";
 import { setAffiliationForHandle } from "../../src/lib/services/tournament/affiliation.js";
 import { getForecaster } from "../../src/lib/services/tournament/forecaster.js";
@@ -21,9 +24,12 @@ vi.mock("../../src/lib/db/runtime.js", () => runtime);
 
 import { POST as loginRoute } from "../../src/app/api/t/auth/password/login/route.js";
 import { POST as registerRoute } from "../../src/app/api/t/auth/password/register/route.js";
-import { GET as meRoute } from "../../src/app/api/t/me/route.js";
-import { TOURNAMENT_SESSION_MAX_AGE_MS, TOURNAMENT_SESSION_REFRESH_MS } from "../../src/lib/config/tournament.js";
 import { POST as affiliationRoute } from "../../src/app/api/t/me/affiliation/route.js";
+import { GET as meRoute } from "../../src/app/api/t/me/route.js";
+import {
+  TOURNAMENT_SESSION_MAX_AGE_MS,
+  TOURNAMENT_SESSION_REFRESH_MS,
+} from "../../src/lib/config/tournament.js";
 
 const APP_ORIGIN = "https://accounts.openmarket.test";
 const HOUR = 60 * 60 * 1000;
@@ -81,28 +87,73 @@ postgresDescribe(suiteName, () => {
   });
 
   it("reserves session sliding for the route that refreshes the browser cookie", async () => {
-    const created = await registerRoute(post("/api/t/auth/password/register", { username: "sliding", password: "long enough pw" }));
+    const created = await registerRoute(
+      post("/api/t/auth/password/register", { username: "sliding", password: "long enough pw" }),
+    );
     const cookie = sessionFrom(created);
-    const expiry = new Date(Date.now() + TOURNAMENT_SESSION_MAX_AGE_MS - TOURNAMENT_SESSION_REFRESH_MS - 1000);
+    const expiry = new Date(
+      Date.now() + TOURNAMENT_SESSION_MAX_AGE_MS - TOURNAMENT_SESSION_REFRESH_MS - 1000,
+    );
     await postgres.db.updateTable("tournament_sessions").set({ expires_at: expiry }).execute();
     const request = new Request(`${APP_ORIGIN}/api/t/me`, { headers: { cookie } });
-    expect(await resolveTournamentSession(postgres.db, request)).toMatchObject({ refreshedToken: null });
-    expect((await postgres.db.selectFrom("tournament_sessions").select("expires_at").executeTakeFirstOrThrow()).expires_at).toEqual(expiry);
+    expect(await resolveTournamentSession(postgres.db, request)).toMatchObject({
+      refreshedToken: null,
+    });
+    expect(
+      (
+        await postgres.db
+          .selectFrom("tournament_sessions")
+          .select("expires_at")
+          .executeTakeFirstOrThrow()
+      ).expires_at,
+    ).toEqual(expiry);
     const refreshed = await meRoute(request);
     expect(refreshed.headers.get("set-cookie")).toContain(cookie);
-    expect((await postgres.db.selectFrom("tournament_sessions").select("expires_at").executeTakeFirstOrThrow()).expires_at.getTime()).toBeGreaterThan(expiry.getTime());
+    expect(
+      (
+        await postgres.db
+          .selectFrom("tournament_sessions")
+          .select("expires_at")
+          .executeTakeFirstOrThrow()
+      ).expires_at.getTime(),
+    ).toBeGreaterThan(expiry.getTime());
     expect((await meRoute(request)).headers.get("set-cookie")).toBeNull();
   });
 
   it("limits profile writes before appending more affiliation rows", async () => {
-    const created = await registerRoute(post("/api/t/auth/password/register", { username: "limited", password: "long enough pw" }));
+    const created = await registerRoute(
+      post("/api/t/auth/password/register", { username: "limited", password: "long enough pw" }),
+    );
     const cookie = sessionFrom(created);
     for (let i = 0; i < 10; i += 1) {
-      expect((await affiliationRoute(post("/api/t/me/affiliation", { affiliation: `Lab ${i}` }, cookie))).status).toBe(200);
+      expect(
+        (await affiliationRoute(post("/api/t/me/affiliation", { affiliation: `Lab ${i}` }, cookie)))
+          .status,
+      ).toBe(200);
     }
-    const blocked = await affiliationRoute(post("/api/t/me/affiliation", { affiliation: "Again" }, cookie));
+    const blocked = await affiliationRoute(
+      post("/api/t/me/affiliation", { affiliation: "Again" }, cookie),
+    );
     expect(blocked.status).toBe(429);
     expect(blocked.headers.get("retry-after")).not.toBeNull();
+  });
+
+  it("limits profile writes across forecasters on one production network", async () => {
+    for (let user = 0; user < 4; user += 1) {
+      const created = await registerRoute(
+        post("/api/t/auth/password/register", {
+          username: `network${user}`,
+          password: "long enough pw",
+        }),
+      );
+      const cookie = sessionFrom(created);
+      for (let index = 0; index < (user < 3 ? 10 : 1); index += 1) {
+        const response = await affiliationRoute(
+          post("/api/t/me/affiliation", { affiliation: `Lab ${index}` }, cookie),
+        );
+        expect(response.status).toBe(user < 3 ? 200 : 429);
+      }
+    }
   });
 
   it("registers once per username, signs in, and throttles failed guesses", async () => {

@@ -354,6 +354,22 @@ postgresDescribe(suiteName, () => {
     expect(await verifyTournament(postgres.db)).toMatchObject({ passed: true, findings: [] });
   });
 
+  it("currently allows an X account whose creation date is unavailable", async () => {
+    await openBinary();
+    const { userId } = await upsertIdentity(postgres.db, {
+      provider: "x",
+      providerUserId: "unknown-age",
+      handle: "UnknownAge",
+      displayName: "UnknownAge",
+      avatarUrl: null,
+      verified: false,
+      providerCreatedAt: null,
+    });
+    expect(await submitForecast(postgres.db, { slug: "binary-q", userId, p: 0.6 })).toMatchObject({
+      p: 0.6,
+    });
+  });
+
   it("rejects accounts younger than the question's minimum age", async () => {
     await openBinary();
     const { userId: young } = await upsertIdentity(postgres.db, {

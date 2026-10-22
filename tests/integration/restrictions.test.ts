@@ -132,6 +132,20 @@ postgresDescribe(suiteName, () => {
 
   const refused = { status: 403, code: "RESTRICTED_PERSON" };
 
+  it("throttles repeated restriction attestations", async () => {
+    for (let index = 0; index < 10; index += 1) {
+      const response = await post(restrictionsPost, "/api/t/me/restrictions", {
+        companies: index % 2 === 0 ? ["modal"] : [],
+      });
+      expect(response.status).toBe(200);
+    }
+    expect(
+      await codeOf(
+        await post(restrictionsPost, "/api/t/me/restrictions", { companies: ["modal"] }),
+      ),
+    ).toEqual({ status: 429, code: "RATE_LIMITED" });
+  });
+
   it("refuses every quote and trade on an attested name, of both kinds", async () => {
     await attestRestrictions(postgres.db, insider.tournamentUserId, ["anthropic"]);
     const binary = await instrument("anthropic", "binary");
