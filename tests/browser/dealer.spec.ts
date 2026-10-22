@@ -33,8 +33,12 @@ test("the board lists the five names with forward and binary prices", async ({ p
   await expect(page.getByText("Stripe")).toHaveCount(0);
   await expectNoHorizontalOverflow(page);
 
-  await board.getByRole("link", { name: "Modal", exact: true }).click();
-  await expect(page).toHaveURL(/\/m\/modal$/);
+  const modal = board.getByRole("link", { name: "Modal", exact: true });
+  await expect(modal).toHaveAttribute("href", "/m/modal");
+  // The first visit to a market page compiles the route in the dev server,
+  // which can outlast the default expect timeout on a cold CI runner.
+  await modal.click();
+  await expect(page).toHaveURL(/\/m\/modal$/, { timeout: 45_000 });
   await expect(page.getByRole("heading", { level: 1, name: "Modal" })).toBeVisible();
 });
 
