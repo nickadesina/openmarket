@@ -36,6 +36,8 @@ export interface ActivityItem {
   readonly metricBefore: number;
   readonly metricAfter: number;
   readonly createdAt: string;
+  /** The fill is a demo account's (decision 0005); the tape tags it "Demo". */
+  readonly demo: boolean;
 }
 
 export interface ActivityPage {
@@ -68,6 +70,7 @@ interface ActivityRow {
   readonly company_name: string;
   readonly company_slug: string;
   readonly company_logo_path: string;
+  readonly demo: boolean;
 }
 
 function invalidCursor(): ServiceError {
@@ -178,6 +181,7 @@ function publicItem(row: ActivityRow): ActivityItem {
     metricBefore: row.metric_before,
     metricAfter: row.metric_after,
     createdAt: row.created_at.toISOString(),
+    demo: row.demo,
   };
 }
 
@@ -207,6 +211,8 @@ export async function getActivity(
         .selectFrom("trades")
         .innerJoin("markets", "markets.id", "trades.market_id")
         .innerJoin("companies", "companies.id", "markets.company_id")
+        .innerJoin("users", "users.id", "trades.user_id")
+        .innerJoin("tournament_users", "tournament_users.id", "users.tournament_user_id")
         .select([
           "trades.id as id",
           "trades.market_id as market_id",
@@ -227,6 +233,7 @@ export async function getActivity(
           "companies.name as company_name",
           "companies.slug as company_slug",
           "companies.logo_path as company_logo_path",
+          "tournament_users.demo as demo",
         ]);
 
       if (slug !== undefined) {

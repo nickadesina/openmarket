@@ -13,6 +13,7 @@ import { DistributionChart } from "../distribution-chart/distribution-chart.js";
 import { MarketActivity } from "../market-activity/market-activity.js";
 import { MarketChart } from "../market-chart/market-chart.js";
 import { MarketComments } from "../market-comments/market-comments.js";
+import { DemoBanner } from "../market-demo/market-demo.js";
 import { MarketHeader } from "../market-header/market-header.js";
 import { StrikeLadder } from "../strike-ladder/strike-ladder.js";
 import { TradeTicket, workingContract } from "../trade-ticket/trade-ticket.js";
@@ -245,6 +246,7 @@ export function MarketWorkspace({
   return (
     <div className={styles.page}>
       <MarketHeader listing={listing} movement={movement} />
+      <DemoBanner />
       {listingQuery.isError ? (
         <div className={styles.staleNotice} role="status">
           Live refresh paused. Displaying the latest confirmed market state.

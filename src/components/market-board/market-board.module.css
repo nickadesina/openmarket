@@ -1,3 +1,8 @@
+.board {
+  display: grid;
+  min-width: 0;
+}
+
 .tableViewport {
   /* Containing block for the visually hidden caption and header labels
      (position: absolute) so they cannot stretch the page past the scroll box. */
@@ -5,6 +10,12 @@
   overflow-x: auto;
   border: 1px solid var(--color-border);
   background: var(--color-bg);
+}
+
+/* Scoped under .board to outrank the boxed default: the demo banner's
+   bottom rule is the table's top edge, one hairline, not two. */
+.board .tableViewport {
+  border-top: 0;
 }
 
 .table {

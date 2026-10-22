@@ -10,6 +10,7 @@ import {
   formatValuation,
   sideLabel,
 } from "../../lib/client/format.js";
+import { DemoTag } from "../market-demo/market-demo.js";
 import type { ActivityItem, ActivityPage, ListingDetail } from "../market-workspace/types.js";
 import styles from "./market-activity.module.css";
 
@@ -32,7 +33,10 @@ function ActivityRow({ item }: { readonly item: ActivityItem }) {
             ? `${sideLabel(item.side)} ${formatCents(String(Math.round(item.quantity * 100)))} forward${item.entryUsd === null ? "" : ` at ${formatPrice(item.entryUsd)}`}`
             : `${item.action === "buy" ? "Bought" : "Sold"} ${formatQuantityShort(item.quantity)} ${sideLabel(item.side)}`}
         </strong>
-        <span suppressHydrationWarning>{formatDateTime(item.createdAt)}</span>
+        <span className={styles.meta}>
+          <span suppressHydrationWarning>{formatDateTime(item.createdAt)}</span>
+          {item.demo ? <DemoTag /> : null}
+        </span>
       </div>
       <div className={styles.tradeValues}>
         <strong>{formatCents(item.cashAmountCents)}</strong>
