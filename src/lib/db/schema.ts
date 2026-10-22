@@ -225,8 +225,8 @@ export interface TournamentForecastEventsTable {
 /** A pre-013 event's bucket vector, kept so its hash and Merkle leaf still verify. */
 export interface TournamentArchivedForecastVectorsTable {
   event_id: Immutable<string>;
-  /** numeric[]; pg returns strings. */
-  probs: Immutable<string[]>;
+  /** numeric[]; pg parses the array's elements as numbers. */
+  probs: Immutable<number[]>;
 }
 
 export interface TournamentResolutionsTable {
