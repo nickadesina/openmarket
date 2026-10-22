@@ -373,3 +373,17 @@ describe("Part 4 admin comment moderation", () => {
     await expect(admin.json()).resolves.toEqual(removed);
   });
 });
+
+it("rejects extraneous quote query parameters before executing", async () => {
+  const response = await quoteRoute(
+    mutationRequest("/api/quote?user_id=secret", {
+      market_id: "0f8a0c1e-6c1d-4f7a-9d2b-3c4e5f607182",
+      action: "buy",
+      side: "yes",
+      strike_index: 0,
+      quantity: 2,
+    }),
+  );
+  expect(response.status).toBe(400);
+  expect(mocks.quoteMarket).not.toHaveBeenCalled();
+});
