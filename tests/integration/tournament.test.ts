@@ -59,7 +59,13 @@ function binary(slug: string, opensAt: Date, closesAt: Date): QuestionInput {
   };
 }
 
-function ladder(slug: string, opensAt: Date, closesAt: Date, edges: number[]): QuestionInput {
+function ladder(
+  slug: string,
+  opensAt: Date,
+  closesAt: Date,
+  edges: number[],
+  expiresAt: Date = closesAt,
+): QuestionInput {
   return {
     slug,
     title: `Ladder ${slug}`,
@@ -69,7 +75,7 @@ function ladder(slug: string, opensAt: Date, closesAt: Date, edges: number[]): Q
     unit: slug.includes("mcap") ? "USD_T" : "USD_B",
     opens_at: opensAt.toISOString(),
     closes_at: closesAt.toISOString(),
-    expiry_at: closesAt.toISOString(),
+    expiry_at: expiresAt.toISOString(),
     buckets: { edges, floor_label: "Nothing by expiry" },
   };
 }
@@ -335,48 +341,70 @@ postgresDescribe(suiteName, () => {
     expect((await getLeaderboard(postgres.db, "all")).entries).toHaveLength(0);
   });
 
-  it("maps a resolved value to its bucket and holds the floor until expiry", async () => {
+  it("maps a resolved value to its bucket and holds the floor until expiry or an early close", async () => {
     const now = Date.now();
+    // Past its scheduled close, not closed early, expiry still ahead.
     await saveDraftQuestion(
       postgres.db,
-      ladder("anthropic-s1-arr", new Date(now - HOUR), new Date(now + HOUR), [66, 70, 74, 78]),
+      ladder(
+        "arr-ladder",
+        new Date(now - 2 * HOUR),
+        new Date(now + HOUR),
+        [66, 70, 74, 78],
+        new Date(now + 2 * HOUR),
+      ),
     );
-    await openQuestion(postgres.db, "anthropic-s1-arr");
+    await openQuestion(postgres.db, "arr-ladder");
     await submitForecast(postgres.db, {
-      slug: "anthropic-s1-arr",
+      slug: "arr-ladder",
       userId: users[0]!,
       probs: [0, 0, 0.5, 0.5, 0, 0],
     });
-    await closeQuestion(postgres.db, "anthropic-s1-arr", {});
+    await postgres.db
+      .updateTable("tournament_questions")
+      .set({ closes_at: new Date(now - HOUR) })
+      .where("slug", "=", "arr-ladder")
+      .execute();
     const base = {
       rung_fired: 1,
       source_url: "https://www.sec.gov/",
       source_excerpt: "Run-rate revenue",
       note_md: "Rung 1.",
     };
+    const floor = { ...base, resolved_value: null, rung_fired: null, winning_bucket_index: 5 };
     await expect(
-      resolveQuestion(
-        postgres.db,
-        "anthropic-s1-arr",
-        { ...base, resolved_value: null, rung_fired: null, winning_bucket_index: 5 },
-        users[0]!,
-      ),
+      resolveQuestion(postgres.db, "arr-ladder", floor, users[0]!),
     ).rejects.toMatchObject({ code: "QUESTION_STATE" });
     await expect(
       resolveQuestion(
         postgres.db,
-        "anthropic-s1-arr",
+        "arr-ladder",
         { ...base, resolved_value: 74, winning_bucket_index: 2 },
         users[0]!,
       ),
     ).rejects.toMatchObject({ code: "INVALID_INPUT", details: { computedWinningBucketIndex: 3 } });
     const outcome = await resolveQuestion(
       postgres.db,
-      "anthropic-s1-arr",
+      "arr-ladder",
       { ...base, resolved_value: 74, winning_bucket_index: 3 },
       users[0]!,
     );
     expect(outcome.winningBucketIndex).toBe(3);
+
+    // Closed early on its document, which carried no figure: the floor resolves before expiry.
+    await saveDraftQuestion(
+      postgres.db,
+      ladder("no-figure", new Date(now - HOUR), new Date(now + HOUR), [66, 70]),
+    );
+    await openQuestion(postgres.db, "no-figure");
+    await closeQuestion(postgres.db, "no-figure", {});
+    const early = await resolveQuestion(
+      postgres.db,
+      "no-figure",
+      { ...floor, winning_bucket_index: 3 },
+      users[0]!,
+    );
+    expect(early.winningBucketIndex).toBe(3);
   });
 
   it("resolves a choice question by bucket and holds its floor until expiry", async () => {

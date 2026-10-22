@@ -148,7 +148,7 @@ function ResolveForm({ question }: { readonly question: AdminQuestion }) {
           </select>
         </Field>
       ) : (
-        <Field label="Resolved value after rounding (blank = floor, only after expiry)">
+        <Field label="Resolved value after rounding (blank = floor: after expiry, or closed early)">
           <input
             inputMode="decimal"
             value={value}

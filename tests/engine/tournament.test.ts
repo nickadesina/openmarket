@@ -290,11 +290,13 @@ describe("launch question set", async () => {
     }
     expect(counts).toEqual({
       "anthropic-ipo-day1-mcap": 7,
+      "anthropic-424b-run-rate": 7,
       "openai-round-vs-anthropic-ipo": 3,
     });
     // 23:59 Pacific Standard Time is 07:59 UTC the next day.
     expect(LAUNCH_QUESTIONS.map((question) => question.closes_at)).toEqual([
       "2027-01-01T07:59:00Z",
+      "2027-02-01T07:59:00Z",
       "2027-01-01T07:59:00Z",
     ]);
   });

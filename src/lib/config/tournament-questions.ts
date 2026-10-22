@@ -41,6 +41,28 @@ export const LAUNCH_QUESTIONS: readonly LaunchQuestion[] = [
     },
   },
   {
+    slug: "anthropic-424b-run-rate",
+    title: "What annualized revenue run-rate will Anthropic's final IPO prospectus disclose?",
+    unit: "USD_B",
+    description_md:
+      "The annualized revenue run-rate Anthropic discloses in its final IPO prospectus (424(b)), in USD billions, as of the most recent date stated in that document. The floor bucket is “no run-rate metric disclosed”.",
+    rulebook_md: [
+      "**Resolution document:** the final prospectus Anthropic files under Rule 424(b) on EDGAR in connection with its initial public offering. Earlier filings (the initial S-1 and any S-1/A) do not resolve the question; they are information.",
+      "**Figure:** the number Anthropic itself labels “annualized revenue run-rate”, “run-rate revenue”, or an equivalent management-defined KPI in that document, at the most recent as-of date it states. If the prospectus gives several dates, the latest is used.",
+      "A range (“approximately $X to $Y billion”) resolves to its midpoint; “over $X billion” resolves to X.",
+      "**Floor (no run-rate metric disclosed):** resolves if no such KPI appears anywhere in the final prospectus. Quarterly or stub-period GAAP revenue multiplied by four does not count: a prospectus that prints only GAAP revenue resolves the floor. The floor also resolves if no 424(b) is filed by 2027-01-31 23:59 America/Los_Angeles.",
+      "The question closes at the 424(b)'s filing time, or 2027-01-31 23:59 America/Los_Angeles if none is filed first.",
+      RESTATEMENT_RULE,
+    ].join("\n\n"),
+    rulebook_version: 1,
+    closes_at: "2027-02-01T07:59:00Z",
+    expiry_at: "2027-02-01T07:59:00Z",
+    buckets: {
+      edges: [67, 72, 78, 85, 95],
+      floor_label: "No run-rate metric disclosed",
+    },
+  },
+  {
     slug: "openai-round-vs-anthropic-ipo",
     title:
       "Which comes first: an OpenAI priced round at ≥$1.4T post-money, or Anthropic's first trade?",

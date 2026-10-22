@@ -1,6 +1,7 @@
 import { sql, type Transaction } from "kysely";
 
 import { MODEL_VERSION } from "../../config/dealer.js";
+import { linkedQuestionsEnabled } from "../../config/tournament.js";
 import type {
   CompanyRow,
   Database,
@@ -69,7 +70,7 @@ export interface ListedInstrument {
   readonly entry_ref_ln: number | null;
   /** The model's p for a binary, mid in ln USD for a forward. */
   readonly value: number;
-  /** The linked tournament question (milestone 7); null when listed past its own expiry. */
+  /** The linked tournament question (milestone 7); null when linking is off or listed past its own expiry. */
   readonly question_slug: string | null;
 }
 
@@ -211,12 +212,14 @@ export async function listInstrument(
     .executeTakeFirstOrThrow();
 
   const marketId = await insertBook(db, listing, instrument, mid.value, now);
-  const question = await linkInstrumentQuestion(db, {
-    listing,
-    instrument,
-    midLn: kind === "forward" ? mid.value : null,
-    now,
-  });
+  const question = linkedQuestionsEnabled()
+    ? await linkInstrumentQuestion(db, {
+        listing,
+        instrument,
+        midLn: kind === "forward" ? mid.value : null,
+        now,
+      })
+    : null;
   const quoteBase = {
     instrumentId: instrument.id,
     postedAt: now,
@@ -339,7 +342,7 @@ const KINDS: readonly InstrumentKind[] = ["binary", "forward"];
  * binary and a live forward, listed now. The settle job rolls a successor
  * in the predecessor's own transaction, so this lists epoch 1, or fills a gap
  * an operator left. A live instrument listed before the tournament bridge
- * gets its linked question here, once.
+ * gets its linked question here, once, while linked questions are on.
  */
 export async function listInstruments(
   db: Transaction<Database>,
@@ -367,7 +370,7 @@ export async function listInstruments(
       .where("instruments.state", "in", LIVE_STATES)
       .execute();
     for (const instrument of live) {
-      if (instrument.question_id !== null) continue;
+      if (instrument.question_id !== null || !linkedQuestionsEnabled()) continue;
       const mid = await latestMid(db, instrument.id, now);
       const question = await linkInstrumentQuestion(db, {
         listing,

@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { BLEND_SCHEDULE } from "../../src/lib/engine/dealer/blend.js";
 import type { ReferenceComponents } from "../../src/lib/services/dealer/reference-prices.js";
@@ -51,6 +51,7 @@ postgresDescribe(suiteName, () => {
   }, 30_000);
 
   beforeEach(async () => {
+    vi.stubEnv("TOURNAMENT_LINKED_QUESTIONS", "1");
     await resetPostgresTestDatabase(postgres.db);
     const listedAt = new Date(Date.now() - 60_000);
     await seedFixtureListings(postgres.db, listedAt);
@@ -71,6 +72,8 @@ postgresDescribe(suiteName, () => {
       .execute();
     await runDealerJob(postgres.db, "gate-list", new Date());
   });
+
+  afterEach(() => vi.unstubAllEnvs());
 
   afterAll(async () => {
     if (postgres !== undefined) await postgres.dispose();

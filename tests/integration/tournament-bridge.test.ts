@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DEALER_PARAMS } from "../../src/lib/config/dealer.js";
 import { forwardQuestionLadder } from "../../src/lib/engine/dealer/question-ladder.js";
@@ -50,10 +50,13 @@ postgresDescribe(suiteName, () => {
   }, 30_000);
 
   beforeEach(async () => {
+    vi.stubEnv("TOURNAMENT_LINKED_QUESTIONS", "1");
     await resetPostgresTestDatabase(postgres.db);
     await seedFixtureListings(postgres.db, LISTED_AT);
     await runDealerJob(postgres.db, "bridge-list", RUN_AT);
   });
+
+  afterEach(() => vi.unstubAllEnvs());
 
   afterAll(async () => {
     if (postgres !== undefined) await postgres.dispose();
@@ -115,6 +118,20 @@ postgresDescribe(suiteName, () => {
       })
       .execute();
   }
+
+  it("lists instruments without questions while linked questions are off", async () => {
+    vi.stubEnv("TOURNAMENT_LINKED_QUESTIONS", "");
+    await resetPostgresTestDatabase(postgres.db);
+    await seedFixtureListings(postgres.db, LISTED_AT);
+    await runDealerJob(postgres.db, "bridge-off", RUN_AT);
+    const instruments = await postgres.db.selectFrom("instruments").select("id").execute();
+    expect(instruments.length).toBe(NAMES.length * 2);
+    const questions = await postgres.db.selectFrom("tournament_questions").select("id").execute();
+    expect(questions).toHaveLength(0);
+    expect(
+      await postgres.db.selectFrom("tournament_instrument_links").selectAll().execute(),
+    ).toEqual([]);
+  });
 
   it("lists every instrument with an open question that asks what it settles", async () => {
     const links = await postgres.db.selectFrom("tournament_instrument_links").selectAll().execute();

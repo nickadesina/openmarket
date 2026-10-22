@@ -324,8 +324,12 @@ function expectedWinningBucket(
   }
   if (question.unit === "choice") return expectedChoiceBucket(question, buckets, input, now);
   if (input.resolved_value === null) {
-    if (now.getTime() < question.expiryAt.getTime()) {
-      throw stateError("The floor resolves only once expiry_at has passed with no document.");
+    // Early, the floor needs the question closed on its resolution document:
+    // the document arrived without the figure (a prospectus with no run-rate).
+    if (question.closedAt === null && now.getTime() < question.expiryAt.getTime()) {
+      throw stateError(
+        "Before expiry_at the floor resolves only on a question closed early on its document.",
+      );
     }
     if (input.rung_fired !== null) {
       throw new ServiceError("INVALID_INPUT", "A floor resolution has no rung.");
