@@ -1,7 +1,12 @@
 import type { Kysely } from "kysely";
 
 import { ServiceError } from "../../api/errors.js";
-import type { Database, TournamentQuestionStatus, TournamentUnit } from "../../db/schema.js";
+import type {
+  Database,
+  TournamentQuestionKind,
+  TournamentQuestionStatus,
+  TournamentUnit,
+} from "../../db/schema.js";
 import type { Bucket } from "../../engine/tournament/buckets.js";
 import { type BucketMedian, bucketMedian } from "../../engine/tournament/median.js";
 import { identitiesFor, userIdForHandle } from "./identities.js";
@@ -23,12 +28,14 @@ import { restrictedCompanies } from "./restrictions.js";
 export interface OpenPosition {
   readonly slug: string;
   readonly title: string;
-  readonly unit: TournamentUnit;
+  readonly kind: TournamentQuestionKind;
+  readonly unit: TournamentUnit | null;
   readonly status: TournamentQuestionStatus;
   readonly windowEndsAt: string;
-  readonly buckets: readonly Bucket[];
-  readonly probs: number[];
-  readonly median: BucketMedian | null;
+  /** The forecaster's P(YES) on a binary; null for a forward. */
+  readonly p: number | null;
+  /** The forecaster's level on a forward, in its unit; null for a binary. */
+  readonly value: number | null;
   readonly submissionCount: number;
   readonly lastUpdatedAt: string;
   readonly aggregate: AggregateView | null;
@@ -37,10 +44,10 @@ export interface OpenPosition {
 export interface ResolvedPosition {
   readonly slug: string;
   readonly title: string;
-  readonly unit: TournamentUnit;
+  readonly kind: TournamentQuestionKind;
+  readonly unit: TournamentUnit | null;
   readonly resolvedAt: string;
-  readonly winningBucketIndex: number;
-  readonly winningBucketLabel: string;
+  readonly outcome: "yes" | "no" | null;
   readonly resolvedValue: number | null;
   readonly timeAvgLogScore: number;
   readonly finalLogScore: number;
@@ -163,14 +170,15 @@ export async function getForecaster(
 }
 
 export interface ViewerForecast {
-  readonly probs: number[];
+  readonly p: number | null;
+  readonly value: number | null;
   readonly submittedAt: string;
   readonly submissionCount: number;
 }
 
 export interface Viewer {
   readonly identity: PublicIdentity;
-  /** The viewer's latest vector per question slug. */
+  /** The viewer's latest forecast per question slug. */
   readonly forecasts: Readonly<Record<string, ViewerForecast>>;
   /** True until the viewer's first submission anywhere: the UI discloses that forecasts are public. */
   readonly firstSubmission: boolean;

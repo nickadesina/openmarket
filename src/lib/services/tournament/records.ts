@@ -140,15 +140,12 @@ export function deriveNumbers(
 export interface AggregateView {
   readonly computedAt: string;
   readonly nForecasters: number;
-  /** False below the minimum forecaster count; every probability field is then null. */
+  /** False below the minimum forecaster count; `p` and `value` are then null. */
   readonly published: boolean;
-  readonly probs: number[] | null;
-  readonly medianValue: number | null;
-  readonly medianPosition: BucketMedian["position"] | null;
-  readonly pFloor: number | null;
-  readonly pYes: number | null;
-  readonly extremization: number;
-  readonly weightingVersion: string;
+  /** The binary crowd P(YES). */
+  readonly p: number | null;
+  /** The forward crowd median, in the question's unit. */
+  readonly value: number | null;
 }
 
 export function toAggregateView(

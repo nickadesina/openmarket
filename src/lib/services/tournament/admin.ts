@@ -12,7 +12,12 @@ import type {
   VoidQuestionInput,
 } from "../../api/tournament-schemas.js";
 import { DISPUTE_WINDOW_MS } from "../../config/tournament.js";
-import type { Database, TournamentQuestionStatus } from "../../db/schema.js";
+import type {
+  Database,
+  TournamentQuestionKind,
+  TournamentQuestionStatus,
+  TournamentUnit,
+} from "../../db/schema.js";
 import {
   assertValidBuckets,
   type Bucket,
@@ -575,14 +580,14 @@ export async function setUserFlag(
 export interface AdminQuestion {
   readonly slug: string;
   readonly title: string;
-  readonly unit: QuestionRecord["unit"];
+  readonly kind: TournamentQuestionKind;
+  readonly unit: TournamentUnit | null;
   readonly storedStatus: TournamentQuestionStatus;
   readonly status: TournamentQuestionStatus;
   readonly opensAt: string;
   readonly closesAt: string;
   readonly windowEndsAt: string;
   readonly expiryAt: string;
-  readonly buckets: readonly Bucket[];
   readonly forecastEvents: number;
   readonly forecasters: number;
   readonly disputeWindowEndsAt: string | null;

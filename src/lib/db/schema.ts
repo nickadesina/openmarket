@@ -140,7 +140,10 @@ export interface RateLimitsTable {
   request_count: number;
 }
 
-export type TournamentUnit = "USD_B" | "USD_T" | "bool" | "choice";
+/** A tournament question is one of the dealer's two contracts (decision 0004). */
+export type TournamentQuestionKind = "binary" | "forward";
+/** A forward's unit; a binary has none. */
+export type TournamentUnit = "USD_B" | "USD_T";
 export type TournamentQuestionStatus = "draft" | "open" | "closed" | "resolved" | "voided";
 export type TournamentProvider = "x" | "dev" | "password";
 
@@ -188,8 +191,9 @@ export interface TournamentQuestionsTable {
   description_md: string;
   rulebook_md: string;
   rulebook_version: number;
-  unit: TournamentUnit;
-  bucket_count: number;
+  kind: TournamentQuestionKind;
+  /** Set iff `kind = 'forward'`. */
+  unit: TournamentUnit | null;
   opens_at: Date;
   closes_at: Date;
   expiry_at: Date;
@@ -202,32 +206,36 @@ export interface TournamentQuestionsTable {
   created_at: GeneratedImmutable<Date>;
 }
 
-export interface TournamentBucketsTable {
-  question_id: Immutable<string>;
-  index: Immutable<number>;
-  kind: Immutable<"range" | "floor">;
-  /** numeric; pg returns strings. */
-  lower: Immutable<string | null>;
-  upper: Immutable<string | null>;
-  label: Immutable<string>;
-}
-
 export interface TournamentForecastEventsTable {
   id: GeneratedImmutable<string>;
   user_id: Immutable<string>;
   question_id: Immutable<string>;
   submitted_at: Immutable<Date>;
-  /** numeric[]; pg returns strings. */
-  probs: Immutable<string[]>;
+  /**
+   * numeric; pg returns strings. A binary's P(YES) or a forward's level in the
+   * question's unit: exactly one is set, except on legacy events (both null),
+   * whose bucket vector is in `tournament_archived_forecast_vectors`.
+   */
+  p: Immutable<string | null>;
+  value: Immutable<string | null>;
   client_hash: Immutable<string | null>;
   event_hash: Immutable<string>;
+}
+
+/** A pre-013 event's bucket vector, kept so its hash and Merkle leaf still verify. */
+export interface TournamentArchivedForecastVectorsTable {
+  event_id: Immutable<string>;
+  /** numeric[]; pg returns strings. */
+  probs: Immutable<string[]>;
 }
 
 export interface TournamentResolutionsTable {
   id: GeneratedImmutable<string>;
   question_id: Immutable<string>;
   resolved_at: Immutable<Date>;
-  winning_bucket_index: Immutable<number>;
+  /** A binary's outcome; exactly one of this and `resolved_value`. */
+  outcome: Immutable<"yes" | "no" | null>;
+  /** numeric; a forward's settling value in the question's unit. */
   resolved_value: Immutable<string | null>;
   rung_fired: Immutable<number | null>;
   source_url: Immutable<string | null>;
@@ -261,11 +269,13 @@ export interface TournamentAggregatesTable {
   id: GeneratedImmutable<string>;
   question_id: Immutable<string>;
   computed_at: Immutable<Date>;
-  probs: Immutable<string[] | null>;
   n_forecasters: Immutable<number>;
-  median_value: Immutable<string | null>;
-  p_floor: Immutable<string | null>;
-  p_yes: Immutable<string | null>;
+  /**
+   * numeric; pg returns strings. The binary crowd P(YES) or the forward crowd
+   * median in the question's unit: both null below one forecaster, else exactly one.
+   */
+  p: Immutable<string | null>;
+  value: Immutable<string | null>;
   extremization: Immutable<number>;
   weighting_version: Immutable<string>;
 }
@@ -525,8 +535,8 @@ export interface Database {
   tournament_identities: TournamentIdentitiesTable;
   tournament_sessions: TournamentSessionsTable;
   tournament_questions: TournamentQuestionsTable;
-  tournament_buckets: TournamentBucketsTable;
   tournament_forecast_events: TournamentForecastEventsTable;
+  tournament_archived_forecast_vectors: TournamentArchivedForecastVectorsTable;
   tournament_resolutions: TournamentResolutionsTable;
   tournament_resolution_notes: TournamentResolutionNotesTable;
   tournament_scores: TournamentScoresTable;

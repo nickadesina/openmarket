@@ -1,7 +1,12 @@
 import type { Kysely } from "kysely";
 
 import { DISPUTE_WINDOW_MS } from "../../config/tournament.js";
-import type { Database, TournamentQuestionStatus, TournamentUnit } from "../../db/schema.js";
+import type {
+  Database,
+  TournamentQuestionKind,
+  TournamentQuestionStatus,
+  TournamentUnit,
+} from "../../db/schema.js";
 import {
   AGGREGATE_WEIGHTING_VERSION,
   MIN_PUBLISHED_FORECASTERS,
@@ -35,7 +40,9 @@ import { aggregateScore } from "./scoring.js";
 export interface QuestionSummary {
   readonly slug: string;
   readonly title: string;
-  readonly unit: TournamentUnit;
+  readonly kind: TournamentQuestionKind;
+  /** A forward's unit; null for a binary. */
+  readonly unit: TournamentUnit | null;
   readonly status: TournamentQuestionStatus;
   readonly acceptingForecasts: boolean;
   readonly opensAt: string;
@@ -43,18 +50,28 @@ export interface QuestionSummary {
   /** closes_at, or the earlier manual close when the document arrived first. */
   readonly windowEndsAt: string;
   readonly expiryAt: string;
-  readonly buckets: readonly Bucket[];
   readonly aggregate: AggregateView | null;
   readonly resolution: {
-    readonly winningBucketIndex: number;
+    /** A binary's outcome; null for a forward. */
+    readonly outcome: "yes" | "no" | null;
+    /** A forward's settling value in its unit; null for a binary. */
     readonly resolvedValue: number | null;
     readonly resolvedAt: string;
+  } | null;
+  /** The dealer instrument a linked question follows; null for a hand-written question. */
+  readonly instrument: {
+    readonly kind: TournamentQuestionKind;
+    readonly companySlug: string;
+    /** A binary's latest YES price. */
+    readonly yesPrice: number | null;
+    /** A forward's latest dealer mid, in USD. */
+    readonly midUsd: number | null;
   } | null;
 }
 
 export interface ResolutionDetail {
   readonly resolvedAt: string;
-  readonly winningBucketIndex: number;
+  readonly outcome: "yes" | "no" | null;
   readonly resolvedValue: number | null;
   readonly rungFired: number | null;
   readonly sourceUrl: string | null;
@@ -79,7 +96,7 @@ export interface ScoredForecaster extends PublicIdentity {
 
 export interface ScoringRules {
   readonly epsilon: number;
-  /** The score of a stretch spent at 0 on the winning bucket. */
+  /** The lowest score a forecast can take: the binary at ε, the forward's floor. */
   readonly clampScore: number;
   readonly extremization: number;
   readonly weightingVersion: string;
@@ -310,7 +327,10 @@ export async function getQuestion(db: Kysely<Database>, slug: string): Promise<Q
 export interface PublicForecast extends PublicIdentity {
   /** The event in force; its provenance proof lives at /t/provenance/[eventId]. */
   readonly eventId: string;
-  readonly probs: number[];
+  /** A binary forecast's P(YES); null for a forward. */
+  readonly p: number | null;
+  /** A forward forecast's level in the question's unit; null for a binary. */
+  readonly value: number | null;
   readonly submittedAt: string;
   readonly submissionCount: number;
 }
