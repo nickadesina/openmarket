@@ -1,31 +1,26 @@
-import type { Kysely } from "kysely";
+import type { Kysely, Selectable } from "kysely";
 
 import { DISPUTE_WINDOW_MS } from "../../config/tournament.js";
 import type {
   Database,
   TournamentQuestionKind,
   TournamentQuestionStatus,
+  TournamentResolutionsTable,
   TournamentUnit,
 } from "../../db/schema.js";
 import {
   AGGREGATE_WEIGHTING_VERSION,
   MIN_PUBLISHED_FORECASTERS,
 } from "../../engine/tournament/aggregate.js";
-import type { Bucket } from "../../engine/tournament/buckets.js";
-import {
-  clampedFloorScore,
-  SCORE_EPSILON,
-  type ScoreResult,
-} from "../../engine/tournament/score.js";
-import { computeAggregate, latestVectors } from "./aggregate.js";
+import { CLAMP_SCORE, SCORE_EPSILON, type ScoreResult } from "../../engine/tournament/score.js";
+import { computeAggregate, latestForecasts } from "./aggregate.js";
 import { identitiesFor } from "./identities.js";
 import {
   type AggregateView,
   acceptingForecasts,
-  deriveNumbers,
+  aggregateView,
   effectiveStatus,
   latestAggregateRow,
-  loadBuckets,
   nullableNumber,
   type PublicIdentity,
   type QuestionRecord,
@@ -35,7 +30,17 @@ import {
   toQuestionRecord,
   windowEnd,
 } from "./records.js";
-import { aggregateScore } from "./scoring.js";
+import { aggregateScore, resolvedAs } from "./scoring.js";
+
+/** The dealer instrument a linked question follows, with its latest price. */
+export interface LinkedInstrument {
+  readonly kind: TournamentQuestionKind;
+  readonly companySlug: string;
+  /** A binary's latest YES price. */
+  readonly yesPrice: number | null;
+  /** A forward's latest dealer mid, in USD. */
+  readonly midUsd: number | null;
+}
 
 export interface QuestionSummary {
   readonly slug: string;
@@ -59,14 +64,7 @@ export interface QuestionSummary {
     readonly resolvedAt: string;
   } | null;
   /** The dealer instrument a linked question follows; null for a hand-written question. */
-  readonly instrument: {
-    readonly kind: TournamentQuestionKind;
-    readonly companySlug: string;
-    /** A binary's latest YES price. */
-    readonly yesPrice: number | null;
-    /** A forward's latest dealer mid, in USD. */
-    readonly midUsd: number | null;
-  } | null;
+  readonly instrument: LinkedInstrument | null;
 }
 
 export interface ResolutionDetail {
@@ -115,7 +113,12 @@ export interface QuestionDetail extends QuestionSummary {
   readonly rules: ScoringRules;
 }
 
-async function liveResolutions(db: TournamentDb, questionIds: readonly string[]) {
+type ResolutionRow = Selectable<TournamentResolutionsTable>;
+
+async function liveResolutions(
+  db: TournamentDb,
+  questionIds: readonly string[],
+): Promise<Map<string, ResolutionRow>> {
   if (questionIds.length === 0) return new Map();
   const rows = await db
     .selectFrom("tournament_resolutions")
@@ -126,19 +129,80 @@ async function liveResolutions(db: TournamentDb, questionIds: readonly string[])
   return new Map(rows.map((row) => [row.question_id, row]));
 }
 
+/**
+ * Each linked question's instrument with its latest price: the latest quote,
+ * else the latest model mid. Read from the dealer's tables, never written.
+ */
+async function linkedInstruments(
+  db: TournamentDb,
+  questionIds: readonly string[],
+): Promise<Map<string, LinkedInstrument>> {
+  if (questionIds.length === 0) return new Map();
+  const links = await db
+    .selectFrom("tournament_instrument_links as links")
+    .innerJoin("instruments", "instruments.id", "links.instrument_id")
+    .innerJoin("listings", "listings.id", "instruments.listing_id")
+    .innerJoin("companies", "companies.id", "listings.company_id")
+    .select([
+      "links.question_id",
+      "instruments.id as instrument_id",
+      "instruments.kind",
+      "companies.slug as company_slug",
+    ])
+    .where("links.question_id", "in", questionIds)
+    .execute();
+  if (links.length === 0) return new Map();
+  const instrumentIds = links.map((link) => link.instrument_id);
+  const quotes = await db
+    .selectFrom("quotes")
+    .select(["instrument_id", "price", "mid_ln"])
+    .distinctOn("instrument_id")
+    .where("instrument_id", "in", instrumentIds)
+    .orderBy("instrument_id")
+    .orderBy("posted_at", "desc")
+    .orderBy("sequence", "desc")
+    .execute();
+  const mids = await db
+    .selectFrom("model_mids")
+    .select(["instrument_id", "p", "mid_ln"])
+    .distinctOn("instrument_id")
+    .where("instrument_id", "in", instrumentIds)
+    .orderBy("instrument_id")
+    .orderBy("computed_at", "desc")
+    .orderBy("id", "desc")
+    .execute();
+  const quoteBy = new Map(quotes.map((quote) => [quote.instrument_id, quote]));
+  const midBy = new Map(mids.map((mid) => [mid.instrument_id, mid]));
+  return new Map(
+    links.map((link) => {
+      const quote = quoteBy.get(link.instrument_id);
+      const mid = midBy.get(link.instrument_id);
+      const midLn = quote?.mid_ln ?? mid?.mid_ln ?? null;
+      return [
+        link.question_id,
+        {
+          kind: link.kind,
+          companySlug: link.company_slug,
+          yesPrice: link.kind === "binary" ? (quote?.price ?? mid?.p ?? null) : null,
+          midUsd: link.kind === "forward" && midLn !== null ? Math.exp(midLn) : null,
+        },
+      ];
+    }),
+  );
+}
+
 async function summarize(
   db: TournamentDb,
   question: QuestionRecord,
-  buckets: readonly Bucket[],
   now: Date,
-  resolution:
-    | { winning_bucket_index: number; resolved_value: string | null; resolved_at: Date }
-    | undefined,
+  resolution: ResolutionRow | undefined,
+  instrument: LinkedInstrument | undefined,
 ): Promise<QuestionSummary> {
   const aggregate = await latestAggregateRow(db, question.id);
   return {
     slug: question.slug,
     title: question.title,
+    kind: question.kind,
     unit: question.unit,
     status: effectiveStatus(question, now),
     acceptingForecasts: acceptingForecasts(question, now),
@@ -146,16 +210,16 @@ async function summarize(
     closesAt: question.closesAt.toISOString(),
     windowEndsAt: windowEnd(question).toISOString(),
     expiryAt: question.expiryAt.toISOString(),
-    buckets,
-    aggregate: aggregate === undefined ? null : toAggregateView(aggregate, question.unit, buckets),
+    aggregate: aggregate === undefined ? null : toAggregateView(aggregate),
     resolution:
       resolution === undefined
         ? null
         : {
-            winningBucketIndex: resolution.winning_bucket_index,
+            outcome: resolution.outcome,
             resolvedValue: nullableNumber(resolution.resolved_value),
             resolvedAt: resolution.resolved_at.toISOString(),
           },
+    instrument: instrument ?? null,
   };
 }
 
@@ -169,20 +233,18 @@ export async function listQuestions(db: Kysely<Database>): Promise<QuestionSumma
     .orderBy("slug", "asc")
     .execute();
   const now = new Date();
-  const resolutions = await liveResolutions(
-    db,
-    rows.map((row) => row.id),
-  );
+  const ids = rows.map((row) => row.id);
+  const resolutions = await liveResolutions(db, ids);
+  const instruments = await linkedInstruments(db, ids);
   const summaries: QuestionSummary[] = [];
   for (const row of rows) {
-    const question = toQuestionRecord(row);
     summaries.push(
       await summarize(
         db,
-        question,
-        await loadBuckets(db, question.id),
+        toQuestionRecord(row),
         now,
         resolutions.get(row.id),
+        instruments.get(row.id),
       ),
     );
   }
@@ -200,28 +262,14 @@ export async function listQuestions(db: Kysely<Database>): Promise<QuestionSumma
 async function finalAggregate(
   db: TournamentDb,
   question: QuestionRecord,
-  buckets: readonly Bucket[],
 ): Promise<AggregateView | null> {
   const end = windowEnd(question);
-  const { probs, nForecasters } = computeAggregate(
+  const { crowd, nForecasters } = computeAggregate(
     question,
-    await latestVectors(db, question.id, end),
+    await latestForecasts(db, question, end),
   );
-  if (probs === null) return null;
-  const published = nForecasters >= MIN_PUBLISHED_FORECASTERS;
-  const derived = deriveNumbers(question.unit, buckets, probs);
-  return {
-    computedAt: end.toISOString(),
-    nForecasters,
-    published,
-    probs: published ? probs : null,
-    medianValue: published ? (derived.median?.value ?? null) : null,
-    medianPosition: published ? (derived.median?.position ?? null) : null,
-    pFloor: published ? derived.pFloor : null,
-    pYes: published ? derived.pYes : null,
-    extremization: question.extremization,
-    weightingVersion: AGGREGATE_WEIGHTING_VERSION,
-  };
+  if (nForecasters === 0) return null;
+  return aggregateView(end, nForecasters, crowd);
 }
 
 export async function scoredForecasters(
@@ -260,7 +308,6 @@ export async function scoredForecasters(
 async function resolutionDetail(
   db: TournamentDb,
   question: QuestionRecord,
-  buckets: readonly Bucket[],
 ): Promise<ResolutionDetail | null> {
   const resolutions = await db
     .selectFrom("tournament_resolutions")
@@ -278,7 +325,7 @@ async function resolutionDetail(
     .execute();
   return {
     resolvedAt: live.resolved_at.toISOString(),
-    winningBucketIndex: live.winning_bucket_index,
+    outcome: live.outcome,
     resolvedValue: nullableNumber(live.resolved_value),
     rungFired: live.rung_fired,
     sourceUrl: live.source_url,
@@ -292,17 +339,23 @@ async function resolutionDetail(
       createdAt: note.created_at.toISOString(),
       noteMd: note.note_md,
     })),
-    finalAggregate: await finalAggregate(db, question, buckets),
-    aggregateScore: await aggregateScore(db, question, live.winning_bucket_index),
+    finalAggregate: await finalAggregate(db, question),
+    aggregateScore: await aggregateScore(db, question, resolvedAs(live)),
     topForecasters: await scoredForecasters(db, live.id, 10),
   };
 }
 
 export async function getQuestion(db: Kysely<Database>, slug: string): Promise<QuestionDetail> {
   const question = await requireQuestion(db, slug);
-  const buckets = await loadBuckets(db, question.id);
   const resolutions = await liveResolutions(db, [question.id]);
-  const summary = await summarize(db, question, buckets, new Date(), resolutions.get(question.id));
+  const instruments = await linkedInstruments(db, [question.id]);
+  const summary = await summarize(
+    db,
+    question,
+    new Date(),
+    resolutions.get(question.id),
+    instruments.get(question.id),
+  );
   return {
     ...summary,
     descriptionMd: question.descriptionMd,
@@ -313,10 +366,10 @@ export async function getQuestion(db: Kysely<Database>, slug: string): Promise<Q
     voidNoteMd: question.voidNoteMd,
     closedAt: question.closedAt?.toISOString() ?? null,
     resolutionDetail:
-      question.storedStatus === "resolved" ? await resolutionDetail(db, question, buckets) : null,
+      question.storedStatus === "resolved" ? await resolutionDetail(db, question) : null,
     rules: {
       epsilon: SCORE_EPSILON,
-      clampScore: clampedFloorScore(question.bucketCount),
+      clampScore: CLAMP_SCORE,
       extremization: question.extremization,
       weightingVersion: AGGREGATE_WEIGHTING_VERSION,
       minPublishedForecasters: MIN_PUBLISHED_FORECASTERS,
@@ -336,42 +389,45 @@ export interface PublicForecast extends PublicIdentity {
 }
 
 /**
- * Every forecaster's vector in force at the window end (their latest, unless
- * a back-dated close left later events uncounted). Flagged accounts are
- * included and marked.
+ * Every forecaster's forecast in force at the window end (their latest,
+ * unless a back-dated close left later events uncounted). Flagged accounts
+ * are included and marked. Legacy (pre-013) events are not forecasts in
+ * force; their proofs stay at /t/provenance/[eventId].
  */
 export async function listLatestForecasts(
   db: Kysely<Database>,
   slug: string,
 ): Promise<{ readonly slug: string; readonly forecasts: PublicForecast[] }> {
   const question = await requireQuestion(db, slug);
-  const latest = await latestVectors(db, question.id, windowEnd(question), {
+  const latest = await latestForecasts(db, question, windowEnd(question), {
     includeFlagged: true,
   });
   const counts = await db
     .selectFrom("tournament_forecast_events")
     .select(["user_id", db.fn.countAll<string>().as("count")])
     .where("question_id", "=", question.id)
+    .where(question.kind === "binary" ? "p" : "value", "is not", null)
     .where("submitted_at", "<", windowEnd(question))
     .groupBy("user_id")
     .execute();
   const countByUser = new Map(counts.map((row) => [row.user_id, Number(row.count)]));
   const identities = await identitiesFor(
     db,
-    latest.map((vector) => vector.userId),
+    latest.map((forecast) => forecast.userId),
   );
   const forecasts = latest
-    .flatMap((vector) => {
-      const identity = identities.get(vector.userId);
+    .flatMap((forecast) => {
+      const identity = identities.get(forecast.userId);
       return identity === undefined
         ? []
         : [
             {
               ...identity,
-              eventId: vector.eventId,
-              probs: vector.probs,
-              submittedAt: vector.submittedAt.toISOString(),
-              submissionCount: countByUser.get(vector.userId) ?? 0,
+              eventId: forecast.eventId,
+              p: forecast.p,
+              value: forecast.value,
+              submittedAt: forecast.submittedAt.toISOString(),
+              submissionCount: countByUser.get(forecast.userId) ?? 0,
             },
           ];
     })
@@ -384,7 +440,6 @@ export async function aggregateHistory(
   slug: string,
 ): Promise<{ readonly slug: string; readonly history: AggregateView[] }> {
   const question = await requireQuestion(db, slug);
-  const buckets = await loadBuckets(db, question.id);
   const rows = await db
     .selectFrom("tournament_aggregates")
     .selectAll()
@@ -392,8 +447,5 @@ export async function aggregateHistory(
     .orderBy("computed_at", "asc")
     .orderBy("id", "asc")
     .execute();
-  return {
-    slug,
-    history: rows.map((row) => toAggregateView(row, question.unit, buckets)),
-  };
+  return { slug, history: rows.map(toAggregateView) };
 }

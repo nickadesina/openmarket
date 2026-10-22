@@ -4,54 +4,60 @@ import { ServiceError } from "../../api/errors.js";
 import { FORECAST_RATE_LIMIT_MS } from "../../config/tournament.js";
 import type { Database } from "../../db/schema.js";
 import {
-  canonicalProbs,
+  type CanonicalForecastInput,
+  FORECAST_DECIMALS,
   ForecastError,
+  type ForecastPoint,
+  type ForecastValue,
+  forecastCanonical,
   normalizeForecast,
 } from "../../engine/tournament/forecast.js";
 import { recomputeAggregate } from "./aggregate.js";
-import {
-  acceptingForecasts,
-  databaseNow,
-  loadBuckets,
-  requireQuestion,
-  windowEnd,
-} from "./records.js";
+import { acceptingForecasts, databaseNow, requireQuestion, windowEnd } from "./records.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export interface SubmitForecastInput {
+/** One forecast: `{ p }` on a binary, `{ value }` (the level, in the question's unit) on a forward. */
+export type SubmitForecastInput = ForecastValue & {
   readonly slug: string;
   readonly userId: string;
-  readonly probs: readonly number[];
   readonly clientHash?: string | undefined;
-}
+};
 
 export interface StoredForecast {
   readonly id: string;
   readonly questionSlug: string;
-  readonly probs: number[];
+  /** The P(YES) stored, at 10 decimal places; null on a forward. */
+  readonly p: number | null;
+  /** The level stored, at 10 decimal places; null on a binary. */
+  readonly value: number | null;
   readonly submittedAt: string;
   readonly eventHash: string;
 }
 
+/** sha256(question_id ‖ user_id ‖ submitted_at ISO ‖ payload), the payload per `forecastCanonical`. */
 export function forecastEventHash(
   questionId: string,
   userId: string,
   submittedAt: Date,
-  probs: readonly number[],
+  forecast: CanonicalForecastInput,
 ): string {
   return createHash("sha256")
     .update(questionId)
     .update(userId)
     .update(submittedAt.toISOString())
-    .update(canonicalProbs(probs))
+    .update(forecastCanonical(forecast))
     .digest("hex");
+}
+
+function storedNumeric(value: number | null): string | null {
+  return value === null ? null : value.toFixed(FORECAST_DECIMALS);
 }
 
 /**
  * Appends one forecast event and the aggregate it produces. The question
  * row is locked for the transaction, so submissions to one question are
- * serialized: every aggregate row reflects every vector committed before it.
+ * serialized: every aggregate row reflects every forecast committed before it.
  */
 export async function submitForecast(
   db: Kysely<Database>,
@@ -107,35 +113,36 @@ export async function submitForecast(
       }
     }
 
-    let probs: number[];
+    let forecast: ForecastPoint;
     try {
-      probs = normalizeForecast(input.probs, question.bucketCount);
+      forecast = normalizeForecast(input, question.kind);
     } catch (error) {
       if (error instanceof ForecastError) throw new ServiceError("INVALID_INPUT", error.message);
       throw error;
     }
 
-    const eventHash = forecastEventHash(question.id, input.userId, now, probs);
+    const eventHash = forecastEventHash(question.id, input.userId, now, forecast);
     const inserted = await transaction
       .insertInto("tournament_forecast_events")
       .values({
         user_id: input.userId,
         question_id: question.id,
         submitted_at: now,
-        probs: probs.map((probability) => probability.toFixed(10)),
+        p: storedNumeric(forecast.p),
+        value: storedNumeric(forecast.value),
         client_hash: input.clientHash ?? null,
         event_hash: eventHash,
       })
       .returning("id")
       .executeTakeFirstOrThrow();
 
-    const buckets = await loadBuckets(transaction, question.id);
-    await recomputeAggregate(transaction, question, buckets, now, windowEnd(question));
+    await recomputeAggregate(transaction, question, now, windowEnd(question));
 
     return {
       id: inserted.id,
       questionSlug: question.slug,
-      probs,
+      p: forecast.p,
+      value: forecast.value,
       submittedAt: now.toISOString(),
       eventHash,
     };

@@ -5,13 +5,13 @@ import type {
   Database,
   TournamentAggregatesTable,
   TournamentProvider,
+  TournamentQuestionKind,
   TournamentQuestionStatus,
   TournamentQuestionsTable,
   TournamentUnit,
 } from "../../db/schema.js";
 import { MIN_PUBLISHED_FORECASTERS } from "../../engine/tournament/aggregate.js";
-import { BINARY_YES_INDEX, type Bucket, floorIndex } from "../../engine/tournament/buckets.js";
-import { type BucketMedian, bucketMedian } from "../../engine/tournament/median.js";
+import type { ForecastPoint } from "../../engine/tournament/forecast.js";
 
 export type TournamentDb = Kysely<Database> | Transaction<Database>;
 export type QuestionRow = Selectable<TournamentQuestionsTable>;
@@ -23,8 +23,9 @@ export interface QuestionRecord {
   readonly descriptionMd: string;
   readonly rulebookMd: string;
   readonly rulebookVersion: number;
-  readonly unit: TournamentUnit;
-  readonly bucketCount: number;
+  readonly kind: TournamentQuestionKind;
+  /** A forward's unit; null for a binary. */
+  readonly unit: TournamentUnit | null;
   readonly opensAt: Date;
   readonly closesAt: Date;
   readonly expiryAt: Date;
@@ -44,8 +45,8 @@ export function toQuestionRecord(row: QuestionRow): QuestionRecord {
     descriptionMd: row.description_md,
     rulebookMd: row.rulebook_md,
     rulebookVersion: row.rulebook_version,
+    kind: row.kind,
     unit: row.unit,
-    bucketCount: row.bucket_count,
     opensAt: row.opens_at,
     closesAt: row.closes_at,
     expiryAt: row.expiry_at,
@@ -87,20 +88,12 @@ export function nullableNumber(value: string | null): number | null {
   return value === null ? null : Number(value);
 }
 
-export async function loadBuckets(db: TournamentDb, questionId: string): Promise<Bucket[]> {
-  const rows = await db
-    .selectFrom("tournament_buckets")
-    .selectAll()
-    .where("question_id", "=", questionId)
-    .orderBy("index", "asc")
-    .execute();
-  return rows.map((row) => ({
-    index: row.index,
-    kind: row.kind,
-    lower: nullableNumber(row.lower),
-    upper: nullableNumber(row.upper),
-    label: row.label,
-  }));
+/** A stored forecast's numeric columns; both null on a legacy (pre-013) event. */
+export function toForecastPoint(row: {
+  readonly p: string | null;
+  readonly value: string | null;
+}): ForecastPoint {
+  return { p: nullableNumber(row.p), value: nullableNumber(row.value) };
 }
 
 /** Loads a public question by slug; drafts are invisible outside admin. */
@@ -118,25 +111,6 @@ export async function requireQuestion(
   return toQuestionRecord(row);
 }
 
-export interface DerivedNumbers {
-  readonly median: BucketMedian | null;
-  readonly pFloor: number | null;
-  readonly pYes: number | null;
-}
-
-export function deriveNumbers(
-  unit: TournamentUnit,
-  buckets: readonly Bucket[],
-  probs: readonly number[],
-): DerivedNumbers {
-  const floor = floorIndex(buckets);
-  return {
-    median: unit === "bool" ? null : bucketMedian(buckets, probs),
-    pFloor: floor === null ? null : probs[floor]!,
-    pYes: unit === "bool" ? probs[BINARY_YES_INDEX]! : null,
-  };
-}
-
 export interface AggregateView {
   readonly computedAt: string;
   readonly nForecasters: number;
@@ -148,26 +122,24 @@ export interface AggregateView {
   readonly value: number | null;
 }
 
-export function toAggregateView(
-  row: Selectable<TournamentAggregatesTable>,
-  unit: TournamentUnit,
-  buckets: readonly Bucket[],
+/** An aggregate as published: the crowd figure is masked below the minimum forecaster count. */
+export function aggregateView(
+  computedAt: Date,
+  nForecasters: number,
+  crowd: ForecastPoint,
 ): AggregateView {
-  const published = row.n_forecasters >= MIN_PUBLISHED_FORECASTERS && row.probs !== null;
-  const probs = published ? toNumbers(row.probs!) : null;
-  const derived = probs === null ? null : deriveNumbers(unit, buckets, probs);
+  const published = nForecasters >= MIN_PUBLISHED_FORECASTERS;
   return {
-    computedAt: row.computed_at.toISOString(),
-    nForecasters: row.n_forecasters,
+    computedAt: computedAt.toISOString(),
+    nForecasters,
     published,
-    probs,
-    medianValue: published ? nullableNumber(row.median_value) : null,
-    medianPosition: derived?.median?.position ?? null,
-    pFloor: published ? nullableNumber(row.p_floor) : null,
-    pYes: published ? nullableNumber(row.p_yes) : null,
-    extremization: row.extremization,
-    weightingVersion: row.weighting_version,
+    p: published ? crowd.p : null,
+    value: published ? crowd.value : null,
   };
+}
+
+export function toAggregateView(row: Selectable<TournamentAggregatesTable>): AggregateView {
+  return aggregateView(row.computed_at, row.n_forecasters, toForecastPoint(row));
 }
 
 export async function latestAggregateRow(
