@@ -499,11 +499,15 @@ export interface AdminQuestion {
   readonly disputeWindowEndsAt: string | null;
 }
 
-/** Every question including drafts, for the admin console. */
+/**
+ * Every question the admin console can act on, drafts included. A voided
+ * question has nothing left to do and keeps its public page, so it is left off.
+ */
 export async function listAdminQuestions(db: Kysely<Database>): Promise<AdminQuestion[]> {
   const rows = await db
     .selectFrom("tournament_questions")
     .selectAll()
+    .where("status", "<>", "voided")
     .orderBy("created_at", "desc")
     .execute();
   const now = await databaseNow(db);
