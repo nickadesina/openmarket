@@ -26,7 +26,7 @@ async function main(): Promise<void> {
 
 try {
   await main();
-} catch (error: unknown) {
-  console.error("Database migration failed", error);
+} catch {
+  console.error("Database migration failed; no credentials or database error details were logged.");
   process.exitCode = 1;
 }
