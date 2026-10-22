@@ -20,10 +20,11 @@ import {
 } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
 import { signInHref, useTournamentViewer } from "../../lib/client/tournament.js";
-import { pointLogScore } from "../../lib/engine/tournament/score.js";
+import { forwardScore, pointLogScore } from "../../lib/engine/tournament/score.js";
 import type { ListingDetail } from "../../lib/services/get-market.js";
 import type { ViewerForecast } from "../../lib/services/tournament/forecaster.js";
 import type { QuestionDetail } from "../../lib/services/tournament/get-question.js";
+import type { StoredForecast } from "../../lib/services/tournament/submit-forecast.js";
 import styles from "./tournament-question.module.css";
 
 /** The binary field's range in percent: 0.1–99.9, so a stored p is strictly inside (0, 1). */
@@ -31,12 +32,11 @@ const PERCENT_MIN = 0.1;
 const PERCENT_MAX = 99.9;
 
 /**
- * 0004's forward score at a miss ratio, 100 · (1 − |ln r| / ln 2), before
- * its floor (which binds only past a ~15,000× miss). The preview is three
- * fixed points: the score depends on the ratio alone, not on the level.
+ * The forward score's preview: three fixed miss ratios, since the score of
+ * a level against its settling value depends on their ratio alone.
  */
 function forwardScoreAtRatio(ratio: number): number {
-  return 100 * (1 - Math.abs(Math.log(ratio)) / Math.LN2);
+  return forwardScore(ratio, 1);
 }
 
 const FORWARD_PREVIEW = [
@@ -81,7 +81,7 @@ function useSubmitForecast(slug: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: { p: number } | { value: number }) =>
-      apiRequest<{ readonly submittedAt: string }>(`/api/t/questions/${slug}/forecasts`, {
+      apiRequest<StoredForecast>(`/api/t/questions/${slug}/forecasts`, {
         method: "POST",
         body: JSON.stringify(body),
       }),

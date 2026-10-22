@@ -95,6 +95,12 @@ export function ProvenancePage({
               <Check ok={verification?.hashMatches} />
             </dd>
           </div>
+          {verification === undefined ? null : (
+            <div>
+              <dt>Payload rebuilt here</dt>
+              <dd className={styles.hash}>{verification.payload}</dd>
+            </div>
+          )}
           {batch === null ? (
             <div>
               <dt>Batch</dt>
@@ -176,7 +182,7 @@ export function ProvenancePage({
             separators:
           </p>
           <pre className={styles.code}>
-            {`${event.questionId}\n${event.userId}\n${event.submittedAt}\n${event.probsCanonical}`}
+            {`${event.questionId}\n${event.userId}\n${event.submittedAt}\n${event.payloadCanonical}`}
           </pre>
           <p>
             leaf = sha256(0x00 ‖ event_hash). For each path step, node = sha256(0x01 ‖ left ‖
