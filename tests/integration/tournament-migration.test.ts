@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { type Kysely, sql } from "kysely";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { LAUNCH_QUESTIONS } from "../../src/lib/config/tournament-questions.js";
 import type { Database } from "../../src/lib/db/schema.js";
 import { buildMerkleTree, merkleRootFromPath } from "../../src/lib/services/tournament/merkle.js";
 import {
@@ -64,7 +65,8 @@ const LEGACY_QUESTIONS: readonly LegacyQuestion[] = [
     ],
   },
   {
-    slug: "openai-round-before-anthropic-ipo",
+    // Production's slug; 0004 opens its replacement as openai-round-before-anthropic-ipo.
+    slug: "openai-round-vs-anthropic-ipo",
     unit: "choice",
     buckets: [
       { kind: "range", lower: null, upper: null, label: "OpenAI round first" },
@@ -260,7 +262,7 @@ postgresDescribe(`${suiteName}: on a populated 012 tournament`, () => {
     const [alice, bob] = userIds as [string, string];
     const ipo = questionIds.get("anthropic-ipo-day1-mcap")!;
     const runRate = questionIds.get("anthropic-424b-run-rate")!;
-    const race = questionIds.get("openai-round-before-anthropic-ipo")!;
+    const race = questionIds.get("openai-round-vs-anthropic-ipo")!;
     const firstHour = [
       await insertLegacyEvent(db, {
         questionId: ipo,
@@ -349,8 +351,8 @@ postgresDescribe(`${suiteName}: on a populated 012 tournament`, () => {
             "Replaced by the forward question at /t/q/anthropic-ipo-day1-mcap; bucket forecasts are not scored.",
         },
         {
-          id: questionIds.get("openai-round-before-anthropic-ipo"),
-          slug: "openai-round-before-anthropic-ipo-v1",
+          id: questionIds.get("openai-round-vs-anthropic-ipo"),
+          slug: "openai-round-vs-anthropic-ipo-v1",
           kind: "binary",
           unit: null,
           status: "voided",
@@ -369,6 +371,21 @@ postgresDescribe(`${suiteName}: on a populated 012 tournament`, () => {
     );
     expect(await columns(postgres, "tournament_questions")).not.toContain("bucket_count");
     expect(await relationExists(postgres, "tournament_buckets")).toBe(false);
+  });
+
+  it("links each voided production question to a replacement the seed opens, of its kind", async () => {
+    const launched = new Map(LAUNCH_QUESTIONS.map((question) => [question.slug, question.kind]));
+    const voided = await postgres.db
+      .selectFrom("tournament_questions")
+      .select(["slug", "kind", "void_note_md"])
+      .where("slug", "like", "%-v1")
+      .execute();
+    expect(voided).toHaveLength(LEGACY_QUESTIONS.length);
+    for (const question of voided) {
+      const target = /\/t\/q\/([a-z0-9-]+);/.exec(question.void_note_md ?? "")?.[1];
+      expect(target, question.slug).toBeDefined();
+      expect(launched.get(target!), `${question.slug} → ${target}`).toBe(question.kind);
+    }
   });
 
   it("archives every vector byte for byte and changes no event row", async () => {
@@ -437,7 +454,7 @@ postgresDescribe(`${suiteName}: on a populated 012 tournament`, () => {
 
   it("takes exactly one of p and value on a new event", async () => {
     const alice = userIds[0]!;
-    const questionId = questionIds.get("openai-round-before-anthropic-ipo")!;
+    const questionId = questionIds.get("openai-round-vs-anthropic-ipo")!;
     const insert = (p: string | null, value: string | null) =>
       sql`
         insert into tournament_forecast_events

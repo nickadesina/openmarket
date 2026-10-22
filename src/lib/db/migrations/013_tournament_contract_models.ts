@@ -99,16 +99,37 @@ async function migrateQuestions(db: Kysely<unknown>): Promise<void> {
     )
     .execute();
 
-  // Every expression reads the row before the update, so the note names the original slug.
+  // Every expression reads the row before the update, so the note names the
+  // original slug unless 0004 opens its replacement under another one.
+  const renamed = sql.join(
+    Object.entries(REPLACEMENT_SLUGS).map(
+      ([original, replacement]) => sql`(${original}, ${replacement})`,
+    ),
+  );
   await sql`
     update tournament_questions
     set status = 'voided',
         slug = slug || '-v1',
-        void_note_md = 'Replaced by the ' || kind || ' question at /t/q/' || slug
+        void_note_md = 'Replaced by the ' || kind || ' question at /t/q/'
+          || coalesce(
+            (select r.replacement from (values ${renamed}) as r (original, replacement)
+             where r.original = tournament_questions.slug),
+            slug
+          )
           || '; bucket forecasts are not scored.'
     where status not in ('voided', 'resolved')
   `.execute(db);
 }
+
+/**
+ * Production slugs whose replacement opens under a different canonical slug
+ * (0004 → "The questions after the change"). Every other voided question is
+ * replaced under its own slug: the seed's two forwards, and a linked
+ * question, which the dealer's list step relinks under the bridge's slug.
+ */
+const REPLACEMENT_SLUGS: Readonly<Record<string, string>> = {
+  "openai-round-vs-anthropic-ipo": "openai-round-before-anthropic-ipo",
+};
 
 async function archiveForecastVectors(db: Kysely<unknown>): Promise<void> {
   await db.schema
