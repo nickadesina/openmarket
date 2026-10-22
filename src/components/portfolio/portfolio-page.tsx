@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
 
-import { ApiClientError, apiRequest } from "../../lib/client/api.js";
+import { ApiClientError, apiRequest, requestPortfolioIdentity } from "../../lib/client/api.js";
 import {
   errorMessage,
   formatCents,
@@ -505,22 +505,24 @@ export function PortfolioPage() {
   // The header reads the same account; after a sign-in change the page holds its
   // skeleton until the positions below belong to the account the header shows.
   const identity = useQuery({
-    queryKey: queryKeys.portfolio,
-    queryFn: () => apiRequest<Pick<Portfolio, "userId">>("/api/portfolio?offset=0&limit=1"),
+    queryKey: queryKeys.identity,
+    queryFn: requestPortfolioIdentity,
   }).data;
 
   const portfolio = portfolioQuery.data;
 
   if (
     portfolioQuery.isLoading ||
-    (identity !== undefined && portfolio !== undefined && portfolio.userId !== identity.userId)
+    identity === undefined ||
+    (identity !== null && portfolio !== undefined && portfolio.userId !== identity.userId)
   ) {
     return <PortfolioSkeleton />;
   }
 
   if (
-    portfolioQuery.error instanceof ApiClientError &&
-    portfolioQuery.error.code === "USER_REQUIRED"
+    identity === null ||
+    (portfolioQuery.error instanceof ApiClientError &&
+      portfolioQuery.error.code === "USER_REQUIRED")
   ) {
     return (
       <section className={styles.statePanel}>
