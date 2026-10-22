@@ -29,7 +29,7 @@ test("a market page shows the demo banner and Demo-tagged activity", async ({ pa
 });
 
 test("the board carries the demo banner and the tape tags demo trades", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/m");
   const board = page.getByRole("tabpanel", { name: "Board" });
   await expect(board.getByRole("region", { name: "Demo markets" })).toBeVisible();
   const tape = page.getByRole("list", { name: "Recent public trades" });

@@ -341,7 +341,7 @@ postgresDescribe(suiteName, () => {
     const db = postgres.db;
     await listAndQuote(db);
     await seedDemo(db, { clock: steppingClock() });
-    const forecaster = await upsertIdentity(db, {
+    const { userId: forecaster } = await upsertIdentity(db, {
       provider: "x",
       providerUserId: "777",
       handle: "RealForecaster",
