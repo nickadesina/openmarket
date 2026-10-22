@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
-import { ServiceError } from "../../../../lib/api/errors.js";
-
 import { QuestionWorkspace } from "../../../../components/tournament-question/question-workspace.js";
+import { ServiceError } from "../../../../lib/api/errors.js";
 import { getRuntimeDatabase } from "../../../../lib/db/runtime.js";
 import {
   getQuestion,

@@ -1,10 +1,10 @@
-import { consumeProfileRateLimit } from "../../../../../lib/services/tournament/profile-rate-limit.js";
 import { parseMutationBody, withMutationRoute } from "../../../../../lib/api/mutation-route.js";
 import { assertOnlyQueryParameters } from "../../../../../lib/api/pagination.js";
 import { withReadRoute } from "../../../../../lib/api/request-context.js";
 import { jsonSuccess } from "../../../../../lib/api/response.js";
 import { restrictionsInputSchema } from "../../../../../lib/api/tournament-schemas.js";
 import { requireTournamentUserId } from "../../../../../lib/auth/tournament-session.js";
+import { consumeProfileRateLimit } from "../../../../../lib/services/tournament/profile-rate-limit.js";
 import {
   attestRestrictions,
   getRestrictions,

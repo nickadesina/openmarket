@@ -185,7 +185,9 @@ export async function submitEvidence(
 }
 
 /** Flags an admin may cite as the later independent confirmation of a submission. */
-const CONFIRMING_KINDS = FLAG_KINDS.filter((kind) => kind !== "user_submitted");
+const CONFIRMING_KINDS: readonly FlagKind[] = FLAG_KINDS.filter(
+  (kind) => kind !== "user_submitted",
+);
 
 export interface EvidenceReview {
   readonly id: string;

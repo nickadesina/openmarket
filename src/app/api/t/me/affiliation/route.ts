@@ -1,9 +1,9 @@
-import { consumeProfileRateLimit } from "../../../../../lib/services/tournament/profile-rate-limit.js";
 import { parseMutationBody, withMutationRoute } from "../../../../../lib/api/mutation-route.js";
 import { jsonSuccess } from "../../../../../lib/api/response.js";
 import { affiliationInputSchema } from "../../../../../lib/api/tournament-schemas.js";
 import { requireTournamentUserId } from "../../../../../lib/auth/tournament-session.js";
 import { setAffiliation } from "../../../../../lib/services/tournament/affiliation.js";
+import { consumeProfileRateLimit } from "../../../../../lib/services/tournament/profile-rate-limit.js";
 
 export const runtime = "nodejs";
 

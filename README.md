@@ -196,7 +196,8 @@ this identity, but cash and positions never enter scoring.
   only. Registration is limited per network (5 an hour); failed sign-ins
   per network and per username (10 per 15 minutes). Sessions are
   server-side rows keyed by the SHA-256 of an opaque cookie token,
-  30-day sliding expiry. Admin is an allowlist (`TOURNAMENT_ADMIN_X_IDS`:
+  30-day sliding expiry, refreshed with its cookie by `GET /api/t/me` at most
+  once a day. Other authenticated reads do not extend it. Admin is an allowlist (`TOURNAMENT_ADMIN_X_IDS`:
   X ids, or `password:<username>`) for `/t/admin` and `/admin`.
 - Affiliation: any forecaster may state one (lab, school, firm; up to 60
   characters, free text with a suggested list in
@@ -278,7 +279,10 @@ re-sent after three minutes. `/t/provenance/[eventId]` (JSON at
 `/api/t/provenance/[eventId]`) shows the hash inputs, batch, path, and
 transaction, and re-verifies the hash chain in the visitor's browser.
 Leaves are append-only and batch commitments immutable; `verify:replay`
-rebuilds every root.
+rebuilds every root and checks that each eligible completed hour has a batch
+and every event belongs to its hour’s batch (using the batcher’s existing
+five-minute grace). A late commit missing from an immutable batch is reported,
+never rewritten.
 
 Bridge to the dealer (milestone 7, `services/dealer/tournament-bridge.ts`,
 migration `011_tournament_bridge`). Off unless `TOURNAMENT_LINKED_QUESTIONS=1`:
