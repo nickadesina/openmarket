@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { DEALER_PARAMS } from "../../../src/lib/config/dealer.js";
 import {
   FLAG_KINDS,
+  type FlagKind,
   type InstrumentSnapshot,
   type LifecycleEvent,
   transition,
@@ -22,7 +23,7 @@ const action = fc.record({
 });
 
 function eventFor(
-  step: fc.ArbitraryValue<typeof action>,
+  step: { type: string; kind: FlagKind },
   at: Date,
   kind: "binary" | "forward",
 ): LifecycleEvent {
