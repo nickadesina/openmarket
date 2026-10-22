@@ -22,13 +22,13 @@ const action = fc.record({
 });
 
 function eventFor(
-  action: fc.ArbitraryValue<typeof action>,
+  step: fc.ArbitraryValue<typeof action>,
   at: Date,
   kind: "binary" | "forward",
 ): LifecycleEvent {
-  if (action.type === "flag") return { type: "flag", at, kind: action.kind };
-  if (action.type === "tick") return { type: "tick", now: at };
-  if (action.type === "remid") return { type: "remid", at };
+  if (step.type === "flag") return { type: "flag", at, kind: step.kind };
+  if (step.type === "tick") return { type: "tick", now: at };
+  if (step.type === "remid") return { type: "remid", at };
   return {
     type: "resolve",
     at,
