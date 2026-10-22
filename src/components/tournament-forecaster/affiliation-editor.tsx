@@ -5,15 +5,10 @@ import { type FormEvent, useId, useState } from "react";
 
 import { apiRequest } from "../../lib/client/api.js";
 import { errorMessage } from "../../lib/client/format.js";
-import {
-  AFFILIATION_MAX_LENGTH,
-  AFFILIATION_SUGGESTIONS,
-} from "../../lib/config/tournament-affiliations.js";
+import { AFFILIATION_MAX_LENGTH } from "../../lib/config/tournament-affiliations.js";
 import styles from "./forecaster-page.module.css";
 
-const KIND_LABELS = { lab: "Labs", school: "Schools", investor: "Investors" } as const;
-
-/** The owner's own affiliation: pick a suggestion or type any lab, school, or firm. */
+/** The owner's own affiliation: any lab, school, or firm, typed freely. */
 export function AffiliationEditor({ current }: { readonly current: string | null }) {
   const queryClient = useQueryClient();
   const id = useId();
@@ -43,7 +38,6 @@ export function AffiliationEditor({ current }: { readonly current: string | null
       <input
         id={`${id}-input`}
         className={styles.affiliationInput}
-        list={`${id}-suggestions`}
         value={value}
         maxLength={AFFILIATION_MAX_LENGTH}
         placeholder="Lab, school, or firm"
@@ -52,15 +46,6 @@ export function AffiliationEditor({ current }: { readonly current: string | null
           save.reset();
         }}
       />
-      <datalist id={`${id}-suggestions`}>
-        {AFFILIATION_SUGGESTIONS.map((suggestion) => (
-          <option
-            key={suggestion.name}
-            value={suggestion.name}
-            label={KIND_LABELS[suggestion.kind]}
-          />
-        ))}
-      </datalist>
       <button
         type="submit"
         className={styles.affiliationButton}
