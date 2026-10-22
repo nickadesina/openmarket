@@ -187,10 +187,11 @@ export function MarketWorkspace({
     const refetchOptions = { throwOnError: true };
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.market(slug) }, refetchOptions),
-      queryClient.invalidateQueries({ queryKey: ["openmarket", "book"] }, refetchOptions),
-      queryClient.invalidateQueries({ queryKey: ["openmarket", "instrument"] }, refetchOptions),
+      queryClient.invalidateQueries({ queryKey: queryKeys.books }, refetchOptions),
+      queryClient.invalidateQueries({ queryKey: queryKeys.instruments }, refetchOptions),
       queryClient.invalidateQueries({ queryKey: queryKeys.activity(slug) }, refetchOptions),
       queryClient.invalidateQueries({ queryKey: queryKeys.portfolio }, refetchOptions),
+      queryClient.invalidateQueries({ queryKey: queryKeys.identity }, refetchOptions),
       queryClient.invalidateQueries({ queryKey: queryKeys.markets }, refetchOptions),
     ]);
   }, [queryClient, slug]);
@@ -296,7 +297,7 @@ export function MarketWorkspace({
       <MarketActivity
         listing={listing}
         activity={activityQuery.data}
-        loading={activityQuery.isFetching}
+        loading={activityQuery.isLoading}
         error={activityQuery.isError}
         onRetry={() => void activityQuery.refetch()}
       />

@@ -176,3 +176,8 @@
     animation: none;
   }
 }
+
+.movement {
+  margin-left: var(--space-2);
+  font-size: var(--font-size-xs);
+}

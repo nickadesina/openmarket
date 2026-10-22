@@ -2,6 +2,10 @@ import type { MarkRange } from "../services/get-marks.js";
 
 export const queryKeys = {
   all: ["openmarket"] as const,
+  books: ["openmarket", "book"] as const,
+  instruments: ["openmarket", "instrument"] as const,
+  adminComments: (marketId: string, parentId?: string) =>
+    ["openmarket", "comments", marketId, "admin", parentId ?? null] as const,
   markets: ["openmarket", "markets"] as const,
   market: (slug: string) => ["openmarket", "market", slug] as const,
   marks: (marketId: string, range: MarkRange) =>
