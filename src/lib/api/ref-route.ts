@@ -10,7 +10,7 @@ import { jsonSuccess } from "./response.js";
 
 /**
  * Every /api/ref/* route (README D14): public, read-only, shared-cached for
- * 60 seconds, and drawn from the caller's `ref` quota (its network's bucket,
+ * 60 seconds for anonymous requests (keyed responses are private), and drawn from the caller's `ref` quota (its network's bucket,
  * or its API key's) after the query is validated and before any read.
  */
 const REF_CACHE_SECONDS = 60;
