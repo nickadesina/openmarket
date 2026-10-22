@@ -16,7 +16,7 @@ and `CONTRACTS.md` too if you touch anything dealer-side.
 | Brief | What | Branch |
 | --- | --- | --- |
 | `o1-onboarding.md` | Sign-in → affiliation → questions; the tournament becomes the front door | `ob/o1-onboarding` |
-| `o2-scoring-legibility.md` | Say how a question settles and what a forecast scores, in plain words and live numbers | `ob/o2-scoring` |
+| `o2-scoring-legibility.md` | Make settling and scoring intuitive: plain words and live numbers first, a new scoring rule (decision 0006) if that is not enough | `ob/o2-scoring` |
 | `o3-demo-markets.md` | Five labelled demo accounts trade the five listed names through the real services | `ob/o3-demo-markets` |
 
 ## Order
@@ -47,11 +47,9 @@ All three run in parallel from `master`, and each opens its own PR to
 - **Real data only,** except O3's demo accounts under decision 0005. Never
   invent copy, figures or rows. Every number on a screen comes from the
   API.
-- **Scoring is decided.** The scoring and settlement math is decision 0004
-  and does not change here: the binary log score, the forward score
-  `max(100·(1 − |ln(x/y)|/ln 2), −896.6)`, time-averaging, void rules. O2
-  changes how it is *explained*. A math change is a new decision record
-  for Nick, not a code change.
+- **Scoring:** O2 owns making scoring intuitive. It may change the scoring
+  rule itself, recorded as decision 0006, under the constraints in its
+  brief. O1 and O3 never touch scoring.
 - **Delete what your change makes dead.**
 - **Screens:**
   - Desktop and 375px both matter.
