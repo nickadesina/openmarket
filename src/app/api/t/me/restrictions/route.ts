@@ -1,3 +1,4 @@
+import { consumeProfileRateLimit } from "../../../../../lib/services/tournament/profile-rate-limit.js";
 import { parseMutationBody, withMutationRoute } from "../../../../../lib/api/mutation-route.js";
 import { assertOnlyQueryParameters } from "../../../../../lib/api/pagination.js";
 import { withReadRoute } from "../../../../../lib/api/request-context.js";
@@ -28,6 +29,7 @@ export function POST(request: Request): Promise<Response> {
     assertOnlyQueryParameters(new URL(request.url).searchParams, []);
     const userId = await requireTournamentUserId(context.db, request);
     const input = await parseMutationBody(request, restrictionsInputSchema, 2_048);
+    await consumeProfileRateLimit(context.db, userId, request);
     const result = await attestRestrictions(context.db, userId, input.companies);
     return jsonSuccess(result, { requestId: context.requestId });
   });

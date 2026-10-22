@@ -79,6 +79,7 @@ export interface TournamentSession {
 export async function resolveTournamentSession(
   db: Kysely<Database>,
   request: Request,
+  options: { readonly refresh?: boolean } = {},
 ): Promise<TournamentSession | null> {
   const token = readCookie(request, TOURNAMENT_SESSION_COOKIE);
   if (token === null || !TOKEN_PATTERN.test(token)) return null;
@@ -95,9 +96,9 @@ export async function resolveTournamentSession(
     await db.deleteFrom("tournament_sessions").where("id", "=", id).execute();
     return null;
   }
-  // Slide the 30-day expiry at most once a day so reads rarely write.
+  // Only a caller that reissues the browser cookie may slide the row.
   const remaining = session.expires_at.getTime() - now;
-  if (TOURNAMENT_SESSION_MAX_AGE_MS - remaining < TOURNAMENT_SESSION_REFRESH_MS) {
+  if (!options.refresh || TOURNAMENT_SESSION_MAX_AGE_MS - remaining < TOURNAMENT_SESSION_REFRESH_MS) {
     return { userId: session.user_id, refreshedToken: null };
   }
   await db
