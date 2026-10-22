@@ -1,0 +1,51 @@
+name: Seed listings (production)
+
+# Operator action, run by hand: lists the five names from backtest/ in
+# production so the dealer job has instruments to quote. Idempotent on
+# (company, listed_at). Needs the repository secret DATABASE_URL_UNPOOLED
+# set to the production Neon direct (unpooled) connection string.
+#
+#   gh workflow run seed-listings.yml            # listed_at = now
+#   gh workflow run seed-listings.yml -f listed_at=2026-10-22T16:00:00Z
+#   gh workflow run seed-listings.yml -f relist=true
+on:
+  workflow_dispatch:
+    inputs:
+      listed_at:
+        description: "ISO timestamp for listings.listed_at (blank = now)"
+        required: false
+        default: ""
+      relist:
+        description: "Replace active listings (--relist)"
+        required: false
+        default: "false"
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Seed listings
+        env:
+          DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
+          LISTED_AT: ${{ inputs.listed_at }}
+          RELIST: ${{ inputs.relist }}
+        run: |
+          if [ -z "$DATABASE_URL_UNPOOLED" ]; then
+            echo "::error::DATABASE_URL_UNPOOLED is not set as a repository secret."
+            echo "Set it once with: gh secret set DATABASE_URL_UNPOOLED"
+            exit 1
+          fi
+          if [ -z "$LISTED_AT" ]; then
+            LISTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          fi
+          FLAGS=""
+          if [ "$RELIST" = "true" ]; then FLAGS="--relist"; fi
+          echo "Seeding listings with listed_at=$LISTED_AT $FLAGS"
+          npm run seed:listings -- --listed-at="$LISTED_AT" $FLAGS

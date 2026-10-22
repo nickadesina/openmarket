@@ -576,6 +576,22 @@ npm run dev              # http://localhost:3000, never 127.0.0.1
   `011_tournament_bridge` for linked questions, evidence and restricted
   persons.
 
+### Seeding production
+
+Listings are an operator action, never a build step. From a machine
+that can reach the production Neon host:
+
+```
+DATABASE_URL_UNPOOLED=<production direct URL> npm run seed:listings -- --listed-at=<ISO now>
+```
+
+Or from GitHub, once `DATABASE_URL_UNPOOLED` is a repository secret
+(`gh secret set DATABASE_URL_UNPOOLED`): `gh workflow run
+seed-listings.yml` (`.github/workflows/seed-listings.yml`; `-f
+relist=true` replaces active listings). Idempotent on
+`(company, listed_at)`. The next dealer job lists the ten instruments
+and their tournament questions.
+
 ### Backtest
 
 ```
