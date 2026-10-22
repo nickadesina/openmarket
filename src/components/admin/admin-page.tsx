@@ -20,7 +20,10 @@ export function AdminPage() {
       <header className={styles.pageHeader}>
         <p className={styles.sectionLabel}>Restricted operations</p>
         <h1>Market administration</h1>
-        <p>Moderate market comments. Every mutation is validated by the server.</p>
+        <p>
+          Moderate market comments. Every mutation is validated by the server. The dealer's books,
+          jobs and sources are under <Link href="/admin/dealer">dealer operations</Link>.
+        </p>
       </header>
 
       {viewer.isPending ? (

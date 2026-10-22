@@ -402,6 +402,7 @@ postgresDescribe(`${suiteName}: 008 on a populated 007 database`, () => {
     expect(migration.results?.map((result) => result.migrationName)).toEqual([
       "008_retire_ladder_and_username_accounts",
       "009_dealer_pnl",
+      "010_api_keys",
     ]);
 
     for (const table of [

@@ -1,0 +1,51 @@
+name: Dealer alerts
+
+# Daily at 06:23 UTC, and on demand: fail if any instrument has been widened
+# longer than the 72 h flag hold (params.json → dealer.flag_hours). A newer
+# mid or the hold's end restores a widened forward, so one still widened past
+# it means the dealer job has stopped running or keeps being re-flagged.
+#
+# The check reads the `health` block of the dealer job's own response: this
+# workflow fires one extra dealer run under its own X-Run-Id (it posts only
+# what moved, like every run) and reads health.widened_over_hold.
+#
+# Deliberately not built here: the silent-source alert (a source with no
+# success in 24 h) and the print-without-a-preceding-scoop counter. Both
+# ship with ingest, owned by Nick (docs/decisions/0001), and read
+# source_health and event_flags once ingest writes them.
+on:
+  schedule:
+    - cron: "23 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  widened:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check for instruments widened past the hold
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          DEALER_URL: ${{ vars.DEALER_URL || 'https://openmkt.vercel.app/api/cron/dealer' }}
+          RUN_ID: alerts-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::warning::CRON_SECRET is not set for this repository; the alert cannot run."
+            exit 0
+          fi
+          body=$(curl --fail-with-body --silent --show-error --max-time 120 \
+            -H "Authorization: Bearer $CRON_SECRET" -H "X-Run-Id: $RUN_ID" "$DEALER_URL")
+          status=$(echo "$body" | jq -r '.status')
+          if [ "$status" != "succeeded" ]; then
+            echo "::error::The dealer job did not run: status $status"
+            echo "$body"
+            exit 1
+          fi
+          hold=$(echo "$body" | jq -r '.health.widened_over_hold.hold_hours')
+          count=$(echo "$body" | jq '.health.widened_over_hold.instruments | length')
+          echo "Instruments widened longer than ${hold} h: ${count}"
+          if [ "$count" -gt 0 ]; then
+            echo "$body" | jq -r '.health.widened_over_hold.instruments[]
+              | "::error::\(.company) \(.kind) widened since \(.widened_since) (\(.hours_widened | floor) h)"'
+            exit 1
+          fi

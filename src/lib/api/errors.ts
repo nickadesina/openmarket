@@ -24,6 +24,7 @@ export const ERROR_CODES = [
   "CAP_EXCEEDED",
   "PRICE_CLAMPED",
   "INSTRUMENT_CLOSED",
+  "API_KEY_INVALID",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

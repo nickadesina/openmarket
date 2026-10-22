@@ -1,0 +1,241 @@
+.page {
+  width: min(72rem, calc(100% - var(--page-gutter) - var(--page-gutter)));
+  margin: 0 auto;
+  padding: var(--space-7) 0 var(--space-8);
+}
+
+.pageHeader {
+  max-width: 48rem;
+  margin-bottom: var(--space-6);
+}
+
+.pageHeader h1 {
+  margin: var(--space-1) 0 var(--space-2);
+  font-size: var(--font-size-xl);
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.pageHeader p,
+.moduleHeader p,
+.gatePanel p,
+.empty p {
+  max-width: 72ch;
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.sectionLabel {
+  composes: sectionHead from "../../styles/shared.module.css";
+}
+
+.operations {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.asOf {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+}
+
+.module,
+.gatePanel {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.module {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+}
+
+.moduleHeader h2,
+.gatePanel h2 {
+  margin: var(--space-1) 0 var(--space-2);
+  font-size: var(--font-size-lg);
+}
+
+.gatePanel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-6);
+  align-items: end;
+  padding: var(--space-5);
+}
+
+/* Each table scrolls inside its own viewport on narrow screens, like the quote sheet. */
+.scroller {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.table th {
+  height: var(--row-compact);
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-hover);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.table td {
+  height: var(--row-table);
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+  white-space: nowrap;
+}
+
+/* Outranks the table head's left alignment for figure columns. */
+.table .figure {
+  font-family: var(--font-num);
+  font-weight: 700;
+  text-align: right;
+}
+
+.totalRow th,
+.totalRow td {
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-elevated);
+}
+
+.gain {
+  color: var(--color-positive);
+}
+
+.loss {
+  color: var(--color-ink);
+}
+
+.flat,
+.muted {
+  color: var(--color-ink-muted);
+}
+
+.code {
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+}
+
+.jobs {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.job h3 {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-sm);
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.job p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.empty {
+  display: grid;
+  max-width: 60ch;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+}
+
+.emptyTitle {
+  font-weight: 700;
+}
+
+/* Outranks `.empty p`'s muted ink: the one-liner is the panel's statement. */
+.empty .emptyTitle {
+  color: var(--color-ink);
+}
+
+.warning {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-warning);
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.warningText {
+  color: var(--color-warning);
+  font-weight: 700;
+}
+
+.errorText {
+  color: var(--color-primary);
+}
+
+.link {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--color-border-strong);
+  text-underline-offset: 0.25rem;
+}
+
+.link:hover {
+  text-decoration-color: var(--color-primary);
+}
+
+.link:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+.primaryButton {
+  composes: primaryButton from "../../styles/shared.module.css";
+}
+
+.retry {
+  composes: buttonBase from "../../styles/shared.module.css";
+  justify-self: start;
+  border: 1px solid var(--color-ink);
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+.retry:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.skeleton {
+  composes: skeletonBlock from "../../styles/shared.module.css";
+  height: 16rem;
+}
+
+@media (max-width: 45rem) {
+  .page {
+    padding-top: var(--space-5);
+  }
+
+  .gatePanel {
+    grid-template-columns: 1fr;
+  }
+
+  .module {
+    padding: var(--space-4);
+  }
+}

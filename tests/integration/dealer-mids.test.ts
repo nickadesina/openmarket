@@ -249,6 +249,8 @@ postgresDescribe(suiteName, () => {
       midsChecked: 2,
       // The requote step's first quote of each hand-made book.
       quotesChecked: 2,
+      // The reference step's first row of each: the model mid, with no flow or crowd.
+      referencesChecked: 2,
       findings: [],
       passed: true,
     });

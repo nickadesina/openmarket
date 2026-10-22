@@ -1,0 +1,75 @@
+import { consumeRefQuota } from "../services/dealer/ref-access.js";
+import { ServiceError } from "./errors.js";
+import {
+  assertOnlyQueryParameters,
+  parseBoundedInteger,
+  parseOptionalString,
+} from "./pagination.js";
+import { type ReadRouteContext, withReadRoute } from "./request-context.js";
+import { jsonSuccess } from "./response.js";
+
+/**
+ * Every /api/ref/* route (README D14): public, read-only, shared-cached for
+ * 60 seconds, and drawn from the caller's `ref` quota (its network's bucket,
+ * or its API key's) after the query is validated and before any read.
+ */
+export const REF_CACHE_SECONDS = 60;
+
+export interface RefRouteContext extends ReadRouteContext {
+  readonly searchParams: URLSearchParams;
+  readonly now: Date;
+}
+
+export function withRefRoute(
+  request: Request,
+  allowedParameters: readonly string[],
+  handler: (context: RefRouteContext) => Promise<unknown> | unknown,
+): Promise<Response> {
+  return withReadRoute(
+    request,
+    async (context) => {
+      const searchParams = new URL(request.url).searchParams;
+      assertOnlyQueryParameters(searchParams, allowedParameters);
+      await consumeRefQuota(() => context.db, request);
+      const body = await handler({
+        requestId: context.requestId,
+        // Lazy, as in withReadRoute: a route that reads nothing opens no pool.
+        get db() {
+          return context.db;
+        },
+        searchParams,
+        now: new Date(),
+      });
+      return jsonSuccess(body, { requestId: context.requestId });
+    },
+    { cacheSeconds: REF_CACHE_SECONDS },
+  );
+}
+
+/** `limit` on a paginated ref log: 1–1000, default 200. */
+export function parseRefLimit(searchParams: URLSearchParams): number {
+  return parseBoundedInteger(searchParams, "limit", {
+    defaultValue: 200,
+    minimum: 1,
+    maximum: 1000,
+  });
+}
+
+export function parseRefCursor(searchParams: URLSearchParams): string | undefined {
+  return parseOptionalString(searchParams, "cursor", { maximumLength: 512 });
+}
+
+/** An optional ISO 8601 instant (`from`, `to`). */
+export function parseRefInstant(searchParams: URLSearchParams, name: string): Date | undefined {
+  const value = parseOptionalString(searchParams, name, { maximumLength: 40 });
+  if (value === undefined) return undefined;
+  const parsed = /^\d{4}-\d{2}-\d{2}(T[\d:.]+(Z|[+-]\d{2}:\d{2}))?$/.test(value)
+    ? new Date(value)
+    : new Date(Number.NaN);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new ServiceError("INVALID_INPUT", `Invalid ${name} query parameter.`, {
+      parameter: name,
+    });
+  }
+  return parsed;
+}

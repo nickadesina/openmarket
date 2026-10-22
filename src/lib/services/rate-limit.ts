@@ -6,7 +6,7 @@ import { ServiceError } from "../api/errors.js";
 import type { Database } from "../db/schema.js";
 import { trustedClientAddress } from "../security/comment-address.js";
 
-export type RateLimitScope = "quote" | "trade" | "tournament_register" | "tournament_login";
+export type RateLimitScope = "quote" | "trade" | "tournament_register" | "tournament_login" | "ref";
 
 export interface RateLimitPolicy {
   readonly limit: number;
@@ -21,6 +21,8 @@ export const RATE_LIMIT_POLICIES: Readonly<Record<RateLimitScope, RateLimitPolic
   // availability before verifying and consumes quota only on a failure.
   tournament_register: { limit: 5, windowMs: 60 * 60_000 },
   tournament_login: { limit: 10, windowMs: 15 * 60_000 },
+  // The public reference API, per network (README D14); a keyed request uses its key's quota.
+  ref: { limit: 60, windowMs: 60_000 },
 };
 
 /** Per-network ceilings consumed alongside the per-user policy, so signing

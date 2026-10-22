@@ -206,25 +206,35 @@ Public, read-only, 60 s cache, every payload carrying `model_version`,
 
 Blend (`src/lib/engine/dealer/blend.ts`):
 
-    R   = w_m·m̃ + w_t·p̄_traded + w_c·p̄_crowd
+    R   = w_m·m + w_t·p̄_traded + w_c·p̄_crowd
     w_t = min(0.6, V_30d / (V_30d + V₀))         V₀ = $50k
     w_c = min(0.3, n / (n + n₀)) · [n ≥ N_min]   n₀ = 20, N_min = 10
     w_m = 1 − w_t − w_c
 
-With no flow and no crowd the reference *is* the model mid and says so.
+m is the latest `model_mids` value, not the skewed quote mid m̃, so the
+dealer's own inventory never moves the reference. p̄_traded is the
+30-day average on the instrument's book (forward: notional-weighted F₀;
+binary: cash-weighted YES price); p̄_crowd the linked question's latest
+aggregate (forward: ln of its median; binary: P(YES)). With n₀ = 20 the
+0.3 cap binds from N_min on, so w_c is 0 or 0.3. With no flow and no
+crowd the reference *is* the model mid and says so (`model_only`). The
+constants are policy, published under `BLEND_VERSION` (README D14).
 
 | Endpoint | Returns |
 | --- | --- |
 | `GET /api/ref/listings` | names, tiers, live instruments, parameters, T |
 | `GET /api/ref/[slug]` | reference forward (ln and USD), reference hazard, components and weights, last print, next expiry, `dealer_inventory_sign` |
-| `GET /api/ref/[slug]/history?from=&to=` | `reference_prices` rows plus the `quotes` tape |
+| `GET /api/ref/[slug]/history?from=&to=` | `reference_prices` rows plus the `quotes` tape (inventory as its sign), each on its own keyset cursor |
 | `GET /api/ref/[slug]/mids` | the model's forecast log, unredacted |
 | `GET /api/ref/[slug]/flags` | public evidence used |
 | `GET /api/ref/rulebook` | current rulebook as JSON |
 
 Auth: public at 60 req/min per network bucket (`rate_limits` scope
-`ref`); keyed tier via `api_keys` with per-key quotas, present from day
-one so the first desk that asks gets a key the same day.
+`ref`); keyed tier via `api_keys` (migration `010`, SHA-256 of the key
+only, `npm run api-key:create`) with per-key quotas, present from day
+one so the first desk that asks gets a key the same day. A bad or
+revoked key is a 401, not the public tier. Logs page with `limit`
+(≤ 1000) and `cursor`.
 
 ## 9. Settlement and rulebook
 
@@ -278,7 +288,7 @@ Anthropic Series D has no dated close.
 | Idempotency | `cron_runs.run_id` unique (the `event_flags.run_id` FK needs it); reruns exit early |
 | LLM extraction | one provider behind `src/lib/services/ingest/extract.ts`; `EXTRACT_API_KEY`; prompts and schema versioned; daily cost cap in `rate_limits` |
 | Secrets | `CRON_SECRET`, `EXTRACT_API_KEY`, `EDGAR_USER_AGENT`, the tournament's X OAuth credentials; sign-in and admin are the tournament's (README D1) |
-| Observability | `/admin/dealer`: `dealer_pnl`, per-source last success, widened instruments, resolution queue; daily Actions job fails if any source is silent 24 h or any instrument widened > 72 h |
+| Observability | `/admin/dealer`: `dealer_pnl`, per-source last success, widened instruments, resolution queue; `dealer-alerts.yml` fails daily if any instrument is widened > 72 h; the silent-source (24 h) check ships with ingest |
 | Replay | `verify:replay` rebuilds quotes-derived state, forward payouts and `reference_prices` |
 | Migration | `007_dealer` is additive; `008` (owner-approved, deletes data) removed the ladder markets, Stripe and the username accounts; `npm run seed:listings` idempotent on `(company, listed_at)` |
 
