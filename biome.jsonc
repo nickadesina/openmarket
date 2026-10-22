@@ -7,7 +7,6 @@
       "scripts/**",
       "tests/**",
       "*.ts",
-      "*.mjs",
       "!!.impeccable",
       "!next-env.d.ts",
       // Generated fixtures: their generators own the bytes, and the ingest must reproduce event-flags.json exactly.
@@ -22,7 +21,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "complexity": {
         // Ratchet: the threshold sits just above where new code should stop.
         // Existing functions above it carry a biome-ignore naming the debt;

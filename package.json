@@ -16,7 +16,6 @@
     "test:browser": "playwright test",
     "test:browser:local": "DATABASE_URL_TEST=postgresql://$USER@localhost:5432/openmarket_test playwright test",
     "db:test:local": "createdb openmarket_test 2>/dev/null; DATABASE_URL_UNPOOLED=postgresql://$USER@localhost:5432/openmarket_test DATABASE_URL=postgresql://$USER@localhost:5432/openmarket_test tsx --env-file-if-exists=.env.local scripts/migrate.ts",
-    "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
