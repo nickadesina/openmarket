@@ -26,11 +26,16 @@ jobs:
       - name: Check for instruments widened past the hold
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          REPOSITORY_IS_FORK: ${{ github.event.repository.fork }}
           DEALER_URL: ${{ vars.DEALER_URL || 'https://openmarket.systems/api/cron/dealer' }}
           RUN_ID: alerts-${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           if [ -z "$CRON_SECRET" ]; then
-            echo "::warning::CRON_SECRET is not set for this repository; the alert cannot run."
+            if [ "$GITHUB_EVENT_NAME" = "schedule" ] && [ "$REPOSITORY_IS_FORK" != "true" ]; then
+              echo "::error::CRON_SECRET is not set; the scheduled job cannot run."
+              exit 1
+            fi
+            echo "::warning::CRON_SECRET is not set; skipping this manual or fork run."
             exit 0
           fi
           body=$(curl --fail-with-body --silent --show-error --max-time 120 \

@@ -590,7 +590,8 @@ npm run dev              # http://localhost:3000, never 127.0.0.1
   `/api/t/cron/provenance` hourly with `Authorization: Bearer
   $CRON_SECRET`; the route refuses anything else. Set the same
   `CRON_SECRET` (at least 16 characters) in Vercel and as a GitHub
-  Actions secret; the workflow skips itself without it, and
+  Actions secret; scheduled cron runs fail without it, while manual and
+  fork runs warn and skip.
   `vars.PROVENANCE_URL` overrides the target. A GitHub schedule rather
   than Vercel Cron keeps hourly runs plan-independent; missed runs catch
   up. `.github/workflows/dealer.yml` calls `/api/cron/dealer` the same
