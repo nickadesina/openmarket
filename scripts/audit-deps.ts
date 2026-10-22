@@ -12,6 +12,8 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 
+import ts from "typescript";
+
 const ROOT = process.cwd();
 
 interface Violation {
@@ -43,17 +45,74 @@ function layerOf(
   return "other";
 }
 
+interface ImportEdge {
+  readonly specifier: string;
+  readonly typeOnly: boolean;
+  readonly line: number;
+}
+
+function importEdge(node: ts.Node, source: ts.SourceFile): ImportEdge | undefined {
+  let specifier: ts.Node | undefined;
+  let typeOnly = false;
+  if (ts.isImportDeclaration(node)) {
+    specifier = node.moduleSpecifier;
+    const clause = node.importClause;
+    const bindings = clause?.namedBindings;
+    typeOnly = Boolean(
+      clause?.isTypeOnly ||
+        (clause?.name === undefined &&
+          bindings &&
+          ts.isNamedImports(bindings) &&
+          bindings.elements.length > 0 &&
+          bindings.elements.every((element) => element.isTypeOnly)),
+    );
+  } else if (ts.isExportDeclaration(node)) {
+    specifier = node.moduleSpecifier;
+    const clause = node.exportClause;
+    typeOnly =
+      node.isTypeOnly ||
+      Boolean(
+        clause &&
+          ts.isNamedExports(clause) &&
+          clause.elements.length > 0 &&
+          clause.elements.every((element) => element.isTypeOnly),
+      );
+  } else if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+    specifier = node.arguments[0];
+  } else if (ts.isImportTypeNode(node) && ts.isLiteralTypeNode(node.argument)) {
+    specifier = node.argument.literal;
+    typeOnly = true;
+  }
+  if (specifier === undefined || !ts.isStringLiteralLike(specifier)) return undefined;
+  return {
+    specifier: specifier.text,
+    typeOnly,
+    line: source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1,
+  };
+}
+
+function imports(absolute: string): ImportEdge[] {
+  const source = ts.createSourceFile(
+    absolute,
+    readFileSync(absolute, "utf8"),
+    ts.ScriptTarget.Latest,
+    true,
+  );
+  const edges: ImportEdge[] = [];
+  function visit(node: ts.Node): void {
+    const edge = importEdge(node, source);
+    if (edge !== undefined) edges.push(edge);
+    ts.forEachChild(node, visit);
+  }
+  visit(source);
+  return edges;
+}
+
 const violations: Violation[] = [];
 for (const absolute of walk(join(ROOT, "src"))) {
   const file = relative(ROOT, absolute);
   const layer = layerOf(file);
-  const lines = readFileSync(absolute, "utf8").split("\n");
-  lines.forEach((text, index) => {
-    const match = text.match(/^\s*import\s+(type\s+)?(?:[^"']*?\s+from\s+)?["']([^"']+)["']/);
-    if (!match) return;
-    const typeOnly = match[1] !== undefined;
-    const specifier = match[2]!;
-    const line = index + 1;
+  for (const { specifier, typeOnly, line } of imports(absolute)) {
     const isRelative = specifier.startsWith(".");
     const target = isRelative
       ? relative(ROOT, resolve(dirname(absolute), specifier)).replace(/\.js$/, "")
@@ -83,7 +142,7 @@ for (const absolute of walk(join(ROOT, "src"))) {
       default:
         break;
     }
-  });
+  }
 }
 
 if (violations.length === 0) {

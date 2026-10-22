@@ -577,9 +577,9 @@ DATABASE_URL_TEST=postgresql://... npx playwright test
 npm run dev              # http://localhost:3000, never 127.0.0.1
 ```
 
-- `.env.local` needs `DATABASE_URL` and `DATABASE_URL_UNPOOLED`; sign-in
-  and admin are the tournament's (below). The npm scripts do not load
-  `.env.local`; export it first (`set -a; . ./.env.local; set +a`).
+- The `tsx` npm scripts load `.env.local` when it exists; exported variables
+  take precedence. `.env.local` needs `DATABASE_URL` and `DATABASE_URL_UNPOOLED`;
+  sign-in and admin are the tournament's (below).
   Dev data: `npm run db:migrate && npm run seed:listings --
   --listed-at=<ISO>`. Migrations run in order to latest on every
   deploy; `008` deletes data (D6) and `013` voids every open bucket
@@ -610,7 +610,8 @@ npm run dev              # http://localhost:3000, never 127.0.0.1
   `/api/t/cron/provenance` hourly with `Authorization: Bearer
   $CRON_SECRET`; the route refuses anything else. Set the same
   `CRON_SECRET` (at least 16 characters) in Vercel and as a GitHub
-  Actions secret; the workflow skips itself without it, and
+  Actions secret; scheduled cron runs fail without it, while manual and
+  fork runs warn and skip.
   `vars.PROVENANCE_URL` overrides the target. A GitHub schedule rather
   than Vercel Cron keeps hourly runs plan-independent; missed runs catch
   up. `.github/workflows/dealer.yml` and `settle.yml` call
