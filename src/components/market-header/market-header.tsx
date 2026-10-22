@@ -33,7 +33,7 @@ const directionClass = {
 export function MarketHeader({ listing, movement }: MarketHeaderProps) {
   const { forward, binary, distribution, anchor } = listing;
   const round = roundChange(listing.vsLastRound);
-  const binaryLabel = listing.binaryEvent === "public_s1" ? "Public S-1 by" : "Priced round by";
+  const binaryLabel = listing.binaryEvent === "public_s1" ? "Public S-1" : "Priced round";
 
   return (
     <header className={styles.header}>
@@ -98,14 +98,15 @@ export function MarketHeader({ listing, movement }: MarketHeaderProps) {
           )}
 
           <div className={styles.cell}>
-            <dt>
-              {binaryLabel} {binary === null ? "quarter-end" : formatDate(binary.expires_at)}
-            </dt>
+            <dt>{binaryLabel} this quarter</dt>
             <dd className={styles.figure}>
               {binary === null ? "Not trading" : `YES ${formatProbability(binary.yes_price)}`}
             </dd>
             {binary === null ? null : (
-              <dd className={styles.note}>Model p {formatProbability(binary.model_p)}</dd>
+              <dd className={styles.note}>
+                By <time dateTime={binary.expires_at}>{formatDate(binary.expires_at)}</time> · model
+                p {formatProbability(binary.model_p)}
+              </dd>
             )}
           </div>
 

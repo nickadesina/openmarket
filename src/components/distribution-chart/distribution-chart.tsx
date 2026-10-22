@@ -16,6 +16,7 @@ interface DistributionChartProps {
 const HEIGHT = 220;
 const MARGIN = { top: 12, right: 8, bottom: 34, left: 44 } as const;
 const LABELLED_STRIKES = [9, 19, 29] as const;
+const WIDE_AXIS = 520;
 
 /** The 41 bucket masses of the API's implied distribution, read-only. */
 export function DistributionChart({ distribution }: DistributionChartProps) {
@@ -166,12 +167,22 @@ export function DistributionChart({ distribution }: DistributionChartProps) {
                 </g>
               );
             })}
-            <text x="0" y={innerHeight + 22} className={styles.axisLabel}>
-              Lower valuation
-            </text>
-            <text x={innerWidth} y={innerHeight + 22} textAnchor="end" className={styles.axisLabel}>
-              Higher valuation
-            </text>
+            {/* The end captions collide with the strike labels on a phone-width axis. */}
+            {innerWidth >= WIDE_AXIS ? (
+              <>
+                <text x="0" y={innerHeight + 22} className={styles.axisLabel}>
+                  Lower valuation
+                </text>
+                <text
+                  x={innerWidth}
+                  y={innerHeight + 22}
+                  textAnchor="end"
+                  className={styles.axisLabel}
+                >
+                  Higher valuation
+                </text>
+              </>
+            ) : null}
           </Group>
         </svg>
       </div>

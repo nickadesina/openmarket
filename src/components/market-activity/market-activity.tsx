@@ -143,6 +143,7 @@ export function MarketActivity({
         <a href="/api/ref/rulebook" target="_blank" rel="noreferrer">
           Rulebook v{listing.rulebookVersion}
         </a>{" "}
+        ·{" "}
         <a href={listing.anchor.sourceUrl} target="_blank" rel="noreferrer">
           Last print source
         </a>

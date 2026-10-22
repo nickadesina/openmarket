@@ -47,6 +47,9 @@ export default defineConfig({
   reporter: isCi ? [["list"], ["html", { open: "never" }]] : "list",
   use: {
     baseURL: appOrigin,
+    // A pinned locale: a POSIX shell's default ("en-US@posix") is not a valid
+    // BCP 47 tag, and the chart library's Intl calls throw on it.
+    locale: "en-US",
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
   },
@@ -67,11 +70,15 @@ export default defineConfig({
   ],
   ...(hasTestDatabase
     ? {
+        // Lists the five names and runs one dealer job against DATABASE_URL_TEST.
+        globalSetup: "./tests/browser/global-setup.ts",
         webServer: {
           command: `npm run dev -- -H ${origin.hostname} -p ${port}`,
           url: appOrigin,
           reuseExistingServer: false,
-          timeout: 120_000,
+          // A first compile in a git worktree can wait on the file watcher scanning its
+          // siblings; four minutes keeps that from failing the run before a test does.
+          timeout: 240_000,
           stdout: isCi ? "pipe" : "ignore",
           stderr: "pipe",
           env: {

@@ -191,7 +191,10 @@ export function MarketChart({
               } as const);
         // A held level is a flat line; autoscaled, its axis would repeat one
         // label at every tick. Frame it with a band either side instead.
-        const held = marks.points.length === 0 ? marks.currentMetric : null;
+        const flat = [marks.openValue, ...marks.points.map((point) => point.value)].every(
+          (value) => value === marks.currentMetric,
+        );
+        const held = flat ? marks.currentMetric : null;
         const currentSeries = chart.addSeries(LineSeries, {
           color: cssVar(tokens, "--color-ink"),
           lineWidth: 2,
