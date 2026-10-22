@@ -7,12 +7,12 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-5);
 }
 
 .header h1 {
   margin: 0;
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-2xl);
   line-height: var(--line-height-tight);
 }
 
@@ -29,7 +29,7 @@
 
 .affiliation {
   color: var(--color-ink-muted);
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-lg);
 }
 
 .affiliationForm {
@@ -108,18 +108,20 @@
 }
 
 .avatar {
-  width: 3rem;
-  height: 3rem;
+  flex: none;
+  width: 6rem;
+  height: 6rem;
   border: 1px solid var(--color-border);
+  object-fit: cover;
 }
 
 .headerMeta {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-1) var(--space-3);
-  margin: var(--space-1) 0 0;
+  margin: var(--space-2) 0 0;
   color: var(--color-ink-muted);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-md);
 }
 
 .flag {
@@ -296,6 +298,11 @@
 
   .position {
     padding: var(--space-3);
+  }
+
+  .avatar {
+    width: 4.5rem;
+    height: 4.5rem;
   }
 
   .total {

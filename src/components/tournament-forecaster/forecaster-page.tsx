@@ -127,7 +127,7 @@ export function ForecasterPage({
       <header className={styles.header}>
         {identity.avatarUrl === null ? null : (
           // biome-ignore lint/performance/noImgElement: X avatars are remote, tiny, and not worth an image-optimizer domain.
-          <img className={styles.avatar} src={identity.avatarUrl} alt="" width={48} height={48} />
+          <img className={styles.avatar} src={identity.avatarUrl} alt="" width={96} height={96} />
         )}
         <div>
           <div className={styles.nameRow}>
