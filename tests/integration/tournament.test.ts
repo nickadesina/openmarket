@@ -1,7 +1,7 @@
 import { sql } from "kysely";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { QuestionInput } from "../../src/lib/api/tournament-schemas.js";
+import { type QuestionInput, questionInputSchema } from "../../src/lib/api/tournament-schemas.js";
 import {
   createTournamentSession,
   TOURNAMENT_SESSION_COOKIE,
@@ -88,6 +88,7 @@ function forward(
   opensAt: Date,
   closesAt: Date,
   expiresAt: Date = closesAt,
+  levelLabel?: string,
 ): QuestionInput {
   return {
     slug,
@@ -97,6 +98,7 @@ function forward(
     rulebook_version: 1,
     kind: "forward",
     unit: "USD_B",
+    ...(levelLabel === undefined ? {} : { level_label: levelLabel }),
     opens_at: opensAt.toISOString(),
     closes_at: closesAt.toISOString(),
     expiry_at: expiresAt.toISOString(),
@@ -227,6 +229,40 @@ postgresDescribe(suiteName, () => {
         forward("backwards", new Date(now - HOUR), new Date(now + HOUR), new Date(now)),
       ),
     ).rejects.toMatchObject({ code: "INVALID_INPUT" });
+  });
+
+  it("names a forward's level when the draft gives one, and never a binary's", async () => {
+    const now = Date.now();
+    await saveDraftQuestion(
+      postgres.db,
+      forward(
+        "labelled",
+        new Date(now - HOUR),
+        new Date(now + HOUR),
+        new Date(now + HOUR),
+        "First-day market cap",
+      ),
+    );
+    await openQuestion(postgres.db, "labelled");
+    await openForward();
+    await openBinary();
+    const bySlug = new Map((await listQuestions(postgres.db)).map((q) => [q.slug, q]));
+    expect(bySlug.get("labelled")?.levelLabel).toBe("First-day market cap");
+    expect(bySlug.get("forward-q")?.levelLabel).toBeNull();
+    expect(bySlug.get("binary-q")?.levelLabel).toBeNull();
+    expect(
+      questionInputSchema.safeParse({
+        ...binary("x", new Date(now), new Date(now + HOUR)),
+        level_label: "Nope",
+      }).success,
+    ).toBe(false);
+    await expect(
+      postgres.db
+        .updateTable("tournament_questions")
+        .set({ level_label: "Nope" })
+        .where("slug", "=", "binary-q")
+        .execute(),
+    ).rejects.toThrow(/tournament_questions_level_label/);
   });
 
   it("validates, rate-limits, and publishes the binary crowd only from five forecasters", async () => {

@@ -48,6 +48,8 @@ export interface QuestionSummary {
   readonly kind: TournamentQuestionKind;
   /** A forward's unit; null for a binary. */
   readonly unit: TournamentUnit | null;
+  /** A forward's short name for its level; null for a binary or when none was given. */
+  readonly levelLabel: string | null;
   readonly status: TournamentQuestionStatus;
   readonly acceptingForecasts: boolean;
   readonly opensAt: string;
@@ -204,6 +206,7 @@ async function summarize(
     title: question.title,
     kind: question.kind,
     unit: question.unit,
+    levelLabel: question.levelLabel,
     status: effectiveStatus(question, now),
     acceptingForecasts: acceptingForecasts(question, now),
     opensAt: question.opensAt.toISOString(),

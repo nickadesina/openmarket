@@ -65,6 +65,7 @@ test("a forecaster submits a forward level and sees it in the list and on their 
     title,
     kind: "forward",
     unit: "USD_B",
+    level_label: "Next post-money",
     expiry_at: new Date(Date.now() + 120 * MINUTE).toISOString(),
   });
 
@@ -74,7 +75,7 @@ test("a forecaster submits a forward level and sees it in the list and on their 
   await expect(page.getByText("Not enough forecasts yet.")).toBeVisible();
 
   await signInAndReload(page, baseURL!, handle);
-  const field = page.getByRole("textbox", { name: "Level in USD billions" });
+  const field = page.getByRole("textbox", { name: "Next post-money" });
   await expect(field).toBeVisible();
   await expect(page.getByText(/the question voids and nothing is scored/)).toBeVisible();
   await expect(page.getByText("Exact 100 · 10% off 86 · 2× off 0")).toBeVisible();

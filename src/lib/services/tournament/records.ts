@@ -34,6 +34,7 @@ export interface QuestionRecord {
   readonly minAccountAgeDays: number;
   readonly extremization: number;
   readonly xThreadUrl: string | null;
+  readonly levelLabel: string | null;
   readonly voidNoteMd: string | null;
 }
 
@@ -55,6 +56,7 @@ export function toQuestionRecord(row: QuestionRow): QuestionRecord {
     minAccountAgeDays: row.min_account_age_days,
     extremization: row.extremization,
     xThreadUrl: row.x_thread_url,
+    levelLabel: row.level_label,
     voidNoteMd: row.void_note_md,
   };
 }

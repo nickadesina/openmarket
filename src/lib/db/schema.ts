@@ -194,6 +194,8 @@ export interface TournamentQuestionsTable {
   kind: TournamentQuestionKind;
   /** Set iff `kind = 'forward'`. */
   unit: TournamentUnit | null;
+  /** A forward's short name for its level, e.g. "First-day market cap" (migration 014). */
+  level_label: Generated<string | null>;
   opens_at: Date;
   closes_at: Date;
   expiry_at: Date;

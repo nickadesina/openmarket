@@ -68,6 +68,8 @@ const forwardQuestionSchema = z
     ...questionFields,
     kind: z.literal("forward"),
     unit: z.enum(["USD_B", "USD_T"]),
+    /** The level's short name, the heading of the forecast field. */
+    level_label: z.string().trim().min(1).max(60).optional(),
     expiry_at: instantSchema,
   })
   .strict();

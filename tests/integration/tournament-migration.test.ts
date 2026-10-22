@@ -315,7 +315,7 @@ postgresDescribe(`${suiteName}: on a populated 012 tournament`, () => {
     vectorsBefore = rows;
     expect(vectorsBefore).toHaveLength(5);
 
-    const migration = await migrateTestDatabase(postgres, "latest");
+    const migration = await migrateTestDatabase(postgres, MIGRATION_013);
     expect(migration.error).toBeUndefined();
     expect(migration.results?.map((result) => result.migrationName)).toEqual([MIGRATION_013]);
   }, 30_000);
@@ -582,8 +582,10 @@ postgresDescribe(`${suiteName}: on an empty tournament`, () => {
   it("goes down to the 012 shape and back up", async () => {
     const down = await migrateTestDatabase(postgres, BEFORE_013);
     expect(down.error).toBeUndefined();
-    expect(down.results?.map((result) => [result.migrationName, result.direction])).toEqual([
-      [MIGRATION_013, "Down"],
+    // Later migrations go down first; 013 is the last step to the 012 shape.
+    expect(down.results?.map((result) => [result.migrationName, result.direction]).at(-1)).toEqual([
+      MIGRATION_013,
+      "Down",
     ]);
     expect(await relationExists(postgres, "tournament_buckets")).toBe(true);
     expect(await relationExists(postgres, "tournament_buckets_one_floor")).toBe(true);
@@ -603,8 +605,9 @@ postgresDescribe(`${suiteName}: on an empty tournament`, () => {
 
     const up = await migrateTestDatabase(postgres, "latest");
     expect(up.error).toBeUndefined();
-    expect(up.results?.map((result) => [result.migrationName, result.direction])).toEqual([
-      [MIGRATION_013, "Up"],
+    expect(up.results?.map((result) => [result.migrationName, result.direction])[0]).toEqual([
+      MIGRATION_013,
+      "Up",
     ]);
   });
 
