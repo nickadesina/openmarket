@@ -65,7 +65,7 @@ function PaperCash() {
     queryFn: () =>
       apiRequest<{ readonly cashBalanceCents: string }>("/api/portfolio?offset=0&limit=1"),
   });
-  // The comments module caches a signed-out read as null under the same key.
+  // Cash becomes available after the signed-in portfolio read resolves.
   if (portfolio.data == null) return null;
   return (
     <span className={`${styles.accountCash} ${styles.wideOnly}`}>
