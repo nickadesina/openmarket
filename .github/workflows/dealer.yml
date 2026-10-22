@@ -17,7 +17,7 @@ jobs:
       - name: Call the dealer job
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          DEALER_URL: ${{ vars.DEALER_URL || 'https://openmkt.vercel.app/api/cron/dealer' }}
+          DEALER_URL: ${{ vars.DEALER_URL || 'https://openmarket.systems/api/cron/dealer' }}
           RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           if [ -z "$CRON_SECRET" ]; then

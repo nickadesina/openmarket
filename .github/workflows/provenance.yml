@@ -16,7 +16,7 @@ jobs:
       - name: Call the provenance job
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          PROVENANCE_URL: ${{ vars.PROVENANCE_URL || 'https://openmkt.vercel.app/api/t/cron/provenance' }}
+          PROVENANCE_URL: ${{ vars.PROVENANCE_URL || 'https://openmarket.systems/api/t/cron/provenance' }}
         run: |
           if [ -z "$CRON_SECRET" ]; then
             echo "CRON_SECRET is not set for this repository; skipping."
