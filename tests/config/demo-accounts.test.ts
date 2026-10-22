@@ -54,7 +54,7 @@ describe("demo accounts", () => {
         expect(DEMO_FORWARD_NOTIONALS_USD).toContain(trade.notionalUsd);
       } else if (trade.kind === "binary_buy") {
         expect(DEMO_BINARY_SPENDS_USD).toContain(trade.spendUsd);
-      } else {
+      } else if (trade.kind === "binary_sell") {
         expect(DEMO_SELL_FRACTIONS).toContain(trade.fraction);
       }
     }
@@ -64,6 +64,35 @@ describe("demo accounts", () => {
         .filter((trade) => trade.slug === slug && trade.kind === "forward")
         .reduce((sum, trade) => sum + (trade.kind === "forward" ? trade.notionalUsd : 0), 0);
       expect(gross).toBeLessThan(capUsd);
+    }
+  });
+
+  it("nets the flow out on each name: forwards and binary buys come in opposite pairs", () => {
+    const plan = demoTradePlan(NAMES);
+    for (const slug of NAMES) {
+      const forwards = plan.flatMap((trade) =>
+        trade.slug === slug && trade.kind === "forward" ? [trade] : [],
+      );
+      const buys = plan.flatMap((trade) =>
+        trade.slug === slug && (trade.kind === "binary_buy" || trade.kind === "binary_match")
+          ? [trade]
+          : [],
+      );
+      for (let index = 1; index < forwards.length; index += 2) {
+        expect(forwards[index]!.side).not.toBe(forwards[index - 1]!.side);
+        expect(forwards[index]!.notionalUsd).toBe(forwards[index - 1]!.notionalUsd);
+      }
+      // Opener (dollars), then its match (the same shares, the other side), and so on.
+      for (const [index, trade] of buys.entries()) {
+        expect(trade.kind).toBe(index % 2 === 0 ? "binary_buy" : "binary_match");
+        if (index % 2 === 1) expect(trade.side).not.toBe(buys[index - 1]!.side);
+      }
+      // The dealer's forward inventory after the name's flow is at most one trade.
+      const net = forwards.reduce(
+        (sum, trade) => sum + (trade.side === "long" ? trade.notionalUsd : -trade.notionalUsd),
+        0,
+      );
+      expect(Math.abs(net)).toBeLessThanOrEqual(Math.max(...DEMO_FORWARD_NOTIONALS_USD));
     }
   });
 });

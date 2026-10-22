@@ -12,6 +12,7 @@ import { runDealerJob } from "../../src/lib/services/dealer/run-dealer-job.js";
 import { executeTrade } from "../../src/lib/services/execute-trade.js";
 import { getActivity } from "../../src/lib/services/get-activity.js";
 import { getMarket } from "../../src/lib/services/get-market.js";
+import { listMarkets } from "../../src/lib/services/list-markets.js";
 import {
   closeQuestion,
   openQuestion,
@@ -180,6 +181,13 @@ postgresDescribe(suiteName, () => {
     const modal = await getMarket(db, "modal", { now: new Date(TRADE_AT + HOUR) });
     expect(modal.openInterest.forwardNotionalUsd).toBeGreaterThan(0);
     expect(modal.openInterest.binaryUsd).toBeGreaterThan(0);
+
+    // The flow nets out: quotes stay near the model, not pushed to a level.
+    for (const listing of (await listMarkets(db, { now: new Date(TRADE_AT + HOUR) })).listings) {
+      const forward = listing.forward!;
+      expect(Math.abs((forward.bid_ln + forward.ask_ln) / 2 - forward.mid_ln)).toBeLessThan(0.03);
+      expect(Math.abs(listing.binary!.yes_price - listing.binary!.model_p)).toBeLessThan(0.05);
+    }
 
     const replay = await verifyReplay(db);
     expect(replay.passed).toBe(true);

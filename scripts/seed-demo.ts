@@ -139,6 +139,8 @@ interface TradeContext {
   readonly listing: ListingView;
   readonly key: string;
   readonly clock: (() => Date) | undefined;
+  /** Shares each name's opening binary buy filled, waiting for its match. */
+  readonly openerShares: Map<string, number>;
 }
 
 function at(clock: (() => Date) | undefined): { now?: Date } {
@@ -198,6 +200,36 @@ async function buyBinary(
     spend_usd: spend,
     max_cost_usd: spend,
   });
+  const { result } = await executeTrade(context.db, context.userId, input, at(context.clock));
+  context.openerShares.set(trade.slug, result.shares);
+  return null;
+}
+
+/** The other side of a name's opening buy, share for share, at its quoted cost. */
+async function matchBinary(
+  context: TradeContext,
+  trade: Extract<DemoTrade, { kind: "binary_match" }>,
+): Promise<string | null> {
+  const marketId = context.listing.binary?.market_id;
+  if (marketId === undefined) return "no live binary";
+  const quantity = context.openerShares.get(trade.slug);
+  context.openerShares.delete(trade.slug);
+  if (quantity === undefined) return "its opening buy did not fill";
+  const quoted = await quoteMarket(
+    context.db,
+    { market_id: marketId, side: trade.side, strike_index: 0, action: "buy", quantity },
+    context.userId,
+    context.clock === undefined ? new Date() : context.clock(),
+  );
+  const input = tradeInputSchema.parse({
+    idempotency_key: context.key,
+    market_id: marketId,
+    side: trade.side,
+    strike_index: 0,
+    action: "buy",
+    quantity,
+    max_cost_usd: formatCentsAsUsd(Number(quoted.cash_amount_cents)),
+  });
   await executeTrade(context.db, context.userId, input, at(context.clock));
   return null;
 }
@@ -243,6 +275,7 @@ async function placeTrade(context: TradeContext, trade: DemoTrade): Promise<stri
   try {
     if (trade.kind === "forward") return await tradeForward(context, trade);
     if (trade.kind === "binary_buy") return await buyBinary(context, trade);
+    if (trade.kind === "binary_match") return await matchBinary(context, trade);
     return await sellBinary(context, trade);
   } catch (error) {
     // The dealer's refusal (cap, price band, a moved quote) is its call; anything else is a bug.
@@ -275,6 +308,7 @@ export async function seedDemo(
   }
 
   const bySlug = new Map(live.map((listing) => [listing.company.slug, listing]));
+  const openerShares = new Map<string, number>();
   let filled = 0;
   let refused = 0;
   for (const [index, trade] of demoTradePlan([...bySlug.keys()]).entries()) {
@@ -285,6 +319,7 @@ export async function seedDemo(
         listing: bySlug.get(trade.slug)!,
         key: idempotencyKey(index),
         clock: options.clock,
+        openerShares,
       },
       trade,
     );

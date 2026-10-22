@@ -8,8 +8,11 @@
  * The trades come from one fixed seed, so a fresh database listed and quoted
  * the same way gets the same book. Sizes are small against the dealer's
  * limits (CONTRACTS.md → The dealer: Q per side on the forward, b and the
- * price band on the binary); a fill the dealer refuses is skipped, never
- * forced. These are not dealer parameters and move no price to a level.
+ * price band on the binary), and on each name forwards and binary buys
+ * come in opposite pairs (long then short at one notional, YES then NO at
+ * one share count), so the flow nets out: the dealer's inventory skew stays
+ * within one trade and the YES price near the model's p. A fill the dealer refuses is skipped, never forced. These are
+ * not dealer parameters and move no price to a level.
  */
 
 export interface DemoAccount {
@@ -31,12 +34,10 @@ export const DEMO_SEED = 20_261_022;
 export const DEMO_TRADES_PER_ACCOUNT = 3;
 
 /** Forward notionals, USD: a fill of each posts the same in collateral (κ = 1). */
-export const DEMO_FORWARD_NOTIONALS_USD: readonly number[] = Object.freeze([
-  250, 500, 1_000, 1_500, 2_500,
-]);
+export const DEMO_FORWARD_NOTIONALS_USD: readonly number[] = Object.freeze([250, 500, 750, 1_000]);
 
 /** Binary buy sizes, USD spent. */
-export const DEMO_BINARY_SPENDS_USD: readonly number[] = Object.freeze([20, 50, 100, 200]);
+export const DEMO_BINARY_SPENDS_USD: readonly number[] = Object.freeze([10, 25, 50, 100]);
 
 /** A binary sell's share of the account's larger holding on that book. */
 export const DEMO_SELL_FRACTIONS: readonly number[] = Object.freeze([0.25, 0.5, 1]);
@@ -56,6 +57,17 @@ export type DemoTrade =
       readonly kind: "binary_buy";
       readonly side: "yes" | "no";
       readonly spendUsd: number;
+    }
+  | {
+      /**
+       * Buys as many shares of `side` as the name's last binary buy filled on
+       * the other side: together they are complete sets, so the YES price
+       * returns to where the pair began.
+       */
+      readonly slug: string;
+      readonly account: number;
+      readonly kind: "binary_match";
+      readonly side: "yes" | "no";
     }
   | {
       readonly slug: string;
@@ -80,35 +92,68 @@ function pick<T>(draw: number, values: readonly T[]): T {
   return values[Math.floor(draw * values.length)]!;
 }
 
+type Draws = readonly [number, number, number, number];
+
+/** A name's opening trade of a kind, waiting for the trade that takes its other side. */
+type OpenPairs = Map<string, { readonly side: string; readonly size: number }>;
+
+/**
+ * Trades of a kind on a name come in pairs: an opener draws its side and
+ * size, and the next trade of that kind on the name takes the other side at
+ * the same size. The net flow on a name is never more than one opener.
+ */
+function paired<S extends string>(
+  open: OpenPairs,
+  key: string,
+  sides: readonly [S, S],
+  sideDraw: number,
+  size: number,
+): { readonly side: S; readonly size: number } {
+  const opener = open.get(key);
+  if (opener !== undefined) {
+    open.delete(key);
+    return { side: opener.side === sides[0] ? sides[1] : sides[0], size: opener.size };
+  }
+  const side = sides[sideDraw < 0.5 ? 0 : 1];
+  open.set(key, { side, size });
+  return { side, size };
+}
+
 /**
  * One trade from its four draws. A round-0 trade is never a sell, so an
- * account holds something before it sells.
+ * account holds something before it sells. Binary buys pair like forwards,
+ * but the second of a pair matches the first's shares, not its dollars.
  */
 function plannedTrade(
   slug: string,
   account: number,
   round: number,
-  [kindDraw, sideDraw, sizeDraw, fractionDraw]: readonly [number, number, number, number],
+  [kindDraw, sideDraw, sizeDraw, fractionDraw]: Draws,
+  open: OpenPairs,
 ): DemoTrade {
   if (kindDraw < 0.4) {
-    const side = sideDraw < 0.5 ? "long" : "short";
-    return {
-      slug,
-      account,
-      kind: "forward",
-      side,
-      notionalUsd: pick(sizeDraw, DEMO_FORWARD_NOTIONALS_USD),
-    };
+    const { side, size } = paired(
+      open,
+      `${slug}:forward`,
+      ["long", "short"] as const,
+      sideDraw,
+      pick(sizeDraw, DEMO_FORWARD_NOTIONALS_USD),
+    );
+    return { slug, account, kind: "forward", side, notionalUsd: size };
   }
   if (kindDraw < 0.8 || round === 0) {
-    const side = sideDraw < 0.5 ? "yes" : "no";
-    return {
-      slug,
-      account,
-      kind: "binary_buy",
-      side,
-      spendUsd: pick(sizeDraw, DEMO_BINARY_SPENDS_USD),
-    };
+    const key = `${slug}:binary`;
+    const opening = !open.has(key);
+    const { side, size } = paired(
+      open,
+      key,
+      ["yes", "no"] as const,
+      sideDraw,
+      pick(sizeDraw, DEMO_BINARY_SPENDS_USD),
+    );
+    return opening
+      ? { slug, account, kind: "binary_buy", side, spendUsd: size }
+      : { slug, account, kind: "binary_match", side };
   }
   return { slug, account, kind: "binary_sell", fraction: pick(fractionDraw, DEMO_SELL_FRACTIONS) };
 }
@@ -123,11 +168,12 @@ function plannedTrade(
 export function demoTradePlan(slugs: readonly string[], seed: number = DEMO_SEED): DemoTrade[] {
   const next = generator(seed);
   const names = [...slugs].sort();
+  const open: OpenPairs = new Map();
   const plan: DemoTrade[] = [];
   for (let round = 0; round < DEMO_TRADES_PER_ACCOUNT; round += 1) {
     for (const slug of names) {
       for (let account = 0; account < DEMO_ACCOUNTS.length; account += 1) {
-        plan.push(plannedTrade(slug, account, round, [next(), next(), next(), next()]));
+        plan.push(plannedTrade(slug, account, round, [next(), next(), next(), next()], open));
       }
     }
   }
