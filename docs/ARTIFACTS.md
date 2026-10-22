@@ -16,9 +16,9 @@ disagree; a Claude Doc that has an in-repo copy is listed with it.
 | `PART1.md`–`PART5.md` | Layer references: engine (1), persistence and transactions (2), read APIs (3), the markets UI (4), deployment (5); superseded on product decisions by `README.md` §2 | when working in `src/lib/engine`, `src/lib/services`, `src/app/api`, the markets screens, or the build |
 | `.env.example` | The environment contract: every variable the app, scripts and build read | adding or reading an env var |
 | `docs/prompts/cleanup/` | The robustness and cleanup pass: a dispatch README and one brief per workstream | running that pass |
-| `docs/prompts/onboarding-and-demo/` | Briefs O1–O3 (O1 and O2 stage 1 merged; O3 not started; status in its README) | running O3 |
+| `docs/prompts/onboarding-and-demo/` | Historical briefs O1–O3 (O1, O2 stage 1 and O3 merged; status in its README) | reviewing onboarding and demo history |
 | `docs/archive/prompts/` | Finished briefs kept for history: `implement-dealer.md` (milestones 1–3, 5–8), `tournament-contracts/` (decision 0004) | never as instructions |
-| `docs/decisions/NNNN-*.md` | Agreed changes that supplement the design: 0001 `event_flags` and the ingest hand-off, 0002 the binary's event window and expiry, 0004 tournament questions follow the contracts (there is no 0003 in the repository) | before any milestone a decision names |
+| `docs/decisions/NNNN-*.md` | Agreed changes that supplement the design: 0001 `event_flags` and the ingest hand-off, 0002 the binary's event window and expiry, 0004 tournament questions follow the contracts, 0005 labelled demo accounts (there is no 0003 in the repository) | before any milestone a decision names |
 | `tests/browser/*.spec.ts`, `tests/browser/global-setup.ts`, `tests/browser/seed-dealer.ts` | Browser specs (dealer, tournament, onboarding, account, restrictions) and the Playwright setup that migrates, lists the five names and runs one dealer job against `DATABASE_URL_TEST` (no production route) | changing the market page, board, ticket or portfolio |
 | `tests/fixtures/event-flags.json` | 161 fixture flags (scoop / release / print) derived from `backtest/events.csv`; what settlement and mid-model tests read until ingest exists | writing any test that needs a flag |
 

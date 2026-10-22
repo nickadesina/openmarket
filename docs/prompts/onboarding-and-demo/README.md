@@ -1,10 +1,10 @@
 # Dispatch: onboarding, legible scoring, demo markets
 
 Status (2026-10-22): O1 merged (#30). O2 stage 1 merged (#29); the
-scoring rule is unchanged and there is no decision 0006. O3 has not
-started: there is no `015_demo_accounts`, no `seed:demo`, no decision
-0005. Move this folder to `docs/archive/prompts/` once O3 lands or is
-dropped.
+scoring rule is unchanged and there is no decision 0006. O3 merged
+in #31, including `015_demo_accounts`, `seed:demo` and decision 0005.
+The briefs below are historical; the cleanup pass follows
+`docs/prompts/cleanup/README.md`.
 
 Three briefs for three cloud agents, from Nick's ask on 2026-10-22:
 

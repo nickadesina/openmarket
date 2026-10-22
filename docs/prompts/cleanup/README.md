@@ -80,8 +80,8 @@ under "Needs decision" in your brief:
   - blend constants (a `BLEND_VERSION`).
 - Product behaviour a user can see (copy aside from fixing a factual
   error), API response shapes, and the scoring rule.
-- Never edit an applied migration (`001`–`014`). New schema goes in a
-  new migration with the next free number. O3 has reserved
+- Never edit an applied migration (`001`–`015`). New schema goes in a
+  new migration with the next free number. O3 merged in #31 with
   `015_demo_accounts` (`docs/prompts/onboarding-and-demo/`), so
   take `016` or later and say so in the PR. Two cleanup PRs needing
   migrations take consecutive numbers: C2 first, C3 next.
