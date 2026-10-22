@@ -415,7 +415,7 @@ postgresDescribe(`${suiteName}: 008 on a populated 007 database`, () => {
 
     const migration = await migrateTestDatabase(postgres, "latest");
     expect(migration.error).toBeUndefined();
-    expect(migration.results?.map((result) => result.migrationName)).toEqual([
+    const historicalMigrations = [
       "008_retire_ladder_and_username_accounts",
       "009_dealer_pnl",
       "010_api_keys",
@@ -424,7 +424,13 @@ postgresDescribe(`${suiteName}: 008 on a populated 007 database`, () => {
       "013_tournament_contract_models",
       "014_tournament_level_label",
       "015_demo_accounts",
-    ]);
+    ];
+    expect(
+      migration.results
+        ?.slice(0, historicalMigrations.length)
+        .map((result) => result.migrationName),
+    ).toEqual(historicalMigrations);
+    expect(migration.results?.every((result) => result.status === "Success")).toBe(true);
 
     for (const table of [
       "users",
