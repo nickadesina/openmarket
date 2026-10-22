@@ -32,13 +32,13 @@ export function refEnvelope(now: Date): RefEnvelope {
 
 export type RefListing = ListingWithCompany;
 
-/** The active listing of the company `slug` names, or MARKET_NOT_FOUND. */
+/** The active listing of the company `slug` names, or LISTING_NOT_FOUND. */
 export async function loadRefListing(db: Kysely<Database>, slug: string): Promise<RefListing> {
   const row = await listingQuery(db)
     .where("companies.slug", "=", slug)
     .where("listings.delisted_at", "is", null)
     .executeTakeFirst();
-  if (row === undefined) throw new ServiceError("MARKET_NOT_FOUND", "Listing not found.");
+  if (row === undefined) throw new ServiceError("LISTING_NOT_FOUND", "Listing not found.");
   return listingWithCompany(row);
 }
 
