@@ -10,6 +10,7 @@ import type { Database, ForwardSide, JsonObject, JsonValue } from "../../db/sche
 import { collateralCents, fill } from "../../engine/dealer/forward.js";
 import { RULEBOOK_VERSION } from "../../engine/dealer/rulebook.js";
 import { deriveAdvisoryLockKey } from "../execute-trade.js";
+import { assertMayTrade } from "../tournament/restrictions.js";
 import { forwardQuoteRow } from "./dealer-books.js";
 import {
   type ForwardBookState,
@@ -196,6 +197,7 @@ export async function executeForwardTrade(
     if (replay !== undefined) return { result: replay, replayed: true };
 
     const book = await loadInstrumentBook(transaction, input.instrument_id, true);
+    await assertMayTrade(transaction, { paperUserId: userId }, book.listing.company_id);
     // The clock is read after the book's lock, so marks keep sequence order in time.
     const at = await executionTime(transaction, options.now);
     const state = await loadForwardBook(transaction, book, at);

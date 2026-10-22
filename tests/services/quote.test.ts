@@ -30,6 +30,7 @@ function queryReturning(result: unknown): Record<string, Mock> {
   query.selectAll = vi.fn(() => query);
   query.where = vi.fn(() => query);
   query.orderBy = vi.fn(() => query);
+  query.limit = vi.fn(() => query);
   query.executeTakeFirst = vi.fn(async () => result);
   query.executeTakeFirstOrThrow = vi.fn(async () => {
     if (result === undefined) throw new Error("no result");
@@ -61,6 +62,11 @@ function mockDatabase(options: MockDatabaseOptions): {
     if (table === "holdings") {
       return queryReturning(options.holdings === undefined ? undefined : { h: options.holdings });
     }
+    // A signed-in quote checks the restricted-person attestation: none here.
+    if (table === "users") {
+      return queryReturning({ tournament_user_id: "00000000-0000-4000-8000-0000000000aa" });
+    }
+    if (table === "tournament_restriction_attestations") return queryReturning(undefined);
     throw new Error(`Unexpected table ${table}`);
   });
   const transactionDatabase = {

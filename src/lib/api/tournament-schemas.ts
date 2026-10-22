@@ -176,6 +176,11 @@ export const evidenceReviewSchema = z
     },
   );
 
+/** The listed names a forecaster is employed by, a director of, or invested in; empty clears. */
+export const restrictionsInputSchema = z
+  .object({ companies: z.array(slugSchema).max(50) })
+  .strict();
+
 export const PASSWORD_MIN_LENGTH = 10;
 export const PASSWORD_MAX_LENGTH = 200;
 

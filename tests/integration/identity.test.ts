@@ -27,6 +27,19 @@ import {
 const runtime = vi.hoisted(() => ({ getRuntimeDatabase: vi.fn() }));
 vi.mock("../../src/lib/db/runtime.js", () => runtime);
 
+// A 007 database predates 011's restricted-person tables, so trades placed on
+// it to populate the migration skip that check; it runs everywhere else.
+const oldSchema = vi.hoisted(() => ({ active: false }));
+vi.mock("../../src/lib/services/tournament/restrictions.js", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../../src/lib/services/tournament/restrictions.js")>();
+  return {
+    ...actual,
+    assertMayTrade: (...args: Parameters<typeof actual.assertMayTrade>) =>
+      oldSchema.active ? Promise.resolve() : actual.assertMayTrade(...args),
+  };
+});
+
 import { POST as removeRoute } from "../../src/app/api/admin/comments/[commentId]/remove/route.js";
 import { GET as portfolioRoute } from "../../src/app/api/portfolio/route.js";
 import { POST as logoutRoute } from "../../src/app/api/t/auth/logout/route.js";
@@ -326,10 +339,12 @@ postgresDescribe(`${suiteName}: 008 on a populated 007 database`, () => {
   let postgres: PostgresTestDatabase;
 
   beforeAll(async () => {
+    oldSchema.active = true;
     postgres = await createPostgresTestDatabase(databaseUrl!, "007_dealer");
   }, 30_000);
 
   afterAll(async () => {
+    oldSchema.active = false;
     if (postgres !== undefined) await postgres.dispose();
   }, 30_000);
 
@@ -477,10 +492,12 @@ postgresDescribe(`${suiteName}: 008 after dealer trading`, () => {
   let postgres: PostgresTestDatabase;
 
   beforeAll(async () => {
+    oldSchema.active = true;
     postgres = await createPostgresTestDatabase(databaseUrl!, "007_dealer");
   }, 30_000);
 
   afterAll(async () => {
+    oldSchema.active = false;
     if (postgres !== undefined) await postgres.dispose();
   }, 30_000);
 

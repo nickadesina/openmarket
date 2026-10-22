@@ -54,6 +54,11 @@
   line-height: 1.5;
 }
 
+.ticketPrompt a {
+  color: var(--color-ink);
+  text-decoration-color: var(--color-primary);
+}
+
 /* Mobile: the order form lives in a sheet, so a fixed bar keeps the working
    contract and its price in view and opens the sheet without a ladder tap. */
 .mobileTradeBar {

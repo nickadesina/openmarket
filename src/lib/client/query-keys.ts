@@ -14,6 +14,7 @@ export const queryKeys = {
     ["openmarket", "comments", marketId, parentId ?? "roots"] as const,
   portfolio: ["openmarket", "portfolio"] as const,
   tournamentViewer: ["openmarket", "tournament", "me"] as const,
+  tournamentRestrictions: ["openmarket", "tournament", "me", "restrictions"] as const,
   tournamentQuestions: ["openmarket", "tournament", "questions"] as const,
   tournamentQuestion: (slug: string) => ["openmarket", "tournament", "question", slug] as const,
   tournamentForecasts: (slug: string) =>

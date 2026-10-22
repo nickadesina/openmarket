@@ -4,6 +4,7 @@ import { ServiceError } from "../api/errors.js";
 import type { QuoteInput } from "../api/schemas.js";
 import type { Database, MetricKind } from "../db/schema.js";
 import { parseRequestedAmount, previewTrade } from "./preview-trade.js";
+import { assertMayTrade } from "./tournament/restrictions.js";
 import { assertBookLive, findTradeBook } from "./trade-book.js";
 
 export interface QuoteResult {
@@ -39,6 +40,9 @@ async function quoteMarketFromSnapshot(
 ): Promise<QuoteResult> {
   const book = await findTradeBook(db, input, false);
   assertBookLive(book, now);
+  if (userId !== undefined) {
+    await assertMayTrade(db, { paperUserId: userId }, book.market.company_id);
+  }
   const market = { ...book.market, market_id: book.market.id };
   if (input.action === "sell" && userId === undefined) {
     throw new ServiceError("USER_REQUIRED", "A user is required to quote a sell.");

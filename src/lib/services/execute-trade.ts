@@ -16,6 +16,7 @@ import type {
 import { EPS } from "../engine/types.js";
 import { binaryQuoteRow, latestMid } from "./dealer/dealer-books.js";
 import { parseRequestedAmount, previewTrade } from "./preview-trade.js";
+import { assertMayTrade } from "./tournament/restrictions.js";
 import { assertBookLive, findTradeBook } from "./trade-book.js";
 
 export interface ExecutionResult extends JsonObject {
@@ -227,6 +228,11 @@ export async function executeTrade(
     if (user === undefined) {
       throw new ServiceError("USER_REQUIRED", "A valid user is required.");
     }
+    await assertMayTrade(
+      transaction,
+      { tournamentUserId: user.tournament_user_id },
+      market.company_id,
+    );
 
     await transaction
       .insertInto("holdings")
