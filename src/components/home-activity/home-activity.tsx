@@ -15,6 +15,7 @@ import {
 import { queryKeys } from "../../lib/client/query-keys.js";
 import type { ActivityItem, ActivityPage } from "../../lib/services/get-activity.js";
 import { CompanyLogo } from "../company-logo/company-logo.js";
+import { DemoTag } from "../market-demo/market-demo.js";
 import styles from "./home-activity.module.css";
 
 const ACTIVITY_LIMIT = 12;
@@ -53,6 +54,7 @@ function ActivityRow({ item }: { readonly item: ActivityItem }) {
           <time dateTime={item.createdAt} suppressHydrationWarning>
             {formatDateTime(item.createdAt)}
           </time>
+          {item.demo ? <DemoTag /> : null}
         </p>
       </div>
       <span className={styles.amount}>{cash}</span>

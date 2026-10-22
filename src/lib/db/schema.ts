@@ -154,6 +154,11 @@ export interface TournamentUsersTable {
   flag_reason: string | null;
   /** Self-reported (lab, school, firm); shown beside the name, never verified. */
   affiliation: string | null;
+  /**
+   * A demo account (decision 0005, migration 015): trades to show the markets
+   * working, labelled wherever it appears; it never signs in or forecasts.
+   */
+  demo: Generated<boolean>;
 }
 
 export interface TournamentPasswordCredentialsTable {

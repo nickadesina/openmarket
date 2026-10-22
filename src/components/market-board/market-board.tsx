@@ -17,6 +17,7 @@ import type { ListingView } from "../../lib/services/get-market.js";
 import type { MarketListResult } from "../../lib/services/list-markets.js";
 import { CompanyLogo } from "../company-logo/company-logo.js";
 import { MovementArrow } from "../icons/icons.js";
+import { DemoBanner } from "../market-demo/market-demo.js";
 import styles from "./market-board.module.css";
 
 function ListingRow({ listing }: { readonly listing: ListingView }) {
@@ -148,31 +149,34 @@ export function MarketBoard({
   }
 
   return (
-    <div className={styles.tableViewport}>
-      <table className={styles.table}>
-        <caption className={styles.visuallyHidden}>
-          Listed names with the forward&apos;s mid and two-way quote, the level against the last
-          round, the quarterly binary&apos;s YES price, and open interest
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col">Name</th>
-            <th scope="col">Forward mid</th>
-            <th scope="col">Bid / ask</th>
-            <th scope="col">Vs last round</th>
-            <th scope="col">Binary YES</th>
-            <th scope="col">Open interest</th>
-            <th scope="col">
-              <span className={styles.visuallyHidden}>Trade</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {marketsQuery.data.listings.map((listing) => (
-            <ListingRow key={listing.listingId} listing={listing} />
-          ))}
-        </tbody>
-      </table>
+    <div className={styles.board}>
+      <DemoBanner />
+      <div className={styles.tableViewport}>
+        <table className={styles.table}>
+          <caption className={styles.visuallyHidden}>
+            Listed names with the forward&apos;s mid and two-way quote, the level against the last
+            round, the quarterly binary&apos;s YES price, and open interest
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Forward mid</th>
+              <th scope="col">Bid / ask</th>
+              <th scope="col">Vs last round</th>
+              <th scope="col">Binary YES</th>
+              <th scope="col">Open interest</th>
+              <th scope="col">
+                <span className={styles.visuallyHidden}>Trade</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {marketsQuery.data.listings.map((listing) => (
+              <ListingRow key={listing.listingId} listing={listing} />
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
