@@ -9,45 +9,52 @@ export const MIN_PUBLISHED_FORECASTERS = 5;
 /** Recorded on every aggregate row; bump when the weighting changes. */
 export const AGGREGATE_WEIGHTING_VERSION = "equal-v1";
 
-/** Clamps a vector to [ε, 1 − ε] and renormalizes it. */
-export function clampVector(probs: readonly number[], epsilon = SCORE_EPSILON): number[] {
-  const clamped = probs.map((probability) => Math.min(Math.max(probability, epsilon), 1 - epsilon));
-  const sum = clamped.reduce((total, probability) => total + probability, 0);
-  return clamped.map((probability) => probability / sum);
+/** Clamps a probability to [ε, 1 − ε]. */
+export function clampProbability(probability: number, epsilon = SCORE_EPSILON): number {
+  return Math.min(Math.max(probability, epsilon), 1 - epsilon);
+}
+
+/** Numerically stable logistic. */
+function logistic(logit: number): number {
+  return logit >= 0 ? 1 / (1 + Math.exp(-logit)) : Math.exp(logit) / (1 + Math.exp(logit));
 }
 
 /**
- * Geometric mean of odds across forecasters, extremized by `a`, mapped back
- * to probabilities and renormalized. Computed in log space: per bucket the
- * mean logit is scaled by `a` and passed through the logistic function.
- * Returns null for an empty set.
+ * The binary crowd: geometric mean of odds across forecasters, extremized by
+ * `a`, as P(YES) = σ(a · mean logit(clamp p)). Null for an empty set.
  */
-export function aggregateForecasts(
-  vectors: readonly (readonly number[])[],
+export function aggregateBinary(
+  probabilities: readonly number[],
   extremization = DEFAULT_EXTREMIZATION,
   epsilon = SCORE_EPSILON,
-): number[] | null {
-  if (vectors.length === 0) return null;
+): number | null {
+  if (probabilities.length === 0) return null;
   if (!Number.isFinite(extremization) || extremization <= 0) {
     throw new RangeError("extremization must be a positive number");
   }
-  const bucketCount = vectors[0]!.length;
-  if (bucketCount < 2) throw new RangeError("vectors need at least two buckets");
-
-  const logitSums = new Array<number>(bucketCount).fill(0);
-  for (const vector of vectors) {
-    if (vector.length !== bucketCount) throw new RangeError("vectors differ in length");
-    const clamped = clampVector(vector, epsilon);
-    clamped.forEach((probability, index) => {
-      logitSums[index]! += Math.log(probability) - Math.log1p(-probability);
-    });
+  let logitSum = 0;
+  for (const probability of probabilities) {
+    if (!Number.isFinite(probability)) throw new RangeError("probabilities must be finite");
+    const clamped = clampProbability(probability, epsilon);
+    logitSum += Math.log(clamped) - Math.log1p(-clamped);
   }
+  return logistic((extremization * logitSum) / probabilities.length);
+}
 
-  const raw = logitSums.map((sum) => {
-    const logit = (extremization * sum) / vectors.length;
-    // Numerically stable logistic.
-    return logit >= 0 ? 1 / (1 + Math.exp(-logit)) : Math.exp(logit) / (1 + Math.exp(logit));
-  });
-  const total = raw.reduce((sum, probability) => sum + probability, 0);
-  return raw.map((probability) => probability / total);
+/**
+ * The forward crowd: the median of the forecasters' ln levels (the mean of
+ * the two middle ones for an even count), returned in the levels' unit.
+ * Null for an empty set.
+ */
+export function aggregateForward(levels: readonly number[]): number | null {
+  if (levels.length === 0) return null;
+  const logs = levels
+    .map((level) => {
+      if (!(level > 0) || !Number.isFinite(level)) throw new RangeError("levels must be positive");
+      return Math.log(level);
+    })
+    .sort((left, right) => left - right);
+  const middle = Math.floor(logs.length / 2);
+  const medianLn = logs.length % 2 === 1 ? logs[middle]! : (logs[middle - 1]! + logs[middle]!) / 2;
+  return Math.exp(medianLn);
 }

@@ -6,8 +6,13 @@ import {
   createTournamentSession,
   TOURNAMENT_SESSION_COOKIE,
 } from "../../src/lib/auth/tournament-session.js";
-import { aggregateForecasts } from "../../src/lib/engine/tournament/aggregate.js";
-import { timeAveragedScore } from "../../src/lib/engine/tournament/score.js";
+import { DISPUTE_WINDOW_MS } from "../../src/lib/config/tournament.js";
+import { aggregateBinary, aggregateForward } from "../../src/lib/engine/tournament/aggregate.js";
+import {
+  binaryScore,
+  forwardScore,
+  timeAveragedScore,
+} from "../../src/lib/engine/tournament/score.js";
 import {
   closeQuestion,
   openQuestion,
@@ -15,13 +20,25 @@ import {
   saveDraftQuestion,
   setUserFlag,
   voidQuestion,
+  voidQuestionIn,
 } from "../../src/lib/services/tournament/admin.js";
 import { getForecaster } from "../../src/lib/services/tournament/forecaster.js";
-import { getQuestion, listQuestions } from "../../src/lib/services/tournament/get-question.js";
-import { getLeaderboard } from "../../src/lib/services/tournament/leaderboard.js";
+import {
+  getQuestion,
+  listLatestForecasts,
+  listQuestions,
+} from "../../src/lib/services/tournament/get-question.js";
+import {
+  getLeaderboard,
+  listLeaderboardPeriods,
+} from "../../src/lib/services/tournament/leaderboard.js";
 import { upsertIdentity } from "../../src/lib/services/tournament/sign-in.js";
-import { submitForecast } from "../../src/lib/services/tournament/submit-forecast.js";
+import {
+  forecastEventHash,
+  submitForecast,
+} from "../../src/lib/services/tournament/submit-forecast.js";
 import { verifyTournament } from "../../src/lib/services/tournament/verify-tournament.js";
+import { seedFixtureListings } from "./dealer-fixture.js";
 import {
   createPostgresTestDatabase,
   type PostgresTestDatabase,
@@ -46,6 +63,13 @@ const suiteName =
     ? `Tournament PostgreSQL integration (${TEST_DATABASE_SKIP_REASON})`
     : "Tournament PostgreSQL integration";
 
+const SOURCE = {
+  rung_fired: 1,
+  source_url: "https://www.sec.gov/edgar",
+  source_excerpt: "Final prospectus",
+  note_md: "Resolved.",
+};
+
 function binary(slug: string, opensAt: Date, closesAt: Date): QuestionInput {
   return {
     slug,
@@ -53,30 +77,29 @@ function binary(slug: string, opensAt: Date, closesAt: Date): QuestionInput {
     description_md: "Description.",
     rulebook_md: "Rulebook.",
     rulebook_version: 1,
-    unit: "bool",
+    kind: "binary",
     opens_at: opensAt.toISOString(),
     closes_at: closesAt.toISOString(),
   };
 }
 
-function ladder(
+function forward(
   slug: string,
   opensAt: Date,
   closesAt: Date,
-  edges: number[],
   expiresAt: Date = closesAt,
 ): QuestionInput {
   return {
     slug,
-    title: `Ladder ${slug}`,
+    title: `Forward ${slug}`,
     description_md: "Description.",
     rulebook_md: "Rulebook.",
     rulebook_version: 1,
-    unit: slug.includes("mcap") ? "USD_T" : "USD_B",
+    kind: "forward",
+    unit: "USD_B",
     opens_at: opensAt.toISOString(),
     closes_at: closesAt.toISOString(),
     expiry_at: expiresAt.toISOString(),
-    buckets: { edges, floor_label: "Nothing by expiry" },
   };
 }
 
@@ -122,6 +145,44 @@ postgresDescribe(suiteName, () => {
     await openQuestion(postgres.db, slug);
   }
 
+  async function openForward(slug = "forward-q"): Promise<void> {
+    const now = Date.now();
+    await saveDraftQuestion(
+      postgres.db,
+      forward(slug, new Date(now - HOUR), new Date(now + HOUR), new Date(now + 2 * HOUR)),
+    );
+    await openQuestion(postgres.db, slug);
+  }
+
+  async function questionRow(slug: string) {
+    return postgres.db
+      .selectFrom("tournament_questions")
+      .select(["id", "opens_at"])
+      .where("slug", "=", slug)
+      .executeTakeFirstOrThrow();
+  }
+
+  /** A back-dated event with its real hash, so the scorer has a known timeline and verify passes. */
+  async function insertEvent(
+    questionId: string,
+    userId: string,
+    at: number,
+    forecast: { readonly p: number | null; readonly value: number | null },
+  ): Promise<void> {
+    const submittedAt = new Date(at);
+    await postgres.db
+      .insertInto("tournament_forecast_events")
+      .values({
+        user_id: userId,
+        question_id: questionId,
+        submitted_at: submittedAt,
+        p: forecast.p === null ? null : forecast.p.toFixed(10),
+        value: forecast.value === null ? null : forecast.value.toFixed(10),
+        event_hash: forecastEventHash(questionId, userId, submittedAt, forecast),
+      })
+      .execute();
+  }
+
   it("keeps an identity per X id and refreshes its handle", async () => {
     const again = await upsertIdentity(postgres.db, {
       provider: "x",
@@ -137,60 +198,103 @@ postgresDescribe(suiteName, () => {
     expect(profile.identity.handle).toBe("Renamed");
   });
 
-  it("hides drafts and pins a question once open", async () => {
+  it("hides drafts, pins a question once open, and stores each kind's shape", async () => {
     const now = Date.now();
     const input = binary("pinned", new Date(now - HOUR), new Date(now + HOUR));
-    await saveDraftQuestion(postgres.db, input);
+    const saved = await saveDraftQuestion(postgres.db, input);
+    expect(saved).toEqual({ slug: "pinned", status: "draft", kind: "binary" });
     expect(await listQuestions(postgres.db)).toHaveLength(0);
     await saveDraftQuestion(postgres.db, { ...input, title: "Edited draft" });
     await openQuestion(postgres.db, "pinned");
-    expect((await listQuestions(postgres.db))[0]!.title).toBe("Edited draft");
+    expect((await listQuestions(postgres.db))[0]).toMatchObject({
+      title: "Edited draft",
+      kind: "binary",
+      unit: null,
+      expiryAt: new Date(input.closes_at).toISOString(),
+      instrument: null,
+    });
     await expect(saveDraftQuestion(postgres.db, input)).rejects.toMatchObject({
       code: "QUESTION_STATE",
     });
+
+    await openForward();
+    const detail = await getQuestion(postgres.db, "forward-q");
+    expect(detail).toMatchObject({ kind: "forward", unit: "USD_B", aggregate: null });
+    expect(detail.rules.clampScore).toBeCloseTo(-896.578, 3);
+    await expect(
+      saveDraftQuestion(
+        postgres.db,
+        forward("backwards", new Date(now - HOUR), new Date(now + HOUR), new Date(now)),
+      ),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" });
   });
 
-  it("validates, rate-limits, and publishes the aggregate only from five forecasters", async () => {
+  it("validates, rate-limits, and publishes the binary crowd only from five forecasters", async () => {
     await openBinary();
     await expect(
-      submitForecast(postgres.db, { slug: "binary-q", userId: users[0]!, probs: [0.5] }),
+      submitForecast(postgres.db, { slug: "binary-q", userId: users[0]!, value: 0.5 }),
     ).rejects.toMatchObject({ code: "INVALID_INPUT" });
     await expect(
-      submitForecast(postgres.db, { slug: "binary-q", userId: users[0]!, probs: [0.5, 0.6] }),
+      submitForecast(postgres.db, { slug: "binary-q", userId: users[0]!, p: 1 }),
     ).rejects.toMatchObject({ code: "INVALID_INPUT" });
 
-    const vectors = [
-      [0.7, 0.3],
-      [0.6, 0.4],
-      [0.8, 0.2],
-      [0.55, 0.45],
-      [0.9, 0.1],
-    ];
+    const ps = [0.7, 0.6, 0.8, 0.55, 0.9];
     for (let index = 0; index < 4; index += 1) {
-      await submitForecast(postgres.db, {
-        slug: "binary-q",
-        userId: users[index]!,
-        probs: vectors[index]!,
-      });
+      await submitForecast(postgres.db, { slug: "binary-q", userId: users[index]!, p: ps[index]! });
     }
     let question = await getQuestion(postgres.db, "binary-q");
-    expect(question.aggregate).toMatchObject({ nForecasters: 4, published: false, probs: null });
+    expect(question.aggregate).toMatchObject({
+      nForecasters: 4,
+      published: false,
+      p: null,
+      value: null,
+    });
 
     const stored = await submitForecast(postgres.db, {
       slug: "binary-q",
       userId: users[4]!,
-      probs: vectors[4]!,
+      p: ps[4]!,
     });
+    expect(stored).toMatchObject({ p: 0.9, value: null });
     expect(stored.eventHash).toMatch(/^[0-9a-f]{64}$/);
     question = await getQuestion(postgres.db, "binary-q");
     expect(question.aggregate!.published).toBe(true);
-    const expected = aggregateForecasts(vectors, 1.5)!;
-    expect(question.aggregate!.probs![0]).toBeCloseTo(expected[0]!, 9);
-    expect(question.aggregate!.pYes).toBeCloseTo(expected[0]!, 9);
+    expect(question.aggregate!.p).toBeCloseTo(aggregateBinary(ps, 1.5)!, 9);
+    expect(question.aggregate!.value).toBeNull();
+
+    const listed = await listLatestForecasts(postgres.db, "binary-q");
+    expect(listed.forecasts.map((forecast) => forecast.p).sort()).toEqual([...ps].sort());
 
     await expect(
-      submitForecast(postgres.db, { slug: "binary-q", userId: users[0]!, probs: [0.1, 0.9] }),
+      submitForecast(postgres.db, { slug: "binary-q", userId: users[0]!, p: 0.1 }),
     ).rejects.toMatchObject({ code: "RATE_LIMITED" });
+    expect(await verifyTournament(postgres.db)).toMatchObject({ passed: true, findings: [] });
+  });
+
+  it("publishes the forward crowd as the median ln level, in the unit", async () => {
+    await openForward();
+    await expect(
+      submitForecast(postgres.db, { slug: "forward-q", userId: users[0]!, p: 0.5 }),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" });
+    await expect(
+      submitForecast(postgres.db, { slug: "forward-q", userId: users[0]!, value: 0 }),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" });
+
+    const levels = [380, 412.5, 450, 300, 1_200];
+    for (let index = 0; index < levels.length; index += 1) {
+      await submitForecast(postgres.db, {
+        slug: "forward-q",
+        userId: users[index]!,
+        value: levels[index]!,
+      });
+    }
+    const question = await getQuestion(postgres.db, "forward-q");
+    expect(question.aggregate).toMatchObject({ nForecasters: 5, published: true, p: null });
+    expect(question.aggregate!.value).toBeCloseTo(aggregateForward(levels)!, 9);
+    expect(question.aggregate!.value).toBeCloseTo(412.5, 9);
+    const viewer = await getForecaster(postgres.db, "forecaster1");
+    expect(viewer.open[0]).toMatchObject({ kind: "forward", unit: "USD_B", p: null, value: 412.5 });
+    expect(await verifyTournament(postgres.db)).toMatchObject({ passed: true, findings: [] });
   });
 
   it("rejects accounts younger than the question's minimum age", async () => {
@@ -205,78 +309,47 @@ postgresDescribe(suiteName, () => {
       providerCreatedAt: new Date(),
     });
     await expect(
-      submitForecast(postgres.db, { slug: "binary-q", userId: young, probs: [0.5, 0.5] }),
+      submitForecast(postgres.db, { slug: "binary-q", userId: young, p: 0.5 }),
     ).rejects.toMatchObject({ code: "ACCOUNT_TOO_NEW" });
   });
 
-  it("closes, resolves, scores, supersedes in the dispute window, and ranks", async () => {
+  it("closes, resolves a binary by outcome, scores, supersedes in the dispute window, and ranks", async () => {
     await openBinary();
-    const question = await getQuestion(postgres.db, "binary-q");
-    const questionRow = await postgres.db
-      .selectFrom("tournament_questions")
-      .select(["id", "opens_at"])
-      .executeTakeFirstOrThrow();
-    // Back-dated events give the scorer a known timeline.
-    const opensAt = questionRow.opens_at.getTime();
+    const row = await questionRow("binary-q");
+    const opensAt = row.opens_at.getTime();
     const timeline = [
-      { user: 0, at: opensAt, probs: [0.9, 0.1] },
-      { user: 1, at: opensAt + HOUR / 2, probs: [0.2, 0.8] },
-      { user: 0, at: opensAt + HOUR / 2, probs: [0.6, 0.4] },
+      { user: 0, at: opensAt, p: 0.9 },
+      { user: 1, at: opensAt + HOUR / 2, p: 0.2 },
+      { user: 0, at: opensAt + HOUR / 2, p: 0.6 },
     ];
     for (const event of timeline) {
-      await postgres.db
-        .insertInto("tournament_forecast_events")
-        .values({
-          user_id: users[event.user]!,
-          question_id: questionRow.id,
-          submitted_at: new Date(event.at),
-          probs: event.probs.map(String),
-          event_hash: "0".repeat(64),
-        })
-        .execute();
+      await insertEvent(row.id, users[event.user]!, event.at, { p: event.p, value: null });
     }
 
-    await expect(
-      resolveQuestion(
-        postgres.db,
-        "binary-q",
-        {
-          resolved_value: null,
-          winning_bucket_index: 0,
-          rung_fired: null,
-          source_url: null,
-          source_excerpt: null,
-          note_md: "Early.",
-        },
-        users[0]!,
-      ),
-    ).rejects.toMatchObject({ code: "QUESTION_STATE" });
+    const yes = { ...SOURCE, outcome: "yes" as const };
+    await expect(resolveQuestion(postgres.db, "binary-q", yes, users[0]!)).rejects.toMatchObject({
+      code: "QUESTION_STATE",
+    });
 
     const { closedAt } = await closeQuestion(postgres.db, "binary-q", {});
     await expect(
-      submitForecast(postgres.db, { slug: "binary-q", userId: users[2]!, probs: [0.5, 0.5] }),
+      submitForecast(postgres.db, { slug: "binary-q", userId: users[2]!, p: 0.5 }),
     ).rejects.toMatchObject({ code: "QUESTION_NOT_OPEN" });
+    await expect(
+      resolveQuestion(postgres.db, "binary-q", { ...SOURCE, resolved_value: 1 }, users[0]!),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" });
 
-    const resolution = {
-      resolved_value: null,
-      winning_bucket_index: 0,
-      rung_fired: null,
-      source_url: "https://www.sec.gov/edgar",
-      source_excerpt: "Form S-1",
-      note_md: "Filed.",
-    };
-    const outcome = await resolveQuestion(postgres.db, "binary-q", resolution, users[0]!);
-    expect(outcome.scoresWritten).toBe(2);
+    const outcome = await resolveQuestion(postgres.db, "binary-q", yes, users[0]!);
+    expect(outcome).toMatchObject({ outcome: "yes", resolvedValue: null, scoresWritten: 2 });
 
     const end = new Date(closedAt).getTime();
     const expectedFirst = timeAveragedScore({
-      bucketCount: 2,
-      winningIndex: 0,
       opensAt,
       closesAt: end,
       forecasts: timeline
         .filter((event) => event.user === 0)
-        .map((event) => ({ at: event.at, probs: event.probs })),
+        .map((event) => ({ at: event.at, forecast: event.p })),
+      score: (p: number) => binaryScore(p, "yes"),
     })!;
     let board = await getLeaderboard(postgres.db, "all");
     expect(board.entries.map((entry) => entry.handle)).toEqual(["Forecaster0", "Forecaster1"]);
@@ -285,15 +358,23 @@ postgresDescribe(suiteName, () => {
 
     const detail = await getQuestion(postgres.db, "binary-q");
     expect(detail.status).toBe("resolved");
+    expect(detail.resolution).toMatchObject({ outcome: "yes", resolvedValue: null });
+    expect(detail.resolutionDetail).toMatchObject({ outcome: "yes", rungFired: 1 });
     expect(detail.resolutionDetail!.topForecasters).toHaveLength(2);
-    expect(detail.resolutionDetail!.finalAggregate!.nForecasters).toBe(2);
-    expect(question.rules.minPublishedForecasters).toBe(5);
+    expect(detail.resolutionDetail!.finalAggregate).toMatchObject({
+      nForecasters: 2,
+      published: false,
+      p: null,
+    });
+    // The back-dated events left no aggregate inside the window.
+    expect(detail.resolutionDetail!.aggregateScore).toBeNull();
+    expect(detail.rules.minPublishedForecasters).toBe(5);
 
     // A dispute inside the window replaces the live row and rescoring follows it.
     const corrected = await resolveQuestion(
       postgres.db,
       "binary-q",
-      { ...resolution, winning_bucket_index: 1, note_md: "Corrected: a DRS, not an S-1." },
+      { ...SOURCE, outcome: "no", note_md: "Corrected: a DRS, not an S-1." },
       users[0]!,
     );
     expect(corrected.supersededResolutionId).toBe(outcome.resolutionId);
@@ -305,7 +386,7 @@ postgresDescribe(suiteName, () => {
 
     const positions = await getForecaster(postgres.db, "forecaster1");
     expect(positions.resolved).toHaveLength(1);
-    expect(positions.resolved[0]!.winningBucketLabel).toBe("No");
+    expect(positions.resolved[0]).toMatchObject({ kind: "binary", outcome: "no" });
 
     // The record is append-only.
     await expect(
@@ -319,169 +400,176 @@ postgresDescribe(suiteName, () => {
     ).rejects.toThrow(/superseded/);
   });
 
-  it("voids without scoring and refuses to resolve a voided question", async () => {
-    await openBinary();
-    await submitForecast(postgres.db, { slug: "binary-q", userId: users[0]!, probs: [0.5, 0.5] });
-    await voidQuestion(postgres.db, "binary-q", { note_md: "Ambiguous rulebook." });
-    await expect(
-      resolveQuestion(
-        postgres.db,
-        "binary-q",
-        {
-          resolved_value: null,
-          winning_bucket_index: 0,
-          rung_fired: null,
-          source_url: null,
-          source_excerpt: null,
-          note_md: "x",
-        },
-        users[0]!,
-      ),
-    ).rejects.toMatchObject({ code: "QUESTION_STATE" });
-    expect((await getLeaderboard(postgres.db, "all")).entries).toHaveLength(0);
-  });
-
-  it("maps a resolved value to its bucket and holds the floor until expiry or an early close", async () => {
-    const now = Date.now();
-    // Past its scheduled close, not closed early, expiry still ahead.
-    await saveDraftQuestion(
-      postgres.db,
-      ladder(
-        "arr-ladder",
-        new Date(now - 2 * HOUR),
-        new Date(now + HOUR),
-        [66, 70, 74, 78],
-        new Date(now + 2 * HOUR),
-      ),
-    );
-    await openQuestion(postgres.db, "arr-ladder");
-    await submitForecast(postgres.db, {
-      slug: "arr-ladder",
-      userId: users[0]!,
-      probs: [0, 0, 0.5, 0.5, 0, 0],
-    });
-    await postgres.db
-      .updateTable("tournament_questions")
-      .set({ closes_at: new Date(now - HOUR) })
-      .where("slug", "=", "arr-ladder")
-      .execute();
-    const base = {
-      rung_fired: 1,
-      source_url: "https://www.sec.gov/",
-      source_excerpt: "Run-rate revenue",
-      note_md: "Rung 1.",
-    };
-    const floor = { ...base, resolved_value: null, rung_fired: null, winning_bucket_index: 5 };
-    await expect(
-      resolveQuestion(postgres.db, "arr-ladder", floor, users[0]!),
-    ).rejects.toMatchObject({ code: "QUESTION_STATE" });
-    await expect(
-      resolveQuestion(
-        postgres.db,
-        "arr-ladder",
-        { ...base, resolved_value: 74, winning_bucket_index: 2 },
-        users[0]!,
-      ),
-    ).rejects.toMatchObject({ code: "INVALID_INPUT", details: { computedWinningBucketIndex: 3 } });
-    const outcome = await resolveQuestion(
-      postgres.db,
-      "arr-ladder",
-      { ...base, resolved_value: 74, winning_bucket_index: 3 },
-      users[0]!,
-    );
-    expect(outcome.winningBucketIndex).toBe(3);
-
-    // Closed early on its document, which carried no figure: the floor resolves before expiry.
-    await saveDraftQuestion(
-      postgres.db,
-      ladder("no-figure", new Date(now - HOUR), new Date(now + HOUR), [66, 70]),
-    );
-    await openQuestion(postgres.db, "no-figure");
-    await closeQuestion(postgres.db, "no-figure", {});
-    const early = await resolveQuestion(
-      postgres.db,
-      "no-figure",
-      { ...floor, winning_bucket_index: 3 },
-      users[0]!,
-    );
-    expect(early.winningBucketIndex).toBe(3);
-  });
-
-  it("resolves a choice question by bucket and holds its floor until expiry", async () => {
-    const now = Date.now();
-    await saveDraftQuestion(postgres.db, {
-      slug: "race",
-      title: "Which comes first?",
-      description_md: "Description.",
-      rulebook_md: "Rulebook.",
-      rulebook_version: 1,
-      unit: "choice",
-      opens_at: new Date(now - HOUR).toISOString(),
-      closes_at: new Date(now + HOUR).toISOString(),
-      expiry_at: new Date(now + HOUR).toISOString(),
-      outcomes: { labels: ["A first", "B first"], floor_label: "Neither" },
-    });
-    await openQuestion(postgres.db, "race");
-    for (const userId of users) {
-      await submitForecast(postgres.db, { slug: "race", userId, probs: [0.6, 0.3, 0.1] });
+  it("resolves a forward to its settling value and scores the level", async () => {
+    await openForward();
+    const row = await questionRow("forward-q");
+    const opensAt = row.opens_at.getTime();
+    const timeline = [
+      { user: 0, at: opensAt, value: 400 },
+      { user: 1, at: opensAt, value: 100 },
+      { user: 2, at: opensAt + HOUR / 2, value: 800 },
+      { user: 1, at: opensAt + HOUR / 2, value: 440 },
+    ];
+    for (const event of timeline) {
+      await insertEvent(row.id, users[event.user]!, event.at, { p: null, value: event.value });
     }
-    const open = await getQuestion(postgres.db, "race");
-    expect(open.buckets.map((bucket) => bucket.kind)).toEqual(["range", "range", "floor"]);
-    expect(open.aggregate!.medianValue).toBeNull();
-    expect(open.aggregate!.pYes).toBeNull();
-    expect(open.aggregate!.pFloor).toBeGreaterThan(0);
-
-    await closeQuestion(postgres.db, "race", {});
-    const base = {
-      rung_fired: null,
-      source_url: "https://example.com/",
-      source_excerpt: "Shares began trading",
-      note_md: "B printed first.",
-    };
+    const { closedAt } = await closeQuestion(postgres.db, "forward-q", {});
     await expect(
-      resolveQuestion(
-        postgres.db,
-        "race",
-        { ...base, resolved_value: 1, winning_bucket_index: 1 },
-        users[0]!,
-      ),
+      resolveQuestion(postgres.db, "forward-q", { ...SOURCE, outcome: "yes" }, users[0]!),
     ).rejects.toMatchObject({ code: "INVALID_INPUT" });
-    await expect(
-      resolveQuestion(
-        postgres.db,
-        "race",
-        { ...base, resolved_value: null, winning_bucket_index: 2 },
-        users[0]!,
-      ),
-    ).rejects.toMatchObject({ code: "QUESTION_STATE" });
+
     const outcome = await resolveQuestion(
       postgres.db,
-      "race",
-      { ...base, resolved_value: null, winning_bucket_index: 1 },
+      "forward-q",
+      { ...SOURCE, resolved_value: 400 },
       users[0]!,
     );
-    expect(outcome.winningBucketIndex).toBe(1);
-    expect((await verifyTournament(postgres.db)).passed).toBe(true);
+    expect(outcome).toMatchObject({ outcome: null, resolvedValue: 400, scoresWritten: 3 });
+
+    const end = new Date(closedAt).getTime();
+    const expected = (user: number) =>
+      timeAveragedScore({
+        opensAt,
+        closesAt: end,
+        forecasts: timeline
+          .filter((event) => event.user === user)
+          .map((event) => ({ at: event.at, forecast: event.value })),
+        score: (x: number) => forwardScore(x, 400),
+      })!;
+    const board = await getLeaderboard(postgres.db, "all");
+    expect(board.entries.map((entry) => entry.handle)).toEqual([
+      "Forecaster0",
+      "Forecaster2",
+      "Forecaster1",
+    ]);
+    expect(board.entries[0]!.totalScore).toBeCloseTo(100, 9);
+    // Half the window unforecast (0), half at a 2× miss (0).
+    expect(board.entries[1]!.totalScore).toBeCloseTo(0, 9);
+    // Half the window 4× low (−100), then 10% high (≈ 86).
+    expect(board.entries[2]!.totalScore).toBeCloseTo(expected(1).timeAvgLogScore, 9);
+    expect(expected(1).timeAvgLogScore).toBeLessThan(0);
+
+    const detail = await getQuestion(postgres.db, "forward-q");
+    expect(detail.resolution).toMatchObject({ outcome: null, resolvedValue: 400 });
+    expect(detail.resolutionDetail!.finalAggregate).toMatchObject({ nForecasters: 3 });
+    const positions = await getForecaster(postgres.db, "forecaster0");
+    expect(positions.resolved[0]).toMatchObject({
+      kind: "forward",
+      unit: "USD_B",
+      outcome: null,
+      resolvedValue: 400,
+    });
+    expect(positions.resolved[0]!.timeAvgLogScore).toBeCloseTo(100, 9);
+    expect(await verifyTournament(postgres.db)).toMatchObject({ passed: true, findings: [] });
+  });
+
+  it("voids a forward without scoring and refuses to resolve a voided question", async () => {
+    await openForward();
+    await submitForecast(postgres.db, { slug: "forward-q", userId: users[0]!, value: 400 });
+    await closeQuestion(postgres.db, "forward-q", {});
+    await voidQuestion(postgres.db, "forward-q", { note_md: "No figure in the 424(b)." });
+    await expect(
+      resolveQuestion(postgres.db, "forward-q", { ...SOURCE, resolved_value: 400 }, users[0]!),
+    ).rejects.toMatchObject({ code: "QUESTION_STATE" });
+    await expect(
+      voidQuestion(postgres.db, "forward-q", { note_md: "Again." }),
+    ).rejects.toMatchObject({ code: "QUESTION_STATE" });
+    const scores = await postgres.db.selectFrom("tournament_scores").selectAll().execute();
+    expect(scores).toHaveLength(0);
+    expect((await getLeaderboard(postgres.db, "all")).entries).toHaveLength(0);
+    expect(await getQuestion(postgres.db, "forward-q")).toMatchObject({
+      status: "voided",
+      voidNoteMd: "No figure in the 424(b).",
+      resolution: null,
+    });
+    expect(await verifyTournament(postgres.db)).toMatchObject({ passed: true, findings: [] });
+  });
+
+  it("voids a resolved question inside the dispute window, and only inside it", async () => {
+    await openForward();
+    await submitForecast(postgres.db, { slug: "forward-q", userId: users[0]!, value: 400 });
+    await closeQuestion(postgres.db, "forward-q", {});
+    const outcome = await resolveQuestion(
+      postgres.db,
+      "forward-q",
+      { ...SOURCE, resolved_value: 400 },
+      users[0]!,
+    );
+    expect(outcome.scoresWritten).toBe(1);
+    expect((await getLeaderboard(postgres.db, "all")).entries).toHaveLength(1);
+
+    await voidQuestion(postgres.db, "forward-q", {
+      note_md: "The figure was not the KPI the rulebook names: void.",
+    });
+    expect((await getLeaderboard(postgres.db, "all")).entries).toHaveLength(0);
+    expect(await listLeaderboardPeriods(postgres.db)).toEqual(["all"]);
+    const resolution = await postgres.db
+      .selectFrom("tournament_resolutions")
+      .select(["id", "superseded_by"])
+      .executeTakeFirstOrThrow();
+    expect(resolution.superseded_by).toBe(resolution.id);
+    expect(await getQuestion(postgres.db, "forward-q")).toMatchObject({
+      status: "voided",
+      resolution: null,
+      resolutionDetail: null,
+    });
+    expect((await getForecaster(postgres.db, "forecaster0")).resolved).toHaveLength(0);
+    expect(await verifyTournament(postgres.db)).toMatchObject({ passed: true, findings: [] });
+
+    // Past the window, the resolution is final.
+    await openBinary();
+    await submitForecast(postgres.db, { slug: "binary-q", userId: users[0]!, p: 0.7 });
+    await closeQuestion(postgres.db, "binary-q", {});
+    await resolveQuestion(postgres.db, "binary-q", { ...SOURCE, outcome: "yes" }, users[0]!);
+    const late = new Date(Date.now() + DISPUTE_WINDOW_MS + HOUR);
+    await expect(
+      postgres.db
+        .transaction()
+        .execute((transaction) =>
+          voidQuestionIn(transaction, "binary-q", { note_md: "Too late." }, late),
+        ),
+    ).rejects.toMatchObject({ code: "QUESTION_STATE" });
+    expect((await getQuestion(postgres.db, "binary-q")).status).toBe("resolved");
+  });
+
+  it("sums both kinds on the leaderboard", async () => {
+    await openBinary();
+    await openForward();
+    await submitForecast(postgres.db, { slug: "binary-q", userId: users[0]!, p: 0.8 });
+    await submitForecast(postgres.db, { slug: "forward-q", userId: users[0]!, value: 300 });
+    await submitForecast(postgres.db, { slug: "binary-q", userId: users[1]!, p: 0.3 });
+    await closeQuestion(postgres.db, "binary-q", {});
+    await closeQuestion(postgres.db, "forward-q", {});
+    await resolveQuestion(postgres.db, "binary-q", { ...SOURCE, outcome: "yes" }, users[0]!);
+    await resolveQuestion(postgres.db, "forward-q", { ...SOURCE, resolved_value: 400 }, users[0]!);
+
+    const scores = await postgres.db
+      .selectFrom("tournament_scores")
+      .select(["question_id", "time_avg_log_score"])
+      .where("user_id", "=", users[0]!)
+      .execute();
+    expect(scores).toHaveLength(2);
+    const board = await getLeaderboard(postgres.db, "all");
+    const first = board.entries.find((entry) => entry.handle === "Forecaster0")!;
+    expect(first.questionsResolved).toBe(2);
+    expect(first.totalScore).toBeCloseTo(
+      scores.reduce((sum, score) => sum + score.time_avg_log_score, 0),
+      9,
+    );
+    const profile = await getForecaster(postgres.db, "forecaster0");
+    expect(profile.resolved.map((position) => position.kind).sort()).toEqual(["binary", "forward"]);
+    expect(profile.totalScore).toBeCloseTo(first.totalScore, 9);
+    expect(await verifyTournament(postgres.db)).toMatchObject({ passed: true, findings: [] });
   });
 
   it("drops flagged accounts from the aggregate", async () => {
-    const now = Date.now();
-    await saveDraftQuestion(
-      postgres.db,
-      ladder("anthropic-ipo-day1-mcap", new Date(now - HOUR), new Date(now + HOUR), [1, 2]),
-    );
-    await openQuestion(postgres.db, "anthropic-ipo-day1-mcap");
+    await openForward("anthropic-ipo-day1-mcap");
     for (const userId of users) {
-      await submitForecast(postgres.db, {
-        slug: "anthropic-ipo-day1-mcap",
-        userId,
-        probs: [0, 1, 0, 0],
-      });
+      await submitForecast(postgres.db, { slug: "anthropic-ipo-day1-mcap", userId, value: 1.5 });
     }
     const before = await getQuestion(postgres.db, "anthropic-ipo-day1-mcap");
     expect(before.aggregate!.nForecasters).toBe(6);
-    expect(before.aggregate!.medianValue).toBeGreaterThan(1);
-    expect(before.aggregate!.medianValue).toBeLessThan(2);
+    expect(before.aggregate!.value).toBeCloseTo(1.5, 9);
 
     const flagged = await setUserFlag(postgres.db, {
       handle: "forecaster5",
@@ -491,35 +579,120 @@ postgresDescribe(suiteName, () => {
     expect(flagged.recomputed).toBe(1);
     const question = await getQuestion(postgres.db, "anthropic-ipo-day1-mcap");
     expect(question.aggregate!.nForecasters).toBe(5);
+    expect(await verifyTournament(postgres.db)).toMatchObject({ passed: true, findings: [] });
+  });
+
+  it("shows a linked question's instrument with its latest price", async () => {
+    await seedFixtureListings(postgres.db, new Date("2026-09-01T00:00:00Z"));
+    const listing = await postgres.db
+      .selectFrom("listings")
+      .innerJoin("companies", "companies.id", "listings.company_id")
+      .select(["listings.id", "companies.slug"])
+      .orderBy("companies.slug")
+      .executeTakeFirstOrThrow();
+    await openBinary();
+    await openForward();
+    const now = Date.now();
+    const instrumentFor = async (kind: "binary" | "forward") =>
+      (
+        await postgres.db
+          .insertInto("instruments")
+          .values({
+            listing_id: listing.id,
+            kind,
+            epoch: 1,
+            question: `${kind} question`,
+            opens_at: new Date(now - HOUR),
+            expires_at: new Date(now + 2 * HOUR),
+            state: "quoting",
+          })
+          .returning("id")
+          .executeTakeFirstOrThrow()
+      ).id;
+    const binaryId = await instrumentFor("binary");
+    const forwardId = await instrumentFor("forward");
+    const quote = {
+      reason: "list" as const,
+      inventory_cents: "0",
+      cap_cents_effective: "0",
+      flag_state: "normal" as const,
+      model_version: "test",
+      rulebook_version: "test",
+    };
+    await postgres.db
+      .insertInto("quotes")
+      .values([
+        { ...quote, instrument_id: binaryId, posted_at: new Date(now - HOUR), price: 0.3 },
+        { ...quote, instrument_id: binaryId, posted_at: new Date(now - 1_000), price: 0.385 },
+        {
+          ...quote,
+          instrument_id: forwardId,
+          posted_at: new Date(now - 1_000),
+          mid_ln: Math.log(4.12e11),
+          bid_ln: Math.log(4e11),
+          ask_ln: Math.log(4.2e11),
+        },
+      ])
+      .execute();
+    for (const [slug, instrumentId] of [
+      ["binary-q", binaryId],
+      ["forward-q", forwardId],
+    ] as const) {
+      const row = await questionRow(slug);
+      await postgres.db
+        .insertInto("tournament_instrument_links")
+        .values({ question_id: row.id, instrument_id: instrumentId })
+        .execute();
+    }
+
+    expect((await getQuestion(postgres.db, "binary-q")).instrument).toEqual({
+      kind: "binary",
+      companySlug: listing.slug,
+      yesPrice: 0.385,
+      midUsd: null,
+    });
+    const linkedForward = (await listQuestions(postgres.db)).find(
+      (question) => question.slug === "forward-q",
+    )!;
+    expect(linkedForward.instrument).toMatchObject({
+      kind: "forward",
+      companySlug: listing.slug,
+      yesPrice: null,
+    });
+    expect(linkedForward.instrument!.midUsd).toBeCloseTo(4.12e11, 0);
   });
 
   it("accepts a forecast through the route with a session and reports the viewer", async () => {
     await openBinary();
+    await openForward();
     const token = await createTournamentSession(postgres.db, users[0]!);
-    const response = await forecastRoute(
-      new Request(`${APP_ORIGIN}/api/t/questions/binary-q/forecasts`, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          origin: APP_ORIGIN,
-          cookie: `${TOURNAMENT_SESSION_COOKIE}=${token}`,
-        },
-        body: JSON.stringify({ probs: [0.25, 0.75] }),
-      }),
-      { params: Promise.resolve({ slug: "binary-q" }) },
-    );
-    expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({ probs: [0.25, 0.75], questionSlug: "binary-q" });
+    const post = (slug: string, body: unknown, cookie = true) =>
+      forecastRoute(
+        new Request(`${APP_ORIGIN}/api/t/questions/${slug}/forecasts`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            origin: APP_ORIGIN,
+            ...(cookie ? { cookie: `${TOURNAMENT_SESSION_COOKIE}=${token}` } : {}),
+          },
+          body: JSON.stringify(body),
+        }),
+        { params: Promise.resolve({ slug }) },
+      );
 
-    const anonymous = await forecastRoute(
-      new Request(`${APP_ORIGIN}/api/t/questions/binary-q/forecasts`, {
-        method: "POST",
-        headers: { "content-type": "application/json", origin: APP_ORIGIN },
-        body: JSON.stringify({ probs: [0.25, 0.75] }),
-      }),
-      { params: Promise.resolve({ slug: "binary-q" }) },
-    );
-    expect(anonymous.status).toBe(401);
+    const response = await post("binary-q", { p: 0.25 });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      p: 0.25,
+      value: null,
+      questionSlug: "binary-q",
+    });
+    const level = await post("forward-q", { value: 412.5 });
+    expect(level.status).toBe(200);
+    expect(await level.json()).toMatchObject({ p: null, value: 412.5 });
+    expect((await post("binary-q", { probs: [0.25, 0.75] })).status).toBe(400);
+    expect((await post("forward-q", { value: -1 })).status).toBe(400);
+    expect((await post("binary-q", { p: 0.25 }, false)).status).toBe(401);
 
     const me = await meRoute(
       new Request(`${APP_ORIGIN}/api/t/me`, {
@@ -527,11 +700,17 @@ postgresDescribe(suiteName, () => {
       }),
     );
     const body = (await me.json()) as {
-      viewer: { identity: { handle: string }; forecasts: Record<string, unknown> };
+      viewer: {
+        identity: { handle: string };
+        forecasts: Record<string, { p: number | null; value: number | null }>;
+      };
       isAdmin: boolean;
     };
     expect(body.viewer.identity.handle).toBe("Forecaster0");
-    expect(Object.keys(body.viewer.forecasts)).toEqual(["binary-q"]);
+    expect(body.viewer.forecasts).toMatchObject({
+      "binary-q": { p: 0.25, value: null },
+      "forward-q": { p: null, value: 412.5 },
+    });
     expect(body.isAdmin).toBe(false);
   });
 });
