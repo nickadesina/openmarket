@@ -100,8 +100,8 @@ postgresDescribe(suiteName, () => {
     if (postgres !== undefined) await postgres.dispose();
   }, 30_000);
 
-  function devIdentity(handle: string) {
-    return upsertIdentity(postgres.db, {
+  async function devIdentity(handle: string): Promise<string> {
+    const { userId } = await upsertIdentity(postgres.db, {
       provider: "dev",
       providerUserId: handle.toLowerCase(),
       handle,
@@ -110,6 +110,7 @@ postgresDescribe(suiteName, () => {
       verified: false,
       providerCreatedAt: null,
     });
+    return userId;
   }
 
   it("opens one paper account per tournament user, idempotently and under concurrency", async () => {
@@ -183,7 +184,7 @@ postgresDescribe(suiteName, () => {
     );
     const path = `/api/admin/comments/${comment.id}/remove`;
     const context = { params: Promise.resolve({ commentId: comment.id }) };
-    const xAdmin = await upsertIdentity(postgres.db, {
+    const { userId: xAdmin } = await upsertIdentity(postgres.db, {
       provider: "x",
       providerUserId: "4242",
       handle: "admin_on_x",
@@ -192,7 +193,7 @@ postgresDescribe(suiteName, () => {
       verified: true,
       providerCreatedAt: new Date("2015-01-01T00:00:00.000Z"),
     });
-    const passwordAdmin = await upsertIdentity(postgres.db, {
+    const { userId: passwordAdmin } = await upsertIdentity(postgres.db, {
       provider: "password",
       providerUserId: "moderator",
       handle: "moderator",
@@ -461,7 +462,7 @@ postgresDescribe(`${suiteName}: 008 on a populated 007 database`, () => {
     expect(after.passed).toBe(true);
     expect(after.cashReconciliation).toMatchObject({ userCount: 0, differenceCents: "0" });
 
-    const tournamentUserId = await upsertIdentity(db, {
+    const { userId: tournamentUserId } = await upsertIdentity(db, {
       provider: "dev",
       providerUserId: "after",
       handle: "after",

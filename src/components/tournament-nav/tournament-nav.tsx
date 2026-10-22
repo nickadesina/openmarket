@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 
 import { apiRequest } from "../../lib/client/api.js";
 import { forecasterHref, useTournamentViewer } from "../../lib/client/tournament.js";
+import { SignInCallout } from "./sign-in-callout.js";
 import { DevSignIn } from "./tournament-account.js";
 import styles from "./tournament-nav.module.css";
 
@@ -42,41 +43,45 @@ export function TournamentNav() {
   ];
 
   return (
-    <div className={styles.bar}>
-      <p className={styles.title}>
-        <span className={styles.tab}>Forecasting tournament</span>
-        <span className={styles.caption}>
-          One number per question, scored. No money, no trading.
-        </span>
-      </p>
-      <nav className={styles.nav} aria-label="Tournament">
-        {links.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={`${styles.link} ${link.current ? styles.linkActive : ""}`}
-            aria-current={link.current ? "page" : undefined}
-          >
-            {link.label}
-          </Link>
-        ))}
-        {/* The header keeps only an icon at phone width; account actions live here. */}
-        {viewer.data?.viewer != null ? (
-          <button
-            type="button"
-            className={`${styles.link} ${styles.narrowOnly}`}
-            onClick={() => signOut.mutate()}
-            disabled={signOut.isPending}
-          >
-            Sign out
-          </button>
+    <>
+      <div className={styles.bar}>
+        <p className={styles.title}>
+          <span className={styles.tab}>Forecasting tournament</span>
+          <span className={styles.caption}>
+            One number per question, scored. No money, no trading.
+          </span>
+        </p>
+        <nav className={styles.nav} aria-label="Tournament">
+          {links.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`${styles.link} ${link.current ? styles.linkActive : ""}`}
+              aria-current={link.current ? "page" : undefined}
+            >
+              {link.label}
+            </Link>
+          ))}
+          {/* The header keeps only an icon at phone width; account actions live here. */}
+          {viewer.data?.viewer != null ? (
+            <button
+              type="button"
+              className={`${styles.link} ${styles.narrowOnly}`}
+              onClick={() => signOut.mutate()}
+              disabled={signOut.isPending}
+            >
+              Sign out
+            </button>
+          ) : null}
+        </nav>
+        {viewer.data?.viewer == null && viewer.data?.signIn.dev === true ? (
+          <div className={styles.narrowOnly}>
+            <DevSignIn />
+          </div>
         ) : null}
-      </nav>
-      {viewer.data?.viewer == null && viewer.data?.signIn.dev === true ? (
-        <div className={styles.narrowOnly}>
-          <DevSignIn />
-        </div>
-      ) : null}
-    </div>
+      </div>
+      {/* The questions list is the front door; its editor-less page carries the sign-in. */}
+      {pathname === "/t" ? <SignInCallout returnTo="/t" /> : null}
+    </>
   );
 }

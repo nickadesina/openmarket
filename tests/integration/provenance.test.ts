@@ -83,7 +83,7 @@ postgresDescribe(suiteName, () => {
   beforeEach(async () => {
     await resetPostgresTestDatabase(postgres.db);
     runtime.getRuntimeDatabase.mockReturnValue(postgres.db);
-    userId = await upsertIdentity(postgres.db, {
+    ({ userId } = await upsertIdentity(postgres.db, {
       provider: "x",
       providerUserId: "42",
       handle: "Prover",
@@ -91,7 +91,7 @@ postgresDescribe(suiteName, () => {
       avatarUrl: null,
       verified: false,
       providerCreatedAt: new Date("2015-01-01T00:00:00Z"),
-    });
+    }));
     const now = Date.now();
     await saveDraftQuestion(postgres.db, {
       slug: "proof-q",

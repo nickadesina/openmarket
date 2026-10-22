@@ -1,0 +1,100 @@
+.page {
+  display: grid;
+  justify-items: center;
+  padding: var(--space-6) 0 var(--space-7);
+}
+
+/* The same ruled single column as the sign-in page it follows. */
+.panel {
+  display: grid;
+  width: min(100%, 28rem);
+  gap: var(--space-5);
+  padding: var(--space-6);
+  border: 1px solid var(--color-border);
+  border-top: 2px solid var(--color-ink);
+  background: var(--color-surface);
+}
+
+.header {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.step {
+  composes: sectionHead from "../../styles/shared.module.css";
+}
+
+.header h1 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--font-size-xl);
+  letter-spacing: -0.01em;
+  line-height: var(--line-height-tight);
+}
+
+.header p:not(.step) {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-md);
+}
+
+.secondaryButton {
+  composes: buttonBase from "../../styles/shared.module.css";
+  border: 1px solid var(--color-ink);
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+.secondaryButton:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.notice {
+  margin: 0;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border-subtle);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+}
+
+.notice strong {
+  color: var(--color-ink);
+}
+
+.skeleton {
+  composes: skeletonBlock from "../../styles/shared.module.css";
+  width: min(100%, 28rem);
+  height: 20rem;
+}
+
+.statePanel {
+  display: grid;
+  width: min(100%, 28rem);
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+}
+
+.statePanel p {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+@media (max-width: 42rem) {
+  .page {
+    padding: var(--space-2) 0 var(--space-5);
+  }
+
+  .panel {
+    padding: var(--space-5) var(--space-4);
+  }
+}

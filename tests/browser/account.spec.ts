@@ -54,7 +54,7 @@ test("the first portfolio view opens a $100,000 paper account for the tournament
   }
 });
 
-test("a username account created on the sign-in page returns to where it started", async ({
+test("a username account created on the sign-in page returns to where it started after welcome", async ({
   page,
 }, testInfo) => {
   const username = uniqueHandle("pw", testInfo).slice(0, 20);
@@ -64,6 +64,9 @@ test("a username account created on the sign-in page returns to where it started
   await page.getByLabel("Password").fill("browser-test-password");
   await page.getByRole("button", { name: "Create account" }).last().click();
 
+  // The welcome route may compile on this first visit in the dev server.
+  await expect(page).toHaveURL(/\/t\/welcome\?return=%2Fportfolio$/, { timeout: 45_000 });
+  await page.getByRole("main").getByRole("link", { name: "Skip" }).click();
   await expect(page).toHaveURL(/\/portfolio$/);
   await expect(page.getByText(`Account · ${username}`)).toBeVisible();
   await expect(page.getByLabel("Portfolio summary")).toContainText(OPENING_BALANCE);

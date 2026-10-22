@@ -1,0 +1,73 @@
+/* The profile's inline row: label, field, Save. */
+.form {
+  display: grid;
+  max-width: 40rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+}
+
+/* The welcome step's stacked form: the field over its help, then the actions. */
+.stacked {
+  max-width: none;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  padding: 0;
+  border: 0;
+}
+
+.label {
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.input {
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+}
+
+.button {
+  composes: buttonBase from "../../styles/shared.module.css";
+  border: 1px solid var(--color-ink);
+  background: var(--color-surface);
+}
+
+.button:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.primary {
+  composes: primaryButton from "../../styles/shared.module.css";
+}
+
+.help {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+}
+
+/* Stacked, the help sits under the field and the actions close the form. */
+.stacked .help {
+  grid-column: auto;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.error {
+  color: var(--color-primary);
+}
