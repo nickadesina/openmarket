@@ -1,10 +1,14 @@
 import type { NextConfig } from "next";
 
-// The canonical production host. The auto-generated Vercel hostname keeps
-// serving, but only as a redirect: mutations are origin-checked against
-// APP_ORIGIN, so a second working hostname would half-work.
-const CANONICAL_HOST = "openmkt.vercel.app";
-const LEGACY_HOSTS = ["openmarket-rho-three.vercel.app"];
+// The canonical production host. Every other hostname that reaches the
+// project keeps serving, but only as a redirect: mutations are origin-checked
+// against APP_ORIGIN, so a second working hostname would half-work.
+const CANONICAL_HOST = "openmarket.systems";
+const LEGACY_HOSTS = [
+  "www.openmarket.systems",
+  "openmkt.vercel.app",
+  "openmarket-rho-three.vercel.app",
+];
 
 const nextConfig: NextConfig = {
   webpack(config) {

@@ -18,7 +18,7 @@ jobs:
       - name: Call the settle job
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          SETTLE_URL: ${{ vars.SETTLE_URL || 'https://openmkt.vercel.app/api/cron/settle' }}
+          SETTLE_URL: ${{ vars.SETTLE_URL || 'https://openmarket.systems/api/cron/settle' }}
           RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           if [ -z "$CRON_SECRET" ]; then

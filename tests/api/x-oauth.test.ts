@@ -15,17 +15,17 @@ import {
 const CONFIG = {
   clientId: "client-id",
   clientSecret: null,
-  redirectUri: "https://openmkt.vercel.app/api/t/auth/x/callback",
+  redirectUri: "https://openmarket.systems/api/t/auth/x/callback",
 };
 
 describe("X OAuth 2.0 PKCE", () => {
   it("derives the redirect from APP_ORIGIN and stays off without a client id", () => {
-    expect(xClientConfig({ APP_ORIGIN: "https://openmkt.vercel.app" })).toBeNull();
-    expect(xClientConfig({ X_CLIENT_ID: "abc", APP_ORIGIN: "https://openmkt.vercel.app" })).toEqual(
+    expect(xClientConfig({ APP_ORIGIN: "https://openmarket.systems" })).toBeNull();
+    expect(xClientConfig({ X_CLIENT_ID: "abc", APP_ORIGIN: "https://openmarket.systems" })).toEqual(
       {
         clientId: "abc",
         clientSecret: null,
-        redirectUri: "https://openmkt.vercel.app/api/t/auth/x/callback",
+        redirectUri: "https://openmarket.systems/api/t/auth/x/callback",
       },
     );
   });
