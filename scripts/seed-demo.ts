@@ -5,11 +5,15 @@
  *
  * Idempotent: when any demo account already holds a trade it does nothing.
  * It skips, writing nothing and exiting cleanly, when there are no listings
- * or no live quotes (a fresh preview before the dealer job has run). Every
- * trade goes through `executeTrade` or `executeForwardTrade` at the dealer's
- * live quote; a fill the dealer refuses is logged and skipped. It never
+ * or no live quotes (a fresh preview before the dealer job has run). It never
  * forecasts and never touches a tournament question. The production and
  * preview builds run it after `seed:tournament` (scripts/vercel-build.ts).
+ *
+ * Every trade goes through `executeTrade` or `executeForwardTrade` at the
+ * quote the dealer shows at the trade's time; a fill the dealer refuses is
+ * logged and skipped. The trades are spread over the last
+ * DEMO_HISTORY_DAYS, each book's no earlier than its honest floor (see
+ * `honestFloor`), so the charts and the tape show history, not one instant.
  */
 import { createHash } from "node:crypto";
 import { pathToFileURL } from "node:url";
@@ -21,9 +25,11 @@ import { formatCentsAsUsd } from "../src/lib/api/money.js";
 import { forwardTradeInputSchema, tradeInputSchema } from "../src/lib/api/schemas.js";
 import {
   DEMO_ACCOUNTS,
+  DEMO_HISTORY_DAYS,
   DEMO_SEED,
   type DemoTrade,
   demoTradePlan,
+  demoTradeTimeline,
 } from "../src/lib/config/demo-accounts.js";
 import { createDirectDatabase, destroyDatabase } from "../src/lib/db/client.js";
 import type { Database } from "../src/lib/db/schema.js";
@@ -35,9 +41,11 @@ import { listMarkets } from "../src/lib/services/list-markets.js";
 import { quoteMarket } from "../src/lib/services/quote.js";
 import { ensurePaperAccount } from "../src/lib/services/user.js";
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 export interface DemoSeedOptions {
-  /** Each service call's clock; the database clock when omitted. Tests step a fixture calendar. */
-  readonly clock?: () => Date;
+  /** The seed's "now", the end of the history window; the database clock when omitted. */
+  readonly now?: Date;
   readonly log?: (line: string) => void;
 }
 
@@ -49,6 +57,9 @@ export type DemoSeedOutcome =
       readonly accounts: number;
       readonly filled: number;
       readonly refused: number;
+      /** The earliest and latest fill times; null when nothing filled. */
+      readonly from: string | null;
+      readonly to: string | null;
     };
 
 /** The demo accounts' trades so far. */
@@ -122,6 +133,36 @@ async function ensureDemoAccounts(db: Kysely<Database>): Promise<string[]> {
   });
 }
 
+/**
+ * The earliest time a demo trade on this instrument can honestly carry: after
+ * its listing and its opening, and after every row already derived from its
+ * book's state as of some time (its quote tape, its reference prices, its
+ * trades and marks). A fill dated later than all of them sees exactly the
+ * state the dealer had then: the model mid in force, the inventory and LMSR
+ * book as they stood, no flag change (each posts a quote row). And no row
+ * written before the seed ever reads a demo trade, so each still recomputes
+ * under `verify:replay`.
+ */
+async function honestFloor(db: Kysely<Database>, instrumentId: string): Promise<Date> {
+  const { rows } = await sql<{ floor: Date }>`
+    select greatest(
+      listings.listed_at,
+      instruments.opens_at,
+      (select max(posted_at) from quotes where quotes.instrument_id = instruments.id),
+      (select max(as_of) from reference_prices
+        where reference_prices.listing_id = instruments.listing_id
+          and reference_prices.kind = instruments.kind),
+      (select max(created_at) from trades where trades.market_id = markets.id),
+      (select max(ts) from marks where marks.market_id = markets.id)
+    ) as floor
+    from instruments
+    join listings on listings.id = instruments.listing_id
+    join markets on markets.instrument_id = instruments.id
+    where instruments.id = ${instrumentId}
+  `.execute(db);
+  return new Date(rows[0]!.floor);
+}
+
 /** A UUID fixed by the seed and the trade's place in the plan. */
 function idempotencyKey(index: number): string {
   const hex = createHash("sha256").update(`openmarket.demo.${DEMO_SEED}.${index}`).digest("hex");
@@ -138,28 +179,20 @@ interface TradeContext {
   readonly userId: string;
   readonly listing: ListingView;
   readonly key: string;
-  readonly clock: (() => Date) | undefined;
+  /** The trade's execution time: every quote it reads and the fill itself. */
+  readonly at: Date;
   /** Shares each name's opening binary buy filled, waiting for its match. */
   readonly openerShares: Map<string, number>;
 }
 
-function at(clock: (() => Date) | undefined): { now?: Date } {
-  return clock === undefined ? {} : { now: clock() };
-}
-
-/** A forward at the dealer's live ask (long) or bid (short), as the ticket sends it. */
+/** A forward at the dealer's ask (long) or bid (short) at the trade's time, as the ticket sends it. */
 async function tradeForward(
   context: TradeContext,
   trade: Extract<DemoTrade, { kind: "forward" }>,
 ): Promise<string | null> {
   const instrumentId = context.listing.forward?.instrument_id;
   if (instrumentId === undefined) return "no live forward";
-  const quote = await getInstrumentQuote(
-    context.db,
-    instrumentId,
-    {},
-    context.clock === undefined ? new Date() : context.clock(),
-  );
+  const quote = await getInstrumentQuote(context.db, instrumentId, {}, context.at);
   if (quote.kind !== "forward") return "not a forward";
   const notional = usd(trade.notionalUsd);
   const input = forwardTradeInputSchema.parse(
@@ -179,7 +212,7 @@ async function tradeForward(
           min_entry_ln: quote.bid_ln,
         },
   );
-  await executeForwardTrade(context.db, context.userId, input, at(context.clock));
+  await executeForwardTrade(context.db, context.userId, input, { now: context.at });
   return null;
 }
 
@@ -200,7 +233,7 @@ async function buyBinary(
     spend_usd: spend,
     max_cost_usd: spend,
   });
-  const { result } = await executeTrade(context.db, context.userId, input, at(context.clock));
+  const { result } = await executeTrade(context.db, context.userId, input, { now: context.at });
   context.openerShares.set(trade.slug, result.shares);
   return null;
 }
@@ -219,7 +252,7 @@ async function matchBinary(
     context.db,
     { market_id: marketId, side: trade.side, strike_index: 0, action: "buy", quantity },
     context.userId,
-    context.clock === undefined ? new Date() : context.clock(),
+    context.at,
   );
   const input = tradeInputSchema.parse({
     idempotency_key: context.key,
@@ -230,7 +263,7 @@ async function matchBinary(
     quantity,
     max_cost_usd: formatCentsAsUsd(Number(quoted.cash_amount_cents)),
   });
-  await executeTrade(context.db, context.userId, input, at(context.clock));
+  await executeTrade(context.db, context.userId, input, { now: context.at });
   return null;
 }
 
@@ -255,7 +288,7 @@ async function sellBinary(
     context.db,
     { market_id: marketId, side, strike_index: 0, action: "sell", quantity },
     context.userId,
-    context.clock === undefined ? new Date() : context.clock(),
+    context.at,
   );
   const input = tradeInputSchema.parse({
     idempotency_key: context.key,
@@ -266,7 +299,7 @@ async function sellBinary(
     quantity,
     min_proceeds_usd: formatCentsAsUsd(Number(quoted.cash_amount_cents)),
   });
-  await executeTrade(context.db, context.userId, input, at(context.clock));
+  await executeTrade(context.db, context.userId, input, { now: context.at });
   return null;
 }
 
@@ -284,6 +317,31 @@ async function placeTrade(context: TradeContext, trade: DemoTrade): Promise<stri
   }
 }
 
+/** The instrument a planned trade fills on: the name's live forward or binary. */
+function instrumentOf(listing: ListingView, trade: DemoTrade): string | null {
+  return trade.kind === "forward"
+    ? (listing.forward?.instrument_id ?? null)
+    : (listing.binary?.instrument_id ?? null);
+}
+
+async function databaseNow(db: Kysely<Database>): Promise<Date> {
+  const { ts } = await db
+    .selectNoFrom(sql<Date>`clock_timestamp()`.as("ts"))
+    .executeTakeFirstOrThrow();
+  return new Date(ts);
+}
+
+/**
+ * Each trade's time: its book's window runs from the later of its honest
+ * floor and DEMO_HISTORY_DAYS ago to now, and the trade sits at its fixed
+ * place on the timeline, so each book's trades keep plan order in time.
+ */
+function tradeTime(floor: Date, now: Date, fraction: number): Date {
+  const start = Math.max(floor.getTime() + 1, now.getTime() - DEMO_HISTORY_DAYS * DAY_MS);
+  if (start >= now.getTime()) return now;
+  return new Date(Math.round(start + (now.getTime() - start) * fraction));
+}
+
 export async function seedDemo(
   db: Kysely<Database>,
   options: DemoSeedOptions = {},
@@ -292,12 +350,21 @@ export async function seedDemo(
   const existing = await demoTradeCount(db);
   if (existing > 0) return { outcome: "already_seeded", trades: existing };
 
-  const markets = await listMarkets(db, at(options.clock));
+  const now = options.now ?? (await databaseNow(db));
+  const markets = await listMarkets(db, { now });
   if (markets.listings.length === 0) return { outcome: "skipped", reason: "no listings" };
   const live = markets.listings.filter(
     (listing) => listing.forward !== null || listing.binary !== null,
   );
   if (live.length === 0) return { outcome: "skipped", reason: "no live quotes" };
+
+  // Every floor is read before the first demo write, which would move it.
+  const floors = new Map<string, Date>();
+  for (const listing of live) {
+    for (const instrumentId of [listing.forward?.instrument_id, listing.binary?.instrument_id]) {
+      if (instrumentId !== undefined) floors.set(instrumentId, await honestFloor(db, instrumentId));
+    }
+  }
 
   let accounts: string[];
   try {
@@ -308,23 +375,29 @@ export async function seedDemo(
   }
 
   const bySlug = new Map(live.map((listing) => [listing.company.slug, listing]));
+  const plan = demoTradePlan([...bySlug.keys()]);
+  const timeline = demoTradeTimeline(plan.length);
   const openerShares = new Map<string, number>();
-  let filled = 0;
+  const filledAt: number[] = [];
   let refused = 0;
-  for (const [index, trade] of demoTradePlan([...bySlug.keys()]).entries()) {
+  for (const [index, trade] of plan.entries()) {
+    const listing = bySlug.get(trade.slug)!;
+    const instrumentId = instrumentOf(listing, trade);
+    const at =
+      instrumentId === null ? now : tradeTime(floors.get(instrumentId)!, now, timeline[index]!);
     const reason = await placeTrade(
       {
         db,
         userId: accounts[trade.account]!,
-        listing: bySlug.get(trade.slug)!,
+        listing,
         key: idempotencyKey(index),
-        clock: options.clock,
+        at,
         openerShares,
       },
       trade,
     );
     if (reason === null) {
-      filled += 1;
+      filledAt.push(at.getTime());
     } else {
       refused += 1;
       log(
@@ -332,7 +405,14 @@ export async function seedDemo(
       );
     }
   }
-  return { outcome: "seeded", accounts: accounts.length, filled, refused };
+  return {
+    outcome: "seeded",
+    accounts: accounts.length,
+    filled: filledAt.length,
+    refused,
+    from: filledAt.length === 0 ? null : new Date(Math.min(...filledAt)).toISOString(),
+    to: filledAt.length === 0 ? null : new Date(Math.max(...filledAt)).toISOString(),
+  };
 }
 
 async function main(): Promise<void> {
@@ -347,8 +427,8 @@ async function main(): Promise<void> {
       console.log(`Demo seed skipped: ${result.reason}; nothing written`);
     } else {
       console.log(
-        `Demo seed: ${result.accounts} demo accounts, ${result.filled} trades filled, ` +
-          `${result.refused} refused by the dealer or skipped`,
+        `Demo seed: ${result.accounts} demo accounts, ${result.filled} trades filled ` +
+          `from ${result.from} to ${result.to}, ${result.refused} refused by the dealer or skipped`,
       );
     }
   } finally {

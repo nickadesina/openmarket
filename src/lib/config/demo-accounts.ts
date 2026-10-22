@@ -30,6 +30,13 @@ export const DEMO_ACCOUNTS: readonly DemoAccount[] = Object.freeze(
 /** The generator's seed. Changing it changes every demo book; reruns never change one. */
 export const DEMO_SEED = 20_261_022;
 
+/**
+ * How far back the demo history reaches. Each book's trades are spread from
+ * the later of this and the book's honest floor (scripts/seed-demo.ts) up to
+ * the seed's run: never before the name was listed or its instrument opened.
+ */
+export const DEMO_HISTORY_DAYS = 21;
+
 /** Trades each account places on each listed name. */
 export const DEMO_TRADES_PER_ACCOUNT = 3;
 
@@ -178,4 +185,17 @@ export function demoTradePlan(slugs: readonly string[], seed: number = DEMO_SEED
     }
   }
   return plan;
+}
+
+/**
+ * Where each planned trade sits in its book's history window, as a fraction
+ * in (0, 1) of the way from the window's start to the seed's run: sorted
+ * draws from their own stream of the seed, so the plan's draws are
+ * untouched and each book's trades keep plan order in time.
+ */
+export function demoTradeTimeline(count: number, seed: number = DEMO_SEED): number[] {
+  const next = generator((seed ^ 0x9e3779b9) >>> 0);
+  return Array.from({ length: count }, () => next())
+    .map((draw) => Math.min(Math.max(draw, 1e-6), 1 - 1e-6))
+    .sort((left, right) => left - right);
 }

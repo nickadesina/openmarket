@@ -33,8 +33,14 @@ markets look like.
 - **Real services only.** They trade through `executeTrade` and
   `executeForwardTrade`, inside the dealer's limits (cap, price band),
   so every ledger invariant and `verify:replay` holds unchanged. Nothing
-  is written to the ledger by hand, and each trade carries the time it
-  executed: the seed run's own.
+  is written to the ledger by hand.
+- **Backdated, honestly (amended, Nick, 2026-10-22).** The trades are
+  spread over the last 21 days through the services' own `now`. On each
+  book they start after the name's listing, its instrument's opening and
+  every quote, reference, trade and mark row already on it, and they end
+  at the seed run. So each fill takes the quote the dealer showed at its
+  time, and no earlier row ever reads one. The accounts' own rows carry
+  the seed run's time.
 - **Never forecast, never ranked, never signed in.** A demo account has
   a `password`-namespace identity (`demo_1` … `demo_5`, shown without an
   "@") and no credential, no X id and no session. Migration 015's

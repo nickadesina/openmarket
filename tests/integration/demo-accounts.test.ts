@@ -53,14 +53,10 @@ const suiteName =
 
 const LISTED_AT = new Date("2026-10-20T00:00:00.000Z");
 const RUN_AT = new Date("2026-10-20T00:05:00.000Z");
-const TRADE_AT = Date.parse("2026-10-20T01:00:00.000Z");
+/** The seed runs two weeks after the dealer first quoted, so the history window is the whole fortnight. */
+const SEED_NOW = new Date("2026-11-03T00:05:00.000Z");
+const TRADE_AT = SEED_NOW.getTime();
 const HOUR = 60 * 60 * 1000;
-
-/** A fixture calendar that steps one second per service call. */
-function steppingClock(): () => Date {
-  let step = 0;
-  return () => new Date(TRADE_AT + 1_000 * step++);
-}
 
 async function listAndQuote(db: Kysely<Database>): Promise<void> {
   await seedFixtureListings(db, LISTED_AT);
@@ -97,6 +93,7 @@ async function demoBook(db: Kysely<Database>) {
       "trades.quantity",
       "trades.cash_amount_cents",
       "trades.metric_after",
+      "trades.created_at",
     ])
     .orderBy("trades.created_at")
     .orderBy("trades.market_sequence")
@@ -129,7 +126,7 @@ postgresDescribe(suiteName, () => {
     const db = postgres.db;
     await listAndQuote(db);
 
-    const seeded = await seedDemo(db, { clock: steppingClock() });
+    const seeded = await seedDemo(db, { now: SEED_NOW });
     expect(seeded).toMatchObject({ outcome: "seeded", accounts: 5 });
     if (seeded.outcome !== "seeded") throw new Error("not seeded");
     expect(seeded.filled).toBeGreaterThan(50);
@@ -200,7 +197,7 @@ postgresDescribe(suiteName, () => {
       tournamentUsers: await count(db, "tournament_users"),
       markets: await db.selectFrom("markets").select(["id", "q"]).orderBy("id").execute(),
     };
-    expect(await seedDemo(db, { clock: steppingClock() })).toEqual({
+    expect(await seedDemo(db, { now: SEED_NOW })).toEqual({
       outcome: "already_seeded",
       trades: seeded.filled,
     });
@@ -213,22 +210,83 @@ postgresDescribe(suiteName, () => {
     }).toEqual(snapshot);
   });
 
+  it("spreads the trades over the window, never before a book's honest floor or after now", async () => {
+    const db = postgres.db;
+    await listAndQuote(db);
+    // A real fill ten days in moves the Modal binary's floor: no demo trade there may precede it.
+    const realAt = new Date(RUN_AT.getTime() + 10 * 24 * HOUR);
+    const trader = await createTrader(db, "early_trader");
+    const modal = await getMarket(db, "modal", { now: realAt });
+    await executeTrade(
+      db,
+      trader.id,
+      {
+        idempotency_key: randomUUID(),
+        market_id: modal.binary!.market_id,
+        side: "yes",
+        strike_index: 0,
+        action: "buy",
+        spend_usd: "25.00",
+        max_cost_usd: "25.00",
+      },
+      { now: realAt },
+    );
+
+    const seeded = await seedDemo(db, { now: SEED_NOW });
+    if (seeded.outcome !== "seeded") throw new Error("not seeded");
+    const rows = await db
+      .selectFrom("trades")
+      .innerJoin("users", "users.id", "trades.user_id")
+      .innerJoin("tournament_users", "tournament_users.id", "users.tournament_user_id")
+      .innerJoin("markets", "markets.id", "trades.market_id")
+      .innerJoin("instruments", "instruments.id", "markets.instrument_id")
+      .innerJoin("listings", "listings.id", "instruments.listing_id")
+      .select([
+        "trades.created_at",
+        "trades.market_id",
+        "instruments.opens_at",
+        "listings.listed_at",
+      ])
+      .where("tournament_users.demo", "=", true)
+      .execute();
+    const times = rows.map((row) => row.created_at.getTime());
+    for (const row of rows) {
+      // The dealer's first quotes (RUN_AT) are every book's floor but Modal's binary.
+      expect(row.created_at.getTime()).toBeGreaterThan(RUN_AT.getTime());
+      expect(row.created_at.getTime()).toBeGreaterThanOrEqual(row.opens_at.getTime());
+      expect(row.created_at.getTime()).toBeGreaterThanOrEqual(row.listed_at.getTime());
+      expect(row.created_at.getTime()).toBeLessThanOrEqual(SEED_NOW.getTime());
+      if (row.market_id === modal.binary!.market_id) {
+        expect(row.created_at.getTime()).toBeGreaterThan(realAt.getTime());
+      }
+    }
+    expect(Math.max(...times) - Math.min(...times)).toBeGreaterThan(7 * 24 * HOUR);
+    expect(seeded.from).toBe(new Date(Math.min(...times)).toISOString());
+    expect(seeded.to).toBe(new Date(Math.max(...times)).toISOString());
+
+    // Marks keep sequence order in time, and every quote and reference row still recomputes.
+    const replay = await verifyReplay(db);
+    expect(replay.passed).toBe(true);
+    await runDealerJob(db, `demo-after-${randomUUID()}`, new Date(SEED_NOW.getTime() + HOUR));
+    expect((await verifyReplay(db)).passed).toBe(true);
+  });
+
   it("writes the same book from the fixed seed on a fresh database", async () => {
     const db = postgres.db;
     await listAndQuote(db);
-    await seedDemo(db, { clock: steppingClock() });
+    await seedDemo(db, { now: SEED_NOW });
     const first = await demoBook(db);
 
     await resetPostgresTestDatabase(db);
     await listAndQuote(db);
-    await seedDemo(db, { clock: steppingClock() });
+    await seedDemo(db, { now: SEED_NOW });
     expect(await demoBook(db)).toEqual(first);
   });
 
   it("tags demo fills in the activity a market page and the board read, and no one else's", async () => {
     const db = postgres.db;
     await listAndQuote(db);
-    await seedDemo(db, { clock: steppingClock() });
+    await seedDemo(db, { now: SEED_NOW });
     const trader = await createTrader(db, "real_trader");
     const before = await getMarket(db, "anduril", { now: new Date(TRADE_AT + HOUR) });
     await executeTrade(
@@ -257,7 +315,7 @@ postgresDescribe(suiteName, () => {
   it("gives demo accounts no way to sign in and no forecast", async () => {
     const db = postgres.db;
     await listAndQuote(db);
-    await seedDemo(db, { clock: steppingClock() });
+    await seedDemo(db, { now: SEED_NOW });
     const ids = await demoUserIds(db);
 
     for (const table of [
@@ -340,7 +398,7 @@ postgresDescribe(suiteName, () => {
   it("keeps demo accounts off the leaderboard", async () => {
     const db = postgres.db;
     await listAndQuote(db);
-    await seedDemo(db, { clock: steppingClock() });
+    await seedDemo(db, { now: SEED_NOW });
     const { userId: forecaster } = await upsertIdentity(db, {
       provider: "x",
       providerUserId: "777",
@@ -388,7 +446,7 @@ postgresDescribe(suiteName, () => {
       reason: "no listings",
     });
     await seedFixtureListings(db, LISTED_AT);
-    expect(await seedDemo(db, { clock: steppingClock() })).toEqual({
+    expect(await seedDemo(db, { now: SEED_NOW })).toEqual({
       outcome: "skipped",
       reason: "no live quotes",
     });
@@ -400,7 +458,7 @@ postgresDescribe(suiteName, () => {
     const db = postgres.db;
     await listAndQuote(db);
     await registerPasswordAccount(db, { username: "demo_3", password: "correct horse battery" });
-    expect(await seedDemo(db, { clock: steppingClock() })).toEqual({
+    expect(await seedDemo(db, { now: SEED_NOW })).toEqual({
       outcome: "skipped",
       reason: "the handle demo_3 belongs to an account that is not a demo account",
     });

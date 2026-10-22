@@ -7,6 +7,7 @@ import {
   DEMO_SELL_FRACTIONS,
   DEMO_TRADES_PER_ACCOUNT,
   demoTradePlan,
+  demoTradeTimeline,
 } from "../../src/lib/config/demo-accounts.js";
 
 /** Decision 0005: five labelled accounts, a plan fixed by its seed, sizes inside the dealer's limits. */
@@ -23,6 +24,17 @@ describe("demo accounts", () => {
     expect(DEMO_ACCOUNTS.map((account) => Object.keys(account).sort())).toEqual(
       DEMO_ACCOUNTS.map(() => ["displayName", "handle"]),
     );
+  });
+
+  it("places every trade on a fixed, ordered timeline inside the history window", () => {
+    const timeline = demoTradeTimeline(75);
+    expect(timeline).toEqual(demoTradeTimeline(75));
+    expect(timeline).toHaveLength(75);
+    expect([...timeline].sort((left, right) => left - right)).toEqual(timeline);
+    expect(timeline.every((fraction) => fraction > 0 && fraction < 1)).toBe(true);
+    // Spread, not bunched: the first and last trades sit near the window's ends.
+    expect(timeline[0]!).toBeLessThan(0.1);
+    expect(timeline.at(-1)!).toBeGreaterThan(0.9);
   });
 
   it("plans the same trades from the same seed, whatever order the names arrive in", () => {
