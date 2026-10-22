@@ -177,8 +177,8 @@ function InstrumentsModule({ data }: { readonly data: Payload }) {
     >
       {overHold.size > 0 ? (
         <p className={styles.warning} role="alert">
-          {overHold.size} {overHold.size === 1 ? "instrument has" : "instruments have"} been
-          widened longer than the {data.health.widened_over_hold.hold_hours} h hold.
+          {overHold.size} {overHold.size === 1 ? "instrument has" : "instruments have"} been widened
+          longer than the {data.health.widened_over_hold.hold_hours} h hold.
         </p>
       ) : null}
       {data.instruments.length === 0 ? (
