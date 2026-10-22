@@ -88,35 +88,64 @@ postgresDescribe(suiteName, () => {
         "instruments.kind",
         "instruments.listing_id",
         "questions.id",
+        "instruments.id as instrument_id",
+        "questions.id",
         "questions.slug",
+        "questions.kind as question_kind",
         "questions.unit",
-        "questions.bucket_count",
       ])
       .orderBy("instruments.kind")
       .execute();
     expect(rows.map((row) => row.kind)).toEqual(["binary", "forward"]);
+    expect(rows.map((row) => row.question_kind)).toEqual(["binary", "forward"]);
     return { binary: rows[0]!, forward: rows[1]! };
   }
 
-  /** Forecaster i's vectors: a spread of P(yes), and most mass on one range bucket. */
+  function unitScale(unit: string | null): number {
+    return unit === "USD_T" ? 1e12 : 1e9;
+  }
+
+  /** The forward's listing mid in its question's unit, so the levels sit where the model does. */
+  async function midInUnit(instrumentId: string, unit: string | null): Promise<number> {
+    const mid = await postgres.db
+      .selectFrom("model_mids")
+      .select("mid_ln")
+      .where("instrument_id", "=", instrumentId)
+      .orderBy("computed_at")
+      .executeTakeFirstOrThrow();
+    return Math.exp(mid.mid_ln!) / unitScale(unit);
+  }
+
+  /** Forecaster i's level: a spread from 0.8× to 1.25× the listing mid, rounded to 3 dp. */
+  function levelOf(index: number, mid: number): number {
+    return Number((mid * (0.8 + index * 0.05)).toFixed(3));
+  }
+
+  /** Forecaster i: a spread of P(yes), and a spread of levels around the listing mid. */
   async function forecast(index: number) {
     const { binary, forward } = await linkedQuestions();
     const trader = await createTrader(postgres.db, `crowd_${index}`);
-    const pYes = 0.2 + index * 0.05;
     await submitForecast(postgres.db, {
       slug: binary.slug,
       userId: trader.tournamentUserId,
-      probs: [pYes, 1 - pYes],
+      p: 0.2 + index * 0.05,
     });
-    const peak = 1 + (index % 3);
-    const rest = (1 - 0.6) / (forward.bucket_count - 1);
     await submitForecast(postgres.db, {
       slug: forward.slug,
       userId: trader.tournamentUserId,
-      probs: Array.from({ length: forward.bucket_count }, (_, bucket) =>
-        bucket === peak ? 0.6 : rest,
-      ),
+      value: levelOf(index, await midInUnit(forward.instrument_id, forward.unit)),
     });
+  }
+
+  /** The median of ln(level in USD) over forecasters 0..n−1: the mean of the two middle when n is even. */
+  async function medianLnUsd(n: number): Promise<number> {
+    const { forward } = await linkedQuestions();
+    const mid = await midInUnit(forward.instrument_id, forward.unit);
+    const logs = Array.from({ length: n }, (_, index) =>
+      Math.log(levelOf(index, mid) * unitScale(forward.unit)),
+    ).sort((left, right) => left - right);
+    const half = Math.floor(n / 2);
+    return n % 2 === 1 ? logs[half]! : (logs[half - 1]! + logs[half]!) / 2;
   }
 
   async function latestReference(listingId: string, kind: "binary" | "forward") {
@@ -164,33 +193,39 @@ postgresDescribe(suiteName, () => {
     const hazardComponents = hazard.components_json as unknown as ReferenceComponents;
     expect(hazard.w_crowd).toBe(BLEND_SCHEDULE.crowd.max_weight);
     expect(hazard.w_model).toBeCloseTo(1 - BLEND_SCHEDULE.crowd.max_weight, 15);
+    expect(hazardAggregate.value).toBeNull();
     expect(hazardComponents.crowd).toEqual({
       question_id: binary.id,
       aggregate_id: hazardAggregate.id,
       computed_at: hazardAggregate.computed_at.toISOString(),
       n_forecasters: 10,
-      unit: "bool",
-      reported: Number(hazardAggregate.p_yes),
-      value: Number(hazardAggregate.p_yes),
+      kind: "binary",
+      unit: null,
+      reported: Number(hazardAggregate.p),
+      value: Number(hazardAggregate.p),
     });
     expect(hazard.value).toBeCloseTo(
-      0.7 * hazardComponents.model.value + 0.3 * Number(hazardAggregate.p_yes),
+      0.7 * hazardComponents.model.value + 0.3 * Number(hazardAggregate.p),
       12,
     );
 
     const reference = await latestReference(forward.listing_id, "forward");
     const forwardAggregate = await latestAggregate(forward.id);
-    const scale = forward.unit === "USD_T" ? 1e12 : 1e9;
-    const crowdLn = Math.log(Number(forwardAggregate.median_value) * scale);
+    expect(forwardAggregate.p).toBeNull();
+    const crowdLn = Math.log(Number(forwardAggregate.value) * unitScale(forward.unit));
     const forwardComponents = reference.components_json as unknown as ReferenceComponents;
     expect(reference.w_crowd).toBe(BLEND_SCHEDULE.crowd.max_weight);
     expect(forwardComponents.crowd).toMatchObject({
       question_id: forward.id,
       aggregate_id: forwardAggregate.id,
       n_forecasters: 10,
+      kind: "forward",
       unit: forward.unit,
+      reported: Number(forwardAggregate.value),
     });
     expect(forwardComponents.crowd!.value).toBeCloseTo(crowdLn, 12);
+    // The crowd is the median of the ten forecasters' ln levels.
+    expect(forwardComponents.crowd!.value).toBeCloseTo(await medianLnUsd(10), 9);
     expect(reference.value).toBeCloseTo(0.7 * forwardComponents.model.value + 0.3 * crowdLn, 12);
 
     // The public reference shows the crowd component and its weight.
@@ -207,7 +242,7 @@ postgresDescribe(suiteName, () => {
     expect(body.reference_forward).toMatchObject({
       model_only: false,
       weights: { crowd: BLEND_SCHEDULE.crowd.max_weight },
-      components: { crowd: { n_forecasters: 10, unit: forward.unit } },
+      components: { crowd: { n_forecasters: 10, kind: "forward", unit: forward.unit } },
     });
     expect(body.instruments.map((row: { question_slug: string }) => row.question_slug)).toEqual(
       expect.arrayContaining([binary.slug, forward.slug]),

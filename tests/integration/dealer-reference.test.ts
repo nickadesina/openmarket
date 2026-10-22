@@ -92,7 +92,7 @@ postgresDescribe(suiteName, () => {
   /** An aggregate row on the question the dealer linked to the instrument when it listed it. */
   async function aggregateOnLinkedQuestion(
     instrumentId: string,
-    aggregate: { n: number; pYes?: number; median?: number },
+    aggregate: { n: number; p?: number; value?: number },
   ) {
     const question = await postgres.db
       .selectFrom("tournament_instrument_links")
@@ -101,7 +101,7 @@ postgresDescribe(suiteName, () => {
         "tournament_questions.id",
         "tournament_instrument_links.question_id",
       )
-      .select(["tournament_questions.id", "tournament_questions.unit", "bucket_count"])
+      .select(["tournament_questions.id", "tournament_questions.kind", "tournament_questions.unit"])
       .where("tournament_instrument_links.instrument_id", "=", instrumentId)
       .executeTakeFirstOrThrow();
     await postgres.db
@@ -109,11 +109,9 @@ postgresDescribe(suiteName, () => {
       .values({
         question_id: question.id,
         computed_at: TRADE_AT,
-        probs: new Array<string>(question.bucket_count).fill(String(1 / question.bucket_count)),
         n_forecasters: aggregate.n,
-        median_value: aggregate.median === undefined ? null : String(aggregate.median),
-        p_floor: question.unit === "bool" ? null : String(1 / question.bucket_count),
-        p_yes: aggregate.pYes === undefined ? null : String(aggregate.pYes),
+        p: aggregate.p === undefined ? null : String(aggregate.p),
+        value: aggregate.value === undefined ? null : String(aggregate.value),
         extremization: 1,
         weighting_version: "test",
       })
@@ -230,9 +228,10 @@ postgresDescribe(suiteName, () => {
   it("gives a linked crowd weight only from ten forecasters", async () => {
     const binary = await instrumentOf("anthropic", "binary");
     const forward = await instrumentOf("anthropic", "forward");
-    await aggregateOnLinkedQuestion(binary.id, { n: 9, pYes: 0.7 });
-    const ladder = await aggregateOnLinkedQuestion(forward.id, { n: 12, median: 400 });
-    const scale = ladder.unit === "USD_T" ? 1e12 : 1e9;
+    await aggregateOnLinkedQuestion(binary.id, { n: 9, p: 0.7 });
+    const level = await aggregateOnLinkedQuestion(forward.id, { n: 12, value: 400 });
+    expect(level.kind).toBe("forward");
+    const scale = level.unit === "USD_T" ? 1e12 : 1e9;
 
     await runDealerJob(postgres.db, "reference-4", LATER);
 
@@ -242,9 +241,11 @@ postgresDescribe(suiteName, () => {
 
     const forwardRef = (await referencesOf(forward.listing_id, "forward")).at(-1)!;
     const components = forwardRef.components_json as unknown as ReferenceComponents;
+    // The crowd component is the median level as ln USD.
     expect(components.crowd).toMatchObject({
       n_forecasters: 12,
-      unit: ladder.unit,
+      kind: "forward",
+      unit: level.unit,
       reported: 400,
       value: Math.log(400 * scale),
     });

@@ -183,25 +183,41 @@ gain/loss, expiry. The binary is today's YES/NO ticket.
 
 ## 7. Tournament bridge
 
-The `/t` tournament (merged to `master` in #2) already has
-numeric ladders with a floor bucket, binaries, append-only forecast
-events, log scoring, leaderboard, X sign-in and Merkle commitments.
-The bridge is a mapping, not a mechanism:
+The `/t` tournament has append-only forecast events, scoring,
+leaderboard, X sign-in and Merkle commitments. Since decision 0004 its
+questions are the dealer's two contracts and nothing else: a binary
+takes one probability of YES, a forward one level in its unit. There
+are no buckets. The bridge is a mapping, not a mechanism:
 
 Mapping per `CONTRACTS.md` → Tournament mapping, built in milestone 7
-(`services/dealer/tournament-bridge.ts`; README D9 has the rules):
+and reshaped by 0004 (`services/dealer/tournament-bridge.ts`; README D9
+has the rules):
 
 - List: the dealer's list step (and the settle job's roll) creates,
   opens and links the instrument's question in the same transaction,
   through the tournament's admin services' in-transaction variants
   (`saveDraftQuestionIn`, `openQuestionIn`, …), so their invariants hold.
-  The forward's ladder edges come from `engine/dealer/question-ladder.ts`,
-  reproducible from the listing's first `model_mids` row and σ_tier.
-- Settle: the settle job closes (back-dated to the announcement) and
-  resolves the question as its run, or voids it on a forward void, in the
-  settlement's transaction; `verify:replay` checks each link.
+  A binary links a `kind: binary` question closing at its expiry. A
+  forward links a `kind: forward` question with `expiry_at` = T, in
+  USD_T when the instrument's listing mid (its first `model_mids` row)
+  is $1T or more and USD_B otherwise; it has no edges. The rulebook text
+  is built from `engine/dealer/rulebook.ts`. Instruments listed before
+  the bridge are linked on the next list step while
+  `TOURNAMENT_LINKED_QUESTIONS=1`.
+- Settle: the settle job closes the question (back-dated to the
+  announcement, never before it opened) and resolves it as its run, in
+  the settlement's transaction: a binary's YES or NO becomes its
+  `outcome`, a settled forward's post-money in the question's unit its
+  `resolved_value`, with the source rank as the rung. A forward void
+  voids the question, which writes no scores. `verify:replay` checks
+  each link: the settle run's first resolution carries the outcome, or
+  the value, the instrument's own settlement implies.
 - Crowd: the reference step reads the linked question's latest
-  `tournament_aggregates` row; blend.ts gives it weight from N_min (10).
+  `tournament_aggregates` row: `p` for a binary, ln(`value` · USD per
+  unit) for a forward (the median of the forecasters' levels). blend.ts
+  gives it weight from N_min (10); blend 1.1.0 is the first under this
+  definition (1.0.0 read a median off the bucket vector). The component
+  records the question's `kind` and `unit` (null for a binary).
 - Evidence: `POST /api/t/questions/[slug]/evidence` files a
   `user_submitted` flag that an admin confirms against a later
   independent flag, or rejects (`event_flag_reviews`). The fixed bonus

@@ -7,6 +7,7 @@ import type {
   JsonValue,
   ReferencePriceInsert,
   ReferencePriceRow,
+  TournamentQuestionKind,
   TournamentUnit,
 } from "../../db/schema.js";
 import {
@@ -21,6 +22,7 @@ import {
 import { RULEBOOK_VERSION } from "../../engine/dealer/rulebook.js";
 import { canonicalJson } from "./compute-mids.js";
 import { LIVE_STATES, latestMid } from "./dealer-books.js";
+import { type LinkedQuestionShape, UNIT_USD } from "./tournament-bridge.js";
 
 /**
  * The reference step of /api/cron/dealer, after `requote` (README D14,
@@ -41,17 +43,16 @@ import { LIVE_STATES, latestMid } from "./dealer-books.js";
  * clamped to [0, 1] against sub-cent rounding on tiny fills.
  *
  * Crowd: the latest aggregate of the question linked to the instrument
- * (tournament_instrument_links, milestone 7). A forward's crowd is the
- * median post-money as ln USD, a binary's its P(YES). Below N_min
+ * (tournament_instrument_links, milestone 7). Since blend 1.1.0 (decision
+ * 0004) a binary question's aggregate is one P(YES) and a forward's the
+ * median of the forecasters' levels in its unit, entering as ln USD; under
+ * 1.0.0 the forward's was a median read off the bucket vector. Below N_min
  * forecasters blend.ts gives it no weight; with no link there is no crowd.
+ * Stored rows are append-only and keep the components JSON they were
+ * written with.
  */
 
 const DAY_MS = 86_400_000;
-
-const UNIT_USD: Readonly<Record<Exclude<TournamentUnit, "bool" | "choice">, number>> = {
-  USD_B: 1e9,
-  USD_T: 1e12,
-};
 
 export interface ModelComponent {
   readonly model_mid_id: string;
@@ -80,8 +81,11 @@ export interface CrowdComponent {
   readonly aggregate_id: string;
   readonly computed_at: string;
   readonly n_forecasters: number;
-  readonly unit: TournamentUnit;
-  /** The aggregate's median in its unit, or its P(YES). */
+  /** The linked question's kind. Rows written under blend 1.0.0 do not carry it. */
+  readonly kind: TournamentQuestionKind;
+  /** A forward question's unit; null for a binary (1.0.0 rows carry "bool"). */
+  readonly unit: TournamentUnit | null;
+  /** The aggregate as published: a forward's median level in its unit, or a binary's P(YES). */
   readonly reported: number | null;
   /** In the model's unit: ln USD for a forward, probability for a binary. */
   readonly value: number | null;
@@ -125,28 +129,32 @@ export function binaryYesPrice(side: string, cashCents: number, quantity: number
   return Math.min(1, Math.max(0, yes));
 }
 
-/** The crowd in the model's unit, or null when the aggregate does not report one. */
+/**
+ * The crowd in the model's unit, or null when the aggregate does not report
+ * one or the question is not the instrument's kind: a binary's `p`, a
+ * forward's ln(value · USD per unit).
+ */
 export function crowdValue(
   kind: InstrumentKind,
-  unit: TournamentUnit,
-  aggregate: { readonly median_value: string | null; readonly p_yes: string | null },
+  question: LinkedQuestionShape,
+  aggregate: { readonly p: string | null; readonly value: string | null },
 ): { readonly reported: number | null; readonly value: number | null } {
   if (kind === "binary") {
-    const p = aggregate.p_yes === null ? null : Number(aggregate.p_yes);
-    const ok = unit === "bool" && p !== null && Number.isFinite(p) && p >= 0 && p <= 1;
+    const p = aggregate.p === null ? null : Number(aggregate.p);
+    const ok = question.kind === "binary" && p !== null && Number.isFinite(p) && p >= 0 && p <= 1;
     return { reported: p, value: ok ? p : null };
   }
-  const median = aggregate.median_value === null ? null : Number(aggregate.median_value);
+  const level = aggregate.value === null ? null : Number(aggregate.value);
   if (
-    unit === "bool" ||
-    unit === "choice" ||
-    median === null ||
-    !Number.isFinite(median) ||
-    median <= 0
+    question.kind !== "forward" ||
+    question.unit === null ||
+    level === null ||
+    !Number.isFinite(level) ||
+    level <= 0
   ) {
-    return { reported: median, value: null };
+    return { reported: level, value: null };
   }
-  return { reported: median, value: crowdForwardLn(median * UNIT_USD[unit]) };
+  return { reported: level, value: crowdForwardLn(level * UNIT_USD[question.unit]) };
 }
 
 /** R from the stored components, under the given schedule. */
@@ -237,25 +245,30 @@ export async function loadCrowdComponent(
       "tournament_questions.id",
       "tournament_instrument_links.question_id",
     )
-    .select(["tournament_questions.id as question_id", "tournament_questions.unit"])
+    .select([
+      "tournament_questions.id as question_id",
+      "tournament_questions.kind",
+      "tournament_questions.unit",
+    ])
     .where("tournament_instrument_links.instrument_id", "=", instrumentId)
     .executeTakeFirst();
   if (link === undefined) return null;
   const aggregate = await db
     .selectFrom("tournament_aggregates")
-    .select(["id", "computed_at", "n_forecasters", "median_value", "p_yes"])
+    .select(["id", "computed_at", "n_forecasters", "p", "value"])
     .where("question_id", "=", link.question_id)
     .where("computed_at", "<=", at)
     .orderBy("computed_at", "desc")
     .orderBy("id", "desc")
     .executeTakeFirst();
   if (aggregate === undefined) return null;
-  const { reported, value } = crowdValue(kind, link.unit, aggregate);
+  const { reported, value } = crowdValue(kind, link, aggregate);
   return {
     question_id: link.question_id,
     aggregate_id: aggregate.id,
     computed_at: aggregate.computed_at.toISOString(),
     n_forecasters: aggregate.n_forecasters,
+    kind: link.kind,
     unit: link.unit,
     reported,
     value,
@@ -508,9 +521,10 @@ async function crowdById(
     )
     .select([
       "tournament_aggregates.n_forecasters",
-      "tournament_aggregates.median_value",
-      "tournament_aggregates.p_yes",
+      "tournament_aggregates.p",
+      "tournament_aggregates.value",
       "tournament_aggregates.question_id",
+      "tournament_questions.kind",
       "tournament_questions.unit",
     ])
     .where("tournament_aggregates.id", "=", cited.aggregate_id)
@@ -520,7 +534,7 @@ async function crowdById(
   return {
     ...cited,
     n_forecasters: aggregate.n_forecasters,
-    ...crowdValue(kind, aggregate.unit, aggregate),
+    ...crowdValue(kind, aggregate, aggregate),
   };
 }
 
