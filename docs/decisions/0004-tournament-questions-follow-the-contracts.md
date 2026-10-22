@@ -134,6 +134,7 @@ type ForecastInput = { p: number } | { value: number }; // by the question's kin
 interface QuestionCore {
   kind: QuestionKind;
   unit: ForwardUnit | null;            // null for a binary
+  levelLabel: string | null;           // a forward's level name (amendment 1); null for a binary
   aggregate: {
     computedAt: string; nForecasters: number; published: boolean;
     p: number | null;                  // binary crowd P(YES)
@@ -150,7 +151,7 @@ type ResolveInput =
   | { resolved_value: number; rung_fired: number | null; source_url: string | null; source_excerpt: string | null; note_md: string };
 
 // question draft (config and admin JSON)
-type QuestionDraft = common & ({ kind: "binary" } | { kind: "forward"; unit: ForwardUnit; expiry_at: string });
+type QuestionDraft = common & ({ kind: "binary" } | { kind: "forward"; unit: ForwardUnit; level_label?: string; expiry_at: string });
 ```
 
 `rules.clampScore` becomes the constant −896.6. `rung_fired` keeps its
@@ -269,3 +270,19 @@ production.
 Not changed: log units in the engine, two contracts per name,
 void-and-refund, the dealer always quotes, version stamps on every
 published price.
+
+## Amendment 1 (2026-10-22): a forward names its level
+
+The forward editor's heading was "Level in USD trillions": no field said
+what the level is. Migration `014_tournament_level_label` adds a nullable
+`tournament_questions.level_label` (forward only, 1–60 characters),
+`QuestionCore` gains `levelLabel`, and the forward draft takes an optional
+`level_label`. The launch forwards are "First-day market cap" and
+"424(b) run-rate"; a linked forward is "Next post-money". A forward without
+one keeps the old heading.
+
+Two other W3 requests were declined. A per-question void sentence would
+restate the rulebook's void clause in a second field that can drift from
+it; the editor's generic line points to the rulebook. A last-round figure on
+`LinkedInstrument` would duplicate what `/api/markets/[slug]` already
+serves to the editor.

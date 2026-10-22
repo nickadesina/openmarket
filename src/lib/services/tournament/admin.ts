@@ -102,6 +102,7 @@ async function writeDraft(
     rulebook_version: input.rulebook_version,
     kind: input.kind,
     unit: input.kind === "forward" ? input.unit : null,
+    level_label: input.kind === "forward" ? (input.level_label ?? null) : null,
     opens_at: opensAt,
     closes_at: closesAt,
     expiry_at: expiryAt,

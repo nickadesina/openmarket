@@ -160,6 +160,7 @@ export function linkedQuestionInput(
     ...common,
     kind: "forward",
     unit,
+    level_label: "Next post-money",
     expiry_at: expiry,
     description_md: `${name}'s next post-money in ${unitWords(unit)}, linked to its next-print forward on OpenMarket (epoch ${instrument.epoch}), which expires ${isoDay(instrument.expires_at)}. If the forward voids, so does this question. The crowd's median enters the published reference forward from ten forecasters.`,
     rulebook_md: forwardRulebook(unit),

@@ -28,6 +28,7 @@ export const LAUNCH_QUESTIONS: readonly LaunchQuestion[] = [
     title: "What will Anthropic's market cap be at the close of its first trading day?",
     kind: "forward",
     unit: "USD_T",
+    level_label: "First-day market cap",
     description_md: [
       "Anthropic's basic-shares market capitalization at the official close of its first day of trading, in USD trillions. If Anthropic's shares have not traded by December 31, 2026, the question voids; the timing is its own question, anthropic-first-trade-by-2026.",
       "**Note to forecasters:** press “valued at” figures are fully diluted and typically run 5–15% above this basic-shares figure.",
@@ -47,6 +48,7 @@ export const LAUNCH_QUESTIONS: readonly LaunchQuestion[] = [
     title: "What annualized revenue run-rate will Anthropic's final IPO prospectus disclose?",
     kind: "forward",
     unit: "USD_B",
+    level_label: "424(b) run-rate",
     description_md:
       "The annualized revenue run-rate Anthropic discloses in its final IPO prospectus (424(b)), in USD billions, as of the most recent date stated in that document. If the prospectus discloses no run-rate metric, or none is filed in time, the question voids.",
     rulebook_md: [

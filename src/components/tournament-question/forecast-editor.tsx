@@ -384,7 +384,9 @@ function ForwardEditor({
     >
       {notice}
       <h3 className={styles.fieldHead} id={`${formId}-title`}>
-        <label htmlFor={inputId}>Level in {tournamentUnitName(unit)}</label>
+        <label htmlFor={inputId}>
+          {question.levelLabel ?? `Level in ${tournamentUnitName(unit)}`}
+        </label>
       </h3>
       <div className={styles.forwardField}>
         <span className={styles.inputFrame}>
