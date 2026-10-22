@@ -18,6 +18,9 @@ export interface ErrorEnvelope {
 }
 
 const SERVICE_ERROR_STATUS: Readonly<Record<ErrorCode, number>> = {
+  CRON_UNAUTHORIZED: 401,
+  LISTING_NOT_FOUND: 404,
+  INSTRUMENT_NOT_FOUND: 404,
   INVALID_INPUT: 400,
   USER_REQUIRED: 401,
   MARKET_NOT_FOUND: 404,
