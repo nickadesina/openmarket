@@ -18,6 +18,7 @@ const runtime = vi.hoisted(() => ({ getRuntimeDatabase: vi.fn() }));
 vi.mock("../../src/lib/db/runtime.js", () => runtime);
 vi.mock("../../src/lib/logging/server-log.js", () => ({
   logReadRequest: vi.fn(),
+  logMutationRequest: vi.fn(),
   logUnexpectedError: vi.fn(),
 }));
 

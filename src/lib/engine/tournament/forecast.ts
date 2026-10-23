@@ -8,7 +8,7 @@ export const FORECAST_DECIMALS = 10;
 export const MAX_FORECAST_LEVEL = 1e15;
 
 /** Prefixes a forward's payload; legacy and binary payloads are digits, `.` and `,` only. */
-export const FORWARD_PAYLOAD_PREFIX = "fwd:";
+const FORWARD_PAYLOAD_PREFIX = "fwd:";
 
 export type ForecastKind = "binary" | "forward";
 
@@ -24,7 +24,7 @@ function atStoredPrecision(value: number): number {
 }
 
 /** A binary's P(YES) at stored precision; throws unless it lies strictly inside (0, 1) there. */
-export function normalizeProbability(p: number): number {
+function normalizeProbability(p: number): number {
   if (!Number.isFinite(p)) throw new ForecastError("A probability must be a finite number.");
   const rounded = atStoredPrecision(p);
   if (!(rounded > 0 && rounded < 1)) {
@@ -34,7 +34,7 @@ export function normalizeProbability(p: number): number {
 }
 
 /** A forward's level at stored precision; throws unless it is positive there. */
-export function normalizeLevel(value: number): number {
+function normalizeLevel(value: number): number {
   if (!Number.isFinite(value)) throw new ForecastError("A level must be a finite number.");
   if (value >= MAX_FORECAST_LEVEL) throw new ForecastError("That level is out of range.");
   const rounded = atStoredPrecision(value);
@@ -62,7 +62,7 @@ export function normalizeForecast(input: ForecastValue, kind: ForecastKind): For
 }
 
 /** Fixed-precision decimals joined by commas: the provenance hash input for a vector. */
-export function canonicalProbs(probs: readonly number[]): string {
+function canonicalProbs(probs: readonly number[]): string {
   return probs.map((probability) => probability.toFixed(FORECAST_DECIMALS)).join(",");
 }
 

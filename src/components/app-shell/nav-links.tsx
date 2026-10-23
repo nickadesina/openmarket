@@ -15,13 +15,14 @@ export function NavLinks() {
   const navRef = useRef<HTMLElement>(null);
   // At phone width the links scroll sideways; keep the current section in view,
   // also when the strip resizes (the account control settles after its read).
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the active link changes with the route, which the DOM query cannot see.
   useEffect(() => {
     const nav = navRef.current;
     if (nav === null) return;
     const reveal = () => {
-      const current = nav.querySelector<HTMLElement>('[aria-current="page"]');
-      if (current === null) return;
+      const current = Array.from(nav.querySelectorAll<HTMLAnchorElement>("a")).find((link) =>
+        within(pathname, new URL(link.href).pathname),
+      );
+      if (current === undefined) return;
       const strip = nav.getBoundingClientRect();
       const link = current.getBoundingClientRect();
       if (link.left < strip.left) nav.scrollLeft -= strip.left - link.left;

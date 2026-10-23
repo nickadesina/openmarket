@@ -2,6 +2,10 @@ import type { MarkRange } from "../services/get-marks.js";
 
 export const queryKeys = {
   all: ["openmarket"] as const,
+  books: ["openmarket", "book"] as const,
+  instruments: ["openmarket", "instrument"] as const,
+  adminComments: (marketId: string, parentId?: string) =>
+    ["openmarket", "comments", marketId, "admin", parentId ?? null] as const,
   markets: ["openmarket", "markets"] as const,
   market: (slug: string) => ["openmarket", "market", slug] as const,
   marks: (marketId: string, range: MarkRange) =>
@@ -12,6 +16,7 @@ export const queryKeys = {
   comments: (marketId: string) => ["openmarket", "comments", marketId] as const,
   commentThread: (marketId: string, parentId: string | null) =>
     ["openmarket", "comments", marketId, parentId ?? "roots"] as const,
+  identity: ["openmarket", "identity"] as const,
   portfolio: ["openmarket", "portfolio"] as const,
   tournamentViewer: ["openmarket", "tournament", "me"] as const,
   tournamentRestrictions: ["openmarket", "tournament", "me", "restrictions"] as const,

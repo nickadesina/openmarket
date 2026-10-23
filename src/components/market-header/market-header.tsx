@@ -59,6 +59,13 @@ export function MarketHeader({ listing, movement }: MarketHeaderProps) {
               className={`${styles.price} ${movement === "up" ? styles.flashUp : movement === "down" ? styles.flashDown : ""}`}
             >
               {forward === null ? "Not trading" : formatPrice(forward.mid_usd)}
+              <span className={styles.movement} aria-live="polite" aria-atomic="true">
+                {movement === "flat" ? null : (
+                  <>
+                    <MovementArrow direction={movement} /> {movement === "up" ? "Up" : "Down"}
+                  </>
+                )}
+              </span>
             </dd>
             {forward === null ? null : (
               <dd className={styles.note}>

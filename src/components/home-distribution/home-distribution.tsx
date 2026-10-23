@@ -15,7 +15,7 @@ import styles from "./home-distribution.module.css";
 // side, widened to admit the round.
 const AXIS_MARGIN = Math.sqrt(10);
 
-export interface Band {
+interface Band {
   readonly axisMin: number;
   readonly axisMax: number;
   readonly lower: number;
@@ -29,7 +29,7 @@ export interface Band {
   };
 }
 
-export function computeBand(listing: ListingView): Band | null {
+function computeBand(listing: ListingView): Band | null {
   const distribution = listing.distribution;
   if (distribution === null) return null;
   const { p10: lower, p50: median, p90: upper } = distribution.band;
@@ -169,10 +169,48 @@ export function HomeDistribution({
   });
   const listings = marketsQuery.data?.listings ?? [];
 
-  if (listings.length === 0) return null;
+  if (marketsQuery.isPending)
+    return (
+      <div
+        className={styles.list}
+        role="status"
+        aria-label="Loading distributions"
+        aria-busy="true"
+      >
+        {[0, 1, 2, 3, 4].map((row) => (
+          <div className={styles.row} key={row}>
+            <span className={styles.skeleton} />
+            <span className={styles.skeleton} />
+            <span className={styles.skeleton} />
+          </div>
+        ))}
+      </div>
+    );
+  if (marketsQuery.isError && marketsQuery.data === undefined)
+    return (
+      <div className={styles.state} role="alert">
+        <strong>Distributions are unavailable.</strong>
+        <p>The implied distributions could not be loaded.</p>
+        <button type="button" className={styles.retry} onClick={() => void marketsQuery.refetch()}>
+          Retry distributions
+        </button>
+      </div>
+    );
+  if (listings.length === 0)
+    return (
+      <div className={styles.state}>
+        <strong>No names are listed.</strong>
+        <p>Implied distributions appear when a live forward lists.</p>
+      </div>
+    );
 
   return (
     <div className={styles.list}>
+      {marketsQuery.isError ? (
+        <p className={styles.state} role="status">
+          Unable to refresh. Showing the latest confirmed distributions.
+        </p>
+      ) : null}
       {listings.map((listing) => (
         <DistributionRow key={listing.listingId} listing={listing} />
       ))}

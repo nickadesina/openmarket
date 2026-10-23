@@ -1,4 +1,8 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { cache } from "react";
 import { MarketWorkspace } from "../../../components/market-workspace/market-workspace.js";
+import { isServiceError } from "../../../lib/api/errors.js";
 import { getRuntimeDatabase } from "../../../lib/db/runtime.js";
 import { type ActivityPage, getActivity } from "../../../lib/services/get-activity.js";
 import { getMarket, type ListingDetail } from "../../../lib/services/get-market.js";
@@ -19,7 +23,8 @@ interface InitialMarketData {
 
 const INITIAL_RANGE = "1w";
 
-async function loadInitialMarket(slug: string): Promise<InitialMarketData> {
+// Metadata and the page share one load per request.
+const loadInitialMarket = cache(async (slug: string): Promise<InitialMarketData> => {
   try {
     const database = getRuntimeDatabase();
     const [listing, activity] = await Promise.all([
@@ -31,9 +36,16 @@ async function loadInitialMarket(slug: string): Promise<InitialMarketData> {
         ? null
         : await getMarks(database, listing.forward.market_id, INITIAL_RANGE);
     return { listing, marks, activity };
-  } catch {
+  } catch (error) {
+    if (isServiceError(error) && error.code === "MARKET_NOT_FOUND") notFound();
     return { listing: null, marks: null, activity: null };
   }
+});
+
+export async function generateMetadata({ params }: MarketPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const { listing } = await loadInitialMarket(slug);
+  return { title: listing?.company.name ?? "Market" };
 }
 
 export default async function MarketPage({ params }: MarketPageProps) {

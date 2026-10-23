@@ -16,10 +16,32 @@ import params from "../../../backtest/out/params.json";
 export const PARAMS_SHA256_BY_MODEL_VERSION: Readonly<Record<string, string>> = {
   "1.0.0": "594d29a5a7bcfa216d7acd18ebdf0dd777bb667bd835f7383928252873c23074",
 };
-export const MODEL_VERSION = Object.keys(PARAMS_SHA256_BY_MODEL_VERSION).at(-1)!;
+/** Published model versions are stable semver; insertion order is not version order. */
+export function latestModelVersion(versions: readonly string[]): string {
+  if (versions.length === 0) throw new RangeError("model version registry must not be empty");
+  const parsed = versions.map((version) => {
+    if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version)) {
+      throw new RangeError(`invalid stable model version: ${version}`);
+    }
+    const parts = version.split(".").map(Number);
+    if (!parts.every(Number.isSafeInteger))
+      throw new RangeError("model version parts must be safe integers");
+    return { version, parts };
+  });
+  parsed.sort(
+    (left, right) =>
+      right.parts[0]! - left.parts[0]! ||
+      right.parts[1]! - left.parts[1]! ||
+      right.parts[2]! - left.parts[2]!,
+  );
+  return parsed[0]!.version;
+}
+
+export const MODEL_VERSION = latestModelVersion(Object.keys(PARAMS_SHA256_BY_MODEL_VERSION));
 
 const tierSchema = z.object({ mega: z.number().finite(), redhot: z.number().finite() }).strict();
 const positive = z.number().finite().positive();
+const positiveTierSchema = z.object({ mega: positive, redhot: positive }).strict();
 
 const paramsSchema = z
   .object({
@@ -30,7 +52,7 @@ const paramsSchema = z
       .object({
         mu_stepup: z.record(z.string(), tierSchema),
         mu_stepup_fallback: tierSchema,
-        cadence_months: tierSchema,
+        cadence_months: positiveTierSchema,
         weibull_k: positive,
         days_per_month: positive,
         leak_hazard_near: z.number().gt(0).lt(1),
@@ -38,7 +60,7 @@ const paramsSchema = z
         leak_window_days: z.number().int().positive(),
       })
       .strict(),
-    sigma_tier: tierSchema,
+    sigma_tier: positiveTierSchema,
     dealer: z
       .object({
         kappa: positive,
@@ -48,7 +70,7 @@ const paramsSchema = z
         gamma: z.number().finite().nonnegative(),
         p_floor: z.number().gt(0).lt(0.5),
         flag_spread_mult: positive,
-        flag_cap_mult: positive,
+        flag_cap_mult: positive.max(1),
         flag_hours: z.number().int().positive(),
       })
       .strict(),

@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
-import { apiRequest, POLL_INTERVAL_MS } from "../../lib/client/api.js";
+import { apiRequest, POLL_INTERVAL_MS, requestPortfolioIdentity } from "../../lib/client/api.js";
 import {
   formatCents,
   formatCompactUsd,
@@ -64,9 +64,8 @@ export function HomeStats({
       : { initialData, initialDataUpdatedAt: Date.parse(initialData.asOf) }),
   });
   const identityQuery = useQuery({
-    queryKey: queryKeys.portfolio,
-    queryFn: () =>
-      apiRequest<{ readonly cashBalanceCents: string }>("/api/portfolio?offset=0&limit=1"),
+    queryKey: queryKeys.identity,
+    queryFn: requestPortfolioIdentity,
   });
 
   const marketsUnavailable = marketsQuery.isError && marketsQuery.data === undefined;
@@ -116,7 +115,11 @@ export function HomeStats({
           </dd>
         </div>
       </dl>
-      <p className={styles.note}>Refreshes every {POLL_INTERVAL_MS / 1000}s</p>
+      <p className={styles.note}>
+        {marketsQuery.isError
+          ? "Refresh paused; showing confirmed levels."
+          : `Refreshes every ${POLL_INTERVAL_MS / 1000}s`}
+      </p>
     </div>
   );
 }

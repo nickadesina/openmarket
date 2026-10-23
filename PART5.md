@@ -1,36 +1,32 @@
 # Part 5 — Deployment Proof
 
-Part 5 deploys the completed product to Vercel with Neon PostgreSQL. It must not fabricate successful deployment, database migration, seed verification, browser proof, or diagnostics.
+Deployment is Vercel with Neon PostgreSQL. Never fabricate successful deployment, database migration, seed verification, browser proof, or diagnostics.
 
-## Environment contracts
+## Environment contract
 
-Runtime pooled connection:
-
-- `DATABASE_URL`
-
-Direct unpooled operations:
-
-- `DATABASE_URL_UNPOOLED`
-- `DATABASE_URL_TEST` only in CI
-
-Application/security:
-
-- `APP_ORIGIN`
-- Sign-in and admin are the tournament's: `X_CLIENT_ID`, `X_CLIENT_SECRET`, `TOURNAMENT_ADMIN_X_IDS` (`.env.example`, README §4)
-
-Vercel-provided preview origins remain dynamically validated through Part 2 origin helpers.
+`.env.example` is the contract: every variable the app, the scripts and
+the build read, with its scope. `scripts/verify-production-config.ts`
+validates the database, origin and Neon branch variables for the target
+at build time (`npm run deploy:check` runs it by hand).
 
 ## Deployment order
 
-1. Confirm Vercel and Neon authentication without printing credentials.
-2. Link the repository to one Vercel project.
-3. Configure isolated Neon development/preview/production branches or document the exact external prerequisite if unavailable.
-4. Set environment variables by scope without exposing values.
-5. Run `npm ci`, typecheck, unit/property/service/route tests, PostgreSQL integration tests, and `next build`.
-6. Run `npm run db:migrate` against `DATABASE_URL_UNPOOLED` before production traffic.
-7. List the names with `npm run seed:listings -- --listed-at=<ISO>`; it refuses an anchor without a source URL.
-8. Run `npm run verify:replay` against the direct production connection.
-9. Deploy, then browser-drive the critical product flow on the deployed origin.
+A merge to `master` deploys to production. `scripts/vercel-build.ts`
+runs, in order and stopping at the first failure:
+
+1. validate the environment for the target (production or preview);
+2. `npm run db:migrate` against `DATABASE_URL_UNPOOLED`;
+3. `npm run seed:tournament -- --open` (opens only missing launch questions);
+4. `npm run verify:replay`;
+5. `next build`.
+
+Steps 2–3 change the database before the build compiles, so a failed
+build leaves the new schema under the previous deployment; migrations
+must stay compatible with the code they replace.
+
+Operator steps, never run by the build: list the names with
+`npm run seed:listings -- --listed-at=<ISO>` (it refuses an anchor
+without a source URL), create API keys with `npm run api-key:create`.
 
 ## Operations
 

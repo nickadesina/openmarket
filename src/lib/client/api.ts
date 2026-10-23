@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Portfolio } from "../services/portfolio.js";
 
 export const POLL_INTERVAL_MS = 4_000;
 
@@ -103,4 +104,17 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
   }
 
   return payload as T;
+}
+
+/** One nullable cache contract for the paper account identity used across the app. */
+export async function requestPortfolioIdentity(): Promise<Pick<
+  Portfolio,
+  "userId" | "identity" | "cashBalanceCents"
+> | null> {
+  try {
+    return await apiRequest<Portfolio>("/api/portfolio?offset=0&limit=1", { cache: "no-store" });
+  } catch (error) {
+    if (error instanceof ApiClientError && error.code === "USER_REQUIRED") return null;
+    throw error;
+  }
 }

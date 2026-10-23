@@ -1,14 +1,14 @@
 # Technical design — dealer, forwards, reference price
 
-Status: proposed, 2026-10-21. This is the in-repo copy of the Claude
-Doc "OpenMarket Technical Design". `README.md` section 2 is the
-decision record; `CONTRACTS.md` is normative for instrument semantics;
-this file says how they are built inside the existing codebase.
+Status (2026-10-22): built, except milestone 4 (ingest: `/api/cron/ingest`,
+the extractor, the admin resolution queue). Each section marks what is
+not built. `README.md` section 2 is the decision record and wins on
+conflict; `CONTRACTS.md` is normative for instrument semantics; this
+file says how they are built inside the codebase.
 
-It supersedes the 41-bucket LMSR ladder as the trading surface. The
-ladder's engine (`src/lib/engine`) stays as reference and as the binary
-market maker; the ladder itself becomes a read-only display derived
-from the forward mid.
+The LMSR engine (`src/lib/engine`) is the binary's market maker; the
+41-bucket grid survives only as a read-only implied distribution
+derived from the forward mid.
 
 ## 1. Scope
 
@@ -20,10 +20,6 @@ identity, forecast log, scoring and provenance. Real money, rails and
 the onshore listing are out of scope; nothing here assumes them or
 blocks them.
 
-Build order: rulebook as code → ingestion → mid model → dealer →
-tournament bridge → reference price API, with the backtest harness
-promoted to a CI job alongside the rulebook.
-
 Rules that hold throughout: valuations are ln USD in the engine and
 dollars at the API; money is integer cents; every published price
 carries `model_version`, `rulebook_version` and (for the reference)
@@ -33,7 +29,10 @@ rebuildable from an append-only log and `verify:replay` proves it.
 
 ## 2. Architecture
 
-Three scheduled jobs do all writing that is not a user trade:
+Scheduled jobs do all writing that is not a user trade. Two are built
+(`/api/cron/dealer`, `/api/cron/settle`); ingest is not, so
+`event_flags` is written only by tests, fixtures and the evidence route
+(decision 0001):
 
     outside        EDGAR + state filings · Tier-1 press RSS · base rates
                         │                │                 │
@@ -51,8 +50,12 @@ log).
 
 ## 3. Data model
 
-Migration `007_dealer`, Kysely-typed in `src/lib/db/schema.ts`.
-Existing tables kept. Each instrument's book is one `markets` row,
+Migrations `007_dealer`, `009_dealer_pnl` (`quotes.sequence`, the
+`dealer_pnl` view), `010_api_keys` and `011_tournament_bridge`
+(`event_flag_reviews`, restricted-person attestations,
+`event_flags.submitted_by`/`submitted_kind`), Kysely-typed in
+`src/lib/db/schema.ts`; the table below is a summary, `schema.ts` is
+the column-level truth. Each instrument's book is one `markets` row,
 linked by `markets.instrument_id` (nullable, unique): the binary in the
 `yes_probability` shape, the forward as `forward_ln` (`n_buckets = 2`,
 q = open long and short notional in USD from [0, 0], b = κ,
@@ -62,7 +65,7 @@ trigger pattern the tournament branch uses.
 | Table | Purpose | Key columns |
 | --- | --- | --- |
 | `listings` | one row per listed name, versioned parameters | `company_id`, `tier`, `kappa`, `cap_cents`, `b_cents`, `spread_floor`, `forward_t_days`, `p_floor`, `model_version`, anchor and source, `listed_at`, `delisted_at` |
-| `instruments` | one row per live or past contract | `listing_id`, `kind` (binary/forward), `epoch`, `question`, `expiry`, `entry_ref_ln`, `state`, `opened_at`, `closed_at` |
+| `instruments` | one row per live or past contract | `listing_id`, `kind` (binary/forward), `epoch`, `question`, `opens_at`, `expires_at`, `entry_ref_ln`, `state`, `widened_until`, `resolution_json` |
 | `event_flags` | ingested public evidence (append-only) | `company_id`, `kind`, `source_url`, `source_rank`, `observed_at`, `published_at`, `terms_json`, `confidence`, `dedupe_key`, `promoted_from`, `run_id` |
 | `model_mids` | every mid the model produced (append-only) | `instrument_id`, `model_version`, `rulebook_version`, `computed_at`, `mid_ln` or `p`, `inputs_json` |
 | `quotes` | every two-way quote posted (append-only; the tape) | `instrument_id`, `posted_at`, `bid_ln`, `ask_ln` or `price`, `mid_ln`, `half_spread`, `inventory_cents`, `cap_cents_effective`, `flag_state`, `model_mid_id` |
@@ -96,9 +99,9 @@ trade writes a `trades` row for cash and idempotency (`strike_index =
 collateral N·κ is reserved from `users.cash_balance_cents` at open and
 released at settlement or void.
 
-## 4. Ingestion
+## 4. Ingestion — not built (milestone 4, decision 0001)
 
-`/api/cron/ingest`, every 15 minutes from a GitHub Actions workflow
+Planned: `/api/cron/ingest`, every 15 minutes from a GitHub Actions workflow
 with `Authorization: Bearer $CRON_SECRET` and `X-Run-Id` (the
 `dealer.yml` pattern: `requireCronSecret` in `src/lib/auth/cron.ts`,
 `runCronJob` in `src/lib/services/dealer/cron-run.ts`). Five names only.
@@ -125,22 +128,28 @@ with no preceding `scoop` is logged as an ingestion miss.
 ## 5. Mid model
 
 `src/lib/engine/dealer/prior.ts`, pure. TypeScript port of
-`backtest/sim.py`'s prior; a unit test asserts agreement to 1e-9 on
-`backtest/events.csv`. The first step of `/api/cron/dealer` appends a
-`model_mids` row per live instrument; there is no separate mid route,
-so the jobs stay three (ingest, dealer, settle).
+`backtest/sim.py`'s prior; `tests/engine/dealer/prior.test.ts` agrees
+with `backtest/out/prior_golden.json` (written by `backtest/golden.py`
+from sim.py) to 1e-9. The dealer job's `mids` step
+(`services/dealer/compute-mids.ts`, third after `state` and `list`)
+appends a `model_mids` row per live instrument when the mid or its
+inputs moved; there is no separate mid route.
 
 - Forward mid: `m = ln V_last + μ_tier`; on a scoop with a valuation,
-  `m = ln V_leak` (re-centre, keep width); on a charter filing, the
-  implied value scaled by the last round's post-money/pps ratio.
-  μ_tier = leave-one-out median realised log step-up of the other
-  names in the tier (backtest: mega-cap 0.65–0.73, red-hot 1.10–1.34).
+  `m = ln V_leak` (re-centre, keep width). A charter filing only widens
+  the forward; re-centring on price-per-share is not built (the
+  rulebook text still describes it). μ_tier = leave-one-out median
+  realised log step-up of the other names in the tier (backtest:
+  mega-cap 0.65–0.73, red-hot 1.10–1.34).
 - Binary p: Weibull hazard (k = 1.6; λ = 11 months mega, 7 red-hot)
-  conditioned on survival to today over the interval to quarter-end;
-  a scoop raises it to max(p, 0.80) if quarter-end is within 60 days,
-  0.95 otherwise; clamped to [p_floor, 1 − p_floor].
-- Heat is not a price input. It scales b, Q and λ. v1 heat is the tier;
-  v2 is a percentile from X mention velocity, HN/GitHub, Wikipedia.
+  conditioned on survival to the binary's listing, over the interval to
+  its expiry; a scoop or release dated on or before listing raises it to
+  max(p, 0.80) if expiry is within 60 days of it, 0.95 otherwise;
+  clamped to [p_floor, 1 − p_floor]. (sim.py knows only scoops; the
+  service also counts releases.)
+- Heat is not a price input. v1 heat is the tier, which sets λ and
+  σ_tier; b and Q are flat until `heat_scaled_q` runs. v2 is a
+  percentile from X mention velocity, HN/GitHub, Wikipedia.
 - `model_version` is semver in `src/lib/config/dealer.ts`; any formula
   or base-rate change bumps it. `inputs_json` stores everything needed
   to re-derive a mid by hand. Parameters are owned by the backtest.
@@ -149,37 +158,46 @@ so the jobs stay three (ingest, dealer, settle).
 
 `src/lib/engine/dealer/binary.ts` (existing LMSR, two outcomes),
 `src/lib/engine/dealer/forward.ts` (quoter), `/api/cron/dealer` every
-15 minutes and after any flag. Execution reads the latest quote inside
-the ledger's advisory-locked transaction.
+15 minutes (steps in `DEALER_STEPS` order: state, list, mids, requote,
+reference). A forward fill does not read the `quotes` tape: inside the
+trade transaction, with the instrument locked, `executeForwardTrade`
+recomputes the quote from the latest mid, the inventory and the flag
+state (`get-instrument-quote.ts`).
 
 Forward quote, per-name T, event-flag multipliers and the hard loss
 bound are as `CONTRACTS.md` → The dealer specifies; this document does
-not restate them. The engine reads γ, σ_tier, s_floor, Q, b, κ and T
-from `src/lib/config/dealer.ts` (backtest-owned). The side whose fill
-would push |I| past Q is pulled. Notional-for-notional fills at the
-posted bid/ask.
+not restate them. γ, s_floor, Q, b, κ and T come from the versioned
+`listings` row (written from `params.json` by `seed:listings`);
+σ_tier and the flag multipliers from `DEALER_PARAMS`
+(`src/lib/config/dealer.ts`). A fill that would push |I| past Q (Q/2
+while widened) is refused; a side with no room left is pulled.
+Notional-for-notional fills at the bid/ask.
 
-State machine on `instruments.state`, one fixture test per transition,
-transitions as `CONTRACTS.md` → Lifecycle: quoting → widened on a flag
-(`widened_until = now + 72h`), back on a newer `model_mids` row or
-expiry of the hold; resolved on a qualifying event ≤ expiry; expired
-otherwise; both list a successor immediately.
+State machine on `instruments.state` (`engine/dealer/lifecycle.ts`),
+one fixture test per transition, transitions as `CONTRACTS.md` →
+Lifecycle: quoting → widened on a flag (`widened_until` = the flag's
+`observed_at` + `flag_hours`, extended by later flags), back on a
+newer `model_mids` row or expiry of the hold; resolved on a qualifying
+event ≤ expiry; expired otherwise; both list a successor immediately.
 
-Settlement (`/api/cron/settle`, hourly and on demand): one transaction
-per instrument; binary pays $1/YES share; forward pays
-`N·clip(settle_ln − entry_ln, −κ, κ)`; `settlements` row with source
-URL and rank; collateral released; successor listed. A higher-ranked
-revision within 7 days writes a correcting settlement. Materialised
-view `dealer_pnl` per listing per epoch: realised, unrealised, bound.
+Settlement (`/api/cron/settle`, hourly): one transaction per
+instrument; binary pays $1/YES share; forward pays
+`N·clip(settle_ln − entry_ln, −κ, κ)`; a `settlements` row with the
+source URL, the rank and rulebook version written into
+`source_description` and `instruments.resolution_json`; collateral
+released; successor listed. A forward settled while a higher rank could
+still supersede it is recorded `final: false`; the correcting
+settlement is not built. View `dealer_pnl` (`009`), one row per
+instrument: realised, open collateral, unrealised, bound.
 
 Restricted persons: an attestation (on the profile, README D12) listing
 any listed name the user is employed by, a director of, or invested in;
 those instruments are hidden in the UI and refused at the API.
 
-UI: the market page keeps chart and ticket; the strike ladder becomes a
-read-only implied distribution from the forward mid and prior width;
-the ticket gains Long/Short, notional, live bid/ask in dollars, max
-gain/loss, expiry. The binary is today's YES/NO ticket.
+UI: the market page `/m/[slug]` has the forward chart, a read-only
+implied ladder and distribution from the forward mid and σ_tier, and
+one ticket switching Forward (Long/Short, notional, live bid/ask in
+dollars, max gain/loss, expiry) and Binary (YES/NO by `market_id`).
 
 ## 7. Tournament bridge
 
@@ -223,8 +241,7 @@ has the rules):
   independent flag, or rejects (`event_flag_reviews`). The fixed bonus
   score a confirmation pays waits on its size (README D9).
 
-Merge order: tournament branch first; `007_dealer` numbered after its
-`004`–`006`; the bridge's additive `011_tournament_bridge` after `010`.
+The bridge is off unless `TOURNAMENT_LINKED_QUESTIONS=1` (README D9).
 
 ## 8. Reference price API
 
@@ -276,15 +293,18 @@ TechCrunch, Axios, NYT; syndications count once; pre-money + amount
 converts to post; ranges settle at midpoint; 7-day revision window;
 binary at quarter-end 23:59:59 UTC.
 
-Workflow: the settle job proposes from the highest-ranked flag; rank
-1–2 auto-resolves; rank 3–4 enters a 24-hour admin queue
-(`/admin/dealer` → resolutions). Every `settlements` row carries
-`source_rank`, `source_url`, `rulebook_version`, admin id if any.
+Workflow: the settle job promotes high-confidence rank 1–2 releases and
+S-1s with a source URL and a post-money to prints and resolves from
+them. Rank 3–4 is reported as pending on `/admin/dealer` (read-only);
+the 24-hour admin queue (`RULEBOOK.review.review_hours`) is not built,
+and neither is the rank-3 "two independent outlets" check at
+promotion (`pressRank` exists but only tests call it).
 
 ## 10. Backtest harness
 
-`backtest/`: `sim.py`, `analyze.py`, `events.csv` (56 priced rounds,
-14 names, Jan 2024–Oct 2026, sourced), `data/*.csv`, `out/`.
+`backtest/`: `sim.py`, `analyze.py`, `golden.py`, `events.csv` (59
+priced rounds, 56 in Jan 2024–Oct 2026, 14 names), `data/*.csv`
+(`sources.csv` gives the listing anchors' URLs), `out/`.
 `backtest.yml` runs on PRs touching `backtest/`,
 `src/lib/engine/dealer/` or `src/lib/config/dealer.ts` and posts the
 summary table as a PR comment.
@@ -313,11 +333,11 @@ Anthropic Series D has no dated close.
 
 | Concern | Choice |
 | --- | --- |
-| Scheduling | Actions workflows `ingest.yml` (15 min), `dealer.yml` (15 min at :05/:20/:35/:50: state, list, mids, requote), `settle.yml` (hourly at :41: promote, resolve, settle or void, roll) → `/api/cron/*` with `CRON_SECRET` and `X-Run-Id`; Vercel Cron as fallback |
+| Scheduling | GitHub Actions workflows `dealer.yml` (15 min at :05/:20/:35/:50: state, list, mids, requote, reference), `settle.yml` (hourly at :41: promote, resolve, settle or void, roll) → `/api/cron/*` with `CRON_SECRET` and `X-Run-Id`; `ingest.yml` is not built; `vercel.json` has no crons |
 | Idempotency | `cron_runs.run_id` unique (the `event_flags.run_id` FK needs it); reruns exit early |
-| LLM extraction | one provider behind `src/lib/services/ingest/extract.ts`; `EXTRACT_API_KEY`; prompts and schema versioned; daily cost cap in `rate_limits` |
-| Secrets | `CRON_SECRET`, `EXTRACT_API_KEY`, `EDGAR_USER_AGENT`, the tournament's X OAuth credentials; sign-in and admin are the tournament's (README D1) |
-| Observability | `/admin/dealer`: `dealer_pnl`, per-source last success, widened instruments, resolution queue; `dealer-alerts.yml` fails daily if any instrument is widened > 72 h; the silent-source (24 h) check ships with ingest |
+| LLM extraction | not built: planned as one provider behind `src/lib/services/ingest/extract.ts` with `EXTRACT_API_KEY` |
+| Secrets | `CRON_SECRET`, the tournament's X OAuth credentials, the Solana provenance key (`.env.example`); `EXTRACT_API_KEY` and `EDGAR_USER_AGENT` arrive with ingest |
+| Observability | `/admin/dealer`: `dealer_pnl`, live instruments, recent runs, pending rank 3–4 promotions (read-only), the evidence queue, `source_health` (empty until ingest); `dealer-alerts.yml` fails daily if any instrument is widened > 72 h; the silent-source (24 h) check ships with ingest |
 | Replay | `verify:replay` rebuilds quotes-derived state, forward payouts and `reference_prices` |
 | Migration | `007_dealer` is additive; `008` (owner-approved, deletes data) removed the ladder markets, Stripe and the username accounts; `011_tournament_bridge` is additive; `npm run seed:listings` idempotent on `(company, listed_at)` |
 
@@ -326,17 +346,13 @@ Anthropic Series D has no dated close.
 | # | Milestone | Gate | Depends on |
 | --- | --- | --- | --- |
 | 1 | Merge tournament branch to `master` (done, #2) | existing CI green | — |
-| 2 | Rulebook + fixtures + `backtest.yml` | fixtures resolve; summary posted on PR | — |
-| 3 | `007_dealer` + `seed:listings` | migrate + replay in build | 1 |
-| 4 | Ingest + flags + admin queue (owned by Nick; the dealer reads `event_flags` and tests will use `tests/fixtures/event-flags.json`, which Nick generates from `events.csv`) | seeded scoop → flag in < 15 min | 2, 3 |
-| 5 | Mid model (TS port) | agrees with `sim.py` to 1e-9 | 2, 3 |
-| 6 | Dealer + settlement + ticket UI; delete the Anthropic/Stripe ladder markets with their rows, Stripe, 41-bucket seeding and ladder trading, the username paper account and the passphrase admin (decided 2026-10-21; these deletions are done: `008`, README D1) | five names quoting; a fixture print settles both instruments and rolls, in an integration test against CI Postgres (no staging gate, 2026-10-21) | 3, 5 |
+| 2 | Rulebook + fixtures + `backtest.yml` (done) | fixtures resolve; summary posted on PR | — |
+| 3 | `007_dealer` + `seed:listings` (done) | migrate + replay in build | 1 |
+| 4 | Ingest + flags + admin queue (not started; owned by Nick; until then tests read `tests/fixtures/event-flags.json`) | seeded scoop → flag in < 15 min | 2, 3 |
+| 5 | Mid model (TS port) (done) | agrees with `sim.py` to 1e-9 | 2, 3 |
+| 6 | Dealer + settlement + ticket UI, ladder and username accounts deleted (done: `008`, README D1) | five names quoting; a fixture print settles both instruments and rolls, in an integration test against CI Postgres | 3, 5 |
 | 7 | Tournament bridge (done: README D9, D12) | crowd weight appears with ≥ 10 forecasters | 1, 6 |
-| 8 | Reference API + `/admin/dealer` + alerts | public endpoints cached, versions in every payload | 6, 7 |
-
-Eight weeks for one engineer plus agents; the dealer (wk 4–6) is the
-critical path. Visible to users: wk 5 live two-way quotes on five
-names; wk 8 the public tape and the linked tournament questions.
+| 8 | Reference API + `/admin/dealer` + alerts (done; the admin resolution actions wait on 4) | public endpoints cached, versions in every payload | 6, 7 |
 
 ## 13. Open decisions (Nick) and risks
 
@@ -344,8 +360,7 @@ Decisions: per-name T launch values; Q per name (flat $25k until
 `heat_scaled_q`); κ per name (labs may warrant 0.7); b and p_floor;
 blend constants; extraction provider (Nick's, with ingest);
 play-money restricted-person enforcement; closing a forward before
-settlement. Decided 2026-10-21, and done (`008`): the Anthropic/Stripe
-LMSR markets are removed.
+settlement.
 
 Risks: the down-round blind spot (sample has none; first one costs the
 cap); ingestion silence (alerts make it visible, not impossible); the
