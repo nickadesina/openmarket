@@ -1,6 +1,15 @@
+import { userInfo } from "node:os";
+
 import { defineConfig, devices } from "@playwright/test";
 
-const hasTestDatabase = Boolean(process.env.DATABASE_URL_TEST);
+// The local npm command supplies a default only after tsx has loaded .env.local.
+if (
+  process.env.npm_lifecycle_event === "test:browser:local" &&
+  !process.env.DATABASE_URL_TEST?.trim()
+) {
+  process.env.DATABASE_URL_TEST = `postgresql://${encodeURIComponent(process.env.USER || userInfo().username)}@localhost:5432/openmarket_test`;
+}
+const hasTestDatabase = Boolean(process.env.DATABASE_URL_TEST?.trim());
 const isCi = Boolean(process.env.CI);
 
 if (isCi && !hasTestDatabase) {

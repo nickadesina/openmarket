@@ -1,4 +1,5 @@
 import { pathToFileURL } from "node:url";
+import { CRON_SECRET_MIN_LENGTH } from "../src/lib/auth/cron.js";
 
 export type DeploymentTarget = "preview" | "production";
 
@@ -149,6 +150,12 @@ export function validateDeploymentConfig(
 ): void {
   if (nodeVersion.split(".")[0] !== "22") {
     fail("OpenMarket deployments require Node.js 22.x");
+  }
+
+  if ((environment.CRON_SECRET?.trim().length ?? 0) < CRON_SECRET_MIN_LENGTH) {
+    const message = "CRON_SECRET must contain at least 16 characters";
+    if (target === "production") fail(message);
+    console.warn(`${message}; preview cron routes will be unavailable`);
   }
 
   const directHostname = validateDatabaseUrls(environment);

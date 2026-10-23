@@ -2,7 +2,16 @@ name: CI
 
 on:
   push:
+    branches: [master]
   pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # Supersede a PR's older runs; every master commit keeps its own result.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:
@@ -57,12 +66,6 @@ jobs:
         if: ${{ hashFiles('playwright.config.*') != '' && hashFiles('tests/browser/**') != '' }}
         run: npm exec -- playwright install --with-deps chromium
 
-      - name: Prepare disposable browser database
-        if: ${{ hashFiles('playwright.config.*') != '' && hashFiles('tests/browser/**') != '' }}
-        run: npm run db:migrate
-        env:
-          DATABASE_URL_UNPOOLED: postgresql://postgres:postgres@127.0.0.1:5432/openmarket_test
-
       - name: Run Playwright critical flow
         if: ${{ hashFiles('playwright.config.*') != '' && hashFiles('tests/browser/**') != '' }}
         run: npm exec -- playwright test
@@ -72,7 +75,9 @@ jobs:
           DATABASE_URL_UNPOOLED: postgresql://postgres:postgres@127.0.0.1:5432/openmarket_test
 
       - name: Verify ledger replay
-        run: npm run db:migrate && npm run verify:replay
+        # Browser global setup migrates before seeding; integration suites use
+        # isolated schemas and do not prepare this public-schema database.
+        run: npm run verify:replay
         env:
           DATABASE_URL_UNPOOLED: postgresql://postgres:postgres@127.0.0.1:5432/openmarket_test
 

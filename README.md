@@ -583,8 +583,8 @@ npm run dev              # http://localhost:3000, never 127.0.0.1
 ```
 
 - `.env.local` needs `DATABASE_URL` and `DATABASE_URL_UNPOOLED`; sign-in
-  and admin are the tournament's (below). The npm scripts do not load
-  `.env.local`; export it first (`set -a; . ./.env.local; set +a`).
+  and admin are the tournament's (below). The npm scripts load
+  `.env.local` when it exists; exported variables take precedence.
   Dev data: `npm run db:migrate && npm run seed:listings --
   --listed-at=<ISO>`. Migrations run in order to latest on every
   deploy; `008` deletes data (D6) and `013` voids every open bucket
@@ -615,15 +615,15 @@ npm run dev              # http://localhost:3000, never 127.0.0.1
   `/api/t/cron/provenance` hourly with `Authorization: Bearer
   $CRON_SECRET`; the route refuses anything else. Set the same
   `CRON_SECRET` (at least 16 characters) in Vercel and as a GitHub
-  Actions secret; the workflow skips itself without it, and
+  Actions secret; scheduled cron runs fail without it, while manual and
+  fork runs warn and skip.
   `vars.PROVENANCE_URL` overrides the target. A GitHub schedule rather
   than Vercel Cron keeps hourly runs plan-independent; missed runs catch
   up. `.github/workflows/dealer.yml` and `settle.yml` call
   `/api/cron/dealer` and `/api/cron/settle` the same way with the same
   secret (`vars.DEALER_URL`, `vars.SETTLE_URL` override the targets).
   `.github/workflows/dealer-alerts.yml` (daily, same secret) fails when
-  an instrument stays widened past its 72 h hold. Without `CRON_SECRET`
-  the cron workflows skip and pass.
+  an instrument stays widened past its 72 h hold.
   `npm run provenance:batch` runs the provenance job by hand. `SOLANA_PROVENANCE_SECRET_KEY` is the fee wallet (the
   64-byte `solana-keygen` JSON array, or its base58), `SOLANA_CLUSTER`
   is `mainnet-beta` (default) or `devnet`, and `SOLANA_RPC_URL`

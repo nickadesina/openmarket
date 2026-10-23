@@ -10,6 +10,12 @@ on:
     - cron: "41 * * * *"
   workflow_dispatch:
 
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -18,11 +24,16 @@ jobs:
       - name: Call the settle job
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          REPOSITORY_IS_FORK: ${{ github.event.repository.fork }}
           SETTLE_URL: ${{ vars.SETTLE_URL || 'https://openmarket.systems/api/cron/settle' }}
           RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           if [ -z "$CRON_SECRET" ]; then
-            echo "CRON_SECRET is not set for this repository; skipping."
+            if [ "$GITHUB_EVENT_NAME" = "schedule" ] && [ "$REPOSITORY_IS_FORK" != "true" ]; then
+              echo "::error::CRON_SECRET is not set; the scheduled job cannot run."
+              exit 1
+            fi
+            echo "::warning::CRON_SECRET is not set; skipping this manual or fork run."
             exit 0
           fi
           curl --fail-with-body --silent --show-error --max-time 120 \
