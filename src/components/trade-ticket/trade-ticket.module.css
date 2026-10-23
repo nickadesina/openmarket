@@ -137,7 +137,7 @@
   font-family: var(--font-caps);
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
 }
 
 .sideYes strong,
@@ -171,11 +171,6 @@
 .sideNo:disabled {
   cursor: not-allowed;
   opacity: 0.6;
-}
-
-.sideYes:focus-visible,
-.sideNo:focus-visible {
-  box-shadow: var(--focus-ring);
 }
 
 /* The chips sit closer to the field above than the ticket's grid gap. */
@@ -271,7 +266,7 @@
   font-family: var(--font-caps);
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
 }
 
@@ -296,7 +291,7 @@
   font-family: var(--font-caps);
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
 }
 
@@ -387,7 +382,7 @@
   font-family: var(--font-caps);
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
 }
 
@@ -419,7 +414,7 @@
 .primary,
 .secondary {
   font-family: var(--font-caps);
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
 }
 
@@ -437,15 +432,6 @@
   border: 1px solid var(--color-border);
   color: var(--color-ink);
   background: var(--color-surface-elevated);
-}
-
-.primary:focus-visible,
-.secondary:focus-visible,
-.close:focus-visible,
-.segmented button:focus-visible,
-.mode button:focus-visible,
-.error button:focus-visible {
-  box-shadow: var(--focus-ring);
 }
 
 .error,
@@ -481,7 +467,7 @@
 .success strong {
   color: var(--color-ink);
   font-family: var(--font-caps);
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
 }
 

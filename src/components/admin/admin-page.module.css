@@ -13,7 +13,7 @@
   margin: var(--space-1) 0 var(--space-2);
   font-size: var(--font-size-2xl);
   line-height: 1.15;
-  letter-spacing: -0.025em;
+  letter-spacing: var(--tracking-headline);
   text-wrap: balance;
 }
 
@@ -150,12 +150,6 @@
   background: var(--color-negative-action-hover);
 }
 
-.field input:focus-visible,
-.field textarea:focus-visible,
-.field select:focus-visible {
-  box-shadow: var(--focus-ring);
-}
-
 .inlineError {
   margin: var(--space-3) 0 0;
   color: var(--color-primary);
@@ -192,10 +186,6 @@
 .comment {
   min-width: 0;
   padding: var(--space-4) 0;
-}
-
-.comment:focus-visible {
-  box-shadow: var(--focus-ring);
 }
 
 .commentMeta {

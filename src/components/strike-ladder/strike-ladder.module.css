@@ -60,16 +60,16 @@
   color: var(--color-ink);
 }
 
+/* A full-bleed row in the clipped main region: the ring draws inset. */
 .tailRow:focus-visible {
-  box-shadow: var(--focus-ring);
-  outline: 0;
+  outline-offset: calc(var(--focus-offset) * -2);
 }
 
 .tailKind {
   color: var(--color-ink);
   font-family: var(--font-caps);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
 }
 
@@ -82,7 +82,7 @@
 .tailAction {
   font-family: var(--font-caps);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
 }
 
@@ -111,7 +111,7 @@
   font-family: var(--font-caps);
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -182,7 +182,7 @@
   font-family: var(--font-caps);
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
 }
 

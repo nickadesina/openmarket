@@ -28,7 +28,7 @@
   font-family: var(--font-caps);
   font-size: var(--font-size-sm);
   font-weight: 700;
-  letter-spacing: 0.09em;
+  letter-spacing: var(--tracking-plate);
   line-height: 1;
   text-transform: uppercase;
   white-space: nowrap;
@@ -47,11 +47,6 @@
   border-color: var(--color-primary);
   background: var(--color-primary);
   color: #ffffff;
-}
-
-.tab:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
 }
 
 .caption {

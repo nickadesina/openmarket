@@ -32,7 +32,7 @@
   font-family: var(--font-caps);
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-align: left;
   text-transform: uppercase;
 }
@@ -121,7 +121,7 @@
   font-family: var(--font-num);
   font-size: var(--font-size-xl);
   font-weight: 700;
-  letter-spacing: -0.01em;
+  letter-spacing: var(--tracking-headline);
   white-space: nowrap;
 }
 
@@ -227,7 +227,7 @@
   font-family: var(--font-caps);
   font-size: var(--font-size-sm);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
   white-space: nowrap;
   transition:
@@ -357,7 +357,7 @@
     font-family: var(--font-caps);
     font-size: var(--font-size-xs);
     font-weight: 700;
-    letter-spacing: var(--caps-tracking);
+    letter-spacing: var(--tracking-caps);
     text-transform: uppercase;
     text-align: left;
   }

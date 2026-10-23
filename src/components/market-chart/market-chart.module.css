@@ -66,13 +66,6 @@
   color: var(--color-ink);
 }
 
-.ranges button:focus-visible,
-.message button:focus-visible,
-.stale button:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-}
-
 .summary {
   margin: 0;
   padding-inline: var(--space-5);

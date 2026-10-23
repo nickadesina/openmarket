@@ -22,7 +22,7 @@
 .tag {
   font-family: var(--font-caps);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
 }
 
@@ -41,11 +41,6 @@
 
 .link:hover {
   color: var(--color-primary-hover);
-}
-
-.link:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
 }
 
 /* Outlined in ink like a stamp: a mark on the record, never a fill. */

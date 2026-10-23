@@ -22,7 +22,7 @@ npm run verify:replay    # ledger invariants against DATABASE_URL_UNPOOLED
 ```
 
 - `biome.jsonc` is lint and format; each disabled rule carries its reason inline. `noExcessiveCognitiveComplexity` is a ratchet: functions above it carry a `biome-ignore` naming the split to make. Lower the ceiling, never add ignores.
-- `scripts/audit-styles.ts`: no literal `font-size` outside `tokens.css`, every rem on the 4px grid, no color literal outside `tokens.css` except white, the module tab only via `.moduleTab`.
+- `scripts/audit-styles.ts`: no literal `font-size` or `letter-spacing` outside `tokens.css`, every rem on the 4px grid, no color literal outside `tokens.css` except white, the module tab only via `.moduleTab`.
 - `scripts/audit-deps.ts`: engine imports engine only; services never import UI; components use services as types and get data through `/api`.
 
 ## Layout of the code
@@ -33,7 +33,7 @@ npm run verify:replay    # ledger invariants against DATABASE_URL_UNPOOLED
 - `src/lib/config/dealer.ts` reads `backtest/out/params.json`; never write a parameter in code. A rerun of `backtest/analyze.py` that changes it adds a model version with the file's digest to `PARAMS_SHA256_BY_MODEL_VERSION`; never rewrite a published one.
 - `src/lib/services` one file per operation on the ledger (`quote`, `execute-trade`, `get-market`, `get-marks`, `verify-replay`); `services/tournament` likewise for the tournament. `quote` and `execute-trade` find their book through `trade-book.ts`: a dealer binary by `market_id` (clamped, live only); `services/dealer/settle-lmsr-book.ts`'s `settleLmsrBook` pays any LMSR book.
 - `src/app/api` thin routes over services. `src/components` client UI, one folder per module with its `.module.css`.
-- `src/styles/tokens.css` the six-step type ramp, row heights, one red. `src/styles/shared.module.css` composable primitives (`.moduleTab`, `.seal`, `.buttonBase`, `.primaryButton`, `.inputFrame`, `.sectionHead`, `.visuallyHidden`, `.skeletonBlock`, …); compose them rather than restating.
+- `src/styles/tokens.css` the six-step type ramp, the four tracking roles, row heights, the one focus ring, one red. `src/styles/shared.module.css` composable primitives (`.moduleTab`, `.seal`, `.buttonBase`, `.primaryButton`, `.inputFrame`, `.sectionHead`, `.visuallyHidden`, `.skeletonBlock`, …); compose them rather than restating.
 
 ## Conventions
 

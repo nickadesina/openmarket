@@ -82,7 +82,7 @@
   font-family: var(--font-caps);
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -124,7 +124,7 @@
   font: inherit;
   font-family: var(--font-caps);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
   font-size: var(--font-size-xs);
   cursor: pointer;
@@ -134,11 +134,6 @@
 .pageState button:hover {
   border-color: var(--color-primary);
   background: var(--color-primary-subtle);
-}
-
-.staleNotice button:focus-visible,
-.pageState button:focus-visible {
-  box-shadow: var(--focus-ring);
 }
 
 .pageState,

@@ -10,7 +10,7 @@
 .header h1 {
   margin: 0 0 var(--space-2);
   font-size: var(--font-size-xl);
-  letter-spacing: -0.01em;
+  letter-spacing: var(--tracking-headline);
   line-height: var(--line-height-tight);
   text-wrap: balance;
 }
@@ -79,7 +79,7 @@
   font-family: var(--font-caps);
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-decoration: underline;
   text-decoration-color: var(--color-primary);
   text-transform: uppercase;
@@ -128,7 +128,7 @@
   font-family: var(--font-caps);
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
 }
 
@@ -175,7 +175,7 @@
   font-family: var(--font-caps);
   font-size: var(--font-size-sm);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
 }
 
@@ -194,7 +194,7 @@
   font-family: var(--font-caps);
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-align: left;
   text-transform: uppercase;
 }
@@ -248,7 +248,7 @@
   font-family: var(--font-caps);
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
 }
 
@@ -339,7 +339,7 @@
   font-family: var(--font-caps);
   font-size: var(--font-size-sm);
   font-weight: 700;
-  letter-spacing: 0.09em;
+  letter-spacing: var(--tracking-plate);
   line-height: 1;
   text-transform: uppercase;
 }
@@ -357,11 +357,6 @@
   min-height: var(--control-height);
   margin: 0;
   accent-color: var(--color-primary);
-}
-
-.slider:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
 }
 
 /* Published figures as chips, at the full control height. */
@@ -455,7 +450,7 @@
   border-right: 1px solid var(--color-ink);
   font-family: var(--font-caps);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
 }
 
@@ -545,7 +540,7 @@
     font-family: var(--font-caps);
     font-size: var(--font-size-xs);
     font-weight: 700;
-    letter-spacing: var(--caps-tracking);
+    letter-spacing: var(--tracking-caps);
     text-transform: uppercase;
   }
 }

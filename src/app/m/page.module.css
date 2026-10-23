@@ -29,7 +29,7 @@
   font-family: var(--font-caps);
   font-size: var(--font-size-sm);
   font-weight: 700;
-  letter-spacing: 0.09em;
+  letter-spacing: var(--tracking-plate);
   line-height: 1;
   text-transform: uppercase;
 }
@@ -46,7 +46,7 @@
   color: var(--color-ink);
   font-family: var(--font-caps);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
 }
 

@@ -41,7 +41,7 @@
   font-family: var(--font-caps);
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tracking-plate);
   text-transform: uppercase;
   transition: background-color var(--duration-fast) var(--ease-out);
 }

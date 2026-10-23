@@ -5,6 +5,7 @@
  *   2. Every rem spacing (padding, margin, gap, inset) and height sits on the 4px grid.
  *   3. No color literal outside src/styles/tokens.css except pure white.
  *   4. The module tab is never restated: compose `.moduleTab` from shared.module.css.
+ *   5. No literal letter-spacing outside src/styles/tokens.css: tracking is a named token.
  *
  * Exit 1 with a file:line list on any finding. See DESIGN.md for the rules' intent.
  */
@@ -50,6 +51,10 @@ for (const absolute of walk(join(ROOT, "src"))) {
       findings.push({ file, line, rule: "font-size must be a ramp token", text: trimmed });
     }
 
+    if (file !== TOKENS && /letter-spacing:\s*-?[0-9.]+(em|rem|px)/.test(trimmed)) {
+      findings.push({ file, line, rule: "letter-spacing must be a tracking token", text: trimmed });
+    }
+
     const spacing = trimmed.match(
       /^(padding|margin|gap|row-gap|column-gap|inset|top|right|bottom|left|(min-|max-)?height|(min-|max-)?width)[a-z-]*:\s*([^;]+);/,
     );
@@ -80,7 +85,7 @@ for (const absolute of walk(join(ROOT, "src"))) {
       if (
         body.includes("background: var(--color-primary)") &&
         body.includes("text-transform: uppercase") &&
-        body.includes("letter-spacing: 0.09em")
+        body.includes("letter-spacing: var(--tracking-plate)")
       ) {
         const line = source.slice(0, block.index).split("\n").length;
         findings.push({

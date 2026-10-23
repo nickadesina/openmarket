@@ -23,7 +23,7 @@
 .header h1 {
   margin: 0;
   font-size: var(--font-size-xl);
-  letter-spacing: -0.01em;
+  letter-spacing: var(--tracking-headline);
   line-height: var(--line-height-tight);
 }
 
@@ -69,7 +69,7 @@
   font-family: var(--font-caps);
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
 }
 
@@ -98,7 +98,7 @@
   font-family: var(--font-caps);
   font-size: var(--font-size-sm);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
   transition:
     background-color var(--duration-fast) var(--ease-out),
@@ -128,7 +128,7 @@
   font-family: var(--font-caps);
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
 }
 

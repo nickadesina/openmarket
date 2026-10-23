@@ -38,7 +38,7 @@
   font-family: var(--font-caps);
   font-size: var(--font-size-sm);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
 }
 
@@ -60,11 +60,6 @@
 
 .input:read-only {
   background: var(--color-surface-elevated);
-}
-
-.input:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
 }
 
 .composerMeta {
@@ -100,7 +95,7 @@
   font-family: var(--font-caps);
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   line-height: 1.5;
   text-transform: uppercase;
 }

@@ -56,11 +56,6 @@
   cursor: pointer;
 }
 
-.refreshButton:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-}
-
 .list {
   margin: 0;
   padding: 0;
@@ -120,12 +115,6 @@
   font: inherit;
   font-size: var(--font-size-sm);
   cursor: pointer;
-}
-
-.message button:focus-visible,
-.resolution a:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
 }
 
 .skeleton {
