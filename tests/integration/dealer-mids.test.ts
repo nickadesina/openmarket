@@ -264,7 +264,7 @@ postgresDescribe(suiteName, () => {
     vi.stubEnv("CRON_SECRET", SECRET);
     const wrong = await call({ authorization: "Bearer not-the-cron-secret", "x-run-id": "1-1" });
     expect(wrong.status).toBe(401);
-    expect(await wrong.json()).toMatchObject({ error: { code: "ADMIN_REQUIRED" } });
+    expect(await wrong.json()).toMatchObject({ error: { code: "CRON_UNAUTHORIZED" } });
     const badId = await call({ authorization: `Bearer ${SECRET}`, "x-run-id": "not a run id" });
     expect(badId.status).toBe(400);
     expect(await postgres.db.selectFrom("cron_runs").select("id").execute()).toEqual([]);

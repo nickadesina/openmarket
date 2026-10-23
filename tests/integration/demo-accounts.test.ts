@@ -496,6 +496,9 @@ postgresDescribe(`${suiteName}: migration 015`, () => {
   }
 
   it("refuses down while a demo user exists, and goes down and up without one", async () => {
+    // Exercise 015's guard independently of later cleanup migrations.
+    const baseline = await migrateTestDatabase(postgres, "015_demo_accounts");
+    expect(baseline.error).toBeUndefined();
     const db = postgres.db;
     expect(await hasDemoColumn()).toBe(true);
     const demo = await db

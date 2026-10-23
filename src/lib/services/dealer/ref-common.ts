@@ -1,10 +1,10 @@
 import { type Kysely, type RawBuilder, sql } from "kysely";
-
 import { ServiceError } from "../../api/errors.js";
 import { MODEL_VERSION } from "../../config/dealer.js";
-import type { CompanyRow, Database, ListingRow } from "../../db/schema.js";
+import type { Database } from "../../db/schema.js";
 import { BLEND_VERSION } from "../../engine/dealer/blend.js";
 import { RULEBOOK_VERSION } from "../../engine/dealer/rulebook.js";
+import { type ListingWithCompany, listingQuery, listingWithCompany } from "./service-helpers.js";
 
 /**
  * What every /api/ref/* operation shares (README D14): the version envelope
@@ -30,26 +30,16 @@ export function refEnvelope(now: Date): RefEnvelope {
   };
 }
 
-export type RefListing = ListingRow & {
-  readonly company: Pick<CompanyRow, "id" | "name" | "slug">;
-};
+export type RefListing = ListingWithCompany;
 
-/** The active listing of the company `slug` names, or MARKET_NOT_FOUND. */
+/** The active listing of the company `slug` names, or LISTING_NOT_FOUND. */
 export async function loadRefListing(db: Kysely<Database>, slug: string): Promise<RefListing> {
-  const row = await db
-    .selectFrom("listings")
-    .innerJoin("companies", "companies.id", "listings.company_id")
-    .selectAll("listings")
-    .select(["companies.name as company_name", "companies.slug as company_slug"])
+  const row = await listingQuery(db)
     .where("companies.slug", "=", slug)
     .where("listings.delisted_at", "is", null)
     .executeTakeFirst();
-  if (row === undefined) throw new ServiceError("MARKET_NOT_FOUND", "Listing not found.");
-  const { company_name, company_slug, ...listing } = row;
-  return {
-    ...listing,
-    company: { id: listing.company_id, name: company_name, slug: company_slug },
-  };
+  if (row === undefined) throw new ServiceError("LISTING_NOT_FOUND", "Listing not found.");
+  return listingWithCompany(row);
 }
 
 /** exp(ln) in USD, rounded to the cent: what a ln-USD level reads as at the API. */
@@ -73,6 +63,13 @@ export interface KeysetPosition {
 }
 
 const POSITION_PATTERN = /^[0-9a-f-]{1,36}$/;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function validCursorTime(value: string): boolean {
+  if (!TIME_PATTERN.test(value) || value.startsWith("0000-")) return false;
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 23) === value.slice(0, 23);
+}
 /** cursorTime's output: UTC, microseconds, so a page never repeats a row timestamptz rounded. */
 const TIME_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/;
 
@@ -88,6 +85,11 @@ export function afterPosition(
   position: KeysetPosition,
   keyType: "uuid" | "bigint",
 ): RawBuilder<boolean> {
+  const validKey =
+    keyType === "uuid"
+      ? UUID_PATTERN.test(position.key)
+      : /^\d{1,19}$/.test(position.key) && BigInt(position.key) <= 9_223_372_036_854_775_807n;
+  if (!validKey || !validCursorTime(position.at)) throw invalidCursor();
   return sql<boolean>`(${sql.ref(timeColumn)}, ${sql.ref(keyColumn)}) > (${position.at}::timestamptz, ${position.key}::${sql.raw(keyType)})`;
 }
 
@@ -111,7 +113,7 @@ function streamPosition(value: unknown): KeysetPosition | "end" | null {
   if (
     typeof position !== "object" ||
     typeof position.at !== "string" ||
-    !TIME_PATTERN.test(position.at) ||
+    !validCursorTime(position.at) ||
     typeof position.key !== "string" ||
     !POSITION_PATTERN.test(position.key)
   ) {

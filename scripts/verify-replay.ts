@@ -1,3 +1,4 @@
+import { isServiceError } from "../src/lib/api/errors.js";
 import { createDirectDatabase, destroyDatabase } from "../src/lib/db/client.js";
 import { verifyDealer } from "../src/lib/services/dealer/verify-dealer.js";
 import { verifyTournament } from "../src/lib/services/tournament/verify-tournament.js";
@@ -23,8 +24,17 @@ async function main(): Promise<void> {
 
 try {
   await main();
-} catch {
+} catch (error) {
   // Database/driver errors can contain connection details. Keep diagnostics secret-free.
-  console.error("Replay verification failed before diagnostics completed");
+  const errorClass =
+    error instanceof TypeError
+      ? "TypeError"
+      : error instanceof RangeError
+        ? "RangeError"
+        : isServiceError(error)
+          ? "ServiceError"
+          : "Error";
+  const detail = isServiceError(error) ? `: ${error.message}` : "";
+  console.error(`Replay verification failed before diagnostics completed (${errorClass})${detail}`);
   process.exitCode = 1;
 }

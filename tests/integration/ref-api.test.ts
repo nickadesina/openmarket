@@ -70,9 +70,9 @@ function slugCall(route: SlugRoute, slug: string, query = "", headers = {}) {
   });
 }
 
-async function expectPublished(response: Response) {
+async function expectPublished(response: Response, cache = "public, max-age=60, s-maxage=60") {
   expect(response.status).toBe(200);
-  expect(response.headers.get("cache-control")).toBe("public, max-age=60, s-maxage=60");
+  expect(response.headers.get("cache-control")).toBe(cache);
   const body = await response.json();
   expect(body).toMatchObject(ENVELOPE);
   expect(Number.isNaN(Date.parse(body.as_of))).toBe(false);
@@ -270,7 +270,10 @@ postgresDescribe(suiteName, () => {
       });
       const keyed = { ...network, authorization: `Bearer ${key}` };
       for (let index = 0; index < 3; index += 1) {
-        await expectPublished(await listingsRoute(get("/api/ref/listings", keyed)));
+        await expectPublished(
+          await listingsRoute(get("/api/ref/listings", keyed)),
+          "private, no-store",
+        );
       }
       // The key's own quota, not the network's, now binds.
       expect((await listingsRoute(get("/api/ref/listings", keyed))).status).toBe(429);

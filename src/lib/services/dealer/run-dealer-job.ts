@@ -1,5 +1,4 @@
 import type { Kysely, Transaction } from "kysely";
-
 import type { Database } from "../../db/schema.js";
 import { applyFlags } from "./apply-flags.js";
 import { computeMids } from "./compute-mids.js";
@@ -8,6 +7,7 @@ import { type DealerHealth, getDealerHealth } from "./get-dealer-health.js";
 import { listInstruments } from "./list-instruments.js";
 import { writeReferencePrices } from "./reference-prices.js";
 import { requote } from "./requote.js";
+import { lockListing } from "./service-helpers.js";
 
 export interface DealerStepContext {
   /** The run's transaction, under the dealer job's advisory lock. */
@@ -55,6 +55,14 @@ export async function runDealerJob(
   now: Date = new Date(),
 ): Promise<DealerJobOutcome> {
   return runCronJob(db, "dealer", runId, async (transaction, id) => {
+    // Acquire listing locks before applyFlags takes instrument row locks, too.
+    const listings = await transaction
+      .selectFrom("listings")
+      .select("id")
+      .where("delisted_at", "is", null)
+      .orderBy("id")
+      .execute();
+    for (const listing of listings) await lockListing(transaction, listing.id);
     const context: DealerStepContext = { db: transaction, runId: id, now };
     const results: Record<string, unknown> = {};
     for (const [name, step] of Object.entries(DEALER_STEPS)) results[name] = await step(context);

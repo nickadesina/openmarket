@@ -10,22 +10,22 @@ import { jsonSuccess } from "./response.js";
 
 /**
  * Every /api/ref/* route (README D14): public, read-only, shared-cached for
- * 60 seconds, and drawn from the caller's `ref` quota (its network's bucket,
+ * 60 seconds for anonymous requests (keyed responses are private), and drawn from the caller's `ref` quota (its network's bucket,
  * or its API key's) after the query is validated and before any read.
  */
-export const REF_CACHE_SECONDS = 60;
+const REF_CACHE_SECONDS = 60;
 
 export interface RefRouteContext extends ReadRouteContext {
   readonly searchParams: URLSearchParams;
   readonly now: Date;
 }
 
-export function withRefRoute(
+export async function withRefRoute(
   request: Request,
   allowedParameters: readonly string[],
   handler: (context: RefRouteContext) => Promise<unknown> | unknown,
 ): Promise<Response> {
-  return withReadRoute(
+  const response = await withReadRoute(
     request,
     async (context) => {
       const searchParams = new URL(request.url).searchParams;
@@ -42,8 +42,12 @@ export function withRefRoute(
       });
       return jsonSuccess(body, { requestId: context.requestId });
     },
-    { cacheSeconds: REF_CACHE_SECONDS },
+    request.headers.has("authorization") ? {} : { cacheSeconds: REF_CACHE_SECONDS },
   );
+  response.headers.set("Vary", "Authorization");
+  if (response.ok && request.headers.has("authorization"))
+    response.headers.set("Cache-Control", "private, no-store");
+  return response;
 }
 
 /** `limit` on a paginated ref log: 1–1000, default 200. */

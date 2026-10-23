@@ -1,16 +1,16 @@
 import type { Kysely } from "kysely";
-
 import { PARAMS_SHA256_BY_MODEL_VERSION } from "../../config/dealer.js";
 import type { Database, ForwardSide, QuoteRow } from "../../db/schema.js";
 import { type MidInputs, midFromInputs } from "./compute-mids.js";
 import { type ForwardQuoteListing, forwardQuoteFor } from "./dealer-books.js";
 import { verifyReferencePrices } from "./reference-prices.js";
+import { groupBy } from "./service-helpers.js";
 import { verifyLinkedQuestions } from "./tournament-bridge.js";
 
 /** A stored mid must recompute from its inputs this closely. */
-export const MID_TOLERANCE = 1e-12;
+const MID_TOLERANCE = 1e-12;
 /** A stored quote must recompute from its inputs this closely, in log units or probability. */
-export const QUOTE_TOLERANCE = 1e-12;
+const QUOTE_TOLERANCE = 1e-12;
 
 export interface DealerFinding {
   readonly id: string;
@@ -218,6 +218,8 @@ export async function verifyDealer(db: Kysely<Database>): Promise<DealerVerifica
     .orderBy("market_sequence")
     .execute();
 
+  const positionsByInstrument = groupBy(positions, (row) => row.instrument_id);
+  const marksByMarket = groupBy(marks, (row) => row.market_id);
   for (const row of quotes) {
     const fail = (check: DealerFinding["check"], detail: string) =>
       findings.push({ id: row.id, check, detail });
@@ -227,13 +229,9 @@ export async function verifyDealer(db: Kysely<Database>): Promise<DealerVerifica
     }
     const context: QuoteContext = { quote: row, listing: row, midLn: row.model_mid_ln };
     if (row.kind === "forward") {
-      checkForwardQuote(
-        context,
-        positions.filter((position) => position.instrument_id === row.instrument_id),
-        fail,
-      );
+      checkForwardQuote(context, positionsByInstrument.get(row.instrument_id) ?? [], fail);
     } else {
-      const bookMarks = marks.filter((mark) => mark.market_id === row.market_id);
+      const bookMarks = marksByMarket.get(row.market_id) ?? [];
       const expected =
         row.reason === "list"
           ? row.model_p

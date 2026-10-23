@@ -1,5 +1,4 @@
 import type { Transaction } from "kysely";
-
 import { DEALER_PARAMS } from "../../config/dealer.js";
 import type { Database, InstrumentRow, ListingRow, QuoteFlagState } from "../../db/schema.js";
 import {
@@ -15,10 +14,12 @@ import { RULEBOOK } from "../../engine/dealer/rulebook.js";
 import {
   forwardQuoteFor,
   forwardQuoteRow,
+  isWidened,
   LIVE_STATES,
   latestMid,
   openForwardInventory,
 } from "./dealer-books.js";
+import { lifecycleSnapshot } from "./service-helpers.js";
 
 /**
  * The state step of /api/cron/dealer (CONTRACTS.md → The dealer, Lifecycle):
@@ -34,7 +35,6 @@ import {
  * flag's time is widened_until − flag_hours and needs no column.
  */
 
-const HOUR_MS = 3_600_000;
 const DAY_MS = 86_400_000;
 const WIDENING_KINDS = FLAG_KINDS.filter(flagWidens);
 
@@ -97,17 +97,6 @@ async function lastStateChange(db: Transaction<Database>, instrument: LiveForwar
   return row?.posted_at ?? instrument.opens_at;
 }
 
-function snapshotOf(instrument: InstrumentRow, flagHours: number): InstrumentSnapshot {
-  const until = instrument.state === "widened" ? instrument.widened_until : null;
-  return {
-    kind: instrument.kind,
-    state: instrument.state,
-    expiresAt: instrument.expires_at,
-    widenedAt: until === null ? null : new Date(until.getTime() - flagHours * HOUR_MS),
-    widenedUntil: until,
-  };
-}
-
 function eventTime(event: LifecycleEvent): number {
   return (event.type === "tick" ? event.now : event.at).getTime();
 }
@@ -161,7 +150,7 @@ async function applyOne(
   }));
   if (mid !== undefined) events.push({ type: "remid", at: mid.computed_at });
 
-  const result = replayLifecycle(snapshotOf(instrument, flagHours), events, now, flagHours);
+  const result = replayLifecycle(lifecycleSnapshot(instrument, flagHours), events, now, flagHours);
   const next = result.instrument;
   const before = instrument.state === "widened" ? instrument.widened_until : null;
   if (next.state === instrument.state && next.widenedUntil?.getTime() === before?.getTime()) {
@@ -174,7 +163,12 @@ async function applyOne(
     .where("id", "=", instrument.id)
     .execute();
   if (mid?.mid_ln != null) {
-    const flagState: QuoteFlagState = next.state === "widened" ? "widened" : "normal";
+    const flagState: QuoteFlagState = isWidened(
+      { state: next.state, widened_until: next.widenedUntil },
+      now,
+    )
+      ? "widened"
+      : "normal";
     const { inventoryCents } = await openForwardInventory(db, instrument.id);
     const quoted = forwardQuoteFor(instrument.listing, mid.mid_ln, inventoryCents, flagState);
     await db
