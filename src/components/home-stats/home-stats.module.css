@@ -79,22 +79,9 @@
   color: var(--color-primary);
 }
 
-.up,
-.down,
-.flat {
-  font-size: var(--font-size-sm);
-}
-
-.up {
-  color: var(--color-positive);
-}
-
-.down {
-  color: var(--color-negative);
-}
-
-.flat {
+.lastRound {
   color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
 }
 
 .note {

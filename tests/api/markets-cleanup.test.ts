@@ -36,6 +36,13 @@ it("keeps the last confirmed board prices after a poll fails", async () => {
         listingId: "saved",
         company: { name: "Saved listing", slug: "saved", logoPath: "/logos/modal.svg" },
         tier: "mega",
+        anchor: {
+          round: "Series D",
+          date: "2026-10-14",
+          postMoneyUsd: "15750000000.00",
+          sourceUrl: "https://example.com/round",
+          sourceRank: 1,
+        },
         vsLastRound: 0,
         forward: { mid_usd: 1e9, bid_usd: 9e8, ask_usd: 1.1e9 },
         binary: null,

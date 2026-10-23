@@ -9,20 +9,18 @@ import {
   formatDate,
   formatPrice,
   formatProbability,
-  roundChange,
+  formatValuation,
   tierLabel,
 } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
 import type { ListingView } from "../../lib/services/get-market.js";
 import type { MarketListResult } from "../../lib/services/list-markets.js";
 import { CompanyLogo } from "../company-logo/company-logo.js";
-import { MovementArrow } from "../icons/icons.js";
 import { DemoBanner } from "../market-demo/market-demo.js";
 import styles from "./market-board.module.css";
 
 function ListingRow({ listing }: { readonly listing: ListingView }) {
   const { forward, binary } = listing;
-  const round = roundChange(listing.vsLastRound);
   const href = `/m/${listing.company.slug}`;
 
   return (
@@ -55,9 +53,12 @@ function ListingRow({ listing }: { readonly listing: ListingView }) {
           </span>
         )}
       </td>
-      <td className={styles.changeCell} data-label="Vs last round">
-        <span className={styles[round.direction]}>
-          <MovementArrow direction={round.direction} /> {round.label}
+      <td className={styles.roundCell} data-label="Last round">
+        <span className={styles.lastRound}>
+          <strong>{formatValuation(listing.anchor.postMoneyUsd)}</strong>
+          <time dateTime={listing.anchor.date}>
+            {listing.anchor.round} · {formatDate(listing.anchor.date)}
+          </time>
         </span>
       </td>
       <td className={styles.binaryCell} data-label="Binary YES">
@@ -167,7 +168,7 @@ export function MarketBoard({
               <th scope="col">Name</th>
               <th scope="col">Forward mid</th>
               <th scope="col">Bid / ask</th>
-              <th scope="col">Vs last round</th>
+              <th scope="col">Last round</th>
               <th scope="col">Binary YES</th>
               <th scope="col">Open interest</th>
               <th scope="col">
