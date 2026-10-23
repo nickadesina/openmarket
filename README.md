@@ -441,9 +441,9 @@ not caught by a test, only by review. `src/lib/engine/dealer/prior.ts`
 ports sim.py's prior (tier, binary p, forward mid with leak re-centring);
 `tests/engine/dealer/prior.test.ts` agrees with
 `backtest/out/prior_golden.json`, which `backtest/golden.py` writes from
-sim.py, to 1e-9. `GET /api/cron/dealer` (`dealer.yml`, every 15 min at
-:05/:20/:35/:50) runs its steps in one transaction per `X-Run-Id` (a rerun reports
-"already ran"); its mids step, `services/dealer/compute-mids.ts`,
+sim.py, to 1e-9. `GET /api/cron/dealer` (Vercel Cron, every 15 min at
+:05/:20/:35/:50) runs its steps in one transaction per run ID (a UTC
+Vercel slot or manual `X-Run-Id`; a rerun reports "already ran"); its mids step, `services/dealer/compute-mids.ts`,
 appends a `model_mids` row per live instrument from the listing's anchor,
 params.json and the scoops and releases since the anchor, only when the
 mid or its inputs moved, and `verify:replay` recomputes every row from its
@@ -492,7 +492,7 @@ dated past expiry; `GET /api/ref/rulebook` publishes it with `rulebook_version`,
 `model_version` and `as_of`. `tests/fixtures/rulebook-events.json`
 records how it resolves every row of `backtest/events.csv` (each row
 entering as rank 1, since the file carries no source rank).
-`GET /api/cron/settle` (`settle.yml`, hourly at :41) settles each live
+`GET /api/cron/settle` (Vercel Cron, hourly at :41) settles each live
 instrument in its own transaction: promotes high-confidence rank 1–2
 releases and S-1s with a post-money to prints (rank 3–4 is reported
 pending; no admin queue yet), resolves through the rulebook, pays a
@@ -551,7 +551,9 @@ inventory's sign, on the reference and on the tape. `/admin/dealer`
 (tournament admins, via `/api/admin/dealer`) shows `dealer_pnl`, live
 instruments, recent runs, the settle job's pending rank 3–4 promotions
 (read-only), the evidence queue (D9) and `source_health`; `dealer-alerts.yml` fails daily when
-any instrument stays widened past the 72 h hold. Not built: the admin
+any instrument stays widened past the 72 h hold, or the latest successful
+dealer invocation is older than 1 h or settle/provenance older than 3 h.
+Alert probes are excluded from freshness. Not built: the admin
 actions on the resolution queue, the silent-source and
 print-without-scoop alerts (ingest's), and the correcting settlement.
 
@@ -611,19 +613,23 @@ npm run dev              # http://localhost:3000, never 127.0.0.1
   after `db:migrate` (`scripts/vercel-build.ts`): it opens only launch
   questions that are missing, leaves open, resolved and voided ones
   alone, and skips any whose close has passed.
-- Provenance: `.github/workflows/provenance.yml` calls
-  `/api/t/cron/provenance` hourly with `Authorization: Bearer
-  $CRON_SECRET`; the route refuses anything else. Set the same
-  `CRON_SECRET` (at least 16 characters) in Vercel and as a GitHub
-  Actions secret; scheduled cron runs fail without it, while manual and
-  fork runs warn and skip.
-  `vars.PROVENANCE_URL` overrides the target. A GitHub schedule rather
-  than Vercel Cron keeps hourly runs plan-independent; missed runs catch
-  up. `.github/workflows/dealer.yml` and `settle.yml` call
-  `/api/cron/dealer` and `/api/cron/settle` the same way with the same
-  secret (`vars.DEALER_URL`, `vars.SETTLE_URL` override the targets).
-  `.github/workflows/dealer-alerts.yml` (daily, same secret) fails when
-  an instrument stays widened past its 72 h hold.
+- Vercel Cron (Pro) runs the schedules in `vercel.json`, in UTC:
+  dealer at :05/:20/:35/:50, settle hourly at :41, and tournament
+  provenance hourly at :07. It sends `Authorization: Bearer $CRON_SECRET`
+  to `/api/cron/dealer`, `/api/cron/settle` and `/api/t/cron/provenance`.
+  Set `CRON_SECRET` (at least 16 characters) in Vercel; production build
+  validation requires it, and the routes refuse callers without it.
+  Vercel deliveries share a deterministic job/UTC slot run ID; manual
+  callers can still supply `X-Run-Id`. Each route has a 300 s execution
+  limit matching the abandoned-run reaper. Provenance still batches each
+  completed hour once and catches up missed hours; invocation records
+  track successful idle hours too, and posting errors mark a failed run.
+  `.github/workflows/dealer-alerts.yml` is the only scheduled job Action:
+  daily at 06:23 UTC, it checks widened instruments and job freshness.
+  Set the same secret in GitHub for this alert only; a scheduled non-fork
+  alert fails without it, while manual/fork alerts warn and skip.
+  `vars.DEALER_URL` overrides the alert's target. Its `alerts-` run IDs
+  cannot collide with `vercel:` slot IDs and never refresh job health.
   `npm run provenance:batch` runs the provenance job by hand. `SOLANA_PROVENANCE_SECRET_KEY` is the fee wallet (the
   64-byte `solana-keygen` JSON array, or its base58), `SOLANA_CLUSTER`
   is `mainnet-beta` (default) or `devnet`, and `SOLANA_RPC_URL`
@@ -648,7 +654,8 @@ Playwright suite on desktop and mobile Chromium (against `next dev`,
 which the dev sign-in needs), then ledger replay. The
 Playwright run has an 18-minute global timeout so a stuck suite fails
 with a report inside the job's 25-minute budget, and the report and
-traces are uploaded on every run.
+traces are uploaded on every run. CI caches Chromium by the installed
+`@playwright/test` version; cache hits install only OS dependencies.
 
 Deployment is Vercel plus Neon; a merge to `master` deploys to
 production. `scripts/vercel-build.ts` validates the environment for the

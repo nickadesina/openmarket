@@ -3,6 +3,8 @@ import { type Kysely, sql } from "kysely";
 import { DEALER_PARAMS } from "../../config/dealer.js";
 import type { Database, InstrumentKind } from "../../db/schema.js";
 
+import { type CronHealth, getCronHealth } from "./get-cron-health.js";
+
 const HOUR_MS = 3_600_000;
 
 export interface WidenedInstrument {
@@ -16,6 +18,8 @@ export interface WidenedInstrument {
 }
 
 export interface DealerHealth {
+  /** Successful invocations, including idle provenance hours; excludes alert probes. */
+  readonly jobs: readonly CronHealth[];
   readonly instruments_quoting: number;
   readonly instruments_widened: number;
   /** Live instruments with no model mid at all: a step that should have written one did not. */
@@ -111,6 +115,7 @@ export async function getDealerHealth(
     .execute();
   const widened = await widenedStreaks(db, now, holdHours);
   return {
+    jobs: await getCronHealth(db, now),
     instruments_quoting: counts.quoting,
     instruments_widened: counts.widened,
     instruments_without_mid: counts.without_mid,

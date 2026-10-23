@@ -1,19 +1,29 @@
 import { randomUUID } from "node:crypto";
 import { type Kysely, sql, type Transaction } from "kysely";
 import { ServiceError } from "../../api/errors.js";
+import { CRON_EXECUTION_SECONDS, type ScheduledJob, vercelCronRunId } from "../../config/cron.js";
 import type { CronRunRow, CronRunStatus, Database } from "../../db/schema.js";
 import { lockCron } from "./service-helpers.js";
 
-/** The three scheduled jobs (TECHNICAL_DESIGN.md §11); there are no others. */
-export type CronJob = "ingest" | "dealer" | "settle";
+/** Active schedules plus the planned ingest job (TECHNICAL_DESIGN.md §11). */
+export type CronJob = "ingest" | ScheduledJob;
 
 /** Letters, digits and `._:-`; GitHub's `${run_id}-${run_attempt}` fits. */
 const RUN_ID_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/;
 
-/** The caller's run id, trimmed, or a fresh UUID when it sent none. */
-export function resolveRunId(supplied: string | null | undefined): string {
+/** Explicit keys take precedence; authenticated Vercel cron calls share a UTC slot key. */
+export function resolveRunId(
+  supplied: string | null | undefined,
+  job?: ScheduledJob,
+  userAgent?: string | null,
+  now: Date = new Date(),
+): string {
   const runId = supplied?.trim() ?? "";
-  if (runId === "") return randomUUID();
+  if (runId === "") {
+    return job !== undefined && userAgent?.startsWith("vercel-cron/")
+      ? vercelCronRunId(job, now)
+      : randomUUID();
+  }
   if (!RUN_ID_PATTERN.test(runId)) {
     throw new ServiceError("INVALID_INPUT", "X-Run-Id must be 1–128 of A–Z a–z 0–9 . _ : -");
   }
@@ -40,17 +50,23 @@ export async function beginCronRun(
   job: CronJob,
   runId: string,
 ): Promise<BeginCronRunResult> {
-  // Runs older than the workflow's five-minute request budget are abandoned.
+  // Runs older than the route execution budget are abandoned.
   await db
     .updateTable("cron_runs")
     .set({
       status: "failed",
       finished_at: sql<Date>`clock_timestamp()`,
-      detail_json: JSON.stringify({ error: "Job exceeded its 300 second execution budget." }),
+      detail_json: JSON.stringify({
+        error: `Job exceeded its ${CRON_EXECUTION_SECONDS} second execution budget.`,
+      }),
     })
     .where("job", "=", job)
     .where("status", "=", "running")
-    .where("started_at", "<", sql<Date>`clock_timestamp() - interval '300 seconds'`)
+    .where(
+      "started_at",
+      "<",
+      sql<Date>`clock_timestamp() - ${CRON_EXECUTION_SECONDS} * interval '1 second'`,
+    )
     .execute();
   const inserted = await db
     .insertInto("cron_runs")
