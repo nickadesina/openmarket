@@ -25,6 +25,7 @@ import { queryKeys } from "../../lib/client/query-keys.js";
 import {
   binaryScoreBounds,
   forwardScoreLadder,
+  isForecastLevel,
   signInHref,
   useNow,
   useTournamentViewer,
@@ -364,7 +365,7 @@ function ForwardEditor({
   const [draft, setDraft] = useState<string | null>(null);
   const text = draft ?? (previous?.value == null ? "" : levelText(previous.value));
   const parsed = parseNumber(text);
-  const value = parsed !== null && parsed > 0 ? parsed : null;
+  const value = isForecastLevel(parsed) ? parsed : null;
 
   const companySlug =
     question.instrument?.kind === "forward" ? question.instrument.companySlug : null;
