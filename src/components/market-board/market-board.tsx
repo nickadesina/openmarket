@@ -152,7 +152,9 @@ export function MarketBoard({
     <div className={styles.board}>
       <DemoBanner />
       {marketsQuery.isError ? (
-        <p role="status">Unable to refresh. Showing the latest confirmed prices.</p>
+        <p className={styles.staleNotice} role="status">
+          Unable to refresh. Showing the latest confirmed prices.
+        </p>
       ) : null}
       <div className={styles.tableViewport}>
         <table className={styles.table}>

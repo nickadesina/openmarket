@@ -115,6 +115,15 @@ function MobileRestriction({ name, profileHref }: RestrictionProps) {
   );
 }
 
+/** The first load, or a retry after a failed poll; never an ordinary background poll. */
+function showsActivityLoading(query: {
+  readonly isLoading: boolean;
+  readonly isError: boolean;
+  readonly isFetching: boolean;
+}): boolean {
+  return query.isLoading || (query.isError && query.isFetching);
+}
+
 export function MarketWorkspace({
   slug,
   initialListing,
@@ -297,7 +306,7 @@ export function MarketWorkspace({
       <MarketActivity
         listing={listing}
         activity={activityQuery.data}
-        loading={activityQuery.isLoading}
+        loading={showsActivityLoading(activityQuery)}
         error={activityQuery.isError}
         onRetry={() => void activityQuery.refetch()}
       />

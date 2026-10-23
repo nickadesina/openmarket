@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { INITIAL_USER_BALANCE_CENTS } from "../../lib/api/money.js";
+import { formatCentsAsUsd, INITIAL_USER_BALANCE_CENTS } from "../../lib/api/money.js";
 
 import { ApiClientError, apiRequest } from "../../lib/client/api.js";
 import {
@@ -262,7 +262,7 @@ function useBinaryOrder({ binary, side, onSideChange, onAuthoritativeRefresh }: 
     if (quote === null) return Promise.resolve();
     const guardUsd =
       movedPrice !== null
-        ? (Number(movedPrice.cashAmountCents) / 100).toFixed(2)
+        ? formatCentsAsUsd(BigInt(movedPrice.cashAmountCents))
         : binarySlippageGuard(action, spend, quote.cash_amount_cents).usd;
     const guard = action === "buy" ? { max_cost_usd: guardUsd } : { min_proceeds_usd: guardUsd };
     return settleOrder(() => trade.execute({ ...requestFields, ...guard }));

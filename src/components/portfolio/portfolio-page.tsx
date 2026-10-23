@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
-import { INITIAL_USER_BALANCE_CENTS } from "../../lib/api/money.js";
+import { formatCentsAsUsd, INITIAL_USER_BALANCE_CENTS } from "../../lib/api/money.js";
 
 import {
   ApiClientError,
@@ -62,7 +62,6 @@ interface SellFlowProps extends SellSelection {
 interface ReviewedSale {
   readonly quote: QuoteResult;
   readonly positionQuantity: number;
-  readonly markPriceUsd: number;
 }
 
 /** Signed cash with the Gain/Loss word (DESIGN.md → The Arrow-and-Word Rule); zero stays muted. */
@@ -172,17 +171,16 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
     Number.isFinite(quantity) &&
     quantity >= MIN_QUANTITY &&
     quantity <= position.sellableQuantity + Number.EPSILON;
-  // A review is valid only for the live position and price it quoted. An
-  // unknown-outcome order is exempt because retry must preserve its request.
+  // A review is valid only for the position it quoted. A price that moves under
+  // it is the server's to judge: the sale carries its slippage floor, and a
+  // PRICE_MOVED refusal re-quotes. An unknown-outcome order is exempt because
+  // retry must preserve its request.
   const settled = market.status !== "open";
-  const quoteStale =
-    review !== null &&
-    (review.positionQuantity !== position.quantity ||
-      review.markPriceUsd !== position.markPriceUsd);
+  const quoteStale = review !== null && review.positionQuantity !== position.quantity;
   const blocked = settled
     ? "This binary has settled. Shares are paid out at settlement, not sold."
     : quoteStale
-      ? "Your position or the price changed since this quote. Review a fresh quote."
+      ? "Your position changed since this quote. Review a fresh quote."
       : null;
   const quote = review === null || (blocked !== null && !trade.canRetry) ? null : review.quote;
   const label = `${sideLabel(position.side)} · ${market.company.name}`;
@@ -203,7 +201,6 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
       setReview({
         quote: nextQuote,
         positionQuantity: position.quantity,
-        markPriceUsd: position.markPriceUsd,
       });
       setNotice(null);
     },
@@ -252,7 +249,7 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
       trade.execute({
         ...fields,
         quantity: quote.quantity,
-        min_proceeds_usd: (minProceedsCents / 100).toFixed(2),
+        min_proceeds_usd: formatCentsAsUsd(minProceedsCents),
       }),
     );
   }
@@ -597,7 +594,7 @@ export function PortfolioPage() {
           type="button"
           className={styles.secondaryButton}
           onClick={() => void refreshPortfolio()}
-          disabled={portfolioQuery.isFetching}
+          disabled={refreshing}
         >
           {refreshing ? "Refreshing…" : "Refresh"}
         </button>
@@ -763,7 +760,7 @@ export function PortfolioPage() {
           <button
             type="button"
             className={styles.secondaryButton}
-            disabled={offset === 0 || portfolioQuery.isFetching}
+            disabled={offset === 0 || refreshing}
             onClick={() => {
               setSelection(null);
               setOffset(Math.max(0, offset - HISTORY_LIMIT));
@@ -774,7 +771,7 @@ export function PortfolioPage() {
           <button
             type="button"
             className={styles.secondaryButton}
-            disabled={portfolio.tradeHistory.nextOffset === null || portfolioQuery.isFetching}
+            disabled={portfolio.tradeHistory.nextOffset === null || refreshing}
             onClick={() => {
               setSelection(null);
               setOffset(portfolio.tradeHistory.nextOffset ?? 0);

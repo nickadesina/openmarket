@@ -40,6 +40,8 @@ export function CompanyLogo({
     <span className={`${styles.frame} ${styles[size]}`} aria-hidden="true">
       <Image
         unoptimized
+        // Small static marks beside a name: load with the row, as the <img> did.
+        loading="eager"
         ref={imageNode}
         className={styles.logo}
         src={logoPath}

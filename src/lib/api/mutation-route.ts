@@ -3,7 +3,7 @@ import type { Kysely } from "kysely";
 import type { ZodIssue, ZodType } from "zod";
 import { getRuntimeDatabase } from "../db/runtime.js";
 import type { Database } from "../db/schema.js";
-import { logReadRequest, logUnexpectedError } from "../logging/server-log.js";
+import { logMutationRequest, logUnexpectedError } from "../logging/server-log.js";
 import { assertAllowedOrigin } from "../security/origin.js";
 import { type ErrorCode, isServiceError, ServiceError } from "./errors.js";
 import { errorCode, jsonError, jsonUnexpectedError, REQUEST_ID_HEADER } from "./response.js";
@@ -113,7 +113,7 @@ export async function withMutationRoute(
     }
   }
 
-  logReadRequest({
+  logMutationRequest({
     requestId,
     method: request.method,
     pathname: new URL(request.url).pathname,

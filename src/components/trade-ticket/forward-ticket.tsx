@@ -11,6 +11,7 @@ import {
   formatCents,
   formatDate,
   formatDateTime,
+  formatForwardNotional,
   formatPrice,
   formatVersion,
   formatWholeUsd,
@@ -375,7 +376,7 @@ function ForwardReview({ order }: { readonly order: ReturnType<typeof useForward
         </p>
       ) : notional !== null ? (
         <p className={styles.pending} role="status">
-          Pricing {side} {formatCents(String(Math.round(Number(notional) * 100)))}…
+          Pricing {side} {formatForwardNotional(Number(notional))}…
         </p>
       ) : null}
     </>

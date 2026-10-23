@@ -70,12 +70,12 @@ export function MarketActivity({
             </h2>
             <p>Fills on both contracts, newest first</p>
           </div>
-          {error && activity !== undefined ? (
+          {loading && activity !== undefined ? (
+            <span className={styles.refreshing}>Refreshing</span>
+          ) : error && activity !== undefined ? (
             <button type="button" className={styles.refreshButton} onClick={onRetry}>
               Refresh paused. Retry
             </button>
-          ) : loading && activity !== undefined ? (
-            <span className={styles.refreshing}>Refreshing</span>
           ) : null}
         </header>
         {error && activity === undefined ? (

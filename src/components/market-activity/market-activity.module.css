@@ -102,8 +102,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Scoped under .list to outrank the muted `.list span` default. */
-
 .message {
   display: grid;
   justify-items: start;
