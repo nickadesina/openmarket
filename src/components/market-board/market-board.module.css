@@ -184,10 +184,25 @@
   font-size: var(--font-size-md);
 }
 
+/* Five red buttons at rest out-shout the five red prices. TRADE rests as a
+   secondary button and fills red only for the row the pointer or focus is
+   on, where the action is. */
 .tradeLink {
-  composes: primaryButton from "../../styles/shared.module.css";
-  min-height: var(--control-height);
+  composes: secondaryButton from "../../styles/shared.module.css";
   padding: 0 var(--space-3);
+}
+
+/* Outranks the secondary hover wash: the live row's action fills red. */
+.marketRow:hover .tradeLink,
+.tradeLink:focus-visible {
+  border-color: var(--color-primary-action);
+  background: var(--color-primary-action);
+  color: #ffffff;
+}
+
+.marketRow .tradeLink:hover {
+  border-color: var(--color-primary-action-hover);
+  background: var(--color-primary-action-hover);
 }
 
 .visuallyHidden {

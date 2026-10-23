@@ -1,21 +1,12 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 
-import { apiRequest, POLL_INTERVAL_MS, requestPortfolioIdentity } from "../../lib/client/api.js";
-import {
-  formatCents,
-  formatCompactUsd,
-  formatDateTime,
-  formatPrice,
-  roundChange,
-} from "../../lib/client/format.js";
+import { apiRequest, POLL_INTERVAL_MS } from "../../lib/client/api.js";
+import { formatCompactUsd, formatDateTime } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
 import type { ListingView } from "../../lib/services/get-market.js";
 import type { MarketListResult } from "../../lib/services/list-markets.js";
-import { CompanyLogo } from "../company-logo/company-logo.js";
-import { MovementArrow } from "../icons/icons.js";
 import styles from "./home-stats.module.css";
 
 function latestTrade(listings: readonly ListingView[]): string | undefined {
@@ -27,29 +18,11 @@ function latestTrade(listings: readonly ListingView[]): string | undefined {
   return latest;
 }
 
-function IndexCell({
-  listing,
-  midUsd,
-}: {
-  readonly listing: ListingView;
-  readonly midUsd: number;
-}) {
-  const movement = roundChange(listing.vsLastRound);
-  return (
-    <li className={styles.cell}>
-      <CompanyLogo name={listing.company.name} logoPath={listing.company.logoPath} size="sm" />
-      <Link className={styles.name} href={`/m/${listing.company.slug}`}>
-        {listing.company.name}
-      </Link>
-      <strong className={styles.level}>{formatPrice(midUsd)}</strong>
-      <span className={styles[movement.direction]}>
-        <MovementArrow direction={movement.direction} /> {movement.label} vs last round
-      </span>
-    </li>
-  );
-}
-
-/** Gray index strip under the top bar: each listed name's forward mid, then the live facts. */
+/**
+ * Gray strip under the top bar: the facts the board below does not carry
+ * (open interest across names, the last trade). Each name's level and its
+ * move against the last round are the board's; paper cash is the header's.
+ */
 export function HomeStats({
   initialData,
 }: {
@@ -63,11 +36,6 @@ export function HomeStats({
       ? {}
       : { initialData, initialDataUpdatedAt: Date.parse(initialData.asOf) }),
   });
-  const identityQuery = useQuery({
-    queryKey: queryKeys.identity,
-    queryFn: requestPortfolioIdentity,
-  });
-
   const marketsUnavailable = marketsQuery.isError && marketsQuery.data === undefined;
   const listings = marketsQuery.data?.listings ?? [];
   const openInterest = listings.reduce(
@@ -79,28 +47,7 @@ export function HomeStats({
   return (
     <div className={styles.strip}>
       <h1 className={styles.visuallyHidden}>Valuation markets</h1>
-      {marketsUnavailable ? (
-        <p className={styles.cell}>Market levels are unavailable.</p>
-      ) : (
-        <ul className={styles.index} aria-label="Market levels">
-          {listings.map((listing) =>
-            listing.forward === null ? null : (
-              <IndexCell
-                key={listing.listingId}
-                listing={listing}
-                midUsd={listing.forward.mid_usd}
-              />
-            ),
-          )}
-        </ul>
-      )}
       <dl className={styles.facts}>
-        {identityQuery.data == null ? null : (
-          <div className={styles.cell}>
-            <dt>Paper cash</dt>
-            <dd className={styles.cash}>{formatCents(identityQuery.data.cashBalanceCents)}</dd>
-          </div>
-        )}
         <div className={styles.cell}>
           <dt>Open interest</dt>
           <dd>{marketsUnavailable ? "Unavailable" : formatCompactUsd(openInterest)}</dd>

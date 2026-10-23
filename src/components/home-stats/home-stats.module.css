@@ -1,5 +1,5 @@
-/* The index strip: a gray band of ruled cells, the brokerage convention of
-   reading every level at a glance before the board. */
+/* The index strip: a gray band of ruled cells holding the live facts the
+   board beneath it does not carry. */
 .strip {
   display: flex;
   flex-wrap: wrap;
@@ -12,18 +12,16 @@
   composes: visuallyHidden from "../../styles/shared.module.css";
 }
 
-.index,
 .facts {
   display: flex;
   min-width: 0;
   margin: 0;
   padding: 0;
   flex-wrap: wrap;
-  list-style: none;
 }
 
-/* Every cell shares one baseline: caps label, figure, and movement word.
-   Box-centering mixed fonts and sizes puts each on its own line. */
+/* Every cell shares one baseline: caps label and figure. Box-centering
+   mixed fonts and sizes puts each on its own line. */
 .cell {
   display: flex;
   min-height: var(--row-table);
@@ -35,12 +33,7 @@
   white-space: nowrap;
 }
 
-.cell > span:first-child {
-  align-self: center;
-}
-
-.name,
-.facts dt {
+.cell dt {
   color: var(--color-ink-muted);
   font-family: var(--font-caps);
   font-size: var(--font-size-xs);
@@ -49,46 +42,11 @@
   text-transform: uppercase;
 }
 
-.name {
-  color: var(--color-ink);
-  text-decoration: none;
-}
-
-.name:hover {
-  text-decoration: underline;
-  text-decoration-color: var(--color-primary);
-  text-underline-offset: 0.1875em;
-}
-
-.level,
-.facts dd {
+.cell dd {
   margin: 0;
   font-family: var(--font-num);
   font-size: var(--font-size-md);
   font-weight: 700;
-}
-
-.level,
-.cash {
-  color: var(--color-primary);
-}
-
-.up,
-.down,
-.flat {
-  font-size: var(--font-size-sm);
-}
-
-.up {
-  color: var(--color-positive);
-}
-
-.down {
-  color: var(--color-negative);
-}
-
-.flat {
-  color: var(--color-ink-muted);
 }
 
 .note {
@@ -100,18 +58,8 @@
 }
 
 @media (max-width: 42rem) {
-  .index,
   .facts {
     width: 100%;
-  }
-
-  /* A name, its level and its movement do not fit one phone-width line;
-     the movement wraps under the name instead of widening the page. */
-  .index .cell {
-    width: 100%;
-    flex-wrap: wrap;
-    border-bottom: 1px solid var(--color-border);
-    white-space: normal;
   }
 
   .cell {
