@@ -135,8 +135,9 @@ tail probabilities as meaningful.
 ### D6. Deployment, migration, and listing — Implemented
 
 - Builds migrate, open any missing launch tournament questions
-  (`seed:tournament -- --open`) and verify replay (§5); they never list
-  dealer names.
+  (`seed:tournament -- --open`), run the demo seed (decision 0005: it
+  trades once and skips before the dealer has quoted), and verify replay
+  (§5). They never list dealer names.
 - Listing is an operator action (`npm run seed:listings`), idempotent on
   (company, listed_at) (D10).
 - Migrations are append-only after launch. One owner-approved exception

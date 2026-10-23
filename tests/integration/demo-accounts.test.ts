@@ -19,6 +19,7 @@ import {
   resolveQuestion,
   saveDraftQuestion,
 } from "../../src/lib/services/tournament/admin.js";
+import { getForecaster } from "../../src/lib/services/tournament/forecaster.js";
 import { getLeaderboard } from "../../src/lib/services/tournament/leaderboard.js";
 import {
   registerPasswordAccount,
@@ -436,6 +437,11 @@ postgresDescribe(suiteName, () => {
     expect(board.entries.map((entry) => entry.handle)).toEqual(["RealForecaster"]);
     const demoHandles = new Set(DEMO_ACCOUNTS.map((account) => account.handle));
     expect(board.entries.some((entry) => demoHandles.has(entry.handle))).toBe(false);
+
+    // A demo profile renders, marked as one; a real profile is not.
+    const demoProfile = await getForecaster(db, `~${DEMO_ACCOUNTS[0]!.handle}`);
+    expect(demoProfile.identity).toMatchObject({ handle: DEMO_ACCOUNTS[0]!.handle, demo: true });
+    expect((await getForecaster(db, "RealForecaster")).identity.demo).toBe(false);
   });
 
   it("skips, writing nothing, with no listings or no live quotes", async () => {
