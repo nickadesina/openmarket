@@ -12,6 +12,7 @@
 import { assertDate, assertFinite, assertPositive } from "../assert.js";
 
 import { DAY_MS, utcMidnight } from "../time.js";
+import { assertPFloor } from "./binary.js";
 
 export const TIERS = ["mega", "redhot"] as const;
 export type Tier = (typeof TIERS)[number];
@@ -93,10 +94,7 @@ export function binaryProbability(
   hazard: HazardParams,
   pFloor: number,
 ): number {
-  assertFinite(pFloor, "pFloor");
-  if (pFloor <= 0 || pFloor >= 0.5) {
-    throw new RangeError("pFloor must be strictly between zero and one half");
-  }
+  assertPFloor(pFloor);
   for (const probability of [hazard.leak_hazard_near, hazard.leak_hazard_far]) {
     assertFinite(probability, "leak hazard");
     if (probability <= 0 || probability >= 1)

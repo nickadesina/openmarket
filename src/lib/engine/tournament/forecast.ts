@@ -5,7 +5,7 @@ export const FORECAST_DECIMALS = 10;
  * A level at or above this prints in exponent notation under `toFixed`, which
  * the canonical form does not admit.
  */
-const MAX_FORECAST_LEVEL = 1e15;
+export const MAX_FORECAST_LEVEL = 1e15;
 
 /** Prefixes a forward's payload; legacy and binary payloads are digits, `.` and `,` only. */
 const FORWARD_PAYLOAD_PREFIX = "fwd:";

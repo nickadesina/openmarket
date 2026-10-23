@@ -27,7 +27,7 @@ export type BinaryClampCheck =
       readonly yesProbabilityAfter: number;
     };
 
-function assertPFloor(pFloor: number): void {
+export function assertPFloor(pFloor: number): void {
   assertFinite(pFloor, "pFloor");
   if (pFloor <= 0 || pFloor >= 0.5) {
     throw new RangeError("pFloor must be strictly between zero and one half");
