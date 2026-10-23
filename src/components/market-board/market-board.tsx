@@ -74,7 +74,7 @@ function ListingRow({ listing }: { readonly listing: ListingView }) {
         )}
       </td>
       <td className={styles.openInterestCell} data-label="Open interest">
-        <span className={styles.tabular}>{formatCompactUsd(listing.openInterest.totalUsd)}</span>
+        {formatCompactUsd(listing.openInterest.totalUsd)}
       </td>
       <td className={styles.statusCell}>
         <Link className={styles.tradeLink} href={href}>

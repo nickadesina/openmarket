@@ -95,7 +95,6 @@
   font-family: var(--font-num);
   font-size: var(--font-size-lg);
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
 
@@ -161,7 +160,6 @@
 
 .marketHeader > strong {
   font-size: var(--font-size-md);
-  font-variant-numeric: tabular-nums;
 }
 
 .positionList,
@@ -208,7 +206,6 @@
 .quoteReview dd {
   margin: var(--space-1) 0 0;
   font-size: var(--font-size-sm);
-  font-variant-numeric: tabular-nums;
 }
 
 .positionAction {
@@ -231,7 +228,6 @@
   padding: var(--space-4);
   margin: 0 0 var(--space-4);
   border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
   background: var(--color-surface-elevated);
 }
 
@@ -258,11 +254,9 @@
   height: var(--control-height);
   padding: 0 var(--space-3);
   border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-ink);
   font: inherit;
-  font-variant-numeric: tabular-nums;
 }
 
 .fieldSupport {
@@ -344,7 +338,6 @@
   padding: var(--space-3) var(--space-4);
   margin-bottom: var(--space-5);
   border: 1px solid var(--color-primary);
-  border-radius: var(--radius-sm);
   color: var(--color-ink);
   font-size: var(--font-size-md);
 }
@@ -364,7 +357,6 @@
 .historyValues {
   align-items: flex-end;
   text-align: right;
-  font-variant-numeric: tabular-nums;
 }
 
 .pagination {
@@ -375,7 +367,6 @@
 .statePanel {
   padding: var(--space-6);
   border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
   background: var(--color-surface);
 }
 
@@ -412,7 +403,6 @@
 .skeletonTitle,
 .skeletonSummary div,
 .skeletonPanel {
-  border-radius: var(--radius-sm);
   background: var(--color-surface-elevated);
   animation: pulse 1.4s var(--ease-out) infinite alternate;
 }

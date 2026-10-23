@@ -206,7 +206,7 @@ Six roles at a ~1.2 ratio: 11 / 13 / 15 / 18 / 22 / 28px. Every figure in Roboto
 ### Named Rules
 **The Caps Voice Rule.** Every structural label — table header, module tab, nav link, stamp, button, disclosure — is bold Roboto Condensed uppercase with at least 0.05em tracking. Content (names, sentences, numbers) is never uppercased.
 
-**The Tabular Rule.** `font-variant-numeric: tabular-nums` is global. Any new number-bearing surface inherits it; never opt out.
+**The Tabular Rule.** `font-variant-numeric: tabular-nums` is global, set once on `html`. Any new number-bearing surface inherits it; never opt out, and never restate it.
 
 **The Price Precision Rule.** A quoted level (forward mid, bid, ask, entry, window change, quantile) is formatted with `formatPrice` at four significant digits ($1.117T, $84.27B) so adjacent levels never collapse into the same label. Reported figures (anchors, settlement values) and grid strikes keep the coarser `formatValuation` form because that is how they were published.
 
@@ -246,7 +246,8 @@ box-shadows in the world are functional, not material: the focus halo
 
 ## Shapes
 
-The world is square: `--radius-sm/md/lg` are all 0. Buttons, inputs, tables,
+The world is square: the only radius token is `--radius-chip`, and `globals.css`
+squares every form control, so no component declares a radius. Buttons, inputs, tables,
 tabs, stamps, sheets, and modules are hard rectangles. The single sanctioned
 curve is `--radius-chip` (0.25rem) on company-logo chips, whose slight
 rounding sets trademarked marks apart from the system's own geometry. Stamps

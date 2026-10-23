@@ -22,7 +22,6 @@
   width: 100%;
   min-width: 54rem;
   border-collapse: collapse;
-  font-variant-numeric: tabular-nums;
 }
 
 .table thead th {
@@ -124,7 +123,6 @@
   font-weight: 700;
   letter-spacing: -0.01em;
   white-space: nowrap;
-  font-variant-numeric: tabular-nums;
 }
 
 .changeCell {
@@ -190,10 +188,6 @@
   composes: primaryButton from "../../styles/shared.module.css";
   min-height: var(--control-height);
   padding: 0 var(--space-3);
-}
-
-.tabular {
-  font-variant-numeric: tabular-nums;
 }
 
 .visuallyHidden {

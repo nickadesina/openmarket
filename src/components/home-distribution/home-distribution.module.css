@@ -79,7 +79,6 @@
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;
-  font-variant-numeric: tabular-nums;
 }
 
 .medianLabel small,
@@ -167,7 +166,6 @@
   font-size: var(--font-size-sm);
   font-weight: 700;
   white-space: nowrap;
-  font-variant-numeric: tabular-nums;
 }
 
 .facts dd small {

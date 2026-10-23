@@ -51,6 +51,14 @@ button {
   border: 0;
 }
 
+/* The One Curve Rule: controls are square whatever the platform draws. */
+button,
+input,
+select,
+textarea {
+  border-radius: 0;
+}
+
 img,
 svg {
   display: block;

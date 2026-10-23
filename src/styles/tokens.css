@@ -64,10 +64,8 @@
   --space-7: 3rem;
   --space-8: 4rem;
 
-  /* The world is square: rules and right angles; radius only on logo chips. */
-  --radius-sm: 0;
-  --radius-md: 0;
-  --radius-lg: 0;
+  /* The world is square (globals.css squares the form controls); the one
+     curve is the logo chip's. */
   --radius-chip: 0.25rem;
   --control-height: 2.25rem;
   --control-height-sm: 2rem;

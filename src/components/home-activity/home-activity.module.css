@@ -21,7 +21,6 @@
   font-family: var(--font-num);
   font-size: var(--font-size-sm);
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
@@ -66,7 +65,6 @@
   flex-wrap: wrap;
   gap: var(--space-1);
   font-size: var(--font-size-xs);
-  font-variant-numeric: tabular-nums;
 }
 
 .meta a {
