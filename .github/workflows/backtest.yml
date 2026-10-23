@@ -4,6 +4,13 @@ name: Backtest
 # parameters, fails if the committed outputs (params.json included) are not
 # what the committed inputs produce, and posts the summary on the PR.
 on:
+  push:
+    branches: [master]
+    paths:
+      - "backtest/**"
+      - "src/lib/engine/dealer/**"
+      - "src/lib/config/dealer.ts"
+      - ".github/workflows/backtest.yml"
   pull_request:
     paths:
       - "backtest/**"
@@ -14,6 +21,11 @@ on:
 permissions:
   contents: read
   pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # Supersede a PR's older runs; every master commit keeps its own result.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   run:

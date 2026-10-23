@@ -1,9 +1,10 @@
-import type { Kysely } from "kysely";
+import { type Kysely, sql } from "kysely";
 
 import type { Database } from "../../db/schema.js";
 import type { ForecastPoint } from "../../engine/tournament/forecast.js";
 import { computeAggregate, latestForecasts } from "./aggregate.js";
 import { buildMerkleTree, merkleRootFromPath } from "./merkle.js";
+import { BATCH_GRACE_MS } from "./provenance.js";
 import {
   effectiveStatus,
   type QuestionRecord,
@@ -34,6 +35,13 @@ export interface TournamentVerification {
   readonly eventsChecked: number;
   readonly batchesChecked: number;
   readonly findings: TournamentFinding[];
+  /**
+   * Provenance gaps that do not fail replay: a completed hour the hourly job
+   * has not batched yet (cron lag), or an event committed after its hour was
+   * batched (batches are immutable, so it can never be added). Both are
+   * reported, never fatal, so they cannot block a deploy.
+   */
+  readonly warnings: TournamentFinding[];
   readonly passed: boolean;
 }
 
@@ -190,18 +198,42 @@ async function checkAggregate(
 /**
  * Every provenance batch must re-derive: its leaves, in order, rebuild the
  * committed root, and each stored path folds its event hash to that root.
+ * Events outside any batch are warnings (see `TournamentVerification`).
  */
-async function checkProvenance(db: Kysely<Database>, fail: Fail): Promise<number> {
+async function checkProvenance(db: Kysely<Database>, fail: Fail, warn: Fail): Promise<number> {
   const batches = await db
     .selectFrom("tournament_provenance_batches")
     .select(["id", "root", "leaf_count", "hour_start"])
     .orderBy("hour_start")
     .execute();
+  const missing = await db
+    .selectFrom("tournament_forecast_events as events")
+    .leftJoin("tournament_provenance_leaves as leaves", "leaves.event_id", "events.id")
+    .leftJoin("tournament_provenance_batches as batches", (join) =>
+      join.onRef("batches.hour_start", "=", sql<Date>`date_trunc('hour', events.submitted_at)`),
+    )
+    .select(["events.id", "batches.id as batch_id"])
+    .where("leaves.event_id", "is", null)
+    .where(({ or, eb }) =>
+      or([
+        eb("batches.id", "is not", null),
+        sql<boolean>`date_trunc('hour', events.submitted_at) + interval '1 hour' <= clock_timestamp() - ${`${BATCH_GRACE_MS} milliseconds`}::interval`,
+      ]),
+    )
+    .execute();
+  for (const event of missing) {
+    warn(
+      "provenance",
+      event.batch_id === null
+        ? `event ${event.id}'s completed hour has no batch`
+        : `event ${event.id} is missing from batch ${event.batch_id}`,
+    );
+  }
   for (const batch of batches) {
     const leaves = await db
       .selectFrom("tournament_provenance_leaves as leaves")
       .innerJoin("tournament_forecast_events as events", "events.id", "leaves.event_id")
-      .select(["leaves.leaf_index", "leaves.path", "events.event_hash"])
+      .select(["leaves.leaf_index", "leaves.path", "events.event_hash", "events.submitted_at"])
       .where("leaves.batch_id", "=", batch.id)
       .orderBy("leaves.leaf_index")
       .execute();
@@ -215,6 +247,12 @@ async function checkProvenance(db: Kysely<Database>, fail: Fail): Promise<number
       continue;
     }
     for (const leaf of leaves) {
+      if (
+        leaf.submitted_at < batch.hour_start ||
+        leaf.submitted_at.getTime() >= batch.hour_start.getTime() + 60 * 60_000
+      ) {
+        fail("provenance", `batch ${hour} leaf ${leaf.leaf_index} belongs to a different hour`);
+      }
       if (merkleRootFromPath(leaf.event_hash, leaf.path) !== batch.root) {
         fail("provenance", `batch ${hour} leaf ${leaf.leaf_index} path does not fold to the root`);
       }
@@ -245,8 +283,11 @@ export async function verifyTournament(db: Kysely<Database>): Promise<Tournament
     if (effectiveStatus(question, now) === "open") await checkAggregate(db, question, fail);
   }
 
-  const batchesChecked = await checkProvenance(db, (check, detail) =>
-    findings.push({ slug: "(provenance)", check, detail }),
+  const warnings: TournamentFinding[] = [];
+  const batchesChecked = await checkProvenance(
+    db,
+    (check, detail) => findings.push({ slug: "(provenance)", check, detail }),
+    (check, detail) => warnings.push({ slug: "(provenance)", check, detail }),
   );
 
   return {
@@ -254,6 +295,7 @@ export async function verifyTournament(db: Kysely<Database>): Promise<Tournament
     eventsChecked,
     batchesChecked,
     findings,
+    warnings,
     passed: findings.length === 0,
   };
 }

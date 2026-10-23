@@ -107,9 +107,13 @@ export async function submitForecast(
     if (previous !== undefined) {
       const elapsed = now.getTime() - previous.submitted_at.getTime();
       if (elapsed < FORECAST_RATE_LIMIT_MS) {
-        throw new ServiceError("RATE_LIMITED", "One revision per question every 10 seconds.", {
-          retryAfterSeconds: Math.max(1, Math.ceil((FORECAST_RATE_LIMIT_MS - elapsed) / 1_000)),
-        });
+        throw new ServiceError(
+          "RATE_LIMITED",
+          `One revision per question every ${FORECAST_RATE_LIMIT_MS / 1000} seconds.`,
+          {
+            retryAfterSeconds: Math.max(1, Math.ceil((FORECAST_RATE_LIMIT_MS - elapsed) / 1_000)),
+          },
+        );
       }
     }
 

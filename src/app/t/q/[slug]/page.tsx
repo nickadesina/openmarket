@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-
+import { notFound } from "next/navigation";
+import { cache } from "react";
 import { QuestionWorkspace } from "../../../../components/tournament-question/question-workspace.js";
+import { ServiceError } from "../../../../lib/api/errors.js";
 import { getRuntimeDatabase } from "../../../../lib/db/runtime.js";
 import {
   getQuestion,
@@ -16,7 +18,7 @@ interface QuestionPageProps {
   readonly params: Promise<{ readonly slug: string }>;
 }
 
-async function loadQuestion(
+const loadQuestion = cache(async function loadQuestion(
   slug: string,
 ): Promise<{ question: QuestionDetail | null; forecasts: PublicForecast[] | null }> {
   try {
@@ -26,10 +28,11 @@ async function loadQuestion(
       listLatestForecasts(database, slug),
     ]);
     return { question, forecasts: forecasts.forecasts };
-  } catch {
+  } catch (error) {
+    if (error instanceof ServiceError && error.code === "QUESTION_NOT_FOUND") notFound();
     return { question: null, forecasts: null };
   }
-}
+});
 
 export async function generateMetadata({ params }: QuestionPageProps): Promise<Metadata> {
   const { slug } = await params;

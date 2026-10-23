@@ -49,3 +49,8 @@ export function welcomeHref(returnTo: string | null | undefined): string {
 export function signInLanding(returnTo: string | null | undefined, created: boolean): string {
   return created ? welcomeHref(returnTo) : safeReturnPath(returnTo);
 }
+
+/** A failed sign-in keeps the validated destination for the next attempt. */
+export function signInFailure(returnTo: string | null, reason: "failed" | "unavailable"): string {
+  return `/t/signin?return=${encodeURIComponent(safeReturnPath(returnTo))}&sign_in=${reason}`;
+}

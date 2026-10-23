@@ -182,6 +182,27 @@ test("a returning sign-in goes straight to its return path", async ({
 
 test("the welcome step sends a signed-out visitor to sign in first", async ({ page }) => {
   await page.goto("/t/welcome");
-  await expect(page).toHaveURL(/\/t\/signin\?return=%2Ft%2Fwelcome$/, LANDING);
+  await expect(page).toHaveURL(/\/t\/signin\?return=%2Ft$/, LANDING);
   await expect(page.getByRole("heading", { level: 1, name: "Sign in to forecast" })).toBeVisible();
+});
+
+test("a returning visitor with a lapsed welcome session reaches the original destination", async ({
+  page,
+  browser,
+  baseURL,
+}, testInfo) => {
+  const name = username("pw_lapsed", testInfo);
+  const first = await browser.newContext({ baseURL: baseURL! });
+  const created = await first.request.post("/api/t/auth/password/register", {
+    headers: { origin: new URL(baseURL!).origin, "content-type": "application/json" },
+    data: { username: name, password: PASSWORD },
+  });
+  expect(created.ok(), await created.text()).toBe(true);
+  await first.close();
+  await page.goto("/t/welcome?return=%2Ft%2Fleaderboard");
+  await expect(page.getByRole("heading", { level: 1, name: "Sign in to forecast" })).toBeVisible(
+    LANDING,
+  );
+  await submitPasswordForm(page, "Sign in", name);
+  await expect(page).toHaveURL(/\/t\/leaderboard$/, LANDING);
 });

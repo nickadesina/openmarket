@@ -365,7 +365,7 @@ describe("Part 4 admin comment moderation", () => {
     const admin = await removeRoute(request());
 
     expect(signedOut.status).toBe(401);
-    expect(notAdmin.status).toBe(401);
+    expect(notAdmin.status).toBe(403);
     await expect(notAdmin.json()).resolves.toMatchObject({ error: { code: "ADMIN_REQUIRED" } });
     expect(admin.status).toBe(200);
     expect(mocks.removeComment).toHaveBeenCalledTimes(1);

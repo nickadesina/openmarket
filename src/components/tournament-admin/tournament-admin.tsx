@@ -24,7 +24,7 @@ function useAdminAction<T>(path: string) {
   return useMutation({
     mutationFn: (body: T) =>
       apiRequest<unknown>(path, { method: "POST", body: JSON.stringify(body) }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["openmarket", "tournament"] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.tournament }),
   });
 }
 

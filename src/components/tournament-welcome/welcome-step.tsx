@@ -4,9 +4,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId } from "react";
 
-import { welcomeHref } from "../../lib/auth/return-path.js";
 import { formatForecasterName } from "../../lib/client/format.js";
-import { signInHref, useTournamentViewer } from "../../lib/client/tournament.js";
+import {
+  PUBLIC_FORECAST_HEADING,
+  signInHref,
+  useTournamentViewer,
+} from "../../lib/client/tournament.js";
 import { AffiliationEditor } from "../tournament-forecaster/affiliation-editor.js";
 import styles from "./welcome-step.module.css";
 
@@ -22,7 +25,7 @@ export function WelcomeStep({ returnTo }: { readonly returnTo: string }) {
   const signedOut = viewerQuery.isSuccess && viewer === null;
 
   useEffect(() => {
-    if (signedOut) router.replace(signInHref(welcomeHref(returnTo)));
+    if (signedOut) router.replace(signInHref(returnTo));
   }, [signedOut, returnTo, router]);
 
   if (viewerQuery.isError) {
@@ -79,7 +82,8 @@ export function WelcomeStep({ returnTo }: { readonly returnTo: string }) {
         />
 
         <p className={styles.notice}>
-          <strong>Forecasts are public.</strong> Every forecast you submit is shown under your name.
+          <strong>{PUBLIC_FORECAST_HEADING}</strong> Every forecast you submit is shown under your
+          name.
         </p>
       </section>
     </div>

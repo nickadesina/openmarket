@@ -4,6 +4,7 @@ import { withReadRoute } from "../../../../../lib/api/request-context.js";
 import { jsonSuccess } from "../../../../../lib/api/response.js";
 import { restrictionsInputSchema } from "../../../../../lib/api/tournament-schemas.js";
 import { requireTournamentUserId } from "../../../../../lib/auth/tournament-session.js";
+import { consumeProfileRateLimit } from "../../../../../lib/services/tournament/profile-rate-limit.js";
 import {
   attestRestrictions,
   getRestrictions,
@@ -28,6 +29,7 @@ export function POST(request: Request): Promise<Response> {
     assertOnlyQueryParameters(new URL(request.url).searchParams, []);
     const userId = await requireTournamentUserId(context.db, request);
     const input = await parseMutationBody(request, restrictionsInputSchema, 2_048);
+    await consumeProfileRateLimit(context.db, userId, request);
     const result = await attestRestrictions(context.db, userId, input.companies);
     return jsonSuccess(result, { requestId: context.requestId });
   });

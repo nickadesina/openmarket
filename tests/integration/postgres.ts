@@ -11,7 +11,7 @@ import {
 import { createPooledDatabase, destroyDatabase } from "../../src/lib/db/client.js";
 import { createMigrator } from "../../src/lib/db/migrator.js";
 import type { CompanyRow, Database, MarketRow } from "../../src/lib/db/schema.js";
-import { seedBinaryMarket } from "../../src/lib/engine/seed.js";
+import { seedBinary } from "../../src/lib/engine/dealer/binary.js";
 import { settleLmsrBook } from "../../src/lib/services/dealer/settle-lmsr-book.js";
 import { upsertIdentity } from "../../src/lib/services/tournament/sign-in.js";
 import { ensurePaperAccount } from "../../src/lib/services/user.js";
@@ -266,7 +266,7 @@ export async function createBinaryBook(
   },
 ): Promise<{ readonly company: CompanyRow; readonly market: MarketRow }> {
   const b = input.b ?? 100;
-  const seeded = seedBinaryMarket(input.yesProbability ?? 0.5, b);
+  const seeded = seedBinary(input.yesProbability ?? 0.5, b);
   return db.transaction().execute(async (transaction) => {
     const name = input.name ?? "Integration Market";
     const company = await transaction
@@ -290,7 +290,7 @@ export async function createBinaryBook(
         sigma: null,
         initial_q: [...seeded.q],
         q: [...seeded.q],
-        current_metric: seeded.currentMetric,
+        current_metric: seeded.yesProbability,
         settled_at: null,
       })
       .returningAll()

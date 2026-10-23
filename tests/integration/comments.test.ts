@@ -476,7 +476,7 @@ postgresDescribe(suiteName, () => {
       request(path, {}, await sessionCookie(postgres.db, user.tournamentUserId)),
       context,
     );
-    expect(ordinary.status).toBe(401);
+    expect(ordinary.status).toBe(403);
     expect(await ordinary.json()).toMatchObject({ error: { code: "ADMIN_REQUIRED" } });
     const admin = await createTrader(postgres.db, "comment_admin");
     const adminCookie = await sessionCookie(postgres.db, admin.tournamentUserId);
