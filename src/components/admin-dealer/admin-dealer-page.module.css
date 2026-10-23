@@ -63,6 +63,11 @@
   font-size: var(--font-size-lg);
 }
 
+.count {
+  color: var(--color-ink-muted);
+  font-family: var(--font-num);
+}
+
 .gatePanel {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -225,6 +230,26 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
+}
+
+/* Reject is final with nothing to check it against: ink, like every
+   irreversible admin action, and set apart from the confirms. */
+.reject {
+  composes: buttonBase from "../../styles/shared.module.css";
+  margin-left: var(--space-3);
+  border: 1px solid var(--color-negative-action);
+  background: var(--color-negative-action);
+  color: #ffffff;
+}
+
+.reject:hover {
+  border-color: var(--color-negative-action-hover);
+  background: var(--color-negative-action-hover);
+}
+
+/* Outranks the gap above when no confirming flag precedes it. */
+.actions .reject:first-child {
+  margin-left: 0;
 }
 
 .skeleton {

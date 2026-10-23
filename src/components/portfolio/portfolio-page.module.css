@@ -40,7 +40,6 @@
 
 .pageHeader p,
 .sectionHeader p,
-.emptyState p,
 .statePanel p,
 .sellFlowHeader p,
 .quoteTime {
@@ -220,16 +219,8 @@
   color: var(--color-positive);
 }
 
-.positive::before {
-  content: "Gain ";
-}
-
 .negative {
   color: var(--color-negative);
-}
-
-.negative::before {
-  content: "Loss ";
 }
 
 .flat {
@@ -312,10 +303,6 @@
   color: var(--color-ink);
 }
 
-.secondaryLink {
-  composes: secondaryButton;
-}
-
 .secondaryButton:hover {
   border-color: var(--color-primary);
   background: var(--color-surface-elevated);
@@ -385,7 +372,6 @@
   margin-top: var(--space-4);
 }
 
-.emptyState,
 .statePanel {
   padding: var(--space-6);
   border: 1px solid var(--color-border-strong);
@@ -393,12 +379,26 @@
   background: var(--color-surface);
 }
 
-.emptyState h3 {
-  margin: 0 0 var(--space-2);
-  font-size: var(--font-size-md);
+/* An empty section is one ruled line: what is missing, then the next step. */
+.emptyLine {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
 }
 
-.emptyState a,
+.emptyLine strong {
+  color: var(--color-ink);
+}
+
+.emptyLine a {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--color-primary);
+  text-underline-offset: 0.1875em;
+}
+
 .statePanel a,
 .statePanel button {
   margin-top: var(--space-4);
@@ -571,7 +571,6 @@
     flex: 1;
   }
 
-  .emptyState,
   .statePanel {
     padding: var(--space-5);
   }

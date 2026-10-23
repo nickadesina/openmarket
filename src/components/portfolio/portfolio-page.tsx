@@ -72,8 +72,8 @@ function pnl(valueUsd: number | null): {
   if (valueUsd === null) return { text: "Not available" };
   if (valueUsd === 0) return { className: styles.flat, text: formatUsd(0) };
   return valueUsd > 0
-    ? { className: styles.positive, text: `+${formatUsd(valueUsd)}` }
-    : { className: styles.negative, text: `−${formatUsd(Math.abs(valueUsd))}` };
+    ? { className: styles.positive, text: `Gain +${formatUsd(valueUsd)}` }
+    : { className: styles.negative, text: `Loss −${formatUsd(Math.abs(valueUsd))}` };
 }
 
 function PortfolioSkeleton() {
@@ -651,13 +651,10 @@ export function PortfolioPage() {
           </div>
         </div>
         {portfolio.forwardPositions.length === 0 ? (
-          <div className={styles.emptyState}>
-            <h3>No open forwards</h3>
-            <p>Go long or short a name&apos;s next post-money from its market page.</p>
-            <Link href="/m" className={styles.secondaryLink}>
-              Browse markets
-            </Link>
-          </div>
+          <p className={styles.emptyLine}>
+            <strong>No open forwards.</strong> Go long or short a name&apos;s next post-money from
+            its <Link href="/m">market page</Link>.
+          </p>
         ) : (
           <ul className={`${styles.positionList} ${styles.marketList}`}>
             {portfolio.forwardPositions.map((position) => (
@@ -678,10 +675,10 @@ export function PortfolioPage() {
         </div>
 
         {portfolio.markets.length === 0 ? (
-          <div className={styles.emptyState}>
-            <h3>No binary shares</h3>
-            <p>Buy YES or NO from a market page. Shares appear here after execution.</p>
-          </div>
+          <p className={styles.emptyLine}>
+            <strong>No binary shares.</strong> Buy YES or NO from a market page; shares appear here
+            after execution.
+          </p>
         ) : (
           <div className={styles.marketList}>
             {portfolio.markets.map((market) => (
@@ -740,14 +737,18 @@ export function PortfolioPage() {
         </div>
 
         {portfolio.tradeHistory.items.length === 0 ? (
-          <div className={styles.emptyState}>
-            <h3>{offset === 0 ? "No trades yet" : "No more trades"}</h3>
-            <p>
-              {offset === 0
-                ? "Completed forwards, buys and sells will be recorded here."
-                : "Return to the previous page to review newer activity."}
-            </p>
-          </div>
+          <p className={styles.emptyLine}>
+            {offset === 0 ? (
+              <>
+                <strong>No trades yet.</strong> Completed forwards, buys and sells are recorded
+                here.
+              </>
+            ) : (
+              <>
+                <strong>No more trades.</strong> Newer trades are on the previous page.
+              </>
+            )}
+          </p>
         ) : (
           <ul className={styles.historyList}>
             {portfolio.tradeHistory.items.map((trade) => (
