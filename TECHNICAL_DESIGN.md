@@ -101,9 +101,9 @@ released at settlement or void.
 
 ## 4. Ingestion — not built (milestone 4, decision 0001)
 
-Planned: `/api/cron/ingest`, every 15 minutes from a GitHub Actions workflow
-with `Authorization: Bearer $CRON_SECRET` and `X-Run-Id` (the
-`dealer.yml` pattern: `requireCronSecret` in `src/lib/auth/cron.ts`,
+Planned: `/api/cron/ingest`, every 15 minutes from Vercel Cron
+with `Authorization: Bearer $CRON_SECRET` and a UTC slot run ID
+(manual callers may supply `X-Run-Id`; the dealer route pattern: `requireCronSecret` in `src/lib/auth/cron.ts`,
 `runCronJob` in `src/lib/services/dealer/cron-run.ts`). Five names only.
 
 | Source | Method | Flags |
@@ -333,11 +333,11 @@ Anthropic Series D has no dated close.
 
 | Concern | Choice |
 | --- | --- |
-| Scheduling | GitHub Actions workflows `dealer.yml` (15 min at :05/:20/:35/:50: state, list, mids, requote, reference), `settle.yml` (hourly at :41: promote, resolve, settle or void, roll) → `/api/cron/*` with `CRON_SECRET` and `X-Run-Id`; `ingest.yml` is not built; `vercel.json` has no crons |
-| Idempotency | `cron_runs.run_id` unique (the `event_flags.run_id` FK needs it); reruns exit early |
+| Scheduling | Vercel Cron (Pro), configured in `vercel.json`: dealer at :05/:20/:35/:50, settle hourly at :41, provenance hourly at :07; bearer `CRON_SECRET`. Routes have a 300 s limit. Ingest is not built. The daily 06:23 UTC `dealer-alerts.yml` Action checks widening and successful-run freshness (dealer ≤1 h; settle/provenance ≤3 h), excluding its own `alerts-` probes. |
+| Idempotency | `cron_runs.run_id` unique; explicit `X-Run-Id` wins, otherwise Vercel uses job/UTC interval slots, other callers use a UUID. Provenance additionally batches hours under an advisory lock; invocation records cover idle hours and posting errors. |
 | LLM extraction | not built: planned as one provider behind `src/lib/services/ingest/extract.ts` with `EXTRACT_API_KEY` |
 | Secrets | `CRON_SECRET`, the tournament's X OAuth credentials, the Solana provenance key (`.env.example`); `EXTRACT_API_KEY` and `EDGAR_USER_AGENT` arrive with ingest |
-| Observability | `/admin/dealer`: `dealer_pnl`, live instruments, recent runs, pending rank 3–4 promotions (read-only), the evidence queue, `source_health` (empty until ingest); `dealer-alerts.yml` fails daily if any instrument is widened > 72 h; the silent-source (24 h) check ships with ingest |
+| Observability | `/admin/dealer`: `dealer_pnl`, live instruments, recent runs, pending rank 3–4 promotions (read-only), the evidence queue, `source_health` (empty until ingest); `dealer-alerts.yml` fails daily if any instrument is widened > 72 h or a scheduled job is stale/missing; the silent-source (24 h) check ships with ingest |
 | Replay | `verify:replay` rebuilds quotes-derived state, forward payouts and `reference_prices` |
 | Migration | `007_dealer` is additive; `008` (owner-approved, deletes data) removed the ladder markets, Stripe and the username accounts; `011_tournament_bridge` is additive; `npm run seed:listings` idempotent on `(company, listed_at)` |
 

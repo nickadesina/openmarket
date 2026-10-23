@@ -10,6 +10,7 @@ import {
   getProvenanceProof,
   postPendingBatches,
 } from "../../src/lib/services/tournament/provenance.js";
+import { runProvenanceJob } from "../../src/lib/services/tournament/run-provenance-job.js";
 import { upsertIdentity } from "../../src/lib/services/tournament/sign-in.js";
 import {
   forecastEventHash,
@@ -331,6 +332,33 @@ postgresDescribe(suiteName, () => {
     const proof = await getProvenanceProof(postgres.db, eventIds[0]!);
     expect(proof.batch?.txSignature).toMatch(/^[1-9A-HJ-NP-Za-km-z]{64,88}$/);
     expect(proof.batch?.confirmedAt).not.toBeNull();
+  });
+
+  it("records posting errors as a failed invocation without changing the report", async () => {
+    const failedRpc = vi.fn(async () => {
+      throw new Error("RPC unavailable");
+    });
+    const report = await runProvenanceJob(
+      postgres.db,
+      "provenance-failure",
+      testWallet(),
+      failedRpc,
+    );
+    expect(report).toMatchObject({
+      posting: {
+        errors: expect.arrayContaining([expect.objectContaining({ message: "RPC unavailable" })]),
+      },
+    });
+    expect(
+      await postgres.db
+        .selectFrom("cron_runs")
+        .select(["status", "finished_at"])
+        .where("run_id", "=", "provenance-failure")
+        .executeTakeFirstOrThrow(),
+    ).toMatchObject({
+      status: "failed",
+      finished_at: expect.any(Date),
+    });
   });
 
   it("serves the proof publicly and guards the cron route with its secret", async () => {

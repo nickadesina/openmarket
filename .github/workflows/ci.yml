@@ -62,8 +62,25 @@ jobs:
       - name: Build Next.js
         run: npm run build
 
-      - name: Install Playwright Chromium
+      - name: Read installed Playwright version
+        id: playwright-version
         if: ${{ hashFiles('playwright.config.*') != '' && hashFiles('tests/browser/**') != '' }}
+        run: node -p '"version=" + require("@playwright/test/package.json").version' >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright Chromium
+        id: playwright-cache
+        if: ${{ hashFiles('playwright.config.*') != '' && hashFiles('tests/browser/**') != '' }}
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-${{ runner.arch }}-playwright-chromium-${{ steps.playwright-version.outputs.version }}
+
+      - name: Install Chromium system dependencies on cache hit
+        if: ${{ steps.playwright-cache.outputs.cache-hit == 'true' }}
+        run: npm exec -- playwright install-deps chromium
+
+      - name: Install Playwright Chromium on cache miss
+        if: ${{ steps.playwright-version.outputs.version != '' && steps.playwright-cache.outputs.cache-hit != 'true' }}
         run: npm exec -- playwright install --with-deps chromium
 
       - name: Run Playwright critical flow

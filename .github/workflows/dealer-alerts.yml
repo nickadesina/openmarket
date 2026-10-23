@@ -6,8 +6,10 @@ name: Dealer alerts
 # it means the dealer job has stopped running or keeps being re-flagged.
 #
 # The check reads the `health` block of the dealer job's own response: this
-# workflow fires one extra dealer run under its own X-Run-Id (it posts only
-# what moved, like every run) and reads health.widened_over_hold.
+# workflow fires one extra dealer run under its own alerts- X-Run-Id (which
+# cannot collide with vercel: slot IDs). Health excludes all alert probes from
+# job freshness so this check cannot mask a stopped scheduler. It also fails
+# when dealer success is older than 1 h, or settle/provenance older than 3 h.
 #
 # Deliberately not built here: the silent-source alert (a source with no
 # success in 24 h) and the print-without-a-preceding-scoop counter. Both
@@ -29,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Check for instruments widened past the hold
+      - name: Check widened instruments and scheduled job freshness
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           REPOSITORY_IS_FORK: ${{ github.event.repository.fork }}
@@ -58,5 +60,16 @@ jobs:
           if [ "$count" -gt 0 ]; then
             echo "$body" | jq -r '.health.widened_over_hold.instruments[]
               | "::error::\(.company) \(.kind) widened since \(.widened_since) (\(.hours_widened | floor) h)"'
+            exit 1
+          fi
+          # Fail closed if a deployment omits or malforms the freshness report.
+          if ! echo "$body" | jq -e '
+            .health.jobs as $jobs |
+            ($jobs | type == "array") and
+            ([$jobs[].job] | sort == ["dealer", "provenance", "settle"]) and
+            all($jobs[]; .stale == false and (.last_succeeded_at | type == "string"))
+          ' >/dev/null; then
+            echo "::error::A scheduled job is stale, has never succeeded, or its health report is missing."
+            echo "$body" | jq '.health.jobs'
             exit 1
           fi
