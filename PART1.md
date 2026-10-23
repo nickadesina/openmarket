@@ -1,8 +1,6 @@
 # Part 1 — Mathematical Core
 
-All parallel work lands in this repository and shares the contracts below. Part 1 intentionally excludes Next.js, PostgreSQL, routes, authentication, and UI.
-
-Milestone 6 note: the 41-bucket ladder no longer trades. The LMSR engine now prices the dealer's two-outcome binary; the grid and the quantile serve the read-only implied distribution (`distribution.ts`). `twap.ts` and `decomposition.ts` are deleted.
+Reference for `src/lib/engine` (excluding `engine/dealer` and `engine/tournament`, which `AGENTS.md` and `CONTRACTS.md` cover): no Next.js, PostgreSQL, routes, authentication or UI. The LMSR engine prices the dealer's two-outcome binary; the 41-bucket grid and the quantile serve only the read-only implied distribution (`distribution.ts`).
 
 ## Shared invariants
 
@@ -14,7 +12,7 @@ Milestone 6 note: the 41-bucket ladder no longer trades. The LMSR engine now pri
 - Public functions validate vector lengths and never mutate caller-owned arrays.
 - ESM imports include `.js` so NodeNext compilation and emitted JavaScript agree.
 
-## Parallel ownership
+## Modules
 
 - Grid/contracts: `buckets.ts`, `contracts.ts`, matching tests.
 - LMSR/spend solver/cash rounding: `lmsr.ts`, matching tests.
@@ -24,4 +22,4 @@ Milestone 6 note: the 41-bucket ladder no longer trades. The LMSR engine now pri
 
 ## Completion gate
 
-`npm test` and `npm run typecheck` must pass. Property tests cover PMF normalization, strike monotonicity, YES+NO full-set cost, path independence, spend caps, and the implied distribution's monotone tail probabilities.
+`npm run check` and `npm run test:unit` must pass. Property tests cover PMF normalization, strike monotonicity, YES+NO full-set cost, path independence, spend caps, and the implied distribution's monotone tail probabilities.

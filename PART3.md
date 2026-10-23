@@ -4,7 +4,7 @@ Part 3 consumes the verified mathematical and transaction layers in `PART1.md` a
 
 ## Shared rules
 
-- Read `/Users/nick/tmp/openmarket/TECHNICAL_DESIGN.md`, `PART1.md`, and `PART2.md` before editing.
+- Read `TECHNICAL_DESIGN.md`, `PART1.md`, and `PART2.md` before editing.
 - Database-backed route handlers export `runtime = "nodejs"`; no Edge runtime.
 - Multi-query payloads run in one repeatable-read, read-only Kysely transaction.
 - Dates serialize as ISO strings; bigint/numeric database values serialize as strings; never serialize JavaScript `bigint`.
@@ -17,7 +17,7 @@ Part 3 consumes the verified mathematical and transaction layers in `PART1.md` a
 
 Milestone 6 replaced the ladder read model with the listing read model (README D11):
 
-- `listMarkets(db, options?) -> Promise<MarketListResult>`: every active listing, by open interest; each carries its live binary and forward quote (the `GET /api/instruments/[id]/quote` shape), the implied distribution, open interest, `model_version` and `rulebook_version`.
+- `listMarkets(db, options?) -> Promise<MarketListResult>`: every active listing, by open interest; each carries its live binary and forward quote (the `GET /api/instruments/[id]/quote` shape), the implied distribution, open interest, `modelVersion` and `rulebookVersion` (the nested quotes keep the snake_case `model_version`/`rulebook_version` of the quote route).
 - `getMarket(db, slug, options?) -> Promise<ListingDetail>`: one listed name's view plus every epoch of both contracts by market id.
 - `getMarks(db, marketId, range, options?) -> Promise<MarkHistory>`: one book's marks by market id, live or settled; ranges `1h|1d|1w|all`; timestamp then sequence order; raw for 1h/1d; final-observation time-bucket downsampling for 1w/all; a forward's current level is its latest model mid.
 - `downsampleMarks(points, maxPoints) -> points`: pure, non-mutating, ordered first/last preserving final-observation buckets.
