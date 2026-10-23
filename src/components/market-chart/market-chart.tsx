@@ -3,7 +3,7 @@
 import type { UTCTimestamp } from "lightweight-charts";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { formatDateTime, formatMetricPrice } from "../../lib/client/format.js";
+import { formatDateTime, formatPrice } from "../../lib/client/format.js";
 import type { MarkHistory, MarkRange } from "../market-workspace/types.js";
 import styles from "./market-chart.module.css";
 
@@ -106,7 +106,6 @@ export function MarketChart({
 }: MarketChartProps) {
   const chartNode = useRef<HTMLDivElement>(null);
   const [renderFailed, setRenderFailed] = useState(false);
-  const kind = marks?.metricKind ?? "forward_ln";
 
   // A book has a level from its listing mark on; a quiet range holds the level
   // in force at the window start and ends at the current one.
@@ -116,15 +115,15 @@ export function MarketChart({
     const last = marks.currentMetric;
     const delta = last - first;
     const direction = delta > 0 ? "rose" : delta < 0 ? "fell" : "held";
-    const magnitude = formatMetricPrice(Math.abs(delta), kind);
+    const magnitude = formatPrice(Math.abs(delta));
     const quiet =
       marks.points.length === 0
         ? `No fills in the ${range} range${lastTradeAt === null ? "" : `; the last was on ${formatDateTime(lastTradeAt)}`}. `
         : "";
     return delta === 0
-      ? `${quiet}${label} held at ${formatMetricPrice(last, kind)} through the ${range} range.`
-      : `${quiet}${label} ${direction} by ${magnitude} during the ${range} range, from ${formatMetricPrice(first, kind)} to ${formatMetricPrice(last, kind)}.`;
-  }, [kind, label, lastTradeAt, marks, range]);
+      ? `${quiet}${label} held at ${formatPrice(last)} through the ${range} range.`
+      : `${quiet}${label} ${direction} by ${magnitude} during the ${range} range, from ${formatPrice(first)} to ${formatPrice(last)}.`;
+  }, [label, lastTradeAt, marks, range]);
 
   useEffect(() => {
     const container = chartNode.current;
@@ -177,18 +176,7 @@ export function MarketChart({
           handleScale: true,
         });
 
-        const priceFormat =
-          kind === "yes_probability"
-            ? ({
-                type: "custom",
-                formatter: (value: number) => `${(value * 100).toFixed(1)}%`,
-                minMove: 0.001,
-              } as const)
-            : ({
-                type: "custom",
-                formatter: (value: number) => formatMetricPrice(value, kind),
-                minMove: 1,
-              } as const);
+        const priceFormat = { type: "custom", formatter: formatPrice, minMove: 1 } as const;
         // A held level is a flat line; autoscaled, its axis would repeat one
         // label at every tick. Frame it with a band either side instead.
         const flat = [marks.openValue, ...marks.points.map((point) => point.value)].every(
@@ -235,7 +223,7 @@ export function MarketChart({
       observer?.disconnect();
       cleanupChart?.();
     };
-  }, [kind, label, marks, range]);
+  }, [label, marks, range]);
 
   return (
     <section className={styles.section} aria-labelledby="market-chart-title">

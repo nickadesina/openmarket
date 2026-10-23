@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../src/lib/logging/server-log.js", () => ({
   logReadRequest: vi.fn(),
+  logMutationRequest: vi.fn(),
   logUnexpectedError: vi.fn(),
 }));
 

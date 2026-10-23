@@ -7,6 +7,7 @@ import { apiRequest, POLL_INTERVAL_MS } from "../../lib/client/api.js";
 import {
   formatCents,
   formatDateTime,
+  formatForwardNotional,
   formatPrice,
   formatQuantityShort,
   formatUsd,
@@ -34,7 +35,7 @@ function ActivityRow({ item }: { readonly item: ActivityItem }) {
         {forward ? (
           <p>
             <span className={styles.buy}>{sideLabel(item.side)}</span>{" "}
-            <strong>{formatCents(String(Math.round(item.quantity * 100)))}</strong>{" "}
+            <strong>{formatForwardNotional(item.quantity)}</strong>{" "}
             <span className={styles.muted}>forward at</span>{" "}
             <strong>{item.entryUsd === null ? "—" : formatPrice(item.entryUsd)}</strong>
           </p>
@@ -99,7 +100,7 @@ export function HomeActivity({ initialData }: { readonly initialData?: ActivityP
     return <ActivitySkeleton />;
   }
 
-  if (activityQuery.isError) {
+  if (activityQuery.isError && activityQuery.data === undefined) {
     return (
       <div className={styles.state} role="alert">
         <strong>Activity is unavailable.</strong>
@@ -111,7 +112,7 @@ export function HomeActivity({ initialData }: { readonly initialData?: ActivityP
     );
   }
 
-  if (activityQuery.data.items.length === 0) {
+  if (activityQuery.data!.items.length === 0) {
     return (
       <div className={styles.state}>
         <strong>No public trades yet.</strong>
@@ -121,10 +122,17 @@ export function HomeActivity({ initialData }: { readonly initialData?: ActivityP
   }
 
   return (
-    <ol className={styles.list} aria-label="Recent public trades">
-      {activityQuery.data.items.map((item) => (
-        <ActivityRow key={`${item.marketId}-${item.marketSequence}`} item={item} />
-      ))}
-    </ol>
+    <>
+      {activityQuery.isError ? (
+        <p className={styles.state} role="status">
+          Unable to refresh. Showing the latest confirmed trades.
+        </p>
+      ) : null}
+      <ol className={styles.list} aria-label="Recent public trades">
+        {activityQuery.data!.items.map((item) => (
+          <ActivityRow key={`${item.marketId}-${item.marketSequence}`} item={item} />
+        ))}
+      </ol>
+    </>
   );
 }

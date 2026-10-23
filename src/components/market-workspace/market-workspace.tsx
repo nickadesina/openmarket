@@ -115,6 +115,15 @@ function MobileRestriction({ name, profileHref }: RestrictionProps) {
   );
 }
 
+/** The first load, or a retry after a failed poll; never an ordinary background poll. */
+function showsActivityLoading(query: {
+  readonly isLoading: boolean;
+  readonly isError: boolean;
+  readonly isFetching: boolean;
+}): boolean {
+  return query.isLoading || (query.isError && query.isFetching);
+}
+
 export function MarketWorkspace({
   slug,
   initialListing,
@@ -187,10 +196,11 @@ export function MarketWorkspace({
     const refetchOptions = { throwOnError: true };
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.market(slug) }, refetchOptions),
-      queryClient.invalidateQueries({ queryKey: ["openmarket", "book"] }, refetchOptions),
-      queryClient.invalidateQueries({ queryKey: ["openmarket", "instrument"] }, refetchOptions),
+      queryClient.invalidateQueries({ queryKey: queryKeys.books }, refetchOptions),
+      queryClient.invalidateQueries({ queryKey: queryKeys.instruments }, refetchOptions),
       queryClient.invalidateQueries({ queryKey: queryKeys.activity(slug) }, refetchOptions),
       queryClient.invalidateQueries({ queryKey: queryKeys.portfolio }, refetchOptions),
+      queryClient.invalidateQueries({ queryKey: queryKeys.identity }, refetchOptions),
       queryClient.invalidateQueries({ queryKey: queryKeys.markets }, refetchOptions),
     ]);
   }, [queryClient, slug]);
@@ -296,7 +306,7 @@ export function MarketWorkspace({
       <MarketActivity
         listing={listing}
         activity={activityQuery.data}
-        loading={activityQuery.isFetching}
+        loading={showsActivityLoading(activityQuery)}
         error={activityQuery.isError}
         onRetry={() => void activityQuery.refetch()}
       />

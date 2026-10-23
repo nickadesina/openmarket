@@ -195,3 +195,59 @@ test("home and a market page fit a phone width", async ({ page }) => {
     await expectNoHorizontalOverflow(page);
   }
 });
+
+test("binary spend rejects exponent and fractional cents before requesting a quote", async ({
+  page,
+}) => {
+  await page.goto("/m/anduril");
+  const ticket = await openTicket(page);
+  await ticket.getByRole("button", { name: "Binary", exact: true }).click();
+  const spend = ticket.getByRole("spinbutton", { name: /Spend/ });
+  for (const invalid of ["1e2", "10.555"]) {
+    await spend.fill(invalid);
+    await expect(ticket.getByRole("button", { name: "Preview buy" })).toBeDisabled();
+  }
+});
+
+test("header sign-in can open the portfolio after a signed-out market visit", async ({
+  page,
+}, testInfo) => {
+  test.skip(isMobile(page), "Header development sign-in is a desktop control.");
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/m/modal");
+  const form = page.getByRole("form", { name: "Development sign-in" });
+  await form
+    .getByRole("textbox", { name: "Development handle" })
+    .fill(uniqueHandle("header", testInfo));
+  await form.getByRole("button", { name: "Dev sign in" }).click();
+  await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeVisible();
+  await page
+    .getByRole("navigation", { name: "Primary navigation" })
+    .getByRole("link", { name: "Portfolio", exact: true })
+    .click();
+  await expect(page.getByRole("heading", { name: "Portfolio", exact: true })).toBeVisible();
+  await expect(page.getByLabel("Portfolio summary")).toContainText("$100,000.00");
+  expect(errors).toEqual([]);
+});
+
+test("portfolio retry recovers a failed identity read", async ({ page, baseURL }, testInfo) => {
+  await signInDev(page, baseURL, uniqueHandle("retry", testInfo));
+  let failIdentity = true;
+  await page.route("**/api/portfolio?offset=0&limit=1", async (route) => {
+    if (failIdentity) {
+      await route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ error: { code: "INTERNAL_ERROR", message: "Unavailable" } }),
+      });
+    } else {
+      await route.continue();
+    }
+  });
+  await page.goto("/portfolio");
+  await expect(page.getByRole("heading", { name: "We could not load your account" })).toBeVisible();
+  failIdentity = false;
+  await page.getByRole("button", { name: "Retry portfolio" }).click();
+  await expect(page.getByLabel("Portfolio summary")).toContainText("$100,000.00");
+});

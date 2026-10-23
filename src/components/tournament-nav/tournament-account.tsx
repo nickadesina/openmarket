@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
-import { apiRequest } from "../../lib/client/api.js";
+import { apiRequest, requestPortfolioIdentity } from "../../lib/client/api.js";
 import { errorMessage, formatCents, formatForecasterName } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
 import { forecasterHref, signInHref, useTournamentViewer } from "../../lib/client/tournament.js";
@@ -55,12 +55,12 @@ export function DevSignIn() {
 
 /** The signed-in viewer's paper cash; the first read opens the account at $100,000. */
 function PaperCash() {
+  // One account read shared with the comments module and the portfolio page;
+  // null when signed out.
   const portfolio = useQuery({
-    queryKey: queryKeys.portfolio,
-    queryFn: () =>
-      apiRequest<{ readonly cashBalanceCents: string }>("/api/portfolio?offset=0&limit=1"),
+    queryKey: queryKeys.identity,
+    queryFn: requestPortfolioIdentity,
   });
-  // The comments module caches a signed-out read as null under the same key.
   if (portfolio.data == null) return null;
   return (
     <span className={`${styles.accountCash} ${styles.wideOnly}`}>

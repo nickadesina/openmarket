@@ -4,7 +4,7 @@ import { ServiceError } from "../api/errors.js";
 import { MODEL_VERSION } from "../config/dealer.js";
 import type { Database } from "../db/schema.js";
 import { RULEBOOK_VERSION } from "../engine/dealer/rulebook.js";
-import { type ListingView, loadListings, readListing } from "./get-market.js";
+import { type ListingView, loadListings, readListings } from "./get-market.js";
 
 /**
  * `GET /api/markets`: every active listing (README D10), each read as
@@ -35,10 +35,11 @@ export async function listMarkets(
     .setIsolationLevel("repeatable read")
     .setAccessMode("read only")
     .execute(async (transaction) => {
-      const listings: ListingView[] = [];
-      for (const listing of await loadListings(transaction, { active: at })) {
-        listings.push(await readListing(transaction, listing, at));
-      }
+      const listings = await readListings(
+        transaction,
+        await loadListings(transaction, { active: at }),
+        at,
+      );
       listings.sort(
         (left, right) =>
           right.openInterest.totalUsd - left.openInterest.totalUsd ||

@@ -10,9 +10,18 @@ export interface ReadRequestLog {
 }
 
 export function logReadRequest(event: ReadRequestLog): void {
+  logRequest("read_request", event);
+}
+
+/** A mutation's outcome, in the read log's shape: never its body, cookie or idempotency key. */
+export function logMutationRequest(event: ReadRequestLog): void {
+  logRequest("mutation_request", event);
+}
+
+function logRequest(name: "read_request" | "mutation_request", event: ReadRequestLog): void {
   const entry = {
     level: event.status >= 500 ? "error" : "info",
-    event: "read_request",
+    event: name,
     requestId: event.requestId,
     method: event.method,
     pathname: event.pathname,
