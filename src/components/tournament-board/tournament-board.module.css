@@ -8,11 +8,14 @@
 }
 
 .table th {
-  font-family: var(--font-caps);
   font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
+}
+
+/* The caps voice inherits from the head to its cells. Letter-spacing in em
+   computes where it is declared, so the head takes the cells' label size. */
+.head {
+  composes: capsLabel from "../../styles/shared.module.css";
+  font-size: var(--font-size-xs);
 }
 
 .table {

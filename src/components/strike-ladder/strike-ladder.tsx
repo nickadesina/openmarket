@@ -110,7 +110,7 @@ export function StrikeLadder({ distribution }: StrikeLadderProps) {
 
       <div className={styles.tableScroller}>
         <table className={styles.table}>
-          <thead>
+          <thead className={styles.head}>
             <tr>
               <th scope="col" className={styles.strikeHead}>
                 Valuation above

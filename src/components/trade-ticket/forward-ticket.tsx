@@ -446,7 +446,9 @@ function ForwardNotices({ order }: { readonly order: ReturnType<typeof useForwar
 
       {result !== null ? (
         <div className={styles.success} role="status">
-          <strong>{result.side === "long" ? "Long" : "Short"} filled</strong>
+          <strong className={styles.successTitle}>
+            {result.side === "long" ? "Long" : "Short"} filled
+          </strong>
           <p>
             {formatCents(result.notional_cents)} notional at {formatPrice(result.entry_usd)};{" "}
             {formatCents(result.collateral_cents)} collateral posted, held to settlement or void.{" "}

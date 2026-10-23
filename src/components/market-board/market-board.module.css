@@ -24,17 +24,20 @@
   border-collapse: collapse;
 }
 
+/* The caps voice inherits from the head to its cells. Letter-spacing in em
+   computes where it is declared, so the head takes the cells' label size. */
+.head {
+  composes: capsLabel from "../../styles/shared.module.css";
+  font-size: var(--font-size-xs);
+}
+
 .table thead th {
   padding: var(--space-3);
   border-bottom: 1px solid var(--color-border);
   border-right: 1px solid var(--color-border-subtle);
   color: var(--color-ink);
-  font-family: var(--font-caps);
   font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--tracking-caps);
   text-align: left;
-  text-transform: uppercase;
 }
 
 .table thead th:last-child {

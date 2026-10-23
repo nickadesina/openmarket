@@ -218,7 +218,7 @@ function ResolutionModule({
         <p className={styles.muted}>Nobody forecast this question.</p>
       ) : (
         <table className={styles.table}>
-          <thead>
+          <thead className={styles.head}>
             <tr>
               <th scope="col" className={styles.figureCell}>
                 #
@@ -267,7 +267,7 @@ function ForecastsTable({
   return (
     <table className={`${styles.table} ${styles.forecastTable}`}>
       <caption className={styles.visuallyHidden}>Latest forecast per forecaster</caption>
-      <thead>
+      <thead className={styles.head}>
         <tr>
           <th scope="col">Forecaster</th>
           <th scope="col" className={styles.figureCell}>

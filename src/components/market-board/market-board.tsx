@@ -163,7 +163,7 @@ export function MarketBoard({
             Listed names with the forward&apos;s mid and two-way quote, the level against the last
             round, the quarterly binary&apos;s YES price, and open interest
           </caption>
-          <thead>
+          <thead className={styles.head}>
             <tr>
               <th scope="col">Name</th>
               <th scope="col">Forward mid</th>

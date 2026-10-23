@@ -40,12 +40,9 @@
   line-height: var(--line-height-normal);
 }
 
-.disclosure strong {
+.disclosureLead {
+  composes: capsLabel from "../../styles/shared.module.css";
   color: var(--color-ink);
-  font-family: var(--font-caps);
-  font-weight: 700;
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
 }
 
 @media (max-width: 72rem) {

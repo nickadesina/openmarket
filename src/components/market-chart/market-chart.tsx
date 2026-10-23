@@ -248,6 +248,7 @@ export function MarketChart({
             <button
               key={item}
               type="button"
+              className={styles.range}
               aria-pressed={range === item}
               onClick={() => onRangeChange(item)}
             >

@@ -34,32 +34,27 @@
   background: var(--color-bg);
 }
 
-.ranges button {
+.range {
+  composes: capsLabel from "../../styles/shared.module.css";
+  min-width: 2.5rem;
   min-height: 1.75rem;
+  padding-inline: var(--space-2);
   border: 0;
   color: var(--color-ink-muted);
   background: transparent;
-  font: inherit;
   font-size: var(--font-size-xs);
-  font-weight: 600;
   cursor: pointer;
-}
-
-.ranges button {
-  min-width: 2.5rem;
-  padding-inline: var(--space-2);
-  text-transform: uppercase;
 }
 
 /* A pressed setting fills ink, like the ticket's toggles; red stays with prices.
    The hover pair outranks the generic ink hover text below. */
-.ranges button[aria-pressed="true"],
-.ranges button[aria-pressed="true"]:hover {
+.range[aria-pressed="true"],
+.range[aria-pressed="true"]:hover {
   color: #ffffff;
   background: var(--color-ink);
 }
 
-.ranges button:hover,
+.range:hover,
 .stale button:hover {
   color: var(--color-ink);
 }

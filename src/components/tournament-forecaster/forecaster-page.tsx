@@ -57,15 +57,15 @@ function OpenPositionRow({
       </div>
       <dl className={styles.figures}>
         <div>
-          <dt>{ownLabel}</dt>
+          <dt className={styles.figureLabel}>{ownLabel}</dt>
           <dd className={styles.own}>{formatTournamentForecast(position, position) ?? "—"}</dd>
         </div>
         <div>
-          <dt>Crowd</dt>
+          <dt className={styles.figureLabel}>Crowd</dt>
           <dd>{crowdHeadline(position)}</dd>
         </div>
         <div>
-          <dt>Revisions</dt>
+          <dt className={styles.figureLabel}>Revisions</dt>
           <dd>{position.submissionCount}</dd>
         </div>
       </dl>
@@ -149,7 +149,7 @@ export function ForecasterPage({
           </p>
         </div>
         <dl className={styles.total}>
-          <dt>Total score</dt>
+          <dt className={styles.figureLabel}>Total score</dt>
           <dd>{formatScore(profile.totalScore)}</dd>
         </dl>
       </header>
@@ -184,7 +184,7 @@ export function ForecasterPage({
           <p className={styles.empty}>No resolved questions yet.</p>
         ) : (
           <table className={styles.table}>
-            <thead>
+            <thead className={styles.head}>
               <tr>
                 <th scope="col">Question</th>
                 <th scope="col">Outcome</th>

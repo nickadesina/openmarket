@@ -100,45 +100,25 @@
   gap: var(--space-3);
 }
 
+/* The shared spec table laid out as an auto-fit grid of label/value pairs,
+   each pair ruled on its right and foot; the box keeps only its top and left. */
 .specTable {
-  display: grid;
+  composes: specTable from "../../styles/shared.module.css";
+  --spec-label: auto;
+  --spec-pad: var(--space-2);
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-  margin: 0;
-  border-top: 1px solid var(--color-border);
-  border-left: 1px solid var(--color-border);
+  border-right: 0;
+  border-bottom: 0;
 }
 
 .specTable > div {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  min-height: var(--row-compact);
   border-right: 1px solid var(--color-border);
   border-bottom: 1px solid var(--color-border);
 }
 
-.specTable dt {
-  display: flex;
-  align-items: center;
-  padding: 0 var(--space-2);
-  border-right: 1px solid var(--color-border-subtle);
-  background: var(--color-surface-hover);
-  font-family: var(--font-caps);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
-}
-
-.specTable dd {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  margin: 0;
-  padding: 0 var(--space-2);
-  font-family: var(--font-num);
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  text-align: right;
+/* Outranks the shared stacked rows' top hairline: pairs sit side by side. */
+.specTable > div + div {
+  border-top: 0;
 }
 
 .specTable .priceFigure {
@@ -185,12 +165,15 @@
   padding: 0 var(--space-2);
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface-hover);
-  font-family: var(--font-caps);
   font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--tracking-caps);
   text-align: left;
-  text-transform: uppercase;
+}
+
+/* The caps voice inherits from the head to its cells. Letter-spacing in em
+   computes where it is declared, so the head takes the cells' label size. */
+.head {
+  composes: capsLabel from "../../styles/shared.module.css";
+  font-size: var(--font-size-xs);
 }
 
 .table td {
@@ -427,13 +410,10 @@
   font-size: var(--font-size-xs);
 }
 
-.stamp span {
+.stampLabel {
+  composes: capsLabel from "../../styles/shared.module.css";
   padding: var(--space-1) var(--space-2);
   border-right: 1px solid var(--color-ink);
-  font-family: var(--font-caps);
-  font-weight: 700;
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
 }
 
 .stamp time {

@@ -111,7 +111,7 @@ function PnlModule({ pnl }: { readonly pnl: Payload["pnl"] }) {
       ) : (
         <div className={styles.scroller}>
           <table className={styles.table}>
-            <thead>
+            <thead className={styles.head}>
               <tr>
                 <th scope="col">Name</th>
                 <th scope="col">Instrument</th>
@@ -150,7 +150,7 @@ function PnlModule({ pnl }: { readonly pnl: Payload["pnl"] }) {
                   </tr>
                 ))}
                 <tr className={styles.totalRow}>
-                  <th scope="row" colSpan={3}>
+                  <th scope="row" colSpan={3} className={styles.totalLabel}>
                     {listing.company} total (bound: live instruments)
                   </th>
                   <td className={styles.figure}>
@@ -196,7 +196,7 @@ function InstrumentsModule({ data }: { readonly data: Payload }) {
       ) : (
         <div className={styles.scroller}>
           <table className={styles.table}>
-            <thead>
+            <thead className={styles.head}>
               <tr>
                 <th scope="col">Name</th>
                 <th scope="col">Instrument</th>
@@ -247,13 +247,13 @@ function RunsModule({ cronRuns }: { readonly cronRuns: Payload["cron_runs"] }) {
       <div className={styles.jobs}>
         {cronRuns.map(({ job, runs }) => (
           <div key={job} className={styles.job}>
-            <h3>{job}</h3>
+            <h3 className={styles.jobName}>{job}</h3>
             {runs.length === 0 ? (
               <p className={styles.muted}>No {job} runs yet.</p>
             ) : (
               <div className={styles.scroller}>
                 <table className={styles.table}>
-                  <thead>
+                  <thead className={styles.head}>
                     <tr>
                       <th scope="col">Started</th>
                       <th scope="col">Status</th>
@@ -314,7 +314,7 @@ function QueueModule({ queue }: { readonly queue: Payload["resolution_queue"] })
       ) : (
         <div className={styles.scroller}>
           <table className={styles.table}>
-            <thead>
+            <thead className={styles.head}>
               <tr>
                 <th scope="col">Name</th>
                 <th scope="col">Flag</th>
@@ -459,7 +459,7 @@ function EvidenceModule({ queue }: { readonly queue: Payload["evidence_queue"] }
       ) : (
         <div className={styles.scroller}>
           <table className={styles.table}>
-            <thead>
+            <thead className={styles.head}>
               <tr>
                 <th scope="col">Name</th>
                 <th scope="col">Claimed</th>
@@ -498,7 +498,7 @@ function SourcesModule({ sources }: { readonly sources: Payload["sources"] }) {
       ) : (
         <div className={styles.scroller}>
           <table className={styles.table}>
-            <thead>
+            <thead className={styles.head}>
               <tr>
                 <th scope="col">Source</th>
                 <th scope="col">Last success</th>

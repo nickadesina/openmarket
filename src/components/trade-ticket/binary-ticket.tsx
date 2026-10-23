@@ -525,7 +525,7 @@ function BinaryNotices({ order }: { readonly order: ReturnType<typeof useBinaryO
 
       {result !== null ? (
         <div className={styles.success} role="status">
-          <strong>Trade completed</strong>
+          <strong className={styles.successTitle}>Trade completed</strong>
           <p>
             {formatQuantity(result.shares)} {result.side.toUpperCase()} shares at{" "}
             {formatContractPrice(result.average_price)} average.{" "}

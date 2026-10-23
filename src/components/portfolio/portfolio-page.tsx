@@ -117,6 +117,7 @@ function SaleReview({
   return (
     <div className={styles.quoteReview}>
       <QuoteReview
+        labelClassName={styles.label}
         rows={[
           { label: "Shares", value: formatQuantity(quote.quantity) },
           { label: "Average price", value: formatContractPrice(quote.average_price) },
@@ -377,15 +378,15 @@ function BinaryPositionRow({
         </div>
         <dl className={styles.positionMetrics}>
           <div>
-            <dt>Mark</dt>
+            <dt className={styles.label}>Mark</dt>
             <dd>{formatContractPrice(position.markPriceUsd)}</dd>
           </div>
           <div>
-            <dt>Marked value</dt>
+            <dt className={styles.label}>Marked value</dt>
             <dd>{formatUsd(position.markedValueUsd)}</dd>
           </div>
           <div>
-            <dt>Approx. avg. price</dt>
+            <dt className={styles.label}>Approx. avg. price</dt>
             <dd>
               {basis?.approximateAveragePriceUsd == null
                 ? "Not available"
@@ -393,11 +394,11 @@ function BinaryPositionRow({
             </dd>
           </div>
           <div>
-            <dt>Approx. cost basis</dt>
+            <dt className={styles.label}>Approx. cost basis</dt>
             <dd>{basis === null ? "Not available" : formatCents(basis.approximateNetCostCents)}</dd>
           </div>
           <div>
-            <dt>Approx. P&L</dt>
+            <dt className={styles.label}>Approx. P&L</dt>
             <dd className={approximatePnl.className}>{approximatePnl.text}</dd>
           </div>
         </dl>
@@ -437,25 +438,25 @@ function ForwardPositionRow({ position }: { readonly position: PortfolioForwardP
         </div>
         <dl className={styles.positionMetrics}>
           <div>
-            <dt>Entry</dt>
+            <dt className={styles.label}>Entry</dt>
             <dd>{formatPrice(position.entryUsd)}</dd>
           </div>
           <div>
-            <dt>Mid now</dt>
+            <dt className={styles.label}>Mid now</dt>
             <dd>{formatPrice(position.midUsd)}</dd>
           </div>
           <div>
-            <dt>Collateral</dt>
+            <dt className={styles.label}>Collateral</dt>
             <dd>{formatCents(position.collateralCents)}</dd>
           </div>
           <div>
-            <dt>Max gain / loss</dt>
+            <dt className={styles.label}>Max gain / loss</dt>
             <dd>
               {formatCents(position.maxGainCents)} / {formatCents(position.maxLossCents)}
             </dd>
           </div>
           <div>
-            <dt>Unrealised</dt>
+            <dt className={styles.label}>Unrealised</dt>
             <dd className={unrealised.className}>{unrealised.text}</dd>
           </div>
         </dl>
@@ -617,23 +618,23 @@ export function PortfolioPage() {
 
       <dl className={styles.summaryBand} aria-label="Portfolio summary">
         <div>
-          <dt>Cash</dt>
+          <dt className={styles.label}>Cash</dt>
           <dd>{formatCents(portfolio.cashBalanceCents)}</dd>
         </div>
         <div>
-          <dt>Forward collateral</dt>
+          <dt className={styles.label}>Forward collateral</dt>
           <dd>{formatCents(portfolio.forwardCollateralCents)}</dd>
         </div>
         <div>
-          <dt>Forward unrealised</dt>
+          <dt className={styles.label}>Forward unrealised</dt>
           <dd className={unrealised.className}>{unrealised.text}</dd>
         </div>
         <div>
-          <dt>Binary holdings</dt>
+          <dt className={styles.label}>Binary holdings</dt>
           <dd>{formatUsd(portfolio.holdingsMarkedValueUsd)}</dd>
         </div>
         <div className={styles.accountValue}>
-          <dt>Account value</dt>
+          <dt className={styles.label}>Account value</dt>
           <dd>{formatUsd(portfolio.accountValueUsd)}</dd>
         </div>
       </dl>

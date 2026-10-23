@@ -29,8 +29,8 @@ export default async function TournamentIndex() {
       </header>
       <TournamentBoard initialQuestions={questions} />
       <p className={styles.disclosure}>
-        <strong>No money moves here.</strong> The tournament produces a ranking per prize period;
-        prizes, if any, are handled off-platform.
+        <strong className={styles.disclosureLead}>No money moves here.</strong> The tournament
+        produces a ranking per prize period; prizes, if any, are handled off-platform.
       </p>
     </div>
   );

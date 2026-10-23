@@ -32,7 +32,7 @@ function Field({ label, children }: { readonly label: string; readonly children:
   return (
     // biome-ignore lint/a11y/noLabelWithoutControl: the control is passed as children and rendered inside the label.
     <label className={styles.field}>
-      <span>{label}</span>
+      <span className={styles.fieldLabel}>{label}</span>
       {children}
     </label>
   );
@@ -271,13 +271,13 @@ function QuestionActions({ question }: { readonly question: AdminQuestion }) {
       ) : null}
       {question.status === "open" ? (
         <details>
-          <summary>Close early</summary>
+          <summary className={styles.actionSummary}>Close early</summary>
           <CloseForm question={question} />
         </details>
       ) : null}
       {question.status === "closed" || (question.status === "resolved" && inDisputeWindow) ? (
         <details>
-          <summary>
+          <summary className={styles.actionSummary}>
             {question.status === "resolved" ? "Correct resolution (dispute window)" : "Resolve"}
           </summary>
           <ResolveForm question={question} />
@@ -285,13 +285,13 @@ function QuestionActions({ question }: { readonly question: AdminQuestion }) {
       ) : null}
       {question.status === "resolved" ? (
         <details>
-          <summary>Record a dispute outcome</summary>
+          <summary className={styles.actionSummary}>Record a dispute outcome</summary>
           <NoteForm question={question} action="notes" />
         </details>
       ) : null}
       {question.storedStatus !== "resolved" || inDisputeWindow ? (
         <details>
-          <summary>
+          <summary className={styles.actionSummary}>
             {question.storedStatus === "resolved" ? "Void (dispute window)" : "Void"}
           </summary>
           <NoteForm question={question} action="void" />

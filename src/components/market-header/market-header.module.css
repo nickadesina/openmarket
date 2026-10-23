@@ -61,13 +61,10 @@
   border-left: 1px solid var(--color-border-subtle);
 }
 
-.cell dt {
+.label {
+  composes: capsLabel from "../../styles/shared.module.css";
   color: var(--color-ink-muted);
-  font-family: var(--font-caps);
   font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
 }
 
 .cell dd {

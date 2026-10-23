@@ -49,11 +49,11 @@ export function HomeStats({
       <h1 className={styles.visuallyHidden}>Valuation markets</h1>
       <dl className={styles.facts}>
         <div className={styles.cell}>
-          <dt>Open interest</dt>
+          <dt className={styles.label}>Open interest</dt>
           <dd>{marketsUnavailable ? "Unavailable" : formatCompactUsd(openInterest)}</dd>
         </div>
         <div className={styles.cell}>
-          <dt>Last trade</dt>
+          <dt className={styles.label}>Last trade</dt>
           <dd>
             {/* ICU output differs between Node and the browser; the client value wins. */}
             <time dateTime={lastTrade} suppressHydrationWarning>

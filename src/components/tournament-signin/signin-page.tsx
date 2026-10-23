@@ -133,7 +133,7 @@ export function SignInPage({
           </div>
           <form className={styles.form} onSubmit={onSubmit}>
             <label className={styles.field}>
-              <span>Username</span>
+              <span className={styles.fieldLabel}>Username</span>
               <input
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
@@ -145,7 +145,7 @@ export function SignInPage({
               />
             </label>
             <label className={styles.field}>
-              <span>Password</span>
+              <span className={styles.fieldLabel}>Password</span>
               <input
                 type="password"
                 value={password}

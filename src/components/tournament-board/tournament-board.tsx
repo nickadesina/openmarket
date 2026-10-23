@@ -90,7 +90,7 @@ export function TournamentBoard({
       ) : (
         <table className={styles.table}>
           <caption className={styles.visuallyHidden}>Tournament questions</caption>
-          <thead>
+          <thead className={styles.head}>
             <tr>
               <th scope="col">Question</th>
               <th scope="col">Crowd</th>
