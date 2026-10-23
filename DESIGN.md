@@ -211,7 +211,7 @@ Six roles: 11 / 13 / 15 / 18 / 24 / 32px. The four text steps climb at ~1.2; the
 
 **The Price Precision Rule.** A quoted level (forward mid, bid, ask, entry, window change, quantile) is formatted with `formatPrice` at four significant digits ($1.117T, $84.27B) so adjacent levels never collapse into the same label. Reported figures (anchors, settlement values) and grid strikes keep the coarser `formatValuation` form because that is how they were published.
 
-**The Baseline Rule.** Every change over a window is measured from the level in force when the window began: the latest mark at or before the window start, else the first mark, else the current metric. The chart summary and its opening point share it. The board and the strips state the forward mid against the last public round instead, a figure the API returns and that is never empty.
+**The Baseline Rule.** Every change over a window is measured from the level in force when the window began: the latest mark at or before the window start, else the first mark, else the current metric. The chart summary and its opening point share it. The board and the market page's Quote Band state the forward mid against the last public round instead, a figure the API returns and that is never empty.
 
 **The Fixed Ramp Rule.** Type sizes are fixed steps from the token ramp (0.6875 / 0.8125 / 0.9375 / 1.125 / 1.5 / 2rem, plus `--font-size-micro` 0.5625rem for seal caps only); no component declares a literal `font-size`; responsive changes swap steps at breakpoints, never fluid `clamp()` type. (The one sanctioned clamp is the page gutter, which is space, not type.)
 
