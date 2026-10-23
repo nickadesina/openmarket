@@ -24,10 +24,12 @@
   background: var(--color-surface);
 }
 
+/* Sticks clear of the sticky site header; the ticket scrolls inside it and
+   pins its action to the rail's foot (trade-ticket.module.css → .submitBar). */
 .tradeRail {
   position: sticky;
-  top: var(--space-4);
-  max-height: calc(100dvh - (var(--space-4) * 2));
+  top: calc(var(--header-height) + var(--space-4));
+  max-height: calc(100dvh - var(--header-height) - (var(--space-4) * 2));
   overflow-y: auto;
   align-self: start;
 }

@@ -596,7 +596,7 @@ function BinaryOrderButton({ order }: { readonly order: ReturnType<typeof useBin
 function BinarySubmit({ order }: { readonly order: ReturnType<typeof useBinaryOrder> }) {
   const { view, result, orderPending, phase } = order;
   return (
-    <>
+    <div className={styles.submitBar}>
       <BinaryOrderButton order={order} />
       <ApprovalStrip
         quoted={view !== null || result !== null || orderPending}
@@ -604,7 +604,7 @@ function BinarySubmit({ order }: { readonly order: ReturnType<typeof useBinaryOr
         filled={result !== null}
         unknown={orderPending}
       />
-    </>
+    </div>
   );
 }
 

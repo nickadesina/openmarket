@@ -474,7 +474,7 @@ function ForwardSubmit({ order }: { readonly order: ReturnType<typeof useForward
     submit,
   } = order;
   return (
-    <>
+    <div className={styles.submitBar}>
       {orderPending ? (
         <PendingOrderActions
           executing={phase === "executing"}
@@ -507,7 +507,7 @@ function ForwardSubmit({ order }: { readonly order: ReturnType<typeof useForward
         filled={result !== null}
         unknown={orderPending}
       />
-    </>
+    </div>
   );
 }
 

@@ -315,6 +315,22 @@
   line-height: 1.45;
 }
 
+/* The action and the approval strip it drives stay in view: the rail and the
+   phone sheet scroll the ticket inside a viewport-tall box, and a quote runs
+   the ticket past a 900px fold. Pinned to that box's foot, bled to the
+   ticket's edges over the body padding. */
+.submitBar {
+  position: sticky;
+  z-index: 1;
+  bottom: 0;
+  display: grid;
+  gap: var(--space-3);
+  margin: 0 calc(var(--space-5) * -1) calc(var(--space-5) * -1);
+  padding: var(--space-3) var(--space-5) max(var(--space-5), env(safe-area-inset-bottom));
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
 /* 稟議 approval strip: three ruled boxes, sealed as the order clears each. */
 .approvals {
   display: grid;
