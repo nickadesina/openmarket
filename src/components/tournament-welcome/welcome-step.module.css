@@ -39,15 +39,7 @@
 }
 
 .secondaryButton {
-  composes: buttonBase from "../../styles/shared.module.css";
-  border: 1px solid var(--color-ink);
-  background: var(--color-surface);
-  color: var(--color-ink);
-}
-
-.secondaryButton:hover {
-  border-color: var(--color-primary);
-  background: var(--color-primary-subtle);
+  composes: secondaryButton from "../../styles/shared.module.css";
 }
 
 .notice {
@@ -69,17 +61,9 @@
 }
 
 .statePanel {
-  display: grid;
+  composes: statePanel from "../../styles/shared.module.css";
   width: min(100%, 28rem);
-  gap: var(--space-2);
   padding: var(--space-4);
-  border: 1px solid var(--color-border);
-}
-
-.statePanel p {
-  margin: 0;
-  color: var(--color-ink-muted);
-  font-size: var(--font-size-sm);
 }
 
 .actions {

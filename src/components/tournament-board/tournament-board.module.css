@@ -85,28 +85,12 @@
 }
 
 .statePanel {
-  display: grid;
-  max-width: 60ch;
-  gap: var(--space-2);
-  padding: var(--space-5);
-  border: 1px solid var(--color-border);
-}
-
-.statePanel p {
-  margin: 0;
-  color: var(--color-ink-muted);
+  composes: statePanel from "../../styles/shared.module.css";
 }
 
 .retry {
-  composes: buttonBase from "../../styles/shared.module.css";
+  composes: secondaryButton from "../../styles/shared.module.css";
   justify-self: start;
-  border: 1px solid var(--color-ink);
-  background: var(--color-surface);
-}
-
-.retry:hover {
-  border-color: var(--color-primary);
-  background: var(--color-primary-subtle);
 }
 
 .skeleton {

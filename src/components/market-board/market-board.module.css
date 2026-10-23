@@ -195,49 +195,15 @@
 }
 
 .state {
-  display: flex;
+  composes: statePanel from "../../styles/shared.module.css";
+  max-width: none;
   min-height: 8rem;
-  padding: var(--space-5);
-  border: 1px solid var(--color-border);
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-5);
-  background: var(--color-bg);
-}
-
-.state strong {
-  font-size: var(--font-size-md);
-}
-
-.state p {
-  max-width: 60ch;
-  margin: var(--space-1) 0 0;
-  color: var(--color-ink-muted);
-  font-size: var(--font-size-sm);
+  align-content: center;
 }
 
 .retry {
-  min-height: var(--control-height);
-  padding: 0 var(--space-3);
+  composes: secondaryButton from "../../styles/shared.module.css";
   flex: 0 0 auto;
-  border: 1px solid var(--color-border-strong);
-  background: var(--color-bg);
-  color: var(--color-ink);
-  cursor: pointer;
-  font-family: var(--font-caps);
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
-  white-space: nowrap;
-  transition:
-    border-color var(--duration-fast) var(--ease-out),
-    background-color var(--duration-fast) var(--ease-out);
-}
-
-.retry:hover {
-  border-color: var(--color-primary);
-  background: var(--color-primary-subtle);
 }
 
 .skeleton {
@@ -374,11 +340,6 @@
 
   .identityCell {
     grid-column: auto;
-  }
-
-  .state {
-    align-items: flex-start;
-    flex-direction: column;
   }
 
   .skeletonRow {

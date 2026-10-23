@@ -504,7 +504,7 @@ function BinaryNotices({ order }: { readonly order: ReturnType<typeof useBinaryO
           <strong>{errorTitle}</strong>
           <p>{error.message}</p>
           {error.code === "PRICE_MOVED" && movedPrice === null ? (
-            <button type="button" onClick={() => void requestQuote()}>
+            <button type="button" className={styles.secondary} onClick={() => void requestQuote()}>
               Refresh quote
             </button>
           ) : null}

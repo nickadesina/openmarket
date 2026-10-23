@@ -125,46 +125,14 @@
 }
 
 .facts {
-  display: grid;
-  margin: 0;
-  border: 1px solid var(--color-border);
+  composes: specTable from "../../styles/shared.module.css";
+  --spec-label: 6rem;
+  --spec-pad: var(--space-2);
   min-width: 15rem;
 }
 
-.facts > div {
-  display: grid;
-  grid-template-columns: 6rem minmax(0, 1fr);
-}
-
-.facts > div + div {
-  border-top: 1px solid var(--color-border-subtle);
-}
-
-.facts dt,
 .facts dd {
-  display: flex;
-  min-height: var(--row-compact);
-  margin: 0;
-  padding: 0 var(--space-2);
-  align-items: center;
-}
-
-.facts dt {
-  border-right: 1px solid var(--color-border-subtle);
-  background: var(--color-surface-hover);
-  font-family: var(--font-caps);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
-}
-
-.facts dd {
-  justify-content: flex-end;
   gap: var(--space-2);
-  font-family: var(--font-num);
-  font-size: var(--font-size-sm);
-  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -185,12 +153,15 @@
 }
 
 .state {
+  composes: statePanel from "../../styles/shared.module.css";
+  max-width: none;
   padding: var(--space-4);
-  border: 1px solid var(--color-border);
 }
+
 .retry {
-  composes: buttonBase from "../../styles/shared.module.css";
+  composes: secondaryButton from "../../styles/shared.module.css";
 }
+
 .skeleton {
   composes: skeletonBlock from "../../styles/shared.module.css";
   height: var(--space-6);

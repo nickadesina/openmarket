@@ -45,6 +45,9 @@
 
 /* Links run the header's full height so the current route's red rule
    lands on the header's ink foot: a marker, not a second red plate. */
+/* The root layout loads this module before any page re-injects
+   shared.module.css, so a composed property could not be overridden here:
+   the caps voice is restated, not composed (also below). */
 .navLink {
   display: inline-flex;
   min-height: 2.75rem;
@@ -106,8 +109,8 @@
   font-size: var(--font-size-xs);
   font-weight: 700;
   letter-spacing: var(--tracking-plate);
-  text-align: center;
   text-transform: uppercase;
+  text-align: center;
 }
 
 .footerLink {
@@ -149,8 +152,9 @@
     gap: var(--space-3);
   }
 
+  /* The wordmark steps down so the section strip keeps its room. */
   .brandName {
-    font-size: var(--font-size-xl);
+    font-size: var(--font-size-lg);
   }
 
   /* Three sections do not fit beside the wordmark and account at phone

@@ -219,7 +219,11 @@ export function MarketWorkspace({
                 ? "No listed name matches this address."
                 : "Market data is temporarily unavailable. Try again in a moment."}
             </p>
-            <button type="button" onClick={() => void listingQuery.refetch()}>
+            <button
+              type="button"
+              className={styles.retry}
+              onClick={() => void listingQuery.refetch()}
+            >
               Retry market
             </button>
           </div>
@@ -260,7 +264,11 @@ export function MarketWorkspace({
       {listingQuery.isError ? (
         <div className={styles.staleNotice} role="status">
           Live refresh paused. Displaying the latest confirmed market state.
-          <button type="button" onClick={() => void listingQuery.refetch()}>
+          <button
+            type="button"
+            className={styles.staleRetry}
+            onClick={() => void listingQuery.refetch()}
+          >
             Retry
           </button>
         </div>

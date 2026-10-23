@@ -18,19 +18,16 @@
 }
 
 .tab {
+  composes: capsLabel from "../../styles/shared.module.css";
   min-height: var(--control-height);
   padding: 0 var(--space-4);
   border: 1px solid var(--color-border);
   border-bottom: 0;
   background: var(--color-surface-hover);
   color: var(--color-ink-muted);
-  font: inherit;
-  font-family: var(--font-caps);
   font-size: var(--font-size-sm);
-  font-weight: 700;
   letter-spacing: var(--tracking-plate);
   line-height: 1;
-  text-transform: uppercase;
   white-space: nowrap;
   cursor: pointer;
   transition:

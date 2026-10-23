@@ -18,15 +18,8 @@
   line-height: var(--line-height-normal);
 }
 
-.label,
-.tag {
-  font-family: var(--font-caps);
-  font-weight: 700;
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
-}
-
 .label {
+  composes: capsLabel from "../../styles/shared.module.css";
   color: var(--color-ink);
   font-size: var(--font-size-sm);
 }
@@ -45,6 +38,7 @@
 
 /* Outlined in ink like a stamp: a mark on the record, never a fill. */
 .tag {
+  composes: capsLabel from "../../styles/shared.module.css";
   display: inline-block;
   padding: 0 var(--space-1);
   border: 1px solid var(--color-border-strong);

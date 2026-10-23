@@ -236,50 +236,12 @@
 
 /* Quote as a ledger: gray label cells, white value cells, every row ruled. */
 .quoteTable {
-  display: grid;
-  margin: 0;
-  border: 1px solid var(--color-border);
-}
-
-.quoteTable > div {
-  display: grid;
-  grid-template-columns: 8.5rem minmax(0, 1fr);
-}
-
-.quoteTable > div + div {
-  border-top: 1px solid var(--color-border-subtle);
-}
-
-.quoteTable dt,
-.quoteTable dd {
-  display: flex;
-  min-height: var(--row-compact);
-  margin: 0;
-  padding: 0 var(--space-3);
-  align-items: center;
-}
-
-.quoteTable dt {
-  border-right: 1px solid var(--color-border-subtle);
-  background: var(--color-surface-hover);
-  color: var(--color-ink);
-  font-family: var(--font-caps);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
-}
-
-.quoteTable dd {
-  justify-content: flex-end;
-  font-family: var(--font-num);
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  text-align: right;
+  composes: specTable from "../../styles/shared.module.css";
 }
 
 /* Rotary date stamp: boxed caps and numerals, pressed on the quote. */
 .dateStamp {
+  composes: capsLabel from "../../styles/shared.module.css";
   display: inline-flex;
   margin: 0;
   justify-self: start;
@@ -288,11 +250,7 @@
   padding: var(--space-1) var(--space-2);
   border: 1px solid var(--color-ink);
   color: var(--color-ink);
-  font-family: var(--font-caps);
   font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
 }
 
 .dateStamp span {
@@ -378,60 +336,21 @@
 }
 
 .approvalLabel {
+  composes: capsLabel from "../../styles/shared.module.css";
   color: var(--color-ink-muted);
-  font-family: var(--font-caps);
   font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
 }
 
 .approval[aria-current="step"] .approvalLabel {
   color: var(--color-ink);
 }
 
-.primary,
-.secondary,
-.error button {
-  min-height: var(--control-height);
-  padding-inline: var(--space-4);
-  font: inherit;
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  cursor: pointer;
-  transition:
-    background var(--duration-fast) var(--ease-out),
-    color var(--duration-fast) var(--ease-out),
-    border-color var(--duration-fast) var(--ease-out);
-}
-
 .primary {
-  border: 1px solid var(--color-primary-action);
-  color: #ffffff;
-  background: var(--color-primary-action);
+  composes: primaryButton from "../../styles/shared.module.css";
 }
 
-.primary,
 .secondary {
-  font-family: var(--font-caps);
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
-}
-
-.primary:hover:not(:disabled) {
-  background: var(--color-primary-action-hover);
-}
-
-.primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.secondary,
-.error button {
-  border: 1px solid var(--color-border);
-  color: var(--color-ink);
-  background: var(--color-surface-elevated);
+  composes: secondaryButton from "../../styles/shared.module.css";
 }
 
 .error,
@@ -449,7 +368,7 @@
   color: var(--color-primary);
 }
 
-.error button {
+.error .secondary {
   margin-top: var(--space-3);
 }
 
@@ -476,19 +395,4 @@
   gap: var(--space-3);
   border: 1px solid var(--color-primary);
   background: var(--color-primary-subtle);
-}
-
-/* The sign-in action is a link styled as the primary button. */
-.signIn .primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .primary,
-  .secondary,
-  .error button {
-    transition: none;
-  }
 }

@@ -75,14 +75,11 @@
 }
 
 .rulesLink {
+  composes: capsLabel from "../../styles/shared.module.css";
   color: var(--color-ink);
-  font-family: var(--font-caps);
   font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--tracking-caps);
   text-decoration: underline;
   text-decoration-color: var(--color-primary);
-  text-transform: uppercase;
 }
 
 .crowd,
@@ -171,12 +168,9 @@
 }
 
 .subheading {
+  composes: capsLabel from "../../styles/shared.module.css";
   margin: 0;
-  font-family: var(--font-caps);
   font-size: var(--font-size-sm);
-  font-weight: 700;
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
 }
 
 .table {
@@ -244,12 +238,9 @@
 }
 
 .noteStamp {
+  composes: capsLabel from "../../styles/shared.module.css";
   color: var(--color-ink-muted);
-  font-family: var(--font-caps);
   font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
 }
 
 .proofLink {
@@ -335,13 +326,11 @@
 
 /* The field's name: caps voice, and the label of the one input under it. */
 .fieldHead {
+  composes: capsLabel from "../../styles/shared.module.css";
   margin: 0;
-  font-family: var(--font-caps);
   font-size: var(--font-size-sm);
-  font-weight: 700;
   letter-spacing: var(--tracking-plate);
   line-height: 1;
-  text-transform: uppercase;
 }
 
 .inputFrame {
@@ -419,15 +408,8 @@
 }
 
 .secondaryButton {
-  composes: buttonBase from "../../styles/shared.module.css";
+  composes: secondaryButton from "../../styles/shared.module.css";
   justify-self: start;
-  border: 1px solid var(--color-ink);
-  background: var(--color-surface);
-}
-
-.secondaryButton:hover:not(:disabled) {
-  border-color: var(--color-primary);
-  background: var(--color-primary-subtle);
 }
 
 .error {

@@ -407,6 +407,7 @@ function ForwardNotices({ order }: { readonly order: ReturnType<typeof useForwar
           {fill?.refusal === "exceeds_cap" ? (
             <button
               type="button"
+              className={styles.secondary}
               onClick={() => changeNotional((Number(fill.max_notional_cents) / 100).toFixed(2))}
             >
               Use maximum
@@ -420,7 +421,11 @@ function ForwardNotices({ order }: { readonly order: ReturnType<typeof useForwar
           <strong>{errorTitle}</strong>
           <p>{error.message}</p>
           {capMaxUsd !== null && Number(capMaxUsd) > 0 ? (
-            <button type="button" onClick={() => changeNotional(capMaxUsd)}>
+            <button
+              type="button"
+              className={styles.secondary}
+              onClick={() => changeNotional(capMaxUsd)}
+            >
               Use maximum
             </button>
           ) : null}
