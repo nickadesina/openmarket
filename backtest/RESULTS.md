@@ -6,7 +6,7 @@ Parameters: Q = $25k, κ = 1.0, b = $2k, s_floor = 0.05, p_floor = 0.05,
 event-flag widening on Tier-1 leaks (spread ×3, Q ÷2, 72 h; the
 binary's b is never changed),
 leave-one-out tier prior, Weibull hazard k = 1.6 with λ = 11 / 7
-months (mega / red-hot), hazard jump to 0.80 within 60 days of a leak.
+months (mega / red-hot), hazard jump to 0.80 if expiry is within 60 days of a leak, 0.95 otherwise.
 
 ## The one-paragraph version
 

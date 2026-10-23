@@ -41,7 +41,7 @@ else.
   The floor equals the binary clamp and binds only past a 1/ε = 1,000×
   miss (100 · (1 − log₂ 1000) = 100 · log₂ 0.002 = −896.6).
 - The crowd publishes from five forecasters, as today. The blend's input
-  becomes simpler: `p_yes` for a binary, the forward median already in
+  becomes simpler: `p` for a binary, the forward median already in
   ln USD (no median-from-buckets, no open-end bounds).
 - No floor bucket anywhere. "Nothing happened by expiry" is NO on a
   binary and void on a forward, which is what the contracts already say
@@ -159,10 +159,13 @@ name (it is the source rank). Score columns keep their names.
 
 ## Workstreams
 
+*Historical: how 0004 was built (PRs #18–#21). Statements of what the
+code did "today" describe it before the change.*
+
 Six agents, disjoint files. W0 goes first and is small, W1–W4 run in
 parallel against the pinned interface, W5 goes last. No workstream edits
 another's files; a needed change goes back to this document. Each has a
-self-contained brief in `docs/prompts/tournament-contracts/` (`README.md`
+self-contained brief in `docs/archive/prompts/tournament-contracts/` (`README.md`
 there has the branch scheme and dispatch order); the summaries below are
 the boundaries.
 
@@ -239,6 +242,8 @@ release below as a checklist. Release itself is Nick's; no agent touches
 production.
 
 ## Release
+
+*Historical: the runbook used for the 0004 release.*
 
 1. Neon: snapshot production (`ep-empty-hill`); `down` refuses once
    questions exist, so the snapshot is the rollback.
