@@ -25,9 +25,12 @@
 /* Sticks clear of the sticky site header; the ticket scrolls inside it and
    pins its action to the rail's foot (trade-ticket.module.css → .submitBar). */
 .tradeRail {
+  --rail-gap: var(--space-4);
   position: sticky;
-  top: calc(var(--header-height) + var(--space-4));
-  max-height: calc(100dvh - var(--header-height) - (var(--space-4) * 2));
+  top: calc(var(--header-height) + var(--rail-gap));
+  /* The stuck size; use-rail-fit.ts shrinks it to the room left while the
+     rail still sits lower on the page. */
+  max-height: calc(100dvh - var(--header-height) - (var(--rail-gap) * 2));
   overflow-y: auto;
   align-self: start;
 }
