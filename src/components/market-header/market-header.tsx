@@ -4,8 +4,8 @@ import {
   formatDateTime,
   formatPrice,
   formatProbability,
+  formatRoundMultiple,
   formatValuation,
-  roundChange,
   tierLabel,
 } from "../../lib/client/format.js";
 import { CompanyLogo } from "../company-logo/company-logo.js";
@@ -18,12 +18,6 @@ interface MarketHeaderProps {
   readonly movement: "up" | "down" | "flat";
 }
 
-const directionClass = {
-  up: styles.positive,
-  down: styles.negative,
-  flat: styles.muted,
-} as const;
-
 /**
  * The quote band: one ruled row that reads like a brokerage quote page, name
  * first, then the forward mid (how big), the round it stands against, the
@@ -32,7 +26,7 @@ const directionClass = {
  */
 export function MarketHeader({ listing, movement }: MarketHeaderProps) {
   const { forward, binary, distribution, anchor } = listing;
-  const round = roundChange(listing.vsLastRound);
+  const multiple = formatRoundMultiple(listing.vsLastRound);
   const binaryLabel = listing.binaryEvent === "public_s1" ? "Public S-1" : "Priced round";
 
   return (
@@ -75,17 +69,20 @@ export function MarketHeader({ listing, movement }: MarketHeaderProps) {
           </div>
 
           <div className={styles.cell}>
-            <dt>Vs last round</dt>
-            <dd className={`${styles.figure} ${directionClass[round.direction]}`}>
-              <MovementArrow direction={round.direction} /> {round.label}
-            </dd>
+            <dt>Last round</dt>
+            <dd className={styles.figure}>{formatValuation(anchor.postMoneyUsd)}</dd>
             <dd className={styles.note}>
-              {anchor.round} · {formatValuation(anchor.postMoneyUsd)} ·{" "}
-              <time dateTime={anchor.date}>{formatDate(anchor.date)}</time> ·{" "}
+              {anchor.round} · <time dateTime={anchor.date}>{formatDate(anchor.date)}</time> ·{" "}
               <a href={anchor.sourceUrl} target="_blank" rel="noreferrer">
                 Source
               </a>
             </dd>
+            {multiple === null ? null : (
+              <dd className={styles.note}>
+                The forward mid is {multiple} this: the model's step-up for a{" "}
+                {tierLabel(listing.tier).toLowerCase()} name, until a scoop or print moves it
+              </dd>
+            )}
           </div>
 
           {distribution === null ? null : (

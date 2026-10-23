@@ -127,21 +127,29 @@
   font-variant-numeric: tabular-nums;
 }
 
-.changeCell {
+.roundCell {
   min-width: 7rem;
+}
+
+/* The last public round: a reported figure in ink, never a movement colour. */
+.lastRound {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.lastRound strong {
+  font-family: var(--font-num);
   font-size: var(--font-size-md);
-  font-weight: 600;
+  font-weight: 700;
+  line-height: 1;
 }
 
-.up {
-  color: var(--color-positive);
+.lastRound time {
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
 }
 
-.down {
-  color: var(--color-negative);
-}
-
-.flat,
 .unavailable {
   color: var(--color-ink-muted);
 }
@@ -368,7 +376,8 @@
     text-align: left;
   }
 
-  .binary {
+  .binary,
+  .lastRound {
     justify-items: end;
   }
 }

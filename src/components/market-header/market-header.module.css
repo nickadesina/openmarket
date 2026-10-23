@@ -102,19 +102,6 @@
   text-decoration-color: var(--color-primary);
 }
 
-/* Movement colors are scoped to outrank the ink `.figure` and muted `.note`. */
-.cell .positive {
-  color: var(--color-positive);
-}
-
-.cell .negative {
-  color: var(--color-negative);
-}
-
-.cell .muted {
-  color: var(--color-ink-muted);
-}
-
 .flashUp,
 .flashDown {
   animation: metric-flash var(--duration-standard) var(--ease-out);

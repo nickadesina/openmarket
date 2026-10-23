@@ -78,23 +78,14 @@ export function formatProbability(value: number): string {
  */
 export const formatContractPrice = formatProbability;
 
-/** A relative change magnitude (0.157 → "15.7%"); direction is carried by an arrow and a word. */
-function formatPercent(value: number): string {
-  return probabilityFormatter.format(value);
-}
-
-/** The level against the last public round, from the API's ratio − 1; never empty, unlike a quiet day's change. */
-export function roundChange(change: number | null): {
-  readonly direction: "up" | "down" | "flat";
-  readonly label: string;
-} {
-  if (change === null || !Number.isFinite(change) || change === 0) {
-    return { direction: "flat", label: "Level" };
-  }
-  return {
-    direction: change > 0 ? "up" : "down",
-    label: `${change > 0 ? "Up" : "Down"} ${formatPercent(Math.abs(change))}`,
-  };
+/**
+ * The forward mid as a multiple of the last round, from the API's ratio − 1.
+ * It is the model's expected step-up to the next print, not movement since the
+ * round, so it never renders as an up/down change; null when there is no mid.
+ */
+export function formatRoundMultiple(change: number | null): string | null {
+  if (change === null || !Number.isFinite(change)) return null;
+  return `${(change + 1).toFixed(2)}×`;
 }
 
 export function formatValuation(value: number | string): string {

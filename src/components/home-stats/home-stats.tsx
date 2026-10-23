@@ -9,13 +9,12 @@ import {
   formatCompactUsd,
   formatDateTime,
   formatPrice,
-  roundChange,
+  formatValuation,
 } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
 import type { ListingView } from "../../lib/services/get-market.js";
 import type { MarketListResult } from "../../lib/services/list-markets.js";
 import { CompanyLogo } from "../company-logo/company-logo.js";
-import { MovementArrow } from "../icons/icons.js";
 import styles from "./home-stats.module.css";
 
 function latestTrade(listings: readonly ListingView[]): string | undefined {
@@ -34,7 +33,6 @@ function IndexCell({
   readonly listing: ListingView;
   readonly midUsd: number;
 }) {
-  const movement = roundChange(listing.vsLastRound);
   return (
     <li className={styles.cell}>
       <CompanyLogo name={listing.company.name} logoPath={listing.company.logoPath} size="sm" />
@@ -42,8 +40,8 @@ function IndexCell({
         {listing.company.name}
       </Link>
       <strong className={styles.level}>{formatPrice(midUsd)}</strong>
-      <span className={styles[movement.direction]}>
-        <MovementArrow direction={movement.direction} /> {movement.label} vs last round
+      <span className={styles.lastRound}>
+        Last round {formatValuation(listing.anchor.postMoneyUsd)}
       </span>
     </li>
   );
