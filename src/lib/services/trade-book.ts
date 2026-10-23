@@ -25,7 +25,7 @@ export interface TradeBook {
  * A dealer book by id. With `lock`, the instrument is locked before the book,
  * the order the settle job takes them in.
  */
-async function byId(
+export async function tradeBookById(
   db: Transaction<Database>,
   marketId: string,
   lock: boolean,
@@ -56,15 +56,6 @@ async function byId(
     .where("id", "=", instrument.listing_id)
     .executeTakeFirstOrThrow();
   return { market, dealer: { instrument, pFloor: listing.p_floor } };
-}
-
-/** The open book `reference` names; check a dealer's with assertBookLive once the clock is read. */
-export async function findTradeBook(
-  db: Transaction<Database>,
-  reference: BookReference,
-  lock: boolean,
-): Promise<TradeBook> {
-  return byId(db, reference.market_id, lock);
 }
 
 /** Refuses a dealer book whose instrument is not live at `at`. */

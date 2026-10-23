@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
+import { MAX_FORECAST_LEVEL } from "../engine/tournament/forecast.js";
 import { binaryScore, forwardScore } from "../engine/tournament/score.js";
 import type { Viewer, ViewerForecast } from "../services/tournament/forecaster.js";
 import type { QuestionDetail } from "../services/tournament/get-question.js";
@@ -17,6 +18,11 @@ import { queryKeys } from "./query-keys.js";
 
 /** The forward preview's misses: exact, 10% either side, 2× either side. */
 const FORWARD_MISS_RATIOS = [1, 1.1, 2] as const;
+
+/** A level the forecast service would accept: positive and below its range cap. */
+export function isForecastLevel(value: number | null): value is number {
+  return value !== null && value > 0 && value < MAX_FORECAST_LEVEL;
+}
 
 /** What a forward level scores if it settles exactly there, 10% off, or 2× off, from the engine. */
 export function forwardScoreLadder(level: number): ForwardScoreLadder {

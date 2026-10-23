@@ -33,7 +33,7 @@ import {
  * the reference does (README D14).
  */
 
-export const HISTORY_STREAMS = ["references", "quotes"] as const;
+const HISTORY_STREAMS = ["references", "quotes"] as const;
 
 export interface RefHistoryQuery {
   readonly from?: Date;

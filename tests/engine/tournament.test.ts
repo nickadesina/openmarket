@@ -1,26 +1,23 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
+import { aggregateBinary, aggregateForward } from "../../src/lib/engine/tournament/aggregate.js";
 import {
-  aggregateBinary,
-  aggregateForward,
-  clampProbability,
-} from "../../src/lib/engine/tournament/aggregate.js";
-import {
-  canonicalProbs,
   ForecastError,
   forecastCanonical,
   normalizeForecast,
-  normalizeLevel,
-  normalizeProbability,
 } from "../../src/lib/engine/tournament/forecast.js";
 import {
   binaryScore,
   CLAMP_SCORE,
   forwardScore,
   pointLogScore,
+  SCORE_EPSILON,
   timeAveragedScore,
 } from "../../src/lib/engine/tournament/score.js";
+
+const normalizeProbability = (p: number) => normalizeForecast({ p }, "binary").p!;
+const normalizeLevel = (value: number) => normalizeForecast({ value }, "forward").value!;
 
 const PROPERTY_OPTIONS = { numRuns: 64, seed: 0x7041 } as const;
 
@@ -154,7 +151,7 @@ describe("time-averaged score", () => {
 describe("aggregate", () => {
   it("pools a binary as σ(a · mean logit), clamped, with no renormalization", () => {
     expect(aggregateBinary([0.7], 1)).toBeCloseTo(0.7, 12);
-    expect(aggregateBinary([0], 1)).toBeCloseTo(clampProbability(0), 12);
+    expect(aggregateBinary([0], 1)).toBeCloseTo(SCORE_EPSILON, 12);
     const logit = (p: number) => Math.log(p / (1 - p));
     const expected = 1 / (1 + Math.exp(-1.5 * ((logit(0.6) + logit(0.8)) / 2)));
     expect(aggregateBinary([0.6, 0.8])).toBeCloseTo(expected, 12);
@@ -162,7 +159,7 @@ describe("aggregate", () => {
     expect(aggregateBinary([0.5, 0.5])).toBeCloseTo(0.5, 12);
   });
 
-  it("matches the bucket engine's n = 2 aggregate", () => {
+  it("matches the two-outcome geometric mean of odds", () => {
     // The vector aggregate on [p, 1 − p] pairs, as the old engine computed it.
     const old = (ps: number[], a: number) => {
       const logit = (p: number) => Math.log(p) - Math.log1p(-p);
@@ -239,7 +236,9 @@ describe("canonical payload", () => {
     fc.assert(
       fc.property(probabilityArb, (p) => {
         // The old normalizer rounded each entry of the submitted pair.
-        const old = canonicalProbs([p, 1 - p].map((entry) => Math.round(entry * 1e10) / 1e10));
+        const old = [p, 1 - p]
+          .map((entry) => (Math.round(entry * 1e10) / 1e10).toFixed(10))
+          .join(",");
         expect(forecastCanonical({ p, value: null })).toBe(old);
       }),
       PROPERTY_OPTIONS,

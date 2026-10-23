@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatCentsAsUsd } from "../api/money.js";
 
 import type { ForwardExecutionResult } from "../services/dealer/execute-forward-trade.js";
 import type { ExecutionResult } from "../services/execute-trade.js";
@@ -201,4 +202,30 @@ export function useTradeExecution<Route extends TradeRoute = "/api/trade">(
   }
 
   return { execute, retry, reset, pending: pending?.fields ?? null, canRetry: pending !== null };
+}
+
+export const BINARY_STRIKE_INDEX = 0;
+
+/** Amount entry accepts decimal cents only, then uses the server's canonical wire format. */
+export function canonicalDollarAmount(text: string): string | null {
+  const trimmed = text.trim();
+  if (!/^\d{1,12}(\.\d{1,2})?$/.test(trimmed) || !(Number(trimmed) > 0)) return null;
+  return Number(trimmed).toFixed(2);
+}
+
+/** One percent of slippage, rounded outward in exact integer cents. */
+export function slippageCents(cashCents: string, action: "buy" | "sell"): number {
+  const cents = BigInt(cashCents);
+  return Number(action === "buy" ? (cents * 101n + 99n) / 100n : (cents * 99n) / 100n);
+}
+
+export function binarySlippageGuard(
+  action: "buy" | "sell",
+  spend: string | null,
+  cashCents: string,
+) {
+  if (action === "buy" && spend !== null)
+    return { usd: spend, cents: Math.round(Number(spend) * 100) };
+  const cents = slippageCents(cashCents, action);
+  return { cents, usd: formatCentsAsUsd(cents) };
 }

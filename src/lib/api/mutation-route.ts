@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
 import type { Kysely } from "kysely";
-import type { ZodType } from "zod";
+import type { ZodIssue, ZodType } from "zod";
 import { getRuntimeDatabase } from "../db/runtime.js";
 import type { Database } from "../db/schema.js";
-import { logUnexpectedError } from "../logging/server-log.js";
+import { logMutationRequest, logUnexpectedError } from "../logging/server-log.js";
 import { assertAllowedOrigin } from "../security/origin.js";
-import { isServiceError, ServiceError } from "./errors.js";
-import { jsonError, jsonUnexpectedError, REQUEST_ID_HEADER } from "./response.js";
+import { type ErrorCode, isServiceError, ServiceError } from "./errors.js";
+import { errorCode, jsonError, jsonUnexpectedError, REQUEST_ID_HEADER } from "./response.js";
 
 export const MUTATION_CONTENT_TYPE = "application/json";
 
@@ -57,6 +57,11 @@ async function readBoundedJson(request: Request, maximumBytes: number): Promise<
   return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(Buffer.concat(chunks)));
 }
 
+function firstInvalidPath(issue: ZodIssue | undefined): string {
+  if (issue?.code === "invalid_union") return firstInvalidPath(issue.errors[0]?.[0]);
+  return issue?.path.map(String).join(".") || "body";
+}
+
 export async function parseMutationBody<T>(
   request: Request,
   schema: ZodType<T>,
@@ -71,7 +76,8 @@ export async function parseMutationBody<T>(
 
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
-    throw new ServiceError("INVALID_INPUT", "Request body is invalid.");
+    const path = firstInvalidPath(parsed.error.issues[0]);
+    throw new ServiceError("INVALID_INPUT", `Request body is invalid at ${path}.`);
   }
   return parsed.data;
 }
@@ -81,6 +87,8 @@ export async function withMutationRoute(
   handler: MutationRouteHandler,
 ): Promise<Response> {
   const requestId = randomUUID();
+  const startedAt = performance.now();
+  let failureCode: ErrorCode | "INTERNAL_ERROR" | undefined;
   const context: MutationRouteContext = {
     requestId,
     get db() {
@@ -96,6 +104,7 @@ export async function withMutationRoute(
     response.headers.set("Cache-Control", "no-store");
     response.headers.set(REQUEST_ID_HEADER, requestId);
   } catch (error: unknown) {
+    failureCode = errorCode(error);
     if (isServiceError(error)) {
       response = jsonError(error, requestId);
     } else {
@@ -104,5 +113,13 @@ export async function withMutationRoute(
     }
   }
 
+  logMutationRequest({
+    requestId,
+    method: request.method,
+    pathname: new URL(request.url).pathname,
+    status: response.status,
+    durationMs: performance.now() - startedAt,
+    ...(failureCode === undefined ? {} : { errorCode: failureCode }),
+  });
   return response;
 }

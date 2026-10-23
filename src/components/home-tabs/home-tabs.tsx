@@ -4,7 +4,7 @@ import { type KeyboardEvent, type ReactNode, useId, useRef, useState } from "rea
 
 import styles from "./home-tabs.module.css";
 
-export interface HomeTab {
+interface HomeTab {
   readonly key: string;
   readonly label: string;
   readonly caption: string;

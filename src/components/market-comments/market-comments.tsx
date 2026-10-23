@@ -3,7 +3,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useRef, useState } from "react";
 
-import { ApiClientError, apiRequest } from "../../lib/client/api.js";
+import { ApiClientError, requestPortfolioIdentity } from "../../lib/client/api.js";
 import { formatDateTime, formatForecasterName } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
 import type { MarketComment } from "../../lib/services/list-comments.js";
@@ -15,17 +15,6 @@ import {
 } from "./comment-composer.js";
 import styles from "./market-comments.module.css";
 import { type CommentThread, useCommentThread } from "./use-comment-thread.js";
-
-async function fetchIdentity(): Promise<CommentIdentity | null> {
-  try {
-    return await apiRequest<CommentIdentity>("/api/portfolio?offset=0&limit=1", {
-      cache: "no-store",
-    });
-  } catch (error) {
-    if (error instanceof ApiClientError && error.code === "USER_REQUIRED") return null;
-    throw error;
-  }
-}
 
 function CommentText({ comment }: { readonly comment: MarketComment }) {
   return (
@@ -238,8 +227,8 @@ export function MarketComments({ marketId }: { readonly marketId: string }) {
   const queryClient = useQueryClient();
   const thread = useCommentThread(marketId, null);
   const identityQuery = useQuery({
-    queryKey: queryKeys.portfolio,
-    queryFn: fetchIdentity,
+    queryKey: queryKeys.identity,
+    queryFn: requestPortfolioIdentity,
   });
   const [visibleIds, setVisibleIds] = useState<ReadonlySet<string> | null>(null);
   const [announcement, setAnnouncement] = useState("");
@@ -253,9 +242,9 @@ export function MarketComments({ marketId }: { readonly marketId: string }) {
   async function refreshIdentity(): Promise<CommentIdentity | null> {
     // ACCOUNT_CHANGED requires a new cookie-backed read, not a stale shared-cache
     // hit or an already-running request started before account selection.
-    await queryClient.cancelQueries({ queryKey: queryKeys.portfolio, exact: true });
-    const identity = await fetchIdentity();
-    queryClient.setQueryData(queryKeys.portfolio, identity);
+    await queryClient.cancelQueries({ queryKey: queryKeys.identity, exact: true });
+    const identity = await requestPortfolioIdentity();
+    queryClient.setQueryData(queryKeys.identity, identity);
     return identity;
   }
 

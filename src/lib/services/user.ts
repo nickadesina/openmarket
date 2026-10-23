@@ -1,9 +1,8 @@
 import type { Kysely, Transaction } from "kysely";
-
+import { INITIAL_USER_BALANCE_CENTS } from "../api/money.js";
 import type { Database } from "../db/schema.js";
 
-/** Every paper account opens with $100,000.00 (README D1). */
-export const INITIAL_USER_BALANCE_CENTS = "10000000";
+export { INITIAL_USER_BALANCE_CENTS } from "../api/money.js";
 
 /**
  * The paper account of a tournament user, opened at the initial balance on

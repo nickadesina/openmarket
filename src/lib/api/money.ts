@@ -1,3 +1,6 @@
+/** Every paper account opens at this cent balance (README D1). */
+export const INITIAL_USER_BALANCE_CENTS = "10000000";
+
 export const USD_MAX_LENGTH = 18;
 
 const USD_PATTERN = /^(-?)(0|[1-9]\d*)(?:\.(\d{1,2}))?(?![\s\S])/;

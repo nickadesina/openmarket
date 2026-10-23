@@ -6,11 +6,11 @@ product
 
 ## Users
 
-Analytical users evaluating private-company valuation expectations through paper-money markets. They need to understand implied distributions, compare strikes, place precise YES/NO trades, and monitor portfolio exposure without learning a professional terminal first.
+Analytical users forecasting private-company valuations. They arrive through the forecasting tournament (`/t`): sign in, optionally state an affiliation, then forecast each question — a probability on a quarterly binary, a level on a next post-money — and see how it will be scored before they commit. Beside it, on the same sign-in, paper markets (`/m`) let them read a name's two-way forward quote and implied range, go long or short its next post-money at a dollar notional, buy or sell its quarterly YES/NO binary, and monitor portfolio exposure without learning a professional terminal first.
 
 ## Product Purpose
 
-OpenMarket tests whether a private company’s next reported valuation can behave like a continuously traded price. Success means the implied median, probability ladder, history, execution state, and portfolio remain mathematically coherent and immediately legible before and after every trade.
+OpenMarket tests whether a private company’s next reported valuation can behave like a continuously traded price, and publishes the result as a reference price. Success means the dealer's quotes, the implied ladder, history, execution state, portfolio, and every forecast's score remain mathematically coherent and immediately legible before and after every trade or forecast.
 
 ## Brand Personality
 

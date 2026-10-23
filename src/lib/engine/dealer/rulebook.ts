@@ -1,3 +1,5 @@
+import { assertDate } from "../assert.js";
+
 /**
  * The settlement rulebook as code (README D13, CONTRACTS.md). Pure: it says
  * what counts, how sources rank, and how an instrument resolves from the
@@ -10,7 +12,7 @@
  */
 export const RULEBOOK_VERSION = "1.0.0";
 
-const DAY_MS = 86_400_000;
+import { DAY_MS, utcMidnight } from "../time.js";
 
 export type SourceRank = 1 | 2 | 3 | 4;
 
@@ -190,6 +192,7 @@ export interface RulebookEvent {
 
 /** The last millisecond of the calendar quarter containing `at`, UTC. */
 export function quarterEndCutoff(at: Date): Date {
+  assertDate(at, "at");
   const quarter = Math.floor(at.getUTCMonth() / 3);
   return new Date(Date.UTC(at.getUTCFullYear(), quarter * 3 + 3, 0, 23, 59, 59, 999));
 }
@@ -203,10 +206,6 @@ export function binaryExpiry(listedAt: Date): Date {
   const daysLeft = Math.floor((utcMidnight(cutoff) - utcMidnight(listedAt)) / DAY_MS);
   if (daysLeft >= RULEBOOK.binary.expiry_floor_days) return cutoff;
   return quarterEndCutoff(new Date(cutoff.getTime() + 1));
-}
-
-function utcMidnight(at: Date): number {
-  return Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate());
 }
 
 export type BinaryResolution =
@@ -225,6 +224,7 @@ export function resolveBinary(
   events: readonly RulebookEvent[],
   asOf: Date,
 ): BinaryResolution {
+  validateResolutionDates(terms.opensAt, terms.cutoff, events, asOf);
   const first = earliest(
     events.filter(
       (event) =>
@@ -262,6 +262,7 @@ export function resolveForward(
   events: readonly RulebookEvent[],
   asOf: Date,
 ): ForwardResolution {
+  validateResolutionDates(terms.opensAt, terms.expiresAt, events, asOf);
   const observed = events.filter(
     (event) => event.announcedAt > terms.opensAt && event.announcedAt <= asOf,
   );
@@ -314,7 +315,9 @@ function isPositiveFinite(value: number | undefined): value is number {
   return value !== undefined && Number.isFinite(value) && value > 0;
 }
 
-function afterGrace(deadline: Date, asOf: Date): boolean {
+export function afterGrace(deadline: Date, asOf: Date): boolean {
+  assertDate(deadline, "deadline");
+  assertDate(asOf, "asOf");
   return asOf.getTime() > deadline.getTime() + RULEBOOK.observation_grace_days * DAY_MS;
 }
 
@@ -324,4 +327,16 @@ function earliest(events: readonly RulebookEvent[]): RulebookEvent | undefined {
     if (first === undefined || event.announcedAt < first.announcedAt) first = event;
   }
   return first;
+}
+
+function validateResolutionDates(
+  opensAt: Date,
+  expiresAt: Date,
+  events: readonly RulebookEvent[],
+  asOf: Date,
+): void {
+  assertDate(opensAt, "opensAt");
+  assertDate(expiresAt, "expiresAt");
+  assertDate(asOf, "asOf");
+  for (const event of events) assertDate(event.announcedAt, "announcedAt");
 }
