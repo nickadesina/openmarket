@@ -14,21 +14,11 @@ async function loadQuestions(): Promise<QuestionSummary[] | undefined> {
   }
 }
 
-interface TournamentIndexProps {
-  readonly searchParams: Promise<{ readonly sign_in?: string }>;
-}
-
-export default async function TournamentIndex({ searchParams }: TournamentIndexProps) {
-  const [{ sign_in: signIn }, questions] = await Promise.all([searchParams, loadQuestions()]);
+// A failed X sign-in returns to /t/signin, which explains it (signInFailure).
+export default async function TournamentIndex() {
+  const questions = await loadQuestions();
   return (
     <div className={styles.page}>
-      {signIn === "failed" || signIn === "unavailable" ? (
-        <p className={styles.notice} role="alert">
-          {signIn === "failed"
-            ? "X sign-in did not complete. Try again; nothing was saved."
-            : "X sign-in is not configured on this deployment."}
-        </p>
-      ) : null}
       <header className={styles.header}>
         <h1>Questions</h1>
         <p>

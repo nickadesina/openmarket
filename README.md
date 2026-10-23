@@ -297,10 +297,10 @@ re-sent after three minutes. `/t/provenance/[eventId]` (JSON at
 `/api/t/provenance/[eventId]`) shows the hash inputs, batch, path, and
 transaction, and re-verifies the hash chain in the visitor's browser.
 Leaves are append-only and batch commitments immutable; `verify:replay`
-rebuilds every root and checks that each eligible completed hour has a batch
-and every event belongs to its hour’s batch (using the batcher’s existing
-five-minute grace). A late commit missing from an immutable batch is reported,
-never rewritten.
+rebuilds every root (a mismatch fails replay) and warns, without failing,
+when a completed hour has no batch yet (the hourly job lags) or an event is
+missing from its hour's immutable batch; such an event is reported, never
+rewritten.
 
 Bridge to the dealer (milestone 7, `services/dealer/tournament-bridge.ts`,
 migration `011_tournament_bridge`). Off unless `TOURNAMENT_LINKED_QUESTIONS=1`:

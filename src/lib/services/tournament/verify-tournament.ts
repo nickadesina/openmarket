@@ -35,6 +35,13 @@ export interface TournamentVerification {
   readonly eventsChecked: number;
   readonly batchesChecked: number;
   readonly findings: TournamentFinding[];
+  /**
+   * Provenance gaps that do not fail replay: a completed hour the hourly job
+   * has not batched yet (cron lag), or an event committed after its hour was
+   * batched (batches are immutable, so it can never be added). Both are
+   * reported, never fatal, so they cannot block a deploy.
+   */
+  readonly warnings: TournamentFinding[];
   readonly passed: boolean;
 }
 
@@ -191,8 +198,9 @@ async function checkAggregate(
 /**
  * Every provenance batch must re-derive: its leaves, in order, rebuild the
  * committed root, and each stored path folds its event hash to that root.
+ * Events outside any batch are warnings (see `TournamentVerification`).
  */
-async function checkProvenance(db: Kysely<Database>, fail: Fail): Promise<number> {
+async function checkProvenance(db: Kysely<Database>, fail: Fail, warn: Fail): Promise<number> {
   const batches = await db
     .selectFrom("tournament_provenance_batches")
     .select(["id", "root", "leaf_count", "hour_start"])
@@ -214,7 +222,7 @@ async function checkProvenance(db: Kysely<Database>, fail: Fail): Promise<number
     )
     .execute();
   for (const event of missing) {
-    fail(
+    warn(
       "provenance",
       event.batch_id === null
         ? `event ${event.id}'s completed hour has no batch`
@@ -275,8 +283,11 @@ export async function verifyTournament(db: Kysely<Database>): Promise<Tournament
     if (effectiveStatus(question, now) === "open") await checkAggregate(db, question, fail);
   }
 
-  const batchesChecked = await checkProvenance(db, (check, detail) =>
-    findings.push({ slug: "(provenance)", check, detail }),
+  const warnings: TournamentFinding[] = [];
+  const batchesChecked = await checkProvenance(
+    db,
+    (check, detail) => findings.push({ slug: "(provenance)", check, detail }),
+    (check, detail) => warnings.push({ slug: "(provenance)", check, detail }),
   );
 
   return {
@@ -284,6 +295,7 @@ export async function verifyTournament(db: Kysely<Database>): Promise<Tournament
     eventsChecked,
     batchesChecked,
     findings,
+    warnings,
     passed: findings.length === 0,
   };
 }

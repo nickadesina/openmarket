@@ -182,20 +182,21 @@ postgresDescribe(suiteName, () => {
     ).rejects.toThrow(/immutable/);
   });
 
-  it("reports completed hours that have never been batched", async () => {
+  it("warns, without failing replay, about a completed hour not yet batched", async () => {
     const result = await verifyTournament(postgres.db);
-    expect(result.findings).toEqual(
+    expect(result.warnings).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           check: "provenance",
-          detail: expect.stringContaining("has no batch"),
+          detail: expect.stringContaining("completed hour has no batch"),
         }),
       ]),
     );
-    expect(result.passed).toBe(false);
+    expect(result.findings.filter((finding) => finding.check === "provenance")).toEqual([]);
+    expect(result.passed).toBe(true);
   });
 
-  it("detects a late committed event missing from an immutable batch", async () => {
+  it("warns about a late committed event missing from an immutable batch", async () => {
     await batchCompletedHours(postgres.db);
     const existing = await postgres.db
       .selectFrom("tournament_forecast_events")
@@ -218,7 +219,7 @@ postgresDescribe(suiteName, () => {
       .execute();
     expect(await batchCompletedHours(postgres.db)).toEqual([]);
     const result = await verifyTournament(postgres.db);
-    expect(result.findings).toEqual(
+    expect(result.warnings).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           check: "provenance",
@@ -226,7 +227,7 @@ postgresDescribe(suiteName, () => {
         }),
       ]),
     );
-    expect(result.passed).toBe(false);
+    expect(result.passed).toBe(true);
   });
 
   it("commits each completed hour once and proves every event in it", async () => {
