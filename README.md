@@ -678,3 +678,35 @@ between the docs, the backtest and the code. Closed rows are removed;
 | Rank 3–4 waits in a 24 h admin queue; rank 3 needs two independent outlets | Not built | The settle job promotes rank 1–2 only and reports 3–4 as pending; `RULEBOOK.review.review_hours` and `pressRank` are not read by any service. |
 | A higher-ranked revision writes a correcting settlement | Not built | Settlements open to revision are recorded `final: false` (D13). |
 | The binary's leak jump follows sim.py | Partly | sim.py jumps on scoops (`leak_date`); `compute-mids.ts` also counts `release` flags dated on or before listing. |
+
+### Open decisions from the cleanup pass (Nick)
+
+The robustness pass (C1–C5, #33–#37) left these alone because each
+changes a published number, a screen or the deploy; the briefs in
+`docs/archive/prompts/cleanup/` have the detail.
+
+1. Charter re-centring: build it (a model version) or drop it from the
+   rulebook (a rulebook version).
+2. The unread rulebook rules (`review.review_hours`, `pressRank`): wire
+   up or drop; either is a rulebook version.
+3. Release flags in the binary's leak jump: `compute-mids.ts` counts
+   them, `sim.py` does not; aligning is a model change.
+4. Dead backtest parameters (`flag_b_mult`, `sigma_stepup`, γ): removing
+   them costs a model version.
+5. X accounts with no `created_at` skip `min_account_age_days`
+   (recommend failing closed).
+6. Comment threads follow the live epoch's market id, so a name's
+   thread resets at each roll and settled threads are not moderable
+   from `/admin`.
+7. Deploy order: `vercel-build.ts` migrates before `next build`
+   (recommend building first).
+8. `.impeccable/` (145 tracked files, 32 MB of design-tool output):
+   untrack or keep.
+9. The leaderboard and a question's latest-forecasts list are
+   unbounded; paging changes a screen.
+10. A forward's widening can lapse up to 15 minutes before the tape
+    shows it (fills follow `widened_until`, the tape follows the next
+    dealer run); closing it changes a fill price.
+11. Forward mids are the last round times the tier's step-up until news
+    arrives, so names in a tier share one multiple (2.08× for
+    mega-caps); making them name-specific is a backtest change.
