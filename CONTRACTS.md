@@ -4,7 +4,8 @@ Normative definition of the two instruments OpenMarket trades per listed
 name. `README.md` section 2 records the product decision (D10–D14);
 `TECHNICAL_DESIGN.md` says how they are built. Where this file and the
 Claude Doc "OpenMarket Contract Specification — Agent & Dependency-Graph
-Guide" differ, this file wins once merged.
+Guide" differ, this file wins. A rule marked *not built* is the
+contract's intent; the code does not enforce it yet.
 
 ## Definitions
 
@@ -16,7 +17,7 @@ Guide" differ, this file wins once merged.
 | Announcement | First public, dated statement that a priced round closed. "In talks" reporting is not an announcement. |
 | Entry price F₀ | The side of the dealer's quote a position fills at when it opens (ask for a long, bid for a short), in ln USD. Each position carries its own F₀. |
 | Expiry T | Binary: calendar quarter-end. Forward: **per name** (`listings.forward_t_days`), rolling. |
-| Settlement hierarchy | Published, versioned source ranking. Rank 1 company/lead release; 2 SEC filing; 3 two independent Tier-1 outlets citing closed terms; 4 one Tier-1 outlet. State charter price-per-share re-centres the mid and never settles. |
+| Settlement hierarchy | Published, versioned source ranking. Rank 1 company/lead release; 2 SEC filing; 3 two independent Tier-1 outlets citing closed terms; 4 one Tier-1 outlet. A state charter never settles; it widens the forward like any flag (re-centring the mid on its price-per-share is *not built*). Rank 3–4 promotion waits for an admin queue that is *not built*: the settle job promotes rank 1–2 only. |
 | Clip κ | Symmetric bound on the forward's payout in log units. Default 1.0 (0.37×–2.72× of F₀). |
 | Position cap Q | Max net notional the dealer holds per side per name. Default $25,000. |
 | Void | A forward cancelled with full refund because no print occurred by T. A normal outcome, not an error. |
@@ -61,7 +62,9 @@ Short pays the negative. Max gain or loss per position is N·κ.
   dated ≤ T, per the hierarchy. A range settles at its midpoint.
   Price-per-share alone does not settle.
 - Undisclosed valuation: wait up to T for a qualifying post-money, then
-  void. Revision by a higher-ranked source within 7 days supersedes.
+  void. Revision by a higher-ranked source within 7 days supersedes
+  (*not built*: such a settlement is recorded `final: false`, and no
+  correcting settlement is written).
 - Down rounds settle normally; shorts are paid.
 - Acquisition before a print settles only if a cash-equivalent equity
   value is disclosed; otherwise void.
@@ -70,8 +73,10 @@ Short pays the negative. Max gain or loss per position is N·κ.
   anchored on the print; on void, at the current mid. T resets.
 
 Launch T (days): OpenAI 270, Anthropic 180, Anduril 270, Modal 120,
-Instinct 90. The backtest proposes revisions from realised cadence; an
-operator applies them.
+Instinct 90. These are declared values (`FORWARD_T_DAYS` in
+`backtest/analyze.py`, published through `params.json`); the backtest
+will propose revisions once `per_name_t` runs, and an operator applies
+them.
 
 ## Why two contracts
 
@@ -90,7 +95,8 @@ mid m with inventory I and risk aversion γ (default 0.5):
     bid = m̃ − s             ask = m̃ + s
 
 s_floor = 0.05; σ_tier = prior-error sd (0.35 mega-cap, 0.62 red-hot).
-The side whose fill would breach Q is pulled.
+A fill that would push |I| past Q (Q/2 while flagged) is refused; a
+side with no room left is pulled.
 
 Event flags (Tier-1 scoop, Form D, charter amendment, "closing"
 statement): the forward's s × 3 and Q ÷ 2 for new positions, until the
@@ -105,8 +111,8 @@ backtest (`backtest/`) puts the realised insider loss near 20% of the
 bound carried.
 
 Restricted persons: employees, directors and investors of a listed name
-may not trade it. Attestation at sign-in in play money; KYC-backed
-later.
+may not trade it. Self-attested on the forecaster's profile in play
+money (README D12); KYC-backed later.
 
 ## Lifecycle
 
@@ -114,6 +120,8 @@ quoting → widened (flag) → quoting (re-price or 72 h)
 quoting | widened → resolved (qualifying event ≤ T) → roll
 quoting | widened → expired (T passes) → roll
 (binary: expired pays NO; forward: expired voids with refund)
+forward: quoting | widened → resolved as a void (acquisition with no
+disclosed value) → refund → roll
 
 ## Tournament mapping
 

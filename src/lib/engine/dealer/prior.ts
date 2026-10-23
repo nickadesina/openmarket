@@ -9,9 +9,13 @@
  * days between UTC dates, as sim.py's `date` arithmetic does.
  */
 
-const DAY_MS = 86_400_000;
+import { assertDate, assertFinite, assertPositive } from "../assert.js";
 
-export type Tier = "mega" | "redhot";
+import { DAY_MS, utcMidnight } from "../time.js";
+import { assertPFloor } from "./binary.js";
+
+export const TIERS = ["mega", "redhot"] as const;
+export type Tier = (typeof TIERS)[number];
 
 export interface TierValues {
   readonly mega: number;
@@ -30,6 +34,8 @@ export interface HazardParams {
 
 /** Mega-cap at or above the threshold, red-hot below (README D10). */
 export function tierOf(lastPostMoneyUsd: number, megaThresholdUsd: number): Tier {
+  assertPositive(lastPostMoneyUsd, "lastPostMoneyUsd");
+  assertPositive(megaThresholdUsd, "megaThresholdUsd");
   return lastPostMoneyUsd >= megaThresholdUsd ? "mega" : "redhot";
 }
 
@@ -40,11 +46,15 @@ export function daysBetween(from: Date, to: Date): number {
 
 /** Months from `from` to `to`: whole days over the backtest's days per month. */
 export function monthsBetween(from: Date, to: Date, daysPerMonth: number): number {
+  assertPositive(daysPerMonth, "daysPerMonth");
   return daysBetween(from, to) / daysPerMonth;
 }
 
 /** Weibull survival S(t) = exp(−(t/λ)^k), t in months since the last print, floored at 0. */
 export function weibullSurvival(tMonths: number, k: number, lambdaMonths: number): number {
+  assertFinite(tMonths, "tMonths");
+  assertPositive(k, "k");
+  assertPositive(lambdaMonths, "lambdaMonths");
   return Math.exp(-((Math.max(tMonths, 0) / lambdaMonths) ** k));
 }
 
@@ -55,6 +65,7 @@ export function roundProbability(
   k: number,
   lambdaMonths: number,
 ): number {
+  assertFinite(tEndMonths, "tEndMonths");
   const sNow = weibullSurvival(tNowMonths, k, lambdaMonths);
   if (sNow <= 0) return 1;
   const sEnd = weibullSurvival(tEndMonths, k, lambdaMonths);
@@ -83,6 +94,13 @@ export function binaryProbability(
   hazard: HazardParams,
   pFloor: number,
 ): number {
+  assertPFloor(pFloor);
+  for (const probability of [hazard.leak_hazard_near, hazard.leak_hazard_far]) {
+    assertFinite(probability, "leak hazard");
+    if (probability <= 0 || probability >= 1)
+      throw new RangeError("leak hazard must be between zero and one");
+  }
+  assertPositive(hazard.leak_window_days, "leak_window_days");
   const lambda = hazard.cadence_months[input.tier];
   const tNow = monthsBetween(input.lastPrintAt, input.listedAt, hazard.days_per_month);
   const tEnd = monthsBetween(input.lastPrintAt, input.expiresAt, hazard.days_per_month);
@@ -108,13 +126,16 @@ export interface ForwardMidInput {
  * ln V_leak from the day of a scoop that reported a valuation.
  */
 export function forwardMid(input: ForwardMidInput): number {
+  assertPositive(input.lastPostMoneyUsd, "lastPostMoneyUsd");
+  assertFinite(input.mu, "mu");
+  assertDate(input.asOf, "asOf");
   const leak = input.leak;
+  if (leak !== null) {
+    assertDate(leak.at, "leak.at");
+    if (leak.postMoneyUsd !== null) assertPositive(leak.postMoneyUsd, "leak.postMoneyUsd");
+  }
   if (leak !== null && leak.postMoneyUsd !== null && daysBetween(leak.at, input.asOf) >= 0) {
     return Math.log(leak.postMoneyUsd);
   }
   return Math.log(input.lastPostMoneyUsd) + input.mu;
-}
-
-function utcMidnight(at: Date): number {
-  return Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate());
 }

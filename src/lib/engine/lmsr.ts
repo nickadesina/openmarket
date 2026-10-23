@@ -1,4 +1,5 @@
-import { MIN_QUANTITY } from "./types.js";
+import { assertFinite } from "./assert.js";
+import { CENT_TOLERANCE, MIN_QUANTITY } from "./types.js";
 
 interface NormalizedState {
   readonly values: readonly number[];
@@ -6,12 +7,6 @@ interface NormalizedState {
   readonly maxQ: number;
   readonly sumExp: number;
   readonly logSumExp: number;
-}
-
-function assertFinite(value: number, name: string): void {
-  if (!Number.isFinite(value)) {
-    throw new RangeError(`${name} must be finite`);
-  }
 }
 
 function assertLiquidity(b: number): void {
@@ -97,23 +92,9 @@ function validateMask(mask: readonly boolean[], expectedLength: number): void {
 }
 
 function maskedBuyCost(state: NormalizedState, mask: readonly boolean[], quantity: number): number {
-  let maxShifted = -Infinity;
-  for (let index = 0; index < state.values.length; index += 1) {
-    const shifted = state.values[index]! + (mask[index] ? quantity : 0);
-    if (shifted > maxShifted) {
-      maxShifted = shifted;
-    }
-  }
-
-  let sumExp = 0;
-  for (let index = 0; index < state.values.length; index += 1) {
-    const shifted = state.values[index]! + (mask[index] ? quantity : 0);
-    sumExp += Math.exp((shifted - maxShifted) / state.b);
-  }
-
-  return assertFiniteResult(
-    maxShifted + state.b * (Math.log(sumExp) - state.logSumExp),
-    "buy cost",
+  return shiftedCost(
+    state,
+    mask.map((included) => (included ? quantity : 0)),
   );
 }
 
@@ -170,7 +151,7 @@ export function quantizeEntitlementCents(entitlementUsd: number): number {
   if (entitlementUsd < 0) {
     throw new RangeError("entitlement must not be negative");
   }
-  return assertSafeCents(Math.floor(entitlementUsd * 100 + 1e-6), "entitlement");
+  return assertSafeCents(Math.floor(entitlementUsd * 100 + CENT_TOLERANCE), "entitlement");
 }
 
 export function solveBuyQuantityForSpend(

@@ -1,3 +1,5 @@
+import { assertNonNegative, assertPositive } from "./assert.js";
+import { SQRT_TWO } from "./types.js";
 /**
  * The read-only implied distribution (README D11, TECHNICAL_DESIGN.md §6):
  * a lognormal centred on the forward's model mid with the tier's prior width
@@ -5,19 +7,11 @@
  * forward mid restated as bucket masses and as P(valuation > strike).
  *
  * Every bucket is floored at MIN_BUCKET_PROBABILITY before normalizing, the
- * rule the ladder's seed used. README D5 keeps that floor open as a display
+ * display convention retained by README D5. That floor remains an open display
  * question, so the tails it creates are a grid artifact, not a view.
  */
 
 export const MIN_BUCKET_PROBABILITY = 0.001;
-
-const SQRT_TWO = Math.sqrt(2);
-
-function assertPositive(value: number, name: string): void {
-  if (!Number.isFinite(value) || value <= 0) {
-    throw new RangeError(`${name} must be finite and greater than zero`);
-  }
-}
 
 function validateBoundaries(boundaries: readonly number[]): void {
   if (!Array.isArray(boundaries) || boundaries.length < 1) {
@@ -88,13 +82,13 @@ export function probabilitiesAbove(probabilities: readonly number[]): number[] {
   if (probabilities.length < 2) {
     throw new RangeError("probabilities must contain at least two buckets");
   }
+  for (const mass of probabilities) {
+    assertNonNegative(mass, "probability");
+  }
   const above = new Array<number>(probabilities.length - 1);
   let tail = 0;
   for (let index = probabilities.length - 1; index >= 1; index -= 1) {
     const mass = probabilities[index]!;
-    if (!Number.isFinite(mass) || mass < 0) {
-      throw new RangeError("probabilities must be finite and non-negative");
-    }
     tail += mass;
     above[index - 1] = Math.min(1, tail);
   }
