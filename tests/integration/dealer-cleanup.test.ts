@@ -121,7 +121,15 @@ const NOW = new Date("2026-09-02T00:00:00Z");
         .where("run_id", "=", "partial")
         .executeTakeFirstOrThrow();
       expect(run.status).toBe("failed");
-      expect(run.detail_json).toMatchObject({ failures: [{ instrument_id: first.id }] });
+      expect(run.detail_json).toMatchObject({
+        error: expect.stringContaining("injected settlement failure"),
+        failures: [
+          {
+            instrument_id: first.id,
+            error: expect.stringContaining("injected settlement failure"),
+          },
+        ],
+      });
     } finally {
       await sql`drop trigger fail_one_settlement on instruments`.execute(postgres.db);
       await sql`drop function fail_one_settlement()`.execute(postgres.db);

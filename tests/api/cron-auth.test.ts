@@ -26,19 +26,21 @@ describe("cron secret", () => {
 
   it("refuses every caller when no secret, or a short one, is configured", () => {
     vi.stubEnv("CRON_SECRET", "");
-    expect(refusal(() => requireCronSecret(request("Bearer "), "dealer"))).toBe("ADMIN_REQUIRED");
+    expect(refusal(() => requireCronSecret(request("Bearer "), "dealer"))).toBe(
+      "CRON_UNAUTHORIZED",
+    );
     vi.stubEnv("CRON_SECRET", "fifteen-chars!!");
     expect(refusal(() => requireCronSecret(request("Bearer fifteen-chars!!"), "dealer"))).toBe(
-      "ADMIN_REQUIRED",
+      "CRON_UNAUTHORIZED",
     );
   });
 
   it("accepts only the bearer secret", () => {
     vi.stubEnv("CRON_SECRET", ` ${SECRET} `);
-    expect(refusal(() => requireCronSecret(request(), "dealer"))).toBe("ADMIN_REQUIRED");
-    expect(refusal(() => requireCronSecret(request(SECRET), "dealer"))).toBe("ADMIN_REQUIRED");
+    expect(refusal(() => requireCronSecret(request(), "dealer"))).toBe("CRON_UNAUTHORIZED");
+    expect(refusal(() => requireCronSecret(request(SECRET), "dealer"))).toBe("CRON_UNAUTHORIZED");
     expect(refusal(() => requireCronSecret(request(`Bearer ${SECRET}x`), "dealer"))).toBe(
-      "ADMIN_REQUIRED",
+      "CRON_UNAUTHORIZED",
     );
     expect(refusal(() => requireCronSecret(request(`Bearer ${SECRET}`), "dealer"))).toBeNull();
   });

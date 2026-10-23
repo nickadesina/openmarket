@@ -581,9 +581,11 @@ export async function runSettleJob(
           for (const flagId of settled.promoted) promoted.add(flagId);
           for (const flag of settled.pending) pending.set(flag.flag_id, flag);
         } catch (error) {
+          // The message, not just the class: /admin/dealer shows it. Service
+          // and pg messages carry no credentials.
           failures.push({
             instrument_id: id,
-            error: error instanceof Error ? error.name : "UnknownError",
+            error: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
           });
         }
       }
@@ -598,6 +600,7 @@ export async function runSettleJob(
       };
       if (failures.length > 0)
         throw new CronWorkFailure("One or more instruments failed settlement.", {
+          error: `${failures.length} of ${live.length} instruments failed settlement; first: ${failures[0]?.error}`,
           ...summary,
           failures,
         });

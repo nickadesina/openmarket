@@ -77,7 +77,7 @@ postgresDescribe(suiteName, () => {
 
     const trader = await createTrader(postgres.db, "dealer_trader");
     const notAdmin = await call(await sessionCookie(postgres.db, trader.tournamentUserId));
-    expect(notAdmin.status).toBe(403);
+    expect(notAdmin.status).toBe(401);
     expect((await notAdmin.json()).error.code).toBe("ADMIN_REQUIRED");
   });
 
