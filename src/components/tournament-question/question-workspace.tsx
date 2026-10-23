@@ -9,6 +9,7 @@ import {
   formatForecasterName,
   formatProbability,
   formatScore,
+  formatScoreWhole,
   formatTimeUntil,
   formatTournamentDateTime,
   formatTournamentForecast,
@@ -16,10 +17,15 @@ import {
   formatTournamentValue,
   tournamentKindCaption,
   tournamentSettleSentences,
-  usdInTournamentUnit,
 } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
-import { useNow, useTournamentViewer } from "../../lib/client/tournament.js";
+import {
+  forwardRuleScores,
+  tournamentCrowdValue,
+  tournamentMarketValue,
+  useNow,
+  useTournamentViewer,
+} from "../../lib/client/tournament.js";
 import type { ForecasterProfile } from "../../lib/services/tournament/forecaster.js";
 import type {
   PublicForecast,
@@ -35,26 +41,18 @@ import styles from "./tournament-question.module.css";
 
 /** The crowd's one figure: "42.0% YES" on a binary, "$412B median" on a forward. */
 function crowdFigure(question: QuestionDetail, aggregate: AggregateView): string | null {
-  if (!aggregate.published) return null;
-  if (question.kind === "binary") {
-    return aggregate.p === null ? null : `${formatProbability(aggregate.p)} YES`;
-  }
-  if (question.unit === null || aggregate.value === null) return null;
-  return `${formatTournamentValue(aggregate.value, question.unit)} median`;
+  const value = tournamentCrowdValue(question, aggregate);
+  if (value === null) return null;
+  if (question.kind === "binary") return `${formatProbability(value)} YES`;
+  return question.unit === null ? null : `${formatTournamentValue(value, question.unit)} median`;
 }
 
 /** The linked contract's latest figure: the binary's YES price, or the forward's dealer mid. */
 function marketFigure(question: QuestionDetail): string | null {
-  const instrument = question.instrument;
-  if (instrument === null) return null;
-  if (question.kind === "binary") {
-    return instrument.yesPrice === null ? null : formatProbability(instrument.yesPrice);
-  }
-  if (question.unit === null || instrument.midUsd === null) return null;
-  return formatTournamentValue(
-    usdInTournamentUnit(instrument.midUsd, question.unit),
-    question.unit,
-  );
+  const value = tournamentMarketValue(question);
+  if (value === null) return null;
+  if (question.kind === "binary") return formatProbability(value);
+  return question.unit === null ? null : formatTournamentValue(value, question.unit);
 }
 
 function CrowdModule({ question }: { readonly question: QuestionDetail }) {
@@ -313,6 +311,7 @@ function ForecastsTable({
 
 function ScoringNote({ question }: { readonly question: QuestionDetail }) {
   const { rules } = question;
+  const scores = forwardRuleScores();
   const ageRule =
     question.minAccountAgeDays > 0
       ? ` X accounts must be at least ${question.minAccountAgeDays} days old to forecast.`
@@ -332,9 +331,11 @@ function ScoringNote({ question }: { readonly question: QuestionDetail }) {
   return (
     <p className={styles.muted}>
       Scored by time-averaged distance from the settling value y, 100 · (1 − |ln(x / y)| / ln 2) for
-      a level x: exact is 100, 10% off about 86, 2× off 0 and 4× off −100, never below{" "}
-      {formatScore(rules.clampScore)}. Time before your first forecast counts as 0. If the question
-      voids, nothing is scored. The crowd is the median of forecasters&apos; levels, taken in logs.
+      a level x: exact is {formatScoreWhole(scores.exact).replace(/^\+/, "")}, 10% off about{" "}
+      {formatScoreWhole(scores.near).replace(/^\+/, "")}, 2× off {formatScoreWhole(scores.double)}{" "}
+      and 4× off {formatScoreWhole(scores.quadruple)}, never below {formatScore(rules.clampScore)}.
+      Time before your first forecast counts as 0. If the question voids, nothing is scored. The
+      crowd is the median of forecasters&apos; levels, taken in logs.
       {ageRule}
     </p>
   );
@@ -389,16 +390,16 @@ export function QuestionWorkspace({
   const now = useNow();
   const questionQuery = useQuery({
     queryKey: queryKeys.tournamentQuestion(slug),
-    queryFn: () => apiRequest<QuestionDetail>(`/api/t/questions/${slug}`),
+    queryFn: () => apiRequest<QuestionDetail>(`/api/t/questions/${encodeURIComponent(slug)}`),
     ...(initialQuestion === null ? {} : { initialData: initialQuestion }),
     refetchInterval: 15_000,
   });
   const forecastsQuery = useQuery({
     queryKey: queryKeys.tournamentForecasts(slug),
     queryFn: () =>
-      apiRequest<{ forecasts: PublicForecast[] }>(`/api/t/questions/${slug}/forecasts`).then(
-        (body) => body.forecasts,
-      ),
+      apiRequest<{ forecasts: PublicForecast[] }>(
+        `/api/t/questions/${encodeURIComponent(slug)}/forecasts`,
+      ).then((body) => body.forecasts),
     ...(initialForecasts === null ? {} : { initialData: [...initialForecasts] }),
     refetchInterval: 15_000,
   });

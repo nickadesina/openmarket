@@ -1,4 +1,6 @@
 import type { ColumnType, Generated, Insertable, Selectable, Updateable } from "kysely";
+import type { FlagKind } from "../engine/dealer/lifecycle.js";
+import type { Tier } from "../engine/dealer/prior.js";
 
 export type MarketStatus = "open" | "settled";
 /**
@@ -306,19 +308,11 @@ export interface TournamentProvenanceLeavesTable {
   path: Immutable<string[]>;
 }
 
-export type ListingTier = "mega" | "redhot";
+export type ListingTier = Tier;
 export type BinaryEventKind = "priced_round" | "public_s1";
 export type InstrumentKind = "binary" | "forward";
 export type InstrumentState = "quoting" | "widened" | "resolved" | "expired";
-export type EventFlagKind =
-  | "form_d"
-  | "form_d_amend"
-  | "charter"
-  | "scoop"
-  | "release"
-  | "s1_public"
-  | "print"
-  | "user_submitted";
+export type EventFlagKind = FlagKind;
 export type EventFlagConfidence = "high" | "medium" | "low";
 export type CronRunStatus = "running" | "succeeded" | "failed";
 export type QuoteReason = "list" | "requote" | "fill" | "widen" | "restore";

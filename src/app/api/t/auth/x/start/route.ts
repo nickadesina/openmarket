@@ -1,3 +1,4 @@
+import { signInFailure } from "../../../../../../lib/auth/return-path.js";
 import { cookieHeader } from "../../../../../../lib/auth/tournament-session.js";
 import {
   beginAuthorization,
@@ -20,7 +21,7 @@ function redirect(location: string, cookie?: string): Response {
 export function GET(request: Request): Response {
   const returnTo = safeReturnPath(new URL(request.url).searchParams.get("return"));
   const config = xClientConfig();
-  if (config === null) return redirect(`/t?sign_in=unavailable`);
+  if (config === null) return redirect(signInFailure(returnTo, "unavailable"));
   try {
     const authorization = beginAuthorization(config, returnTo);
     return redirect(
@@ -29,6 +30,6 @@ export function GET(request: Request): Response {
     );
   } catch (error) {
     logUnexpectedError(crypto.randomUUID(), error);
-    return redirect(`/t?sign_in=unavailable`);
+    return redirect(signInFailure(returnTo, "unavailable"));
   }
 }

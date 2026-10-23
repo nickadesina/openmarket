@@ -20,7 +20,7 @@ import {
  * re-derive it through prior.ts.
  */
 
-export const MIDS_STREAMS = ["mids"] as const;
+const MIDS_STREAMS = ["mids"] as const;
 
 export interface RefMid {
   readonly id: string;

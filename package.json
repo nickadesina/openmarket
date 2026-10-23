@@ -14,7 +14,7 @@
     "test:unit": "vitest run --exclude \"tests/integration/**\"",
     "test:integration": "vitest run tests/integration",
     "test:browser": "playwright test",
-    "test:browser:local": "tsx --env-file-if-exists=.env.local node_modules/@playwright/test/cli.js test",
+    "test:browser:local": "node --env-file-if-exists=.env.local node_modules/@playwright/test/cli.js test",
     "db:test:local": "tsx --env-file-if-exists=.env.local scripts/migrate.ts --test-local",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",

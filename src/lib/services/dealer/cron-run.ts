@@ -1,9 +1,8 @@
 import { randomUUID } from "node:crypto";
-
 import { type Kysely, sql, type Transaction } from "kysely";
-
 import { ServiceError } from "../../api/errors.js";
 import type { CronRunRow, CronRunStatus, Database } from "../../db/schema.js";
+import { lockCron } from "./service-helpers.js";
 
 /** The three scheduled jobs (TECHNICAL_DESIGN.md §11); there are no others. */
 export type CronJob = "ingest" | "dealer" | "settle";
@@ -41,6 +40,18 @@ export async function beginCronRun(
   job: CronJob,
   runId: string,
 ): Promise<BeginCronRunResult> {
+  // Runs older than the workflow's five-minute request budget are abandoned.
+  await db
+    .updateTable("cron_runs")
+    .set({
+      status: "failed",
+      finished_at: sql<Date>`clock_timestamp()`,
+      detail_json: JSON.stringify({ error: "Job exceeded its 300 second execution budget." }),
+    })
+    .where("job", "=", job)
+    .where("status", "=", "running")
+    .where("started_at", "<", sql<Date>`clock_timestamp() - interval '300 seconds'`)
+    .execute();
   const inserted = await db
     .insertInto("cron_runs")
     .values({ job, run_id: runId, status: "running" })
@@ -84,28 +95,52 @@ export type CronRunOutcome<T> =
  * after the other) and mark the run succeeded with the result as its detail
  * in that same transaction. On an error the work rolls back, the run is
  * marked failed with the message, and the error is rethrown.
+ * A `run` object supplies work that owns its per-instrument transactions;
+ * the same claim, completion and failure bookkeeping still applies.
  */
+export class CronWorkFailure extends Error {
+  constructor(
+    message: string,
+    readonly detail: unknown,
+  ) {
+    super(message);
+  }
+}
+
 export async function runCronJob<T>(
   db: Kysely<Database>,
   job: CronJob,
   runId: string,
-  work: (transaction: Transaction<Database>, runId: string) => Promise<T>,
+  work:
+    | ((transaction: Transaction<Database>, runId: string) => Promise<T>)
+    | { readonly run: () => Promise<T> },
 ): Promise<CronRunOutcome<T>> {
   const begun = await beginCronRun(db, job, runId);
   if (begun.status === "already_ran") return begun;
   try {
-    const result = await db.transaction().execute(async (transaction) => {
-      await sql`select pg_advisory_xact_lock(hashtext('openmarket_cron'), hashtext(${job}))`.execute(
-        transaction,
-      );
-      const value = await work(transaction, runId);
-      await finishCronRun(transaction, runId, "succeeded", value);
-      return value;
-    });
+    const result =
+      typeof work !== "function"
+        ? await work.run()
+        : await db.transaction().execute(async (transaction) => {
+            await lockCron(transaction, job);
+            const value = await work(transaction, runId);
+            await finishCronRun(transaction, runId, "succeeded", value);
+            return value;
+          });
+    if (typeof work !== "function") await finishCronRun(db, runId, "succeeded", result);
     return { status: "succeeded", runId, result };
   } catch (error) {
     const message = error instanceof Error ? error.message : "the job failed";
-    await finishCronRun(db, runId, "failed", { error: message });
+    try {
+      await finishCronRun(
+        db,
+        runId,
+        "failed",
+        error instanceof CronWorkFailure ? error.detail : { error: message },
+      );
+    } catch {
+      // Preserve the work failure even if bookkeeping is unavailable.
+    }
     throw error;
   }
 }

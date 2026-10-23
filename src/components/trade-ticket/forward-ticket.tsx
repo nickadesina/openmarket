@@ -4,18 +4,22 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { INITIAL_USER_BALANCE_CENTS } from "../../lib/api/money.js";
 
 import { ApiClientError, apiRequest, POLL_INTERVAL_MS } from "../../lib/client/api.js";
 import {
   formatCents,
   formatDate,
   formatDateTime,
+  formatForwardNotional,
   formatPrice,
   formatVersion,
+  formatWholeUsd,
 } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
 import { signInHref } from "../../lib/client/tournament.js";
 import {
+  canonicalDollarAmount,
   type ForwardRequote,
   type TradeOutcome,
   useTradeExecution,
@@ -41,7 +45,6 @@ interface ForwardTicketProps {
 }
 
 const QUICK_NOTIONAL_USD = ["500", "1000", "5000", "25000"] as const;
-const NOTIONAL_PATTERN = /^\d{1,12}(\.\d{1,2})?$/;
 
 const ERROR_TITLES: Readonly<Record<string, string>> = {
   PRICE_MOVED: "Price moved",
@@ -50,16 +53,11 @@ const ERROR_TITLES: Readonly<Record<string, string>> = {
   INSTRUMENT_CLOSED: "Not trading",
   USER_REQUIRED: "Sign-in required",
   RETRYABLE: "Outcome unknown",
+  MARKET_SETTLED: "Market settled",
+  RESTRICTED_PERSON: "Trading restricted",
 };
 
 type Phase = "idle" | "executing";
-
-/** The amount as the wire carries it, or null when it is not a positive dollar amount. */
-function notionalUsd(text: string): string | null {
-  const trimmed = text.trim();
-  if (!NOTIONAL_PATTERN.test(trimmed) || !(Number(trimmed) > 0)) return null;
-  return Number(trimmed).toFixed(2);
-}
 
 function refusalMessage(
   side: ForwardSide,
@@ -83,8 +81,17 @@ function refusalMessage(
  * wire is the entry on screen: the order fills there or comes back as a
  * requote. A position is held to settlement or void.
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: the order state machine lives in one component; extract a useForwardOrder hook before growing.
-export function ForwardTicket({
+/** Delay only preview requests; never let the prior amount's preview authorize a fill. */
+function usePricedNotional(notional: string | null) {
+  const [priced, setPriced] = useState(notional);
+  useEffect(() => {
+    const timeout = setTimeout(() => setPriced(notional), 250);
+    return () => clearTimeout(timeout);
+  }, [notional]);
+  return priced;
+}
+
+function useForwardOrder({
   forward,
   side,
   onSideChange,
@@ -103,14 +110,15 @@ export function ForwardTicket({
   const orderPending = trade.canRetry;
   const busy = phase !== "idle" || orderPending;
 
-  const notional = notionalUsd(notionalText);
+  const notional = canonicalDollarAmount(notionalText);
+  const pricedNotional = usePricedNotional(notional);
   const previewQuery = useQuery({
-    queryKey: queryKeys.instrumentQuote(forward.instrument_id, side, notional),
+    queryKey: queryKeys.instrumentQuote(forward.instrument_id, side, pricedNotional),
     queryFn: () =>
       apiRequest<ForwardInstrumentQuote>(
-        `/api/instruments/${encodeURIComponent(forward.instrument_id)}/quote?side=${side}&notional_usd=${notional}`,
+        `/api/instruments/${encodeURIComponent(forward.instrument_id)}/quote?side=${side}&notional_usd=${pricedNotional}`,
       ),
-    enabled: notional !== null && !orderPending,
+    enabled: pricedNotional !== null && !orderPending,
     refetchInterval: POLL_INTERVAL_MS,
     placeholderData: keepPreviousData,
   });
@@ -135,11 +143,12 @@ export function ForwardTicket({
     setCapMaxUsd(null);
   }
 
-  // A requote or a fill is only valid for the side and amount that produced it.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: reset only when the priced order changes.
-  useEffect(() => {
+  const orderKey = `${side}:${forward.instrument_id}`;
+  const [previousOrderKey, setPreviousOrderKey] = useState(orderKey);
+  if (previousOrderKey !== orderKey) {
+    setPreviousOrderKey(orderKey);
     resetOrder();
-  }, [side, forward.instrument_id]);
+  }
 
   function changeNotional(next: string) {
     if (next === notionalText) return;
@@ -196,8 +205,41 @@ export function ForwardTicket({
   const reviewEntryUsd = requote?.entryUsd ?? fill?.entry_usd ?? null;
   const reviewCollateral = requote?.collateralCents ?? fill?.collateral_cents ?? null;
 
+  return {
+    forward,
+    side,
+    onSideChange,
+    busy,
+    notional,
+    live,
+    notionalText,
+    changeNotional,
+    previewQuery,
+    fill,
+    reviewEntryUsd,
+    reviewCollateral,
+    requote,
+    pathname,
+    refusal,
+    errorTitle,
+    error,
+    result,
+    refreshStale,
+    needsSignIn,
+    capMaxUsd,
+    trade,
+    orderPending,
+    phase,
+    setError,
+    settleOrder,
+    submit,
+  };
+}
+
+function ForwardControls({ order }: { readonly order: ReturnType<typeof useForwardOrder> }) {
+  const { forward, side, onSideChange, busy, notional, live, notionalText, changeNotional } = order;
   return (
-    <div className={styles.body}>
+    <>
       <p className={styles.question}>
         {forward.question}{" "}
         <span>
@@ -265,7 +307,7 @@ export function ForwardTicket({
             onClick={() => changeNotional(`${value}.00`)}
             disabled={busy}
           >
-            ${Number(value).toLocaleString("en-US")}
+            {formatWholeUsd(Number(value))}
           </button>
         ))}
       </div>
@@ -275,7 +317,15 @@ export function ForwardTicket({
           Enter a dollar notional greater than zero, to the cent.
         </p>
       ) : null}
+    </>
+  );
+}
 
+function ForwardReview({ order }: { readonly order: ReturnType<typeof useForwardOrder> }) {
+  const { side, notional, previewQuery, live, fill, reviewEntryUsd, reviewCollateral, requote } =
+    order;
+  return (
+    <>
       {fill !== null && reviewEntryUsd !== null && reviewCollateral !== null ? (
         <div className={styles.quote} aria-live="polite">
           <QuoteReview
@@ -326,10 +376,28 @@ export function ForwardTicket({
         </p>
       ) : notional !== null ? (
         <p className={styles.pending} role="status">
-          Pricing {side} {formatCents(String(Math.round(Number(notional) * 100)))}…
+          Pricing {side} {formatForwardNotional(Number(notional))}…
         </p>
       ) : null}
+    </>
+  );
+}
 
+function ForwardNotices({ order }: { readonly order: ReturnType<typeof useForwardOrder> }) {
+  const {
+    pathname,
+    fill,
+    refusal,
+    errorTitle,
+    error,
+    result,
+    refreshStale,
+    needsSignIn,
+    capMaxUsd,
+    changeNotional,
+  } = order;
+  return (
+    <>
       {refusal !== null && error === null ? (
         <div className={styles.error} role="alert">
           <strong>
@@ -361,7 +429,10 @@ export function ForwardTicket({
 
       {needsSignIn ? (
         <div className={styles.signIn}>
-          <p>Trading needs a signed-in account. Your first trade opens a $100,000 paper balance.</p>
+          <p>
+            Trading needs a signed-in account. Your first trade opens a{" "}
+            {formatWholeUsd(Number(INITIAL_USER_BALANCE_CENTS) / 100)} paper balance.
+          </p>
           <Link className={styles.primary} href={signInHref(pathname)}>
             Sign in to trade
           </Link>
@@ -383,7 +454,27 @@ export function ForwardTicket({
           </p>
         </div>
       ) : null}
+    </>
+  );
+}
 
+function ForwardSubmit({ order }: { readonly order: ReturnType<typeof useForwardOrder> }) {
+  const {
+    side,
+    trade,
+    orderPending,
+    busy,
+    fill,
+    phase,
+    setError,
+    requote,
+    result,
+    needsSignIn,
+    settleOrder,
+    submit,
+  } = order;
+  return (
+    <>
       {orderPending ? (
         <PendingOrderActions
           executing={phase === "executing"}
@@ -416,6 +507,18 @@ export function ForwardTicket({
         filled={result !== null}
         unknown={orderPending}
       />
+    </>
+  );
+}
+
+export function ForwardTicket(props: ForwardTicketProps) {
+  const order = useForwardOrder(props);
+  return (
+    <div className={styles.body}>
+      <ForwardControls order={order} />
+      <ForwardReview order={order} />
+      <ForwardNotices order={order} />
+      <ForwardSubmit order={order} />
     </div>
   );
 }

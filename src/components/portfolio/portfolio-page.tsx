@@ -3,8 +3,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
+import { formatCentsAsUsd, INITIAL_USER_BALANCE_CENTS } from "../../lib/api/money.js";
 
-import { ApiClientError, apiRequest } from "../../lib/client/api.js";
+import {
+  ApiClientError,
+  apiRequest,
+  POLL_INTERVAL_MS,
+  requestPortfolioIdentity,
+} from "../../lib/client/api.js";
 import {
   errorMessage,
   formatCents,
@@ -12,14 +18,21 @@ import {
   formatDate,
   formatDateTime,
   formatForecasterName,
+  formatForwardNotional,
   formatPrice,
   formatQuantity,
   formatUsd,
+  formatWholeUsd,
   sideLabel,
 } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
 import { signInHref } from "../../lib/client/tournament.js";
-import { type TradeOutcome, useTradeExecution } from "../../lib/client/use-trade-execution.js";
+import {
+  BINARY_STRIKE_INDEX,
+  slippageCents,
+  type TradeOutcome,
+  useTradeExecution,
+} from "../../lib/client/use-trade-execution.js";
 import type { ExecutionResult } from "../../lib/services/execute-trade.js";
 import type {
   Portfolio,
@@ -49,7 +62,6 @@ interface SellFlowProps extends SellSelection {
 interface ReviewedSale {
   readonly quote: QuoteResult;
   readonly positionQuantity: number;
-  readonly markPriceUsd: number;
 }
 
 /** Signed cash with the Gain/Loss word (DESIGN.md → The Arrow-and-Word Rule); zero stays muted. */
@@ -159,17 +171,16 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
     Number.isFinite(quantity) &&
     quantity >= MIN_QUANTITY &&
     quantity <= position.sellableQuantity + Number.EPSILON;
-  // A review is valid only for the live position and price it quoted. An
-  // unknown-outcome order is exempt because retry must preserve its request.
+  // A review is valid only for the position it quoted. A price that moves under
+  // it is the server's to judge: the sale carries its slippage floor, and a
+  // PRICE_MOVED refusal re-quotes. An unknown-outcome order is exempt because
+  // retry must preserve its request.
   const settled = market.status !== "open";
-  const quoteStale =
-    review !== null &&
-    (review.positionQuantity !== position.quantity ||
-      review.markPriceUsd !== position.markPriceUsd);
+  const quoteStale = review !== null && review.positionQuantity !== position.quantity;
   const blocked = settled
     ? "This binary has settled. Shares are paid out at settlement, not sold."
     : quoteStale
-      ? "Your position or the price changed since this quote. Review a fresh quote."
+      ? "Your position changed since this quote. Review a fresh quote."
       : null;
   const quote = review === null || (blocked !== null && !trade.canRetry) ? null : review.quote;
   const label = `${sideLabel(position.side)} · ${market.company.name}`;
@@ -177,7 +188,7 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
     market_id: market.marketId,
     action: "sell",
     side: position.side,
-    strike_index: 0,
+    strike_index: BINARY_STRIKE_INDEX,
   } as const;
 
   const quoteMutation = useMutation({
@@ -190,7 +201,6 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
       setReview({
         quote: nextQuote,
         positionQuantity: position.quantity,
-        markPriceUsd: position.markPriceUsd,
       });
       setNotice(null);
     },
@@ -201,8 +211,7 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
   });
 
   // Min proceeds: the bound on the wire, 1% under the quoted figure, shown in the review.
-  const minProceedsCents =
-    quote === null ? null : Math.floor(Number(quote.cash_amount_cents) * 0.99);
+  const minProceedsCents = quote === null ? null : slippageCents(quote.cash_amount_cents, "sell");
 
   async function settleOrder(send: () => Promise<TradeOutcome<ExecutionResult>>) {
     setSelling(true);
@@ -240,7 +249,7 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
       trade.execute({
         ...fields,
         quantity: quote.quantity,
-        min_proceeds_usd: (minProceedsCents / 100).toFixed(2),
+        min_proceeds_usd: formatCentsAsUsd(minProceedsCents),
       }),
     );
   }
@@ -269,6 +278,7 @@ function SellFlow({ market, position, onClose, onComplete }: SellFlowProps) {
       <label className={styles.field}>
         <span>Quantity</span>
         <input
+          type="number"
           inputMode="decimal"
           autoComplete="off"
           value={quantityText}
@@ -464,7 +474,7 @@ function HistoryRow({ trade }: { readonly trade: PortfolioTrade }) {
   const forward = trade.metricKind === "forward_ln";
   const cash = formatCents(trade.cashAmountCents);
   const title = forward
-    ? `${sideLabel(trade.side)} ${formatCents(String(Math.round(trade.quantity * 100)))} forward${trade.entryUsd === null ? "" : ` at ${formatPrice(trade.entryUsd)}`}`
+    ? `${sideLabel(trade.side)} ${formatForwardNotional(trade.quantity)} forward${trade.entryUsd === null ? "" : ` at ${formatPrice(trade.entryUsd)}`}`
     : `${trade.action === "buy" ? "Bought" : "Sold"} ${formatQuantity(trade.quantity)} ${sideLabel(trade.side)}`;
 
   return (
@@ -495,40 +505,53 @@ function HistoryRow({ trade }: { readonly trade: PortfolioTrade }) {
 
 export function PortfolioPage() {
   const [offset, setOffset] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
   const [selection, setSelection] = useState<SellSelection | null>(null);
   const [completion, setCompletion] = useState<string | null>(null);
 
   const portfolioQuery = useQuery({
     queryKey: [...queryKeys.portfolio, offset, HISTORY_LIMIT],
+    refetchInterval: POLL_INTERVAL_MS,
     queryFn: () => apiRequest<Portfolio>(`/api/portfolio?offset=${offset}&limit=${HISTORY_LIMIT}`),
   });
   // The header reads the same account; after a sign-in change the page holds its
   // skeleton until the positions below belong to the account the header shows.
-  const identity = useQuery({
-    queryKey: queryKeys.portfolio,
-    queryFn: () => apiRequest<Pick<Portfolio, "userId">>("/api/portfolio?offset=0&limit=1"),
-  }).data;
+  const identityQuery = useQuery({
+    queryKey: queryKeys.identity,
+    queryFn: requestPortfolioIdentity,
+  });
+  const identity = identityQuery.data;
 
   const portfolio = portfolioQuery.data;
+  async function refreshPortfolio() {
+    setRefreshing(true);
+    try {
+      await Promise.all([portfolioQuery.refetch(), identityQuery.refetch()]);
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   if (
     portfolioQuery.isLoading ||
-    (identity !== undefined && portfolio !== undefined && portfolio.userId !== identity.userId)
+    identityQuery.isPending ||
+    (identity != null && portfolio !== undefined && portfolio.userId !== identity.userId)
   ) {
     return <PortfolioSkeleton />;
   }
 
   if (
-    portfolioQuery.error instanceof ApiClientError &&
-    portfolioQuery.error.code === "USER_REQUIRED"
+    identity === null ||
+    (portfolioQuery.error instanceof ApiClientError &&
+      portfolioQuery.error.code === "USER_REQUIRED")
   ) {
     return (
       <section className={styles.statePanel}>
         <p className={styles.stateLabel}>Portfolio access</p>
         <h1>Sign in to see your portfolio</h1>
         <p>
-          The tournament account is the only account. Its first visit here opens a $100,000 paper
-          balance.
+          The tournament account is the only account. Its first visit here opens a{" "}
+          {formatWholeUsd(Number(INITIAL_USER_BALANCE_CENTS) / 100)} paper balance.
         </p>
         <Link className={styles.primaryButton} href={signInHref("/portfolio")}>
           Sign in
@@ -537,7 +560,7 @@ export function PortfolioPage() {
     );
   }
 
-  if (portfolioQuery.isError || portfolio === undefined) {
+  if (portfolio === undefined || identity === undefined) {
     return (
       <section className={styles.statePanel}>
         <p className={styles.stateLabel}>Portfolio unavailable</p>
@@ -546,7 +569,7 @@ export function PortfolioPage() {
         <button
           type="button"
           className={styles.primaryButton}
-          onClick={() => portfolioQuery.refetch()}
+          onClick={() => void refreshPortfolio()}
         >
           Retry portfolio
         </button>
@@ -570,12 +593,18 @@ export function PortfolioPage() {
         <button
           type="button"
           className={styles.secondaryButton}
-          onClick={() => portfolioQuery.refetch()}
-          disabled={portfolioQuery.isFetching}
+          onClick={() => void refreshPortfolio()}
+          disabled={refreshing}
         >
-          {portfolioQuery.isFetching ? "Refreshing…" : "Refresh"}
+          {refreshing ? "Refreshing…" : "Refresh"}
         </button>
       </header>
+
+      {portfolioQuery.isError ? (
+        <p className={styles.stateLabel} role="status">
+          Refresh paused. Showing the last confirmed account.
+        </p>
+      ) : null}
 
       {completion !== null ? (
         <div className={styles.successNotice} role="status">
@@ -731,7 +760,7 @@ export function PortfolioPage() {
           <button
             type="button"
             className={styles.secondaryButton}
-            disabled={offset === 0 || portfolioQuery.isFetching}
+            disabled={offset === 0 || refreshing}
             onClick={() => {
               setSelection(null);
               setOffset(Math.max(0, offset - HISTORY_LIMIT));
@@ -742,7 +771,7 @@ export function PortfolioPage() {
           <button
             type="button"
             className={styles.secondaryButton}
-            disabled={portfolio.tradeHistory.nextOffset === null || portfolioQuery.isFetching}
+            disabled={portfolio.tradeHistory.nextOffset === null || refreshing}
             onClick={() => {
               setSelection(null);
               setOffset(portfolio.tradeHistory.nextOffset ?? 0);

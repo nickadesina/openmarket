@@ -1,7 +1,7 @@
 import { SCORE_EPSILON } from "./score.js";
 
 /** Default extremization exponent; stored per question so it can be tuned without rewriting history. */
-export const DEFAULT_EXTREMIZATION = 1.5;
+const DEFAULT_EXTREMIZATION = 1.5;
 
 /** The aggregate is published only once this many forecasters are on file. */
 export const MIN_PUBLISHED_FORECASTERS = 5;
@@ -10,7 +10,7 @@ export const MIN_PUBLISHED_FORECASTERS = 5;
 export const AGGREGATE_WEIGHTING_VERSION = "equal-v1";
 
 /** Clamps a probability to [ε, 1 − ε]. */
-export function clampProbability(probability: number, epsilon = SCORE_EPSILON): number {
+function clampProbability(probability: number, epsilon = SCORE_EPSILON): number {
   return Math.min(Math.max(probability, epsilon), 1 - epsilon);
 }
 

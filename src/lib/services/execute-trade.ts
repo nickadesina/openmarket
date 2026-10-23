@@ -1,7 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-
-import { type Kysely, sql, type Transaction } from "kysely";
-
+import { type Kysely, sql } from "kysely";
 import { ServiceError } from "../api/errors.js";
 import { formatCentsAsUsd, parseUsdToCents } from "../api/money.js";
 import type { TradeInput } from "../api/schemas.js";
@@ -15,9 +13,10 @@ import type {
 } from "../db/schema.js";
 import { EPS } from "../engine/types.js";
 import { binaryQuoteRow, latestMid } from "./dealer/dealer-books.js";
+import { loadTradeReplay, lockIdempotency } from "./dealer/service-helpers.js";
 import { parseRequestedAmount, previewTrade } from "./preview-trade.js";
 import { assertMayTrade } from "./tournament/restrictions.js";
-import { assertBookLive, findTradeBook } from "./trade-book.js";
+import { assertBookLive, tradeBookById } from "./trade-book.js";
 
 export interface ExecutionResult extends JsonObject {
   readonly trade_id: string;
@@ -147,34 +146,61 @@ function isExecutionResult(value: JsonValue): value is ExecutionResult {
   );
 }
 
-async function loadReplay(
-  transaction: Transaction<Database>,
-  idempotencyKey: string,
-  userId: string,
-  requestFingerprint: string,
-): Promise<ExecutionResult | undefined> {
-  const existing = await transaction
-    .selectFrom("trades")
-    .select(["user_id", "request_fingerprint", "execution_result"])
-    .where("idempotency_key", "=", idempotencyKey)
-    .executeTakeFirst();
-  if (existing === undefined) return undefined;
-  if (
-    existing.user_id.toLowerCase() !== userId.toLowerCase() ||
-    existing.request_fingerprint !== requestFingerprint
-  ) {
+function validateExecutionCash(
+  input: TradeInput,
+  preview: ReturnType<typeof previewTrade>,
+  user: { readonly cash_balance_cents: string },
+  executionTs: Date,
+): bigint {
+  const {
+    cashAmountCents,
+    quantity,
+    priceAfter,
+    metricAfter,
+    redemptionQuantity,
+    redemptionCents,
+    sellableAfter,
+  } = preview;
+  // The slippage guard is checked after the post-trade state is known so a
+  // PRICE_MOVED rejection carries the same fields as a quote: the client
+  // re-presents the full consequence set, not just the new cash figure.
+  const guardCents = parseUsdToCents(
+    input.action === "buy" ? input.max_cost_usd : input.min_proceeds_usd,
+  );
+  if (input.action === "buy" ? cashAmountCents > guardCents : cashAmountCents < guardCents) {
     throw new ServiceError(
-      "IDEMPOTENCY_CONFLICT",
-      "Idempotency key is bound to a different caller or request.",
+      "PRICE_MOVED",
+      `Price moved. New ${input.action === "buy" ? "cost" : "proceeds"}: $${formatCentsAsUsd(cashAmountCents)}. Confirm trade?`,
+      {
+        cash_amount_cents: cashAmountCents.toString(),
+        shares: quantity,
+        average_price: Math.abs(cashAmountCents) / 100 / quantity,
+        price_after: priceAfter,
+        current_metric_after: metricAfter,
+        expected_redemption_quantity: redemptionQuantity,
+        expected_redemption_cents: redemptionCents.toString(),
+        sellable_quantity: sellableAfter,
+        quoted_at: executionTs.toISOString(),
+      },
     );
   }
-  if (!isExecutionResult(existing.execution_result)) {
-    throw new ServiceError(
-      "IDEMPOTENCY_CONFLICT",
-      "Stored idempotent execution response is invalid.",
-    );
+
+  const userCash = parseDatabaseBigint(user.cash_balance_cents, "cash_balance_cents");
+  if (input.action === "buy" && userCash < BigInt(cashAmountCents)) {
+    throw new ServiceError("INSUFFICIENT_CASH", "Insufficient cash balance.", {
+      cash_balance_cents: user.cash_balance_cents,
+      required_cents: cashAmountCents.toString(),
+    });
   }
-  return existing.execution_result;
+
+  const signedTradeCash =
+    input.action === "buy" ? -BigInt(cashAmountCents) : BigInt(cashAmountCents);
+  const cashBalance = userCash + signedTradeCash + BigInt(redemptionCents);
+  if (cashBalance < 0n || cashBalance > SIGNED_BIGINT_MAX) {
+    throw new ServiceError("INSUFFICIENT_CASH", "Insufficient cash balance.");
+  }
+
+  return cashBalance;
 }
 
 export interface TradeOptions {
@@ -189,18 +215,25 @@ export async function executeTrade(
   options: TradeOptions = {},
 ): Promise<{ result: ExecutionResult; replayed: boolean }> {
   const idempotencyKey = input.idempotency_key.toLowerCase();
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: one serializable transaction on purpose; split validation from ledger writes before growing.
+  // READ COMMITTED; the instrument, book, account and holdings are locked before writes.
   return db.transaction().execute(async (transaction) => {
     const advisoryKey = deriveAdvisoryLockKey(idempotencyKey);
-    await sql`select pg_advisory_xact_lock(${advisoryKey.toString()}::bigint)`.execute(transaction);
+    await lockIdempotency(transaction, advisoryKey);
 
     const requestFingerprint = deriveTradeRequestFingerprint(userId, input);
-    const replay = await loadReplay(transaction, idempotencyKey, userId, requestFingerprint);
+    const replay = await loadTradeReplay(
+      transaction,
+      idempotencyKey,
+      userId,
+      requestFingerprint,
+      isExecutionResult,
+      "Stored idempotent execution response is invalid.",
+    );
     if (replay !== undefined) {
       return { result: replay, replayed: true };
     }
 
-    const book = await findTradeBook(transaction, input, true);
+    const book = await tradeBookById(transaction, input.market_id, true);
     const market = book.market;
     // The clock is read after the book's lock, so marks keep sequence order in time.
     const executionTs =
@@ -288,44 +321,7 @@ export async function executeTrade(
     const metricAfter = preview.metricAfter;
     const sellableAfter = preview.sellableAfter;
 
-    // The slippage guard is checked after the post-trade state is known so a
-    // PRICE_MOVED rejection carries the same fields as a quote: the client
-    // re-presents the full consequence set, not just the new cash figure.
-    const guardCents = parseUsdToCents(
-      input.action === "buy" ? input.max_cost_usd : input.min_proceeds_usd,
-    );
-    if (input.action === "buy" ? cashAmountCents > guardCents : cashAmountCents < guardCents) {
-      throw new ServiceError(
-        "PRICE_MOVED",
-        `Price moved. New ${input.action === "buy" ? "cost" : "proceeds"}: $${formatCentsAsUsd(cashAmountCents)}. Confirm trade?`,
-        {
-          cash_amount_cents: cashAmountCents.toString(),
-          shares: quantity,
-          average_price: Math.abs(cashAmountCents) / 100 / quantity,
-          price_after: priceAfter,
-          current_metric_after: metricAfter,
-          expected_redemption_quantity: redemptionQuantity,
-          expected_redemption_cents: redemptionCents.toString(),
-          sellable_quantity: sellableAfter,
-          quoted_at: executionTs.toISOString(),
-        },
-      );
-    }
-
-    const userCash = parseDatabaseBigint(user.cash_balance_cents, "cash_balance_cents");
-    if (input.action === "buy" && userCash < BigInt(cashAmountCents)) {
-      throw new ServiceError("INSUFFICIENT_CASH", "Insufficient cash balance.", {
-        cash_balance_cents: user.cash_balance_cents,
-        required_cents: cashAmountCents.toString(),
-      });
-    }
-
-    const signedTradeCash =
-      input.action === "buy" ? -BigInt(cashAmountCents) : BigInt(cashAmountCents);
-    const cashBalance = userCash + signedTradeCash + BigInt(redemptionCents);
-    if (cashBalance < 0n || cashBalance > SIGNED_BIGINT_MAX) {
-      throw new ServiceError("INSUFFICIENT_CASH", "Insufficient cash balance.");
-    }
+    const cashBalance = validateExecutionCash(input, preview, user, executionTs);
 
     const mmCashDelta =
       (input.action === "buy" ? BigInt(cashAmountCents) : -BigInt(cashAmountCents)) -

@@ -1,8 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
+import { MAX_FORECAST_LEVEL } from "../engine/tournament/forecast.js";
 import { binaryScore, forwardScore } from "../engine/tournament/score.js";
 import type { Viewer, ViewerForecast } from "../services/tournament/forecaster.js";
+import type { QuestionDetail } from "../services/tournament/get-question.js";
+import type { AggregateView } from "../services/tournament/records.js";
 import { apiRequest } from "./api.js";
 import type {
   BinaryScoreBounds,
@@ -10,10 +13,16 @@ import type {
   WindowCoverage,
   WindowSpanUnit,
 } from "./format.js";
+import { usdInTournamentUnit } from "./format.js";
 import { queryKeys } from "./query-keys.js";
 
 /** The forward preview's misses: exact, 10% either side, 2× either side. */
 const FORWARD_MISS_RATIOS = [1, 1.1, 2] as const;
+
+/** A level the forecast service would accept: positive and below its range cap. */
+export function isForecastLevel(value: number | null): value is number {
+  return value !== null && value > 0 && value < MAX_FORECAST_LEVEL;
+}
 
 /** What a forward level scores if it settles exactly there, 10% off, or 2× off, from the engine. */
 export function forwardScoreLadder(level: number): ForwardScoreLadder {
@@ -122,3 +131,44 @@ export function signInHref(returnTo: string): string {
 export function forecasterHref(identity: { readonly profileSlug: string }): string {
   return `/t/u/${identity.profileSlug}`;
 }
+
+/** Sign-out invalidates every identity-dependent read, including paper cash. */
+export function useTournamentSignOut() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiRequest("/api/t/auth/logout", { method: "POST", body: "{}" }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.all }),
+  });
+}
+
+/** The numeric crowd figure shared by the readout and the editable forecast chips. */
+export function tournamentCrowdValue(
+  question: Pick<QuestionDetail, "kind">,
+  aggregate: AggregateView | null,
+): number | null {
+  if (aggregate?.published !== true) return null;
+  return question.kind === "binary" ? aggregate.p : aggregate.value;
+}
+
+/** A linked contract's figure in the question's own units. */
+export function tournamentMarketValue(question: QuestionDetail): number | null {
+  const instrument = question.instrument;
+  if (instrument === null) return null;
+  if (question.kind === "binary") return instrument.yesPrice;
+  if (question.unit === null || instrument.midUsd === null) return null;
+  return usdInTournamentUnit(instrument.midUsd, question.unit);
+}
+
+/** Same scorer and miss ratios as the forward editor, including its doubled outer miss. */
+export function forwardRuleScores() {
+  const [exact, near, double] = FORWARD_MISS_RATIOS;
+  return {
+    exact: forwardScore(1, exact),
+    near: forwardScore(1, near),
+    double: forwardScore(1, double),
+    quadruple: forwardScore(1, double ** 2),
+  };
+}
+
+/** Shared heading; the surrounding explanation is specific to onboarding or submission. */
+export const PUBLIC_FORECAST_HEADING = "Forecasts are public.";

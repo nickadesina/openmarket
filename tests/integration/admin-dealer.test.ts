@@ -18,6 +18,7 @@ const runtime = vi.hoisted(() => ({ getRuntimeDatabase: vi.fn() }));
 vi.mock("../../src/lib/db/runtime.js", () => runtime);
 vi.mock("../../src/lib/logging/server-log.js", () => ({
   logReadRequest: vi.fn(),
+  logMutationRequest: vi.fn(),
   logUnexpectedError: vi.fn(),
 }));
 
@@ -76,7 +77,7 @@ postgresDescribe(suiteName, () => {
 
     const trader = await createTrader(postgres.db, "dealer_trader");
     const notAdmin = await call(await sessionCookie(postgres.db, trader.tournamentUserId));
-    expect(notAdmin.status).toBe(401);
+    expect(notAdmin.status).toBe(403);
     expect((await notAdmin.json()).error.code).toBe("ADMIN_REQUIRED");
   });
 

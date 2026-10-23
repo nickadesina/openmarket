@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useId, useState } from "react";
 
+import { PASSWORD_MIN_LENGTH } from "../../lib/api/tournament-schemas.js";
 import { safeReturnPath, welcomeHref } from "../../lib/auth/return-path.js";
 import { ApiClientError, apiRequest } from "../../lib/client/api.js";
 import { errorMessage } from "../../lib/client/format.js";
@@ -12,8 +13,6 @@ import { useTournamentViewer, xSignInHref } from "../../lib/client/tournament.js
 import styles from "./signin-page.module.css";
 
 type Mode = "sign-in" | "create";
-
-const PASSWORD_MIN_LENGTH = 10;
 
 function failure(error: unknown): string {
   if (error instanceof ApiClientError && error.code === "INVALID_INPUT") {
@@ -27,7 +26,13 @@ function failure(error: unknown): string {
  * sign-in lands back where the visitor started; a new account passes through
  * the welcome step first.
  */
-export function SignInPage({ returnTo: rawReturn }: { readonly returnTo: string | null }) {
+export function SignInPage({
+  returnTo: rawReturn,
+  signIn,
+}: {
+  readonly returnTo: string | null;
+  readonly signIn?: string | undefined;
+}) {
   const returnTo = safeReturnPath(rawReturn);
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -82,6 +87,14 @@ export function SignInPage({ returnTo: rawReturn }: { readonly returnTo: string 
             number, the chance of YES or a dollar level.
           </p>
         </header>
+
+        {signIn === "failed" || signIn === "unavailable" ? (
+          <p className={styles.error} role="alert">
+            {signIn === "failed"
+              ? "X sign-in did not complete. Try again; nothing was saved."
+              : "X sign-in is not configured on this deployment."}
+          </p>
+        ) : null}
 
         {viewer.isPending ? (
           <div className={styles.xSkeleton} role="status" aria-label="Checking sign-in options" />

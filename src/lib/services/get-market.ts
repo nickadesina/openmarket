@@ -20,7 +20,7 @@ import {
   probabilitiesAbove,
 } from "../engine/distribution.js";
 import { impliedValuationQuantile } from "../engine/median.js";
-import { LIVE_STATES, openForwardInventory } from "./dealer/dealer-books.js";
+import { LIVE_STATES } from "./dealer/dealer-books.js";
 import {
   type BinaryInstrumentQuote,
   type ForwardInstrumentQuote,
@@ -194,21 +194,74 @@ async function liveQuote(
   }
 }
 
-/** One listing's view at `at`, inside the caller's read transaction. */
-export async function readListing(
+/** Shared read inputs for the whole board, avoiding one query set per listed name. */
+async function loadListingReads(
+  db: Transaction<Database>,
+  listings: readonly ListingWithCompany[],
+) {
+  const listingIds = listings.map((listing) => listing.id);
+  const companyIds = listings.map((listing) => listing.company_id);
+  const live = await db
+    .selectFrom("instruments")
+    .selectAll()
+    .where("listing_id", "in", listingIds)
+    .where("state", "in", LIVE_STATES)
+    .orderBy("epoch", "desc")
+    .execute();
+  const instrumentIds = live.map((instrument) => instrument.id);
+  const [markets, inventory, lastTrades] = await Promise.all([
+    instrumentIds.length === 0
+      ? []
+      : db
+          .selectFrom("markets")
+          .selectAll()
+          .select(openInterestSql(sql.ref("markets.id")).as("binary_interest"))
+          .where("instrument_id", "in", instrumentIds)
+          .execute(),
+    instrumentIds.length === 0
+      ? []
+      : db
+          .selectFrom("forward_positions")
+          .select([
+            "instrument_id",
+            sql<string>`coalesce(sum(notional_cents) filter (where side = 'long'), 0)::text`.as(
+              "long",
+            ),
+            sql<string>`coalesce(sum(notional_cents) filter (where side = 'short'), 0)::text`.as(
+              "short",
+            ),
+          ])
+          .where("instrument_id", "in", instrumentIds)
+          .where("settled_at", "is", null)
+          .where("voided_at", "is", null)
+          .groupBy("instrument_id")
+          .execute(),
+    db
+      .selectFrom("trades")
+      .innerJoin("markets", "markets.id", "trades.market_id")
+      .select(["markets.company_id", sql<Date>`max(trades.created_at)`.as("at")])
+      .where("markets.company_id", "in", companyIds)
+      .groupBy("markets.company_id")
+      .execute(),
+  ]);
+  return {
+    live,
+    markets: new Map(markets.map((market) => [market.instrument_id, market])),
+    inventory: new Map(inventory.map((row) => [row.instrument_id, row])),
+    lastTrades: new Map(lastTrades.map((row) => [row.company_id, row.at])),
+  };
+}
+
+/** One listing's view at `at`, using the board's common read snapshot. */
+async function readListing(
   db: Transaction<Database>,
   listing: ListingWithCompany,
   at: Date,
+  reads: Awaited<ReturnType<typeof loadListingReads>>,
 ): Promise<ListingView> {
-  const live = await db
-    .selectFrom("instruments")
-    .innerJoin("markets", "markets.instrument_id", "instruments.id")
-    .selectAll("instruments")
-    .select("markets.id as book_id")
-    .where("instruments.listing_id", "=", listing.id)
-    .where("instruments.state", "in", LIVE_STATES)
-    .orderBy("instruments.epoch", "desc")
-    .execute();
+  const live = reads.live.filter(
+    (instrument) => instrument.listing_id === listing.id && reads.markets.has(instrument.id),
+  );
   const { company: listingCompany, ...listingRow } = listing;
   const company = { id: listingCompany.id, name: listingCompany.name, slug: listingCompany.slug };
 
@@ -217,34 +270,23 @@ export async function readListing(
   for (const kind of ["forward", "binary"] as const) {
     const row = live.find((instrument) => instrument.kind === kind);
     if (row === undefined) continue;
-    const { book_id: bookId, ...instrument } = row;
-    const market = await db
-      .selectFrom("markets")
-      .selectAll()
-      .where("id", "=", bookId)
-      .executeTakeFirstOrThrow();
+    const instrument = row;
+    const market = reads.markets.get(row.id);
+    if (market === undefined) continue;
     const quote = await liveQuote(db, { instrument, listing: listingRow, company, market }, at);
     if (quote?.kind === "forward") forward = quote;
     if (quote?.kind === "binary") binary = quote;
   }
 
-  const [forwardInventory, binaryInterest, lastTrade] = await Promise.all([
-    forward === null ? null : openForwardInventory(db, forward.instrument_id),
-    binary === null
-      ? null
-      : db.selectNoFrom(openInterestSql(binary.market_id).as("value")).executeTakeFirstOrThrow(),
-    db
-      .selectFrom("trades")
-      .innerJoin("markets", "markets.id", "trades.market_id")
-      .select(sql<Date | null>`max(trades.created_at)`.as("at"))
-      .where("markets.company_id", "=", listing.company_id)
-      .executeTakeFirstOrThrow(),
-  ]);
+  const forwardInventory =
+    forward === null ? undefined : reads.inventory.get(forward.instrument_id);
   const forwardNotionalUsd =
-    forwardInventory === null
+    forwardInventory === undefined
       ? 0
-      : (forwardInventory.longCents + forwardInventory.shortCents) / 100;
-  const binaryUsd = binaryInterest?.value ?? 0;
+      : (Number(forwardInventory.long) + Number(forwardInventory.short)) / 100;
+  const binaryUsd =
+    binary === null ? 0 : (reads.markets.get(binary.instrument_id)?.binary_interest ?? 0);
+  const lastTrade = reads.lastTrades.get(listing.company_id);
   const anchorUsd = Number(listing.anchor_post_money_usd);
 
   return {
@@ -274,10 +316,21 @@ export async function readListing(
       binaryUsd,
       totalUsd: forwardNotionalUsd + binaryUsd,
     },
-    lastTradeAt: lastTrade.at === null ? null : new Date(lastTrade.at).toISOString(),
+    lastTradeAt: lastTrade === undefined ? null : new Date(lastTrade).toISOString(),
     modelVersion: MODEL_VERSION,
     rulebookVersion: RULEBOOK_VERSION,
   };
+}
+
+/** Batch the board's listing/book/interest reads; quoteBook remains the authoritative quote calculation. */
+export async function readListings(
+  db: Transaction<Database>,
+  listings: readonly ListingWithCompany[],
+  at: Date,
+): Promise<ListingView[]> {
+  if (listings.length === 0) return [];
+  const reads = await loadListingReads(db, listings);
+  return Promise.all(listings.map((listing) => readListing(db, listing, at, reads)));
 }
 
 /** Listings with their companies: `active` ones (listed by `at`, not delisted), or a company's latest. */
@@ -370,9 +423,9 @@ export async function getMarket(
         throw new ServiceError("MARKET_NOT_FOUND", "No listed name matches this address.");
       }
       const [view, epochs] = await Promise.all([
-        readListing(transaction, listing, at),
+        readListings(transaction, [listing], at),
         loadEpochs(transaction, listing.company_id),
       ]);
-      return { ...view, epochs, asOf: at.toISOString() };
+      return { ...view[0]!, epochs, asOf: at.toISOString() };
     });
 }

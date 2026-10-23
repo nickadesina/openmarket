@@ -102,15 +102,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Scoped under .list to outrank the muted `.list span` default. */
-.list .positive {
-  color: var(--color-positive);
-}
-
-.list .negative {
-  color: var(--color-negative);
-}
-
 .message {
   display: grid;
   justify-items: start;
@@ -212,8 +203,4 @@
     align-items: flex-start;
     padding-inline: var(--space-4);
   }
-}
-
-.visuallyHidden {
-  composes: visuallyHidden from "../../styles/shared.module.css";
 }

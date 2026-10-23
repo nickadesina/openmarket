@@ -76,12 +76,10 @@ export function formatProbability(value: number): string {
  * A contract price (average fill, price after) is a probability of a $1 payout and reads as
  * one, like the ladder; cash amounts (cost, proceeds, marked value) are the dollar figures.
  */
-export function formatContractPrice(value: number): string {
-  return probabilityFormatter.format(value);
-}
+export const formatContractPrice = formatProbability;
 
 /** A relative change magnitude (0.157 → "15.7%"); direction is carried by an arrow and a word. */
-export function formatPercent(value: number): string {
+function formatPercent(value: number): string {
   return probabilityFormatter.format(value);
 }
 
@@ -452,4 +450,20 @@ export function formatDuration(milliseconds: number): string {
 /** Elapsed hours at one decimal ("74.5 h"): how long an instrument has been widened. */
 export function formatHours(hours: number): string {
   return Number.isFinite(hours) ? `${hours.toFixed(1)} h` : "Unavailable";
+}
+
+/** Sigma is a model parameter, shown with two decimal places. */
+export function formatSigma(value: number): string {
+  return value.toFixed(2);
+}
+export function formatForwardNotional(quantity: number): string {
+  return formatCents(String(Math.round(quantity * 100)));
+}
+/** Whole-dollar chips and opening-balance copy retain their existing precision. */
+export function formatWholeUsd(value: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(value);
 }

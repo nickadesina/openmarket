@@ -365,11 +365,66 @@ describe("Part 4 admin comment moderation", () => {
     const admin = await removeRoute(request());
 
     expect(signedOut.status).toBe(401);
-    expect(notAdmin.status).toBe(401);
+    expect(notAdmin.status).toBe(403);
     await expect(notAdmin.json()).resolves.toMatchObject({ error: { code: "ADMIN_REQUIRED" } });
     expect(admin.status).toBe(200);
     expect(mocks.removeComment).toHaveBeenCalledTimes(1);
     expect(mocks.removeComment).toHaveBeenCalledWith(fakeDatabase, COMMENT_ID);
     await expect(admin.json()).resolves.toEqual(removed);
   });
+});
+
+it("rejects extraneous quote query parameters before executing", async () => {
+  const response = await quoteRoute(
+    mutationRequest("/api/quote?user_id=secret", {
+      market_id: "0f8a0c1e-6c1d-4f7a-9d2b-3c4e5f607182",
+      action: "buy",
+      side: "yes",
+      strike_index: 0,
+      quantity: 2,
+    }),
+  );
+  expect(response.status).toBe(400);
+  expect(mocks.quoteMarket).not.toHaveBeenCalled();
+});
+
+it("identifies a failing field without echoing the submitted value", async () => {
+  const response = await quoteRoute(
+    mutationRequest("/api/quote", {
+      market_id: "private-invalid-market",
+      action: "buy",
+      side: "yes",
+      strike_index: 0,
+      quantity: 2,
+    }),
+  );
+  expect(response.status).toBe(400);
+  const payload = JSON.stringify(await response.json());
+  expect(payload).toContain("market_id");
+  expect(payload).not.toContain("private-invalid-market");
+});
+
+it("logs mutation duration and status without query, cookie or body secrets", async () => {
+  const logged = vi.spyOn(console, "info").mockImplementation(() => undefined);
+  try {
+    await quoteRoute(
+      mutationRequest(
+        "/api/quote?secret=private-query",
+        { private: "private-body" },
+        { cookie: "private-cookie" },
+      ),
+    );
+    expect(logged).toHaveBeenCalledOnce();
+    const entry = JSON.parse(String(logged.mock.calls[0]?.[0]));
+    expect(entry).toMatchObject({
+      method: "POST",
+      pathname: "/api/quote",
+      status: 400,
+      errorCode: "INVALID_INPUT",
+    });
+    expect(entry.durationMs).toBeGreaterThanOrEqual(0);
+    expect(JSON.stringify(entry)).not.toContain("private-");
+  } finally {
+    logged.mockRestore();
+  }
 });

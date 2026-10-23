@@ -1,5 +1,4 @@
 import type { Kysely } from "kysely";
-
 import type {
   CronRunStatus,
   Database,
@@ -12,6 +11,7 @@ import { listPendingEvidence, type PendingEvidence } from "../tournament/evidenc
 import type { CronJob } from "./cron-run.js";
 import { LIVE_STATES } from "./dealer-books.js";
 import { type DealerHealth, getDealerHealth } from "./get-dealer-health.js";
+import { type RefEnvelope, refEnvelope } from "./ref-common.js";
 import type { PendingPromotion } from "./settle-instruments.js";
 
 /**
@@ -89,7 +89,7 @@ export interface AdminSource {
   readonly last_error: string | null;
 }
 
-export interface DealerAdminPayload {
+export interface DealerAdminPayload extends Omit<RefEnvelope, "as_of"> {
   readonly as_of: Date;
   readonly pnl: readonly AdminPnlListing[];
   readonly instruments: readonly AdminInstrument[];
@@ -263,6 +263,7 @@ export async function getDealerAdmin(db: Kysely<Database>, now: Date): Promise<D
   for (const job of JOBS) cronRuns.push({ job, runs: await recentRuns(db, job) });
   const sources = await db.selectFrom("source_health").selectAll().orderBy("source").execute();
   return {
+    ...refEnvelope(now),
     as_of: now,
     pnl: await pnlByListing(db),
     instruments,

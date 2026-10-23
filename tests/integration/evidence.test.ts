@@ -23,6 +23,7 @@ const runtime = vi.hoisted(() => ({ getRuntimeDatabase: vi.fn() }));
 vi.mock("../../src/lib/db/runtime.js", () => runtime);
 vi.mock("../../src/lib/logging/server-log.js", () => ({
   logReadRequest: vi.fn(),
+  logMutationRequest: vi.fn(),
   logUnexpectedError: vi.fn(),
 }));
 
@@ -314,7 +315,7 @@ postgresDescribe(suiteName, () => {
       { decision: "confirmed", confirming_flag_id: print.id },
       cookie,
     );
-    expect(await codeOf(forecasterReview)).toEqual({ status: 401, code: "ADMIN_REQUIRED" });
+    expect(await codeOf(forecasterReview)).toEqual({ status: 403, code: "ADMIN_REQUIRED" });
 
     const admin = await createTrader(postgres.db, "admin");
     const adminCookie = await sessionCookie(postgres.db, admin.tournamentUserId);

@@ -31,6 +31,7 @@ vi.mock("../../src/lib/auth/tournament-session.js", async (importOriginal) => ({
 }));
 
 const { GET } = await import("../../src/app/api/t/auth/x/callback/route.js");
+const { GET: start } = await import("../../src/app/api/t/auth/x/start/route.js");
 
 const PROFILE: XProfile = {
   id: "123456",
@@ -65,6 +66,20 @@ describe("GET /api/t/auth/x/callback", () => {
     vi.clearAllMocks();
   });
 
+  it("keeps a safe return path when X sign-in is unavailable", () => {
+    vi.stubEnv("X_CLIENT_ID", "");
+    const response = start(
+      new Request("https://openmarket.systems/api/t/auth/x/start?return=%2Fportfolio"),
+    );
+    expect(response.headers.get("location")).toBe(
+      "/t/signin?return=%2Fportfolio&sign_in=unavailable",
+    );
+    const unsafe = start(
+      new Request("https://openmarket.systems/api/t/auth/x/start?return=https://evil.example"),
+    );
+    expect(unsafe.headers.get("location")).toBe("/t/signin?return=%2Ft&sign_in=unavailable");
+  });
+
   it("lands a returning sign-in on the page that started it", async () => {
     const response = await GET(callback("/t/q/anthropic-s1-by-2026-12-31"));
     expect(response.status).toBe(302);
@@ -93,11 +108,19 @@ describe("GET /api/t/auth/x/callback", () => {
     expect(fromQuestions.headers.get("location")).toBe("/t/welcome");
   });
 
+  it("preserves the return path when X times out", async () => {
+    mocks.fetchXProfile.mockRejectedValue(new DOMException("Timed out", "TimeoutError"));
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const response = await GET(callback("/portfolio"));
+    expect(response.headers.get("location")).toBe("/t/signin?return=%2Fportfolio&sign_in=failed");
+    expect(mocks.createTournamentSession).not.toHaveBeenCalled();
+  });
+
   it("still fails closed without opening a session", async () => {
     mocks.fetchXProfile.mockRejectedValue(new Error("X profile lookup failed (403)."));
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     const response = await GET(callback("/t"));
-    expect(response.headers.get("location")).toBe("/t?sign_in=failed");
+    expect(response.headers.get("location")).toBe("/t/signin?return=%2Ft&sign_in=failed");
     expect(response.headers.getSetCookie().map((cookie) => cookie.split("=")[0])).toEqual([
       OAUTH_STATE_COOKIE,
     ]);
