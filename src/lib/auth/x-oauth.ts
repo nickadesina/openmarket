@@ -19,6 +19,7 @@ export const X_SCOPES = ["users.read", "tweet.read"] as const;
 export const OAUTH_STATE_COOKIE = "openmarket_tournament_oauth";
 export const OAUTH_STATE_MAX_AGE_MS = 10 * 60 * 1000;
 const MAX_STATE_COOKIE_LENGTH = 1_024;
+const X_REQUEST_TIMEOUT_MS = 10_000;
 
 type Environment = Readonly<Record<string, string | undefined>>;
 
@@ -211,6 +212,7 @@ export async function fetchXProfile(
   }
   const tokenResponse = await fetchImpl(X_TOKEN_URL, {
     method: "POST",
+    signal: AbortSignal.timeout(X_REQUEST_TIMEOUT_MS),
     headers,
     body: new URLSearchParams({
       grant_type: "authorization_code",
@@ -228,6 +230,7 @@ export async function fetchXProfile(
   if (!token.success) throw new XSignInError("X returned an unreadable token.");
 
   const profileResponse = await fetchImpl(X_PROFILE_URL, {
+    signal: AbortSignal.timeout(X_REQUEST_TIMEOUT_MS),
     headers: { Authorization: `Bearer ${token.data.access_token}` },
   });
   if (!profileResponse.ok) {

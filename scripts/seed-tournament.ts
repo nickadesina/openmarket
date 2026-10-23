@@ -13,7 +13,7 @@
 import { questionInputSchema } from "../src/lib/api/tournament-schemas.js";
 import { LAUNCH_QUESTIONS } from "../src/lib/config/tournament-questions.js";
 import { createDirectDatabase, destroyDatabase } from "../src/lib/db/client.js";
-import { openQuestion, saveDraftQuestion } from "../src/lib/services/tournament/admin.js";
+import { seedQuestion } from "../src/lib/services/tournament/seed-question.js";
 
 function argument(name: string): string | undefined {
   const prefix = `--${name}=`;
@@ -42,10 +42,9 @@ async function main(): Promise<void> {
         console.log(`skipped: ${input.slug} closed at ${input.closes_at}; not opened`);
         continue;
       }
-      await saveDraftQuestion(db, input);
+      await seedQuestion(db, input, open);
       console.log(`draft: ${input.slug}`);
       if (open) {
-        await openQuestion(db, input.slug);
         console.log(`open: ${input.slug} from ${opensAt}`);
       }
     }

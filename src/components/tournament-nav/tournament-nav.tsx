@@ -1,11 +1,13 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { apiRequest } from "../../lib/client/api.js";
-import { forecasterHref, useTournamentViewer } from "../../lib/client/tournament.js";
+import {
+  forecasterHref,
+  useTournamentSignOut,
+  useTournamentViewer,
+} from "../../lib/client/tournament.js";
 import { SignInCallout } from "./sign-in-callout.js";
 import { DevSignIn } from "./tournament-account.js";
 import styles from "./tournament-nav.module.css";
@@ -14,11 +16,7 @@ import styles from "./tournament-nav.module.css";
 export function TournamentNav() {
   const pathname = usePathname();
   const viewer = useTournamentViewer();
-  const queryClient = useQueryClient();
-  const signOut = useMutation({
-    mutationFn: () => apiRequest("/api/t/auth/logout", { method: "POST", body: "{}" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["openmarket", "tournament"] }),
-  });
+  const signOut = useTournamentSignOut();
   const links = [
     {
       href: "/t",

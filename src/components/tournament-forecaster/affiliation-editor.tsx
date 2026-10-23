@@ -2,9 +2,9 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, type ReactNode, useId, useState } from "react";
-
 import { apiRequest } from "../../lib/client/api.js";
 import { errorMessage } from "../../lib/client/format.js";
+import { queryKeys } from "../../lib/client/query-keys.js";
 import { AFFILIATION_MAX_LENGTH } from "../../lib/config/tournament-affiliations.js";
 import styles from "./affiliation-editor.module.css";
 
@@ -38,7 +38,7 @@ export function AffiliationEditor({
       }),
     onSuccess: async (result) => {
       setValue(result.affiliation ?? "");
-      await queryClient.invalidateQueries({ queryKey: ["openmarket", "tournament"] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.tournament });
       onContinue?.();
     },
   });
