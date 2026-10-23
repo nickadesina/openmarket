@@ -64,9 +64,22 @@ async function main(): Promise<void> {
   }
 }
 
+/**
+ * The error's class and, for a PostgreSQL error, its SQLSTATE: enough to tell
+ * a refused connection (ECONNREFUSED, 28P01) from a failed statement (42701),
+ * without messages that may carry hosts or values.
+ */
+function errorSummary(error: unknown): string {
+  if (!(error instanceof Error)) return "UnknownError";
+  const code = (error as { code?: unknown }).code;
+  return typeof code === "string" ? `${error.name} ${code}` : error.name;
+}
+
 try {
   await main();
-} catch {
-  console.error("Database migration failed; no credentials or database error details were logged.");
+} catch (error) {
+  console.error(
+    `Database migration failed (${errorSummary(error)}); no credentials or database error details were logged.`,
+  );
   process.exitCode = 1;
 }
