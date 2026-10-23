@@ -30,6 +30,7 @@ export async function identitiesFor(
       "identities.verified",
       "users.flagged",
       "users.affiliation",
+      "users.demo",
     ])
     .distinctOn("identities.user_id")
     .where("identities.user_id", "in", [...new Set(userIds)])
@@ -46,6 +47,7 @@ export async function identitiesFor(
       avatarUrl: row.avatar_url,
       verified: row.verified,
       flagged: row.flagged,
+      demo: row.demo,
     });
   }
   return identities;

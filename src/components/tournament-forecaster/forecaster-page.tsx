@@ -20,6 +20,7 @@ import type {
   OpenPosition,
   ResolvedPosition,
 } from "../../lib/services/tournament/forecaster.js";
+import { DemoTag } from "../market-demo/market-demo.js";
 import { AffiliationEditor } from "./affiliation-editor.js";
 import styles from "./forecaster-page.module.css";
 import { RestrictionsEditor } from "./restrictions-editor.js";
@@ -137,7 +138,10 @@ export function ForecasterPage({
           </div>
           <p className={styles.headerMeta}>
             {identity.displayName === identity.handle ? null : <span>{identity.displayName}</span>}
-            {identity.provider === "password" ? <span>Username account</span> : null}
+            {identity.demo ? <DemoTag /> : null}
+            {identity.provider === "password" && !identity.demo ? (
+              <span>Username account</span>
+            ) : null}
             {identity.verified ? <span>Verified on X</span> : null}
             {identity.flagged ? (
               <span className={styles.flag}>Flagged: excluded from the crowd</span>

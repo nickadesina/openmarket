@@ -170,6 +170,8 @@ export interface PublicIdentity {
   readonly avatarUrl: string | null;
   readonly verified: boolean;
   readonly flagged: boolean;
+  /** A demo account (decision 0005): trades the demo markets, never forecasts. */
+  readonly demo: boolean;
 }
 
 export async function databaseNow(db: TournamentDb): Promise<Date> {

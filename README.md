@@ -133,7 +133,10 @@ tail probabilities as meaningful.
 
 ### D6. Deployment, migration, and listing — Implemented
 
-- Builds migrate and verify replay (§5); they never seed or list.
+- Builds migrate, open any missing launch questions
+  (`seed:tournament -- --open`), run the demo seed (decision 0005: it
+  trades once and skips before the dealer has quoted), and verify replay
+  (§5). They never list.
 - Listing is an operator action (`npm run seed:listings`), idempotent on
   (company, listed_at) (D10).
 - Migrations are append-only after launch. One owner-approved exception
@@ -638,14 +641,14 @@ See `PART5.md` for the environment contract.
 | Claim | Status | Evidence |
 | --- | --- | --- |
 | CI blocked by a table-order assertion | Stale | Fixed before the current head; 15 integration tests pass locally and in the last pushed run. |
-| CI never reaches browser tests | Fixed | The ladder specs that timed out went with the admin seed in milestone 6. Playwright's global setup lists the five names and runs one dealer job against `DATABASE_URL_TEST` (`tests/browser/global-setup.ts`, no production route); `dealer.spec.ts` covers the board, market page, a forward long into the portfolio, a binary buy, PRICE_MOVED, mobile overflow and keyboard reach. Specs sign in through the tournament's dev sign-in. |
+| CI never reaches browser tests | Fixed | The ladder specs that timed out went with the admin seed in milestone 6. Playwright's global setup lists the five names, runs one dealer job and seeds the demo accounts' trades against `DATABASE_URL_TEST` (`tests/browser/global-setup.ts`, no production route); `dealer.spec.ts` covers the board, market page, a forward long into the portfolio, a binary buy, PRICE_MOVED, mobile overflow and keyboard reach. Specs sign in through the tournament's dev sign-in. |
 | Shared username paper account with $100,000 opening balance | Fixed | Removed in milestone 6; a tournament user's paper account opens at $100,000 on first use (D1). |
 | Any known username resumes that account | Fixed | The username flow, its cookie and `USER_COOKIE_SECRET` are deleted; identity is the tournament session. |
 | Production requires exactly Stripe and Anthropic | Fixed | `scripts/production-seed.ts` is deleted; `seed:listings` lists the D10 names. |
 | Epochs half-modeled | Superseded | The ladder markets are gone (`008`); the dealer carries `instruments.epoch` (D3). |
 | Outstanding claims varies with mask width | Fixed | Both services read `openInterestSql`, the largest per-bucket total. |
 | Grid and floor impose artificial tails | True, display only | Universal grid in `buckets.ts`; 0.001 floor in `engine/distribution.ts` (`MIN_BUCKET_PROBABILITY`), now on the read-only implied distribution. Decision open (D5). |
-| Deployment deadlocks after 30 days | Fixed | Builds never seeded; the production seed and its freshness rule are deleted (D6). |
+| Deployment deadlocks after 30 days | Fixed | The production seed and its freshness rule are deleted; the build's seeds today (launch questions, the one-time demo seed) carry no freshness rule (D6). |
 | Trading surface is the 41-bucket ladder | Fixed | Milestone 6: the market page trades the forward (Long/Short, notional, live bid/ask, max gain/loss, expiry) and the binary (YES/NO by `market_id`); the ladder is a read-only implied display. Slug addressing on `/api/quote` and `/api/trade`, the ladder's preview branch, `settleMarket` and `settlementInputSchema`, `twap.ts`, `decomposition.ts`, the grid's bucket lookups and the valuation seed are deleted; `settleLmsrBook` lives in `services/dealer/settle-lmsr-book.ts`. |
 | Tournament is in `master` | Fixed | Merged in #2 (`a60d971`, 2026-10-21); milestone 1 is done. |
 | `shelved/timing-strips` branch exists | False | Not on the remote as of 2026-10-21; the "by date" market is reinstated as D11's binary. |
