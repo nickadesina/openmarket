@@ -139,11 +139,16 @@ export function SignInPage({
                 onChange={(event) => setUsername(event.target.value)}
                 autoComplete="username"
                 pattern="[A-Za-z0-9_]{3,20}"
+                title="3 to 20 letters, digits or underscores"
+                aria-describedby={`${id}-username-rule`}
                 minLength={3}
                 maxLength={20}
                 required
               />
             </label>
+            <p className={styles.note} id={`${id}-username-rule`}>
+              3 to 20 letters, digits or underscores.
+            </p>
             <label className={styles.field}>
               <span>Password</span>
               <input
