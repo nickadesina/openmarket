@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { sql } from "kysely";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { type QuestionInput, questionInputSchema } from "../../src/lib/api/tournament-schemas.js";
@@ -40,6 +42,7 @@ import {
   submitForecast,
 } from "../../src/lib/services/tournament/submit-forecast.js";
 import { verifyTournament } from "../../src/lib/services/tournament/verify-tournament.js";
+import { parseProposedQuestions } from "../../src/lib/tradeables/proposed-questions.js";
 import { seedFixtureListings } from "./dealer-fixture.js";
 import {
   createPostgresTestDatabase,
@@ -794,5 +797,35 @@ postgresDescribe(suiteName, () => {
       "forward-q": { p: null, value: 412.5 },
     });
     expect(body.isAdmin).toBe(false);
+  });
+
+  it("seeds a proposer's file with their name on each question, and keeps it once open", async () => {
+    const opensAt = new Date(Date.now() - HOUR).toISOString();
+    const questions = parseProposedQuestions(
+      readFileSync("docs/tradeables/questions/futuresearch.json", "utf8"),
+      opensAt,
+    ).map((question) => ({ ...question, proposed_by: "FutureSearch" }));
+    for (const question of questions) await seedQuestion(postgres.db, question, true);
+
+    for (const question of questions) {
+      const detail = await getQuestion(postgres.db, question.slug);
+      expect(detail).toMatchObject({
+        proposedBy: "FutureSearch",
+        status: "open",
+        kind: question.kind,
+      });
+    }
+    const house = binary(
+      "house-question",
+      new Date(Date.now() - HOUR),
+      new Date(Date.now() + HOUR),
+    );
+    await seedQuestion(postgres.db, house, true);
+    expect((await getQuestion(postgres.db, "house-question")).proposedBy).toBeNull();
+    await expect(
+      sql`update tournament_questions set proposed_by = '  ' where slug = 'house-question'`.execute(
+        postgres.db,
+      ),
+    ).rejects.toThrow(/tournament_questions_proposed_by/);
   });
 });

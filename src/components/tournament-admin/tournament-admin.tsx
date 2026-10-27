@@ -325,7 +325,7 @@ function DraftForm() {
           spellCheck={false}
           value={source}
           onChange={(event) => setSource(event.target.value)}
-          placeholder='{"slug": "…", "title": "…", "kind": "forward", "unit": "USD_B", "expiry_at": "…", "opens_at": "…", "closes_at": "…", "description_md": "…", "rulebook_md": "…", "rulebook_version": 1} — or "kind": "binary" with no unit or expiry_at'
+          placeholder='{"slug": "…", "title": "…", "kind": "forward", "unit": "USD_B", "expiry_at": "…", "opens_at": "…", "closes_at": "…", "description_md": "…", "rulebook_md": "…", "rulebook_version": 1, "proposed_by": "…" (optional)} — or "kind": "binary" with no unit or expiry_at'
         />
       </Field>
       <button className={styles.inkButton} type="submit" disabled={save.isPending}>

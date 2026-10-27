@@ -9,11 +9,20 @@
  * A question that is already open is pinned and reported as such. With
  * --open, a question whose close has passed is skipped rather than written,
  * so the production build can run this on every deploy (scripts/vercel-build.ts).
+ *
+ * With --from, the questions come from a proposer's file instead of the
+ * launch set (docs/tradeables/questions/, src/lib/tradeables/proposed-questions.ts):
+ *
+ *   npm run seed:tournament -- --from=docs/tradeables/questions/futuresearch.json --open
  */
+
+import { readFileSync } from "node:fs";
+
 import { questionInputSchema } from "../src/lib/api/tournament-schemas.js";
 import { LAUNCH_QUESTIONS } from "../src/lib/config/tournament-questions.js";
 import { createDirectDatabase, destroyDatabase } from "../src/lib/db/client.js";
 import { seedQuestion } from "../src/lib/services/tournament/seed-question.js";
+import { parseProposedQuestions } from "../src/lib/tradeables/proposed-questions.js";
 
 function argument(name: string): string | undefined {
   const prefix = `--${name}=`;
@@ -27,8 +36,14 @@ async function main(): Promise<void> {
 
   const db = createDirectDatabase();
   try {
-    for (const launch of LAUNCH_QUESTIONS) {
-      const input = questionInputSchema.parse({ ...launch, opens_at: opensAt });
+    const from = argument("from");
+    const inputs =
+      from === undefined
+        ? LAUNCH_QUESTIONS.map((launch) =>
+            questionInputSchema.parse({ ...launch, opens_at: opensAt }),
+          )
+        : parseProposedQuestions(readFileSync(from, "utf8"), opensAt);
+    for (const input of inputs) {
       const existing = await db
         .selectFrom("tournament_questions")
         .select("status")

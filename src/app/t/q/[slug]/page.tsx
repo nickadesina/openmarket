@@ -10,6 +10,7 @@ import {
   type PublicForecast,
   type QuestionDetail,
 } from "../../../../lib/services/tournament/get-question.js";
+import { questionShareMetadata } from "../../../../lib/tradeables/question-share.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,7 +38,8 @@ const loadQuestion = cache(async function loadQuestion(
 export async function generateMetadata({ params }: QuestionPageProps): Promise<Metadata> {
   const { slug } = await params;
   const { question } = await loadQuestion(slug);
-  return { title: question?.title ?? "Question" };
+  if (question === null) return { title: "Question" };
+  return { title: question.title, ...questionShareMetadata(question) };
 }
 
 export default async function QuestionPage({ params }: QuestionPageProps) {

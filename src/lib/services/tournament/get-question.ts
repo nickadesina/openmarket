@@ -109,6 +109,8 @@ export interface QuestionDetail extends QuestionSummary {
   readonly rulebookVersion: number;
   readonly minAccountAgeDays: number;
   readonly xThreadUrl: string | null;
+  /** Who proposed the question, as they want it shown; null for the house's own. */
+  readonly proposedBy: string | null;
   readonly voidNoteMd: string | null;
   readonly closedAt: string | null;
   readonly resolutionDetail: ResolutionDetail | null;
@@ -370,6 +372,7 @@ export async function getQuestion(db: Kysely<Database>, slug: string): Promise<Q
     rulebookVersion: question.rulebookVersion,
     minAccountAgeDays: question.minAccountAgeDays,
     xThreadUrl: question.xThreadUrl,
+    proposedBy: question.proposedBy,
     voidNoteMd: question.voidNoteMd,
     closedAt: question.closedAt?.toISOString() ?? null,
     resolutionDetail:

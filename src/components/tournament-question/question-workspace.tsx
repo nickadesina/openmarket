@@ -424,6 +424,9 @@ export function QuestionWorkspace({
     <article className={styles.page}>
       <header className={styles.header}>
         <h1>{question.title}</h1>
+        {question.proposedBy === null ? null : (
+          <p className={styles.proposedBy}>Proposed by {question.proposedBy}</p>
+        )}
         <p className={styles.headerMeta}>
           <span>{tournamentKindCaption(question)}</span>
           <span>{windowLine(question, now)}</span>
