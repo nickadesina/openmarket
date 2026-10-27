@@ -1,0 +1,168 @@
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+  padding: var(--space-6) 0 var(--space-7);
+}
+
+.pageHeader {
+  display: grid;
+  max-width: 48rem;
+  gap: var(--space-2);
+}
+
+.pageHeader h1 {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-tight);
+  text-wrap: balance;
+}
+
+.pageHeader p {
+  max-width: 72ch;
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+.sectionLabel {
+  composes: sectionHead from "../../styles/shared.module.css";
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.link {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--color-border-strong);
+  text-underline-offset: 0.25rem;
+}
+
+.link:hover {
+  text-decoration-color: var(--color-primary);
+}
+
+.section {
+  display: grid;
+  max-width: 80ch;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+  scroll-margin-top: var(--space-4);
+}
+
+.section > p {
+  margin: 0;
+}
+
+.section code,
+.list code {
+  padding: 0 var(--space-1);
+  background: var(--color-surface-hover);
+  font-size: var(--font-size-sm);
+  overflow-wrap: anywhere;
+}
+
+.muted {
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+}
+
+.list {
+  display: grid;
+  margin: 0;
+  padding-left: var(--space-5);
+  gap: var(--space-2);
+}
+
+.route {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-2);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border-subtle);
+  scroll-margin-top: var(--space-4);
+}
+
+.route h3 {
+  margin: 0;
+  font-size: var(--font-size-md);
+}
+
+.route p {
+  margin: 0;
+}
+
+.minorHead {
+  margin: var(--space-2) 0 0;
+  color: var(--color-ink-muted);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+/* A two-column ledger of field name and meaning, ruled like a spec table. */
+.fields {
+  display: grid;
+  margin: 0;
+  border: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+}
+
+.fields > div {
+  display: grid;
+  grid-template-columns: minmax(10rem, 14rem) minmax(0, 1fr);
+}
+
+.fields > div + div {
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.fields dt {
+  padding: var(--space-2) var(--space-3);
+  border-right: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-hover);
+  overflow-wrap: anywhere;
+}
+
+.fields dd {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+}
+
+.example {
+  max-height: 32rem;
+  margin: 0;
+  padding: var(--space-3);
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-elevated);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}
+
+@media (max-width: 42rem) {
+  .fields > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fields dt {
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+}
+
+/* Outranks `.section code`'s inline chip: the example is one block. */
+.section .example code {
+  padding: 0;
+  background: none;
+  font-size: inherit;
+}

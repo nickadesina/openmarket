@@ -542,9 +542,15 @@ s-maxage=60` on success and one unit of the `ref` quota; each service
 puts the three versions and `as_of` first in its payload
 (`refEnvelope`, `ref-common.ts`). The quota is 60 a minute per network, or a key's
 own with `Authorization: Bearer <key>` (migration `010_api_keys`); an
-unknown or revoked key is refused (401), never served as public.
-`npm run api-key:create -- --name=<desk> [--quota=600]` prints a key
-once and stores its SHA-256. `/api/ref/[slug]` lists each live
+unknown or revoked key is refused (401 `API_KEY_INVALID`), never served as
+public. `npm run api-key:create -- --name=<desk> [--quota=600]
+[--tier=design_partner]` prints a key once and stores its SHA-256. A
+`design_partner` key (migration `018_api_key_tiers`) expires 365 days after
+creation and is then refused with 401 `API_KEY_EXPIRED` naming the expiry;
+`standard` keys never expire. `api_key_usage` counts each key's served
+requests per UTC day, and `/admin/dealer` lists keys by tier with the last
+seven days. `/ref` documents the routes for a stranger and `/ref/trial`
+renders the trial terms (`docs/tradeables/feed-trial.md`). `/api/ref/[slug]` lists each live
 instrument's `question_slug`. The forward's reference blends the model
 mid, not the inventory-skewed quote mid, and the API publishes only the
 inventory's sign, on the reference and on the tape. `/admin/dealer`

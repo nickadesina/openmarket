@@ -500,6 +500,18 @@ export interface ApiKeysTable {
   quota_per_minute: number;
   created_at: GeneratedImmutable<Date>;
   revoked_at: Date | null;
+  /** Migration 018: `design_partner` keys expire; `standard` keys do not. */
+  tier: ColumnType<ApiKeyTier, ApiKeyTier | undefined, never>;
+  expires_at: ColumnType<Date | null, Date | null | undefined, never>;
+}
+
+export type ApiKeyTier = "design_partner" | "standard";
+
+/** Served requests per key per UTC day (migration 018). */
+export interface ApiKeyUsageTable {
+  key_id: Immutable<string>;
+  day: Immutable<string>;
+  request_count: number;
 }
 
 /** The `dealer_pnl` view (migration 009): cents, from the dealer's side. */
@@ -557,6 +569,7 @@ export interface Database {
   source_health: SourceHealthTable;
   dealer_pnl: DealerPnlView;
   api_keys: ApiKeysTable;
+  api_key_usage: ApiKeyUsageTable;
   event_flag_reviews: EventFlagReviewsTable;
   tournament_restriction_attestations: TournamentRestrictionAttestationsTable;
   tournament_restriction_companies: TournamentRestrictionCompaniesTable;

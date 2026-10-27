@@ -30,7 +30,8 @@
     "seed:tournament": "tsx --env-file-if-exists=.env.local scripts/seed-tournament.ts",
     "seed:demo": "tsx --env-file-if-exists=.env.local scripts/seed-demo.ts",
     "provenance:batch": "tsx --env-file-if-exists=.env.local scripts/provenance-batch.ts",
-    "api-key:create": "tsx --env-file-if-exists=.env.local scripts/api-key-create.ts"
+    "api-key:create": "tsx --env-file-if-exists=.env.local scripts/api-key-create.ts",
+    "export:ref-examples": "tsx --env-file-if-exists=.env.local scripts/export-ref-examples.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.11",
