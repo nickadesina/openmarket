@@ -1,0 +1,236 @@
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+  padding: var(--space-6) 0 var(--space-7);
+}
+
+.pageHeader {
+  display: grid;
+  max-width: 48rem;
+  gap: var(--space-2);
+}
+
+.pageHeader h1 {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-tight);
+}
+
+.pageHeader p {
+  max-width: 72ch;
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+.sectionLabel {
+  composes: sectionHead from "../../styles/shared.module.css";
+}
+
+/* Versions as a two-cell Spec Table: caps label over the figure. */
+.versions {
+  display: flex;
+  width: max-content;
+  margin: 0;
+  border: 1px solid var(--color-border);
+}
+
+.versions > div {
+  display: flex;
+  align-items: baseline;
+}
+
+.versions > div + div {
+  border-left: 1px solid var(--color-border-subtle);
+}
+
+.versions dt {
+  padding: var(--space-2) var(--space-3);
+  border-right: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-hover);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.versions dd {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-num);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.link {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--color-border-strong);
+  text-underline-offset: 0.25rem;
+}
+
+.link:hover {
+  text-decoration-color: var(--color-primary);
+}
+
+.layout {
+  display: grid;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+  gap: var(--space-6);
+}
+
+.sections {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-6);
+}
+
+.section {
+  display: grid;
+  max-width: 80ch;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+  scroll-margin-top: var(--space-4);
+}
+
+.anchor {
+  color: inherit;
+  text-decoration: none;
+}
+
+.anchor:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--color-primary);
+  text-underline-offset: 0.25rem;
+}
+
+.rule {
+  display: grid;
+  grid-template-columns: minmax(10rem, 14rem) minmax(0, 1fr);
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--color-border-subtle);
+  scroll-margin-top: var(--space-4);
+}
+
+.rule:target {
+  background: var(--color-primary-subtle);
+}
+
+.ruleLabel {
+  display: flex;
+  margin: 0;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  line-height: var(--line-height-normal);
+}
+
+.ruleText {
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+}
+
+.ruleText p,
+.ruleText ul,
+.ruleText ol {
+  margin: 0;
+}
+
+.ruleText ul,
+.ruleText ol {
+  padding-left: var(--space-5);
+}
+
+/* Outranks `.ruleText p`'s flush top: the note sits under the rule. */
+.ruleText .notBuiltNote {
+  margin-top: var(--space-2);
+  color: var(--color-warning);
+  font-size: var(--font-size-sm);
+}
+
+.notBuilt {
+  color: var(--color-warning);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.values {
+  display: grid;
+  margin: 0;
+  gap: var(--space-1);
+}
+
+.values > div {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.values dt {
+  color: var(--color-ink-muted);
+}
+
+.values dd {
+  margin: 0;
+}
+
+.aside {
+  position: sticky;
+  top: var(--space-4);
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-top: 2px solid var(--color-warning);
+}
+
+.notBuiltList {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  gap: var(--space-3);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  list-style: none;
+}
+
+.notBuiltList p {
+  margin: var(--space-1) 0 0;
+  color: var(--color-ink-muted);
+}
+
+.muted {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+}
+
+@media (max-width: 58rem) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .aside {
+    position: static;
+    grid-row: 1;
+  }
+
+  .rule {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+}
