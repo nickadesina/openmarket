@@ -84,7 +84,7 @@ export function inQuestionUnit(valueUsd: number, unit: TournamentUnit): number {
   return valueUsd / UNIT_USD[unit];
 }
 
-function unitWords(unit: TournamentUnit): string {
+export function unitWords(unit: TournamentUnit): string {
   return unit === "USD_T" ? "USD trillions" : "USD billions";
 }
 
@@ -97,10 +97,18 @@ function sourceRanks(): string {
   return RULEBOOK.source_ranks.map((row) => `${row.rank}. ${row.source}`).join("\n");
 }
 
-function binaryRulebook(listing: BridgeListing): string {
+/**
+ * A question's rulebook text from RULEBOOK. `resolvedBy` says who resolves
+ * it: the dealer's instrument for a linked question, an admin for one a
+ * proposer asked (docs/tradeables/questions/).
+ */
+export function binaryRulebook(
+  listing: Pick<BridgeListing, "binary_event">,
+  resolvedBy = "This question resolves with the dealer's binary, in the same transaction.",
+): string {
   const binary = RULEBOOK.binary;
   return [
-    `**OpenMarket rulebook ${RULEBOOK_VERSION}**, published at /api/ref/rulebook. This question resolves with the dealer's binary, in the same transaction.`,
+    `**OpenMarket rulebook ${RULEBOOK_VERSION}**, published at /api/ref/rulebook. ${resolvedBy}`,
     `**Yes:** ${binary.resolves_yes} ${binary.window}`,
     `**No:** ${binary.resolves_no}`,
     listing.binary_event === "public_s1" ? binary.labs : binary.undisclosed_valuation,
@@ -110,10 +118,13 @@ function binaryRulebook(listing: BridgeListing): string {
   ].join("\n\n");
 }
 
-function forwardRulebook(unit: TournamentUnit): string {
+export function forwardRulebook(
+  unit: TournamentUnit,
+  resolvedBy = "This question resolves with the dealer's forward, in the same transaction.",
+): string {
   const forward = RULEBOOK.forward;
   return [
-    `**OpenMarket rulebook ${RULEBOOK_VERSION}**, published at /api/ref/rulebook. This question resolves with the dealer's forward, in the same transaction.`,
+    `**OpenMarket rulebook ${RULEBOOK_VERSION}**, published at /api/ref/rulebook. ${resolvedBy}`,
     `**Print:** ${RULEBOOK.print.definition} ${RULEBOOK.print.conversions.join(" ")}`,
     `**Resolves** to the post-money in ${unitWords(unit)} ${forward.settles.charAt(0).toLowerCase()}${forward.settles.slice(1)} ${forward.down_rounds}`,
     `**Void:** ${forward.void} ${forward.undisclosed_valuation} ${forward.acquisition} A void voids this question, and nothing is scored.`,

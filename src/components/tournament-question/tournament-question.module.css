@@ -24,6 +24,12 @@
   font-size: var(--font-size-sm);
 }
 
+.proposedBy {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: var(--font-size-sm);
+}
+
 .headerMeta a {
   color: var(--color-ink);
   text-decoration: underline;

@@ -28,6 +28,7 @@
     "deploy:check:preview": "tsx --env-file-if-exists=.env.local scripts/verify-production-config.ts --target=preview",
     "seed:listings": "tsx --env-file-if-exists=.env.local scripts/seed-listings.ts",
     "seed:tournament": "tsx --env-file-if-exists=.env.local scripts/seed-tournament.ts",
+    "export:proposer-questions": "tsx scripts/export-proposer-questions.ts",
     "seed:demo": "tsx --env-file-if-exists=.env.local scripts/seed-demo.ts",
     "export:resolution-sources": "tsx scripts/export-resolution-sources.ts",
     "provenance:batch": "tsx --env-file-if-exists=.env.local scripts/provenance-batch.ts",

@@ -609,7 +609,11 @@ npm run dev              # http://localhost:3000, never 127.0.0.1
   `dev:<handle>`); it is off in every other mode. Launch questions:
   `npm run seed:tournament` writes the four drafts (two binaries, two
   forwards; decision 0004), `-- --open` (optionally `--opens-at=<ISO>`)
-  opens them. Every production and preview build runs it with `--open`
+  opens them. `-- --from=<file>` seeds a proposer's questions instead
+  (`docs/tradeables/questions/`, written by `npm run
+  export:proposer-questions`): binaries and forwards on listed names only,
+  each with an optional `proposed_by` (migration `019`) shown as "Proposed
+  by" on `/t/q/[slug]`, whose share link carries Open Graph and X card text. Every production and preview build runs it with `--open`
   after `db:migrate` (`scripts/vercel-build.ts`): it opens only launch
   questions that are missing, leaves open, resolved and voided ones
   alone, and skips any whose close has passed.

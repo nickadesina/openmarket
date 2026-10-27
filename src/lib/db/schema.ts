@@ -211,6 +211,8 @@ export interface TournamentQuestionsTable {
   min_account_age_days: Generated<number>;
   extremization: Generated<number>;
   x_thread_url: string | null;
+  /** Who proposed the question, as they want it shown (migration 019). */
+  proposed_by: Generated<string | null>;
   void_note_md: string | null;
   created_at: GeneratedImmutable<Date>;
 }

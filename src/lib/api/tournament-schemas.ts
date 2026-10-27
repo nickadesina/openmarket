@@ -52,6 +52,15 @@ const questionFields = {
   min_account_age_days: z.number().int().min(0).max(3_650).optional(),
   extremization: z.number().finite().positive().max(10).optional(),
   x_thread_url: httpUrlSchema.optional(),
+  /** The proposer's name as they want it shown; plain text. */
+  proposed_by: z
+    .string()
+    .trim()
+    .min(1)
+    .max(100)
+    .refine((value) => !/[\p{Cc}\p{Cf}]/u.test(value), "Name has invalid characters")
+    .nullable()
+    .optional(),
 } as const;
 
 /** Resolves YES or NO; its expiry is its close. */
