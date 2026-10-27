@@ -34,7 +34,8 @@
     "export:round-history": "tsx scripts/export-round-history.ts",
     "api-key:create": "tsx --env-file-if-exists=.env.local scripts/api-key-create.ts",
     "export:backtest-public": "tsx scripts/export-backtest-public.ts",
-    "export:tradeables": "npm run export:resolution-sources && npm run export:round-history && npm run export:backtest-public"
+    "export:tradeables": "npm run export:resolution-sources && npm run export:round-history && npm run export:backtest-public",
+    "export:ref-examples": "tsx --env-file-if-exists=.env.local scripts/export-ref-examples.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.11",

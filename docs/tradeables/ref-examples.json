@@ -1,0 +1,366 @@
+{
+  "captured_at": "2026-10-27T18:45:44.673Z",
+  "slug": "anthropic",
+  "note": "Real responses from a development server. Keys withheld: parameters, blend, weights, components, inputs, half_spread, cap_usd_effective. Arrays keep their first 2 entries.",
+  "examples": {
+    "listings": {
+      "request": "GET /api/ref/listings",
+      "response": {
+        "model_version": "1.0.0",
+        "rulebook_version": "1.0.0",
+        "blend_version": "1.1.0",
+        "as_of": "2026-10-27T18:45:41.999Z",
+        "listings": [
+          {
+            "slug": "anduril",
+            "name": "Anduril",
+            "tier": "mega",
+            "binary_event": "priced_round",
+            "listed_at": "2026-10-20T00:00:00.000Z",
+            "listing_model_version": "1.0.0",
+            "forward_t_days": 270,
+            "anchor": {
+              "round": "Series H",
+              "date": "2026-05-13",
+              "post_money_usd": 61000000000,
+              "source_url": "https://www.anduril.com/news/anduril-announces-usd5b-series-h-raise",
+              "source_rank": 1
+            },
+            "instruments": [
+              {
+                "id": "be0e2d15-7a46-4d7d-8138-6c78a41f0f83",
+                "kind": "binary",
+                "epoch": 1,
+                "question": "Will Anduril announce a priced round by 2026-12-31?",
+                "state": "quoting",
+                "opens_at": "2026-10-27T18:44:11.184Z",
+                "expires_at": "2026-12-31T23:59:59.999Z",
+                "widened_until": null
+              },
+              {
+                "id": "6d915c34-0305-4258-9d12-5e5d5574b6f4",
+                "kind": "forward",
+                "epoch": 1,
+                "question": "What will Anduril's next post-money valuation be?",
+                "state": "quoting",
+                "opens_at": "2026-10-27T18:44:11.184Z",
+                "expires_at": "2027-07-24T18:44:11.184Z",
+                "widened_until": null
+              }
+            ]
+          },
+          {
+            "slug": "anthropic",
+            "name": "Anthropic",
+            "tier": "mega",
+            "binary_event": "public_s1",
+            "listed_at": "2026-10-20T00:00:00.000Z",
+            "listing_model_version": "1.0.0",
+            "forward_t_days": 180,
+            "anchor": {
+              "round": "Series H",
+              "date": "2026-05-28",
+              "post_money_usd": 965000000000,
+              "source_url": "https://www.anthropic.com/news/series-h",
+              "source_rank": 1
+            },
+            "instruments": [
+              {
+                "id": "ee87a385-9a4e-484d-a259-62d1d8dae3ab",
+                "kind": "binary",
+                "epoch": 1,
+                "question": "Will Anthropic publicly file an S-1 by 2026-12-31?",
+                "state": "quoting",
+                "opens_at": "2026-10-27T18:44:11.184Z",
+                "expires_at": "2026-12-31T23:59:59.999Z",
+                "widened_until": null
+              },
+              {
+                "id": "fcb03c6b-8977-4c45-bb6d-e00a83969f40",
+                "kind": "forward",
+                "epoch": 1,
+                "question": "What will Anthropic's next post-money valuation be?",
+                "state": "quoting",
+                "opens_at": "2026-10-27T18:44:11.184Z",
+                "expires_at": "2027-04-25T18:44:11.184Z",
+                "widened_until": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "reference": {
+      "request": "GET /api/ref/anthropic",
+      "response": {
+        "model_version": "1.0.0",
+        "rulebook_version": "1.0.0",
+        "blend_version": "1.1.0",
+        "as_of": "2026-10-27T18:45:42.344Z",
+        "slug": "anthropic",
+        "name": "Anthropic",
+        "tier": "mega",
+        "reference_forward": {
+          "instrument_id": "fcb03c6b-8977-4c45-bb6d-e00a83969f40",
+          "as_of": "2026-10-27T18:44:11.184Z",
+          "blend_version": "1.1.0",
+          "model_version": "1.0.0",
+          "rulebook_version": "1.0.0",
+          "model_only": true,
+          "ln": 28.24293060759329,
+          "usd": 1843949044585.99
+        },
+        "reference_hazard": {
+          "instrument_id": "ee87a385-9a4e-484d-a259-62d1d8dae3ab",
+          "as_of": "2026-10-27T18:44:11.184Z",
+          "blend_version": "1.1.0",
+          "model_version": "1.0.0",
+          "rulebook_version": "1.0.0",
+          "model_only": true,
+          "p": 0.19504853429410363
+        },
+        "last_print": {
+          "round": "Series H",
+          "date": "2026-05-28",
+          "post_money_usd": 965000000000,
+          "post_money_ln": 27.595393938285397,
+          "source_url": "https://www.anthropic.com/news/series-h",
+          "source_rank": 1,
+          "flag_id": null
+        },
+        "next_expiry": {
+          "kind": "binary",
+          "instrument_id": "ee87a385-9a4e-484d-a259-62d1d8dae3ab",
+          "expires_at": "2026-12-31T23:59:59.999Z"
+        },
+        "dealer_inventory_sign": 0,
+        "instruments": [
+          {
+            "id": "ee87a385-9a4e-484d-a259-62d1d8dae3ab",
+            "kind": "binary",
+            "epoch": 1,
+            "state": "quoting",
+            "opens_at": "2026-10-27T18:44:11.184Z",
+            "expires_at": "2026-12-31T23:59:59.999Z",
+            "widened_until": null,
+            "question_slug": null
+          },
+          {
+            "id": "fcb03c6b-8977-4c45-bb6d-e00a83969f40",
+            "kind": "forward",
+            "epoch": 1,
+            "state": "quoting",
+            "opens_at": "2026-10-27T18:44:11.184Z",
+            "expires_at": "2027-04-25T18:44:11.184Z",
+            "widened_until": null,
+            "question_slug": null
+          }
+        ]
+      }
+    },
+    "history": {
+      "request": "GET /api/ref/anthropic/history?limit=2",
+      "response": {
+        "model_version": "1.0.0",
+        "rulebook_version": "1.0.0",
+        "blend_version": "1.1.0",
+        "as_of": "2026-10-27T18:45:42.603Z",
+        "slug": "anthropic",
+        "from": null,
+        "to": "2026-10-27T18:45:42.603Z",
+        "references": [
+          {
+            "id": "542ed7ca-0472-48da-8aff-73c9df3c583c",
+            "kind": "forward",
+            "as_of": "2026-10-27T18:44:11.184Z",
+            "value": 28.24293060759329,
+            "usd": 1843949044585.99,
+            "blend_version": "1.1.0",
+            "model_version": "1.0.0",
+            "rulebook_version": "1.0.0"
+          },
+          {
+            "id": "88c0813c-a911-4ca3-b163-c9df1b9cf1c6",
+            "kind": "binary",
+            "as_of": "2026-10-27T18:44:11.184Z",
+            "value": 0.19504853429410363,
+            "usd": null,
+            "blend_version": "1.1.0",
+            "model_version": "1.0.0",
+            "rulebook_version": "1.0.0"
+          }
+        ],
+        "quotes": [
+          {
+            "sequence": "3",
+            "instrument_id": "ee87a385-9a4e-484d-a259-62d1d8dae3ab",
+            "kind": "binary",
+            "epoch": 1,
+            "posted_at": "2026-10-27T18:44:11.184Z",
+            "reason": "list",
+            "model_mid_id": "34d16af0-ea8a-4bfc-abf7-b43d19a6cef2",
+            "mid_ln": null,
+            "mid_usd": null,
+            "bid_ln": null,
+            "bid_usd": null,
+            "ask_ln": null,
+            "ask_usd": null,
+            "price": 0.19504853429410363,
+            "dealer_inventory_sign": 0,
+            "flag_state": "normal",
+            "model_version": "1.0.0",
+            "rulebook_version": "1.0.0"
+          },
+          {
+            "sequence": "4",
+            "instrument_id": "fcb03c6b-8977-4c45-bb6d-e00a83969f40",
+            "kind": "forward",
+            "epoch": 1,
+            "posted_at": "2026-10-27T18:44:11.184Z",
+            "reason": "list",
+            "model_mid_id": "d00726b3-4f89-4335-a2ad-94575d5910b5",
+            "mid_ln": 28.24293060759329,
+            "mid_usd": 1843949044585.99,
+            "bid_ln": 28.19293060759329,
+            "bid_usd": 1754018588490.17,
+            "ask_ln": 28.29293060759329,
+            "ask_usd": 1938490333763.44,
+            "price": null,
+            "dealer_inventory_sign": 0,
+            "flag_state": "normal",
+            "model_version": "1.0.0",
+            "rulebook_version": "1.0.0"
+          }
+        ],
+        "next_cursor": null
+      }
+    },
+    "mids": {
+      "request": "GET /api/ref/anthropic/mids?limit=2",
+      "response": {
+        "model_version": "1.0.0",
+        "rulebook_version": "1.0.0",
+        "blend_version": "1.1.0",
+        "as_of": "2026-10-27T18:45:43.048Z",
+        "slug": "anthropic",
+        "mids": [
+          {
+            "id": "34d16af0-ea8a-4bfc-abf7-b43d19a6cef2",
+            "instrument_id": "ee87a385-9a4e-484d-a259-62d1d8dae3ab",
+            "kind": "binary",
+            "epoch": 1,
+            "computed_at": "2026-10-27T18:44:11.184Z",
+            "model_version": "1.0.0",
+            "rulebook_version": "1.0.0",
+            "mid_ln": null,
+            "p": 0.19504853429410363,
+            "run_id": "manual-ref-examples-1",
+            "mid_usd": null
+          },
+          {
+            "id": "d00726b3-4f89-4335-a2ad-94575d5910b5",
+            "instrument_id": "fcb03c6b-8977-4c45-bb6d-e00a83969f40",
+            "kind": "forward",
+            "epoch": 1,
+            "computed_at": "2026-10-27T18:44:11.184Z",
+            "model_version": "1.0.0",
+            "rulebook_version": "1.0.0",
+            "mid_ln": 28.24293060759329,
+            "p": null,
+            "run_id": "manual-ref-examples-1",
+            "mid_usd": 1843949044585.99
+          }
+        ],
+        "next_cursor": null
+      }
+    },
+    "flags": {
+      "request": "GET /api/ref/anthropic/flags?limit=2",
+      "response": {
+        "model_version": "1.0.0",
+        "rulebook_version": "1.0.0",
+        "blend_version": "1.1.0",
+        "as_of": "2026-10-27T18:45:44.307Z",
+        "slug": "anthropic",
+        "flags": [],
+        "next_cursor": null
+      }
+    },
+    "rulebook": {
+      "request": "GET /api/ref/rulebook",
+      "response": {
+        "model_version": "1.0.0",
+        "rulebook_version": "1.0.0",
+        "blend_version": "1.1.0",
+        "as_of": "2026-10-27T18:45:44.669Z",
+        "rulebook": {
+          "version": "1.0.0",
+          "print": {
+            "definition": "The post-money valuation of a priced primary equity round, publicly reported.",
+            "also_for_labs": "An IPO's first-day closing market capitalisation.",
+            "not_prints": [
+              "SAFEs and convertible notes",
+              "same-price extensions"
+            ],
+            "conversions": [
+              "A pre-money valuation plus the amount raised is the post-money.",
+              "A reported range settles at its midpoint (the ingest records the midpoint)."
+            ]
+          },
+          "announcement": "The first public, dated statement that a priced round closed. Reporting that a round is in talks is not an announcement.",
+          "source_ranks": [
+            {
+              "rank": 1,
+              "source": "Company or lead-investor release"
+            },
+            {
+              "rank": 2,
+              "source": "SEC filing"
+            }
+          ],
+          "tier1_outlets": [
+            "Bloomberg",
+            "Reuters"
+          ],
+          "syndication": "Syndicated copies of one report count as one outlet: a reprint counts under the outlet that originated it.",
+          "charter": "A state charter's price per share re-centres the model mid and never settles.",
+          "revision_window_days": 7,
+          "revision": "A higher-ranked source dated within the revision window of the first print supersedes it, even when dated after expiry. A settlement is final once nothing can outrank it or the window and the observation grace have passed.",
+          "observation_grace_days": 1,
+          "review": {
+            "auto_resolve_max_rank": 2,
+            "review_hours": 24
+          },
+          "binary": {
+            "resolves_yes": "On the first qualifying announcement at or before quarter-end 23:59:59.999 UTC: a priced round (labs: a public S-1).",
+            "resolves_no": "One day after quarter-end, if nothing qualified.",
+            "undisclosed_valuation": "A priced round with an undisclosed valuation still resolves YES.",
+            "labs": "A confidential S-1 resolves only once it is public before quarter-end.",
+            "window": "Any qualifying announcement strictly after the binary's listing time and at or before its expiry counts, including a second round in the same calendar quarter (decision 0002).",
+            "expiry_floor_days": 21,
+            "expiry": "The current calendar quarter-end if at least 21 days remain at listing, otherwise the next quarter-end.",
+            "roll": "Each successor lists the same day its predecessor resolves or expires."
+          },
+          "forward": {
+            "settles": "On the first print after the position's instrument opened, with a qualifying post-money dated at or before expiry.",
+            "undisclosed_valuation": "Waits until expiry for a qualifying post-money, then voids with full refund.",
+            "void": "No print by expiry voids every position with full refund of collateral.",
+            "down_rounds": "Settle normally; shorts are paid.",
+            "acquisition": "An acquisition before a print settles at a disclosed cash-equivalent equity value; with none disclosed the forward voids when it is announced.",
+            "roll": "On settlement the successor opens anchored on the print; on void, at the current mid."
+          }
+        },
+        "not_built": [
+          {
+            "rule": "charter",
+            "note": "Charter re-centring: the mid reads scoops only, and a charter only widens the forward like any flag."
+          },
+          {
+            "rule": "review",
+            "note": "Rank 3 and 4 review queue: the settle job promotes rank 1 and 2 releases only and reports rank 3 and 4 as pending."
+          }
+        ]
+      }
+    }
+  }
+}
