@@ -110,6 +110,7 @@ async function writeDraft(
     min_account_age_days: input.min_account_age_days ?? 90,
     extremization: input.extremization ?? 1.5,
     x_thread_url: input.x_thread_url ?? null,
+    proposed_by: input.proposed_by ?? null,
   };
   if (existing === undefined) {
     await transaction.insertInto("tournament_questions").values(values).execute();

@@ -12,7 +12,7 @@ import type {
 } from "../../db/schema.js";
 
 /** The labs' binary is "public S-1 filed by quarter-end" (README D11). */
-const PUBLIC_S1_COMPANIES: ReadonlySet<string> = new Set(["OpenAI", "Anthropic"]);
+export const PUBLIC_S1_COMPANIES: ReadonlySet<string> = new Set(["OpenAI", "Anthropic"]);
 
 export type SeedListingOutcome = "created" | "relisted" | "unchanged";
 

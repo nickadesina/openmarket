@@ -1,5 +1,6 @@
-import type { Kysely } from "kysely";
+import { type Kysely, sql } from "kysely";
 import type {
+  ApiKeyTier,
   CronRunStatus,
   Database,
   InstrumentKind,
@@ -20,7 +21,8 @@ import type { PendingPromotion } from "./settle-instruments.js";
  * instruments and their widening, the recent runs of each scheduled job,
  * the resolution queue (rank 3–4 promotions the last settle run left
  * pending; read-only until the admin queue is built), the evidence
- * forecasters submitted that no admin has reviewed yet, and `source_health`
+ * forecasters submitted that no admin has reviewed yet, the reference API's
+ * keys by tier with their last seven days of requests, and `source_health`
  * as ingest writes it. Every figure is computed here; the page formats.
  */
 
@@ -89,6 +91,19 @@ export interface AdminSource {
   readonly last_error: string | null;
 }
 
+/** A reference API key as admins see it: never the key or its hash. */
+export interface AdminApiKey {
+  readonly id: string;
+  readonly name: string;
+  readonly tier: ApiKeyTier;
+  readonly quota_per_minute: number;
+  readonly created_at: Date;
+  readonly expires_at: Date | null;
+  readonly revoked_at: Date | null;
+  /** Served requests over the last seven UTC days, today included. */
+  readonly requests_7d: number;
+}
+
 export interface DealerAdminPayload extends Omit<RefEnvelope, "as_of"> {
   readonly as_of: Date;
   readonly pnl: readonly AdminPnlListing[];
@@ -103,7 +118,35 @@ export interface DealerAdminPayload extends Omit<RefEnvelope, "as_of"> {
   /** User-submitted evidence awaiting an admin's confirm or reject. */
   readonly evidence_queue: readonly PendingEvidence[];
   readonly sources: readonly AdminSource[];
+  /** Reference API keys, design partners first, with their recent use. */
+  readonly api_keys: readonly AdminApiKey[];
   readonly health: DealerHealth;
+}
+
+const USAGE_DAYS = 7;
+
+async function apiKeys(db: Kysely<Database>, now: Date): Promise<AdminApiKey[]> {
+  const since = new Date(now.getTime() - (USAGE_DAYS - 1) * 86_400_000).toISOString().slice(0, 10);
+  const rows = await db
+    .selectFrom("api_keys")
+    .leftJoin("api_key_usage", (join) =>
+      join.onRef("api_key_usage.key_id", "=", "api_keys.id").on("api_key_usage.day", ">=", since),
+    )
+    .select([
+      "api_keys.id",
+      "api_keys.name",
+      "api_keys.tier",
+      "api_keys.quota_per_minute",
+      "api_keys.created_at",
+      "api_keys.expires_at",
+      "api_keys.revoked_at",
+      sql<string>`coalesce(sum(api_key_usage.request_count), 0)`.as("requests_7d"),
+    ])
+    .groupBy("api_keys.id")
+    .orderBy("api_keys.tier")
+    .orderBy("api_keys.name")
+    .execute();
+  return rows.map((row) => ({ ...row, requests_7d: Number(row.requests_7d) }));
 }
 
 function cents(value: number): string {
@@ -271,6 +314,7 @@ export async function getDealerAdmin(db: Kysely<Database>, now: Date): Promise<D
     resolution_queue: await resolutionQueue(db),
     evidence_queue: await listPendingEvidence(db),
     sources,
+    api_keys: await apiKeys(db, now),
     health: await getDealerHealth(db, now),
   };
 }

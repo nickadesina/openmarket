@@ -1,0 +1,6 @@
+company,binary_event,forward_t_days,forward_lives,settled,voided,open,void_rate_of_resolved,binary_quarters,binary_yes
+Anduril,priced_round,270,8,3,4,1,0.571,15,3
+Anthropic,public_s1,180,10,5,4,1,0.444,12,0
+Instinct,priced_round,90,5,3,1,1,0.25,15,4
+Modal,priced_round,120,11,3,7,1,0.7,14,3
+OpenAI,public_s1,270,4,2,1,1,0.333,12,0

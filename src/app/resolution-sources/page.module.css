@@ -1,0 +1,150 @@
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+  padding: var(--space-6) 0 var(--space-7);
+}
+
+.pageHeader {
+  max-width: 48rem;
+}
+
+.pageHeader h1 {
+  margin: var(--space-2) 0;
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-tight);
+  text-wrap: balance;
+}
+
+.pageHeader p:last-child {
+  max-width: 72ch;
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+.sectionLabel {
+  composes: sectionHead from "../../styles/shared.module.css";
+}
+
+.section {
+  display: grid;
+  gap: var(--space-4);
+}
+
+/* The table scrolls inside its own viewport on narrow screens. */
+.scroller {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  min-width: 72rem;
+  border: 1px solid var(--color-border);
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+.table thead th {
+  height: var(--row-compact);
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-hover);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.table tbody th,
+.table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+  text-align: left;
+  vertical-align: top;
+}
+
+.table tbody th {
+  min-width: 9rem;
+  font-weight: 700;
+}
+
+.table td:nth-child(4) {
+  min-width: 20rem;
+}
+
+.unverified {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--color-warning);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.muted {
+  color: var(--color-ink-muted);
+}
+
+.notes {
+  display: grid;
+  max-width: 80ch;
+  margin: 0;
+  gap: var(--space-4);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+.notes dt {
+  font-weight: 700;
+}
+
+.notes dd {
+  margin: 0;
+}
+
+.notes p {
+  margin: 0;
+}
+
+.sources {
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-5);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+}
+
+.link {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--color-border-strong);
+  text-underline-offset: 0.25rem;
+}
+
+.link:hover {
+  text-decoration-color: var(--color-primary);
+}
+
+/* Outranks `.link`'s ink inside the muted source list. */
+.sources .link {
+  color: var(--color-ink-muted);
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-5);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+}

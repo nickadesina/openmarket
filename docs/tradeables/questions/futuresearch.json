@@ -1,0 +1,117 @@
+[
+  {
+    "rulebook_version": 1,
+    "closes_at": "2027-03-31T23:59:59.999Z",
+    "proposed_by": null,
+    "slug": "anduril-round-by-2027-03-31",
+    "title": "Will Anduril announce a priced round by 2027-03-31?",
+    "kind": "binary",
+    "description_md": "Anduril's quarterly binary as OpenMarket's rulebook defines it, asked as a forecasting question that closes 2027-03-31.",
+    "rulebook_md": "**OpenMarket rulebook 1.0.0**, published at /api/ref/rulebook. An OpenMarket admin resolves this question under it.\n\n**Yes:** On the first qualifying announcement at or before quarter-end 23:59:59.999 UTC: a priced round (labs: a public S-1). Any qualifying announcement strictly after the binary's listing time and at or before its expiry counts, including a second round in the same calendar quarter (decision 0002).\n\n**No:** One day after quarter-end, if nothing qualified.\n\nA priced round with an undisclosed valuation still resolves YES.\n\nAn announcement is the first public, dated statement that a priced round closed. Reporting that a round is in talks is not an announcement.\n\n**Sources, highest rank first** (the rank is recorded as the rung):\n1. Company or lead-investor release\n2. SEC filing\n3. Two independent Tier-1 outlets citing closed terms\n4. One Tier-1 outlet citing closed terms\n\nThe scoring window ends at the qualifying announcement's public time."
+  },
+  {
+    "rulebook_version": 1,
+    "closes_at": "2027-03-31T23:59:59.999Z",
+    "proposed_by": null,
+    "slug": "anduril-next-print-by-2027-03-31",
+    "title": "What will Anduril's next post-money valuation be?",
+    "kind": "forward",
+    "unit": "USD_B",
+    "level_label": "Next post-money",
+    "expiry_at": "2027-03-31T23:59:59.999Z",
+    "description_md": "Anduril's next post-money in USD billions, if a print comes by 2027-03-31. With no print by then the question voids and nothing is scored. The last print was Series H on 2026-05-13.",
+    "rulebook_md": "**OpenMarket rulebook 1.0.0**, published at /api/ref/rulebook. An OpenMarket admin resolves this question under it.\n\n**Print:** The post-money valuation of a priced primary equity round, publicly reported. A pre-money valuation plus the amount raised is the post-money. A reported range settles at its midpoint (the ingest records the midpoint). Price per share alone does not settle.\n\n**Resolves** to the post-money in USD billions on the first print after the position's instrument opened, with a qualifying post-money dated at or before expiry. Settle normally; shorts are paid.\n\n**Void:** No print by expiry voids every position with full refund of collateral. Waits until expiry for a qualifying post-money, then voids with full refund. An acquisition before a print settles at a disclosed cash-equivalent equity value; with none disclosed the forward voids when it is announced. A void voids this question, and nothing is scored.\n\n**Sources, highest rank first** (the rank is recorded as the rung):\n1. Company or lead-investor release\n2. SEC filing\n3. Two independent Tier-1 outlets citing closed terms\n4. One Tier-1 outlet citing closed terms\n\nThe scoring window ends at the settling print's public time."
+  },
+  {
+    "rulebook_version": 1,
+    "closes_at": "2027-03-31T23:59:59.999Z",
+    "proposed_by": null,
+    "slug": "anthropic-s1-by-2027-03-31",
+    "title": "Will Anthropic publicly file an S-1 by 2027-03-31?",
+    "kind": "binary",
+    "description_md": "Anthropic's quarterly binary as OpenMarket's rulebook defines it, asked as a forecasting question that closes 2027-03-31.",
+    "rulebook_md": "**OpenMarket rulebook 1.0.0**, published at /api/ref/rulebook. An OpenMarket admin resolves this question under it.\n\n**Yes:** On the first qualifying announcement at or before quarter-end 23:59:59.999 UTC: a priced round (labs: a public S-1). Any qualifying announcement strictly after the binary's listing time and at or before its expiry counts, including a second round in the same calendar quarter (decision 0002).\n\n**No:** One day after quarter-end, if nothing qualified.\n\nA confidential S-1 resolves only once it is public before quarter-end.\n\nAn announcement is the first public, dated statement that a priced round closed. Reporting that a round is in talks is not an announcement.\n\n**Sources, highest rank first** (the rank is recorded as the rung):\n1. Company or lead-investor release\n2. SEC filing\n3. Two independent Tier-1 outlets citing closed terms\n4. One Tier-1 outlet citing closed terms\n\nThe scoring window ends at the qualifying announcement's public time."
+  },
+  {
+    "rulebook_version": 1,
+    "closes_at": "2027-03-31T23:59:59.999Z",
+    "proposed_by": null,
+    "slug": "anthropic-next-print-by-2027-03-31",
+    "title": "What will Anthropic's next post-money valuation be?",
+    "kind": "forward",
+    "unit": "USD_B",
+    "level_label": "Next post-money",
+    "expiry_at": "2027-03-31T23:59:59.999Z",
+    "description_md": "Anthropic's next post-money in USD billions, if a print comes by 2027-03-31. With no print by then the question voids and nothing is scored. The last print was Series H on 2026-05-28.",
+    "rulebook_md": "**OpenMarket rulebook 1.0.0**, published at /api/ref/rulebook. An OpenMarket admin resolves this question under it.\n\n**Print:** The post-money valuation of a priced primary equity round, publicly reported. A pre-money valuation plus the amount raised is the post-money. A reported range settles at its midpoint (the ingest records the midpoint). Price per share alone does not settle.\n\n**Resolves** to the post-money in USD billions on the first print after the position's instrument opened, with a qualifying post-money dated at or before expiry. Settle normally; shorts are paid.\n\n**Void:** No print by expiry voids every position with full refund of collateral. Waits until expiry for a qualifying post-money, then voids with full refund. An acquisition before a print settles at a disclosed cash-equivalent equity value; with none disclosed the forward voids when it is announced. A void voids this question, and nothing is scored.\n\n**Sources, highest rank first** (the rank is recorded as the rung):\n1. Company or lead-investor release\n2. SEC filing\n3. Two independent Tier-1 outlets citing closed terms\n4. One Tier-1 outlet citing closed terms\n\nThe scoring window ends at the settling print's public time."
+  },
+  {
+    "rulebook_version": 1,
+    "closes_at": "2027-03-31T23:59:59.999Z",
+    "proposed_by": null,
+    "slug": "instinct-round-by-2027-03-31",
+    "title": "Will Instinct announce a priced round by 2027-03-31?",
+    "kind": "binary",
+    "description_md": "Instinct's quarterly binary as OpenMarket's rulebook defines it, asked as a forecasting question that closes 2027-03-31.",
+    "rulebook_md": "**OpenMarket rulebook 1.0.0**, published at /api/ref/rulebook. An OpenMarket admin resolves this question under it.\n\n**Yes:** On the first qualifying announcement at or before quarter-end 23:59:59.999 UTC: a priced round (labs: a public S-1). Any qualifying announcement strictly after the binary's listing time and at or before its expiry counts, including a second round in the same calendar quarter (decision 0002).\n\n**No:** One day after quarter-end, if nothing qualified.\n\nA priced round with an undisclosed valuation still resolves YES.\n\nAn announcement is the first public, dated statement that a priced round closed. Reporting that a round is in talks is not an announcement.\n\n**Sources, highest rank first** (the rank is recorded as the rung):\n1. Company or lead-investor release\n2. SEC filing\n3. Two independent Tier-1 outlets citing closed terms\n4. One Tier-1 outlet citing closed terms\n\nThe scoring window ends at the qualifying announcement's public time."
+  },
+  {
+    "rulebook_version": 1,
+    "closes_at": "2027-03-31T23:59:59.999Z",
+    "proposed_by": null,
+    "slug": "instinct-next-print-by-2027-03-31",
+    "title": "What will Instinct's next post-money valuation be?",
+    "kind": "forward",
+    "unit": "USD_B",
+    "level_label": "Next post-money",
+    "expiry_at": "2027-03-31T23:59:59.999Z",
+    "description_md": "Instinct's next post-money in USD billions, if a print comes by 2027-03-31. With no print by then the question voids and nothing is scored. The last print was Series C on 2026-09-28.",
+    "rulebook_md": "**OpenMarket rulebook 1.0.0**, published at /api/ref/rulebook. An OpenMarket admin resolves this question under it.\n\n**Print:** The post-money valuation of a priced primary equity round, publicly reported. A pre-money valuation plus the amount raised is the post-money. A reported range settles at its midpoint (the ingest records the midpoint). Price per share alone does not settle.\n\n**Resolves** to the post-money in USD billions on the first print after the position's instrument opened, with a qualifying post-money dated at or before expiry. Settle normally; shorts are paid.\n\n**Void:** No print by expiry voids every position with full refund of collateral. Waits until expiry for a qualifying post-money, then voids with full refund. An acquisition before a print settles at a disclosed cash-equivalent equity value; with none disclosed the forward voids when it is announced. A void voids this question, and nothing is scored.\n\n**Sources, highest rank first** (the rank is recorded as the rung):\n1. Company or lead-investor release\n2. SEC filing\n3. Two independent Tier-1 outlets citing closed terms\n4. One Tier-1 outlet citing closed terms\n\nThe scoring window ends at the settling print's public time."
+  },
+  {
+    "rulebook_version": 1,
+    "closes_at": "2027-03-31T23:59:59.999Z",
+    "proposed_by": null,
+    "slug": "modal-round-by-2027-03-31",
+    "title": "Will Modal announce a priced round by 2027-03-31?",
+    "kind": "binary",
+    "description_md": "Modal's quarterly binary as OpenMarket's rulebook defines it, asked as a forecasting question that closes 2027-03-31.",
+    "rulebook_md": "**OpenMarket rulebook 1.0.0**, published at /api/ref/rulebook. An OpenMarket admin resolves this question under it.\n\n**Yes:** On the first qualifying announcement at or before quarter-end 23:59:59.999 UTC: a priced round (labs: a public S-1). Any qualifying announcement strictly after the binary's listing time and at or before its expiry counts, including a second round in the same calendar quarter (decision 0002).\n\n**No:** One day after quarter-end, if nothing qualified.\n\nA priced round with an undisclosed valuation still resolves YES.\n\nAn announcement is the first public, dated statement that a priced round closed. Reporting that a round is in talks is not an announcement.\n\n**Sources, highest rank first** (the rank is recorded as the rung):\n1. Company or lead-investor release\n2. SEC filing\n3. Two independent Tier-1 outlets citing closed terms\n4. One Tier-1 outlet citing closed terms\n\nThe scoring window ends at the qualifying announcement's public time."
+  },
+  {
+    "rulebook_version": 1,
+    "closes_at": "2027-03-31T23:59:59.999Z",
+    "proposed_by": null,
+    "slug": "modal-next-print-by-2027-03-31",
+    "title": "What will Modal's next post-money valuation be?",
+    "kind": "forward",
+    "unit": "USD_B",
+    "level_label": "Next post-money",
+    "expiry_at": "2027-03-31T23:59:59.999Z",
+    "description_md": "Modal's next post-money in USD billions, if a print comes by 2027-03-31. With no print by then the question voids and nothing is scored. The last print was Series D on 2026-10-14.",
+    "rulebook_md": "**OpenMarket rulebook 1.0.0**, published at /api/ref/rulebook. An OpenMarket admin resolves this question under it.\n\n**Print:** The post-money valuation of a priced primary equity round, publicly reported. A pre-money valuation plus the amount raised is the post-money. A reported range settles at its midpoint (the ingest records the midpoint). Price per share alone does not settle.\n\n**Resolves** to the post-money in USD billions on the first print after the position's instrument opened, with a qualifying post-money dated at or before expiry. Settle normally; shorts are paid.\n\n**Void:** No print by expiry voids every position with full refund of collateral. Waits until expiry for a qualifying post-money, then voids with full refund. An acquisition before a print settles at a disclosed cash-equivalent equity value; with none disclosed the forward voids when it is announced. A void voids this question, and nothing is scored.\n\n**Sources, highest rank first** (the rank is recorded as the rung):\n1. Company or lead-investor release\n2. SEC filing\n3. Two independent Tier-1 outlets citing closed terms\n4. One Tier-1 outlet citing closed terms\n\nThe scoring window ends at the settling print's public time."
+  },
+  {
+    "rulebook_version": 1,
+    "closes_at": "2027-03-31T23:59:59.999Z",
+    "proposed_by": null,
+    "slug": "openai-s1-by-2027-03-31",
+    "title": "Will OpenAI publicly file an S-1 by 2027-03-31?",
+    "kind": "binary",
+    "description_md": "OpenAI's quarterly binary as OpenMarket's rulebook defines it, asked as a forecasting question that closes 2027-03-31.",
+    "rulebook_md": "**OpenMarket rulebook 1.0.0**, published at /api/ref/rulebook. An OpenMarket admin resolves this question under it.\n\n**Yes:** On the first qualifying announcement at or before quarter-end 23:59:59.999 UTC: a priced round (labs: a public S-1). Any qualifying announcement strictly after the binary's listing time and at or before its expiry counts, including a second round in the same calendar quarter (decision 0002).\n\n**No:** One day after quarter-end, if nothing qualified.\n\nA confidential S-1 resolves only once it is public before quarter-end.\n\nAn announcement is the first public, dated statement that a priced round closed. Reporting that a round is in talks is not an announcement.\n\n**Sources, highest rank first** (the rank is recorded as the rung):\n1. Company or lead-investor release\n2. SEC filing\n3. Two independent Tier-1 outlets citing closed terms\n4. One Tier-1 outlet citing closed terms\n\nThe scoring window ends at the qualifying announcement's public time."
+  },
+  {
+    "rulebook_version": 1,
+    "closes_at": "2027-03-31T23:59:59.999Z",
+    "proposed_by": null,
+    "slug": "openai-next-print-by-2027-03-31",
+    "title": "What will OpenAI's next post-money valuation be?",
+    "kind": "forward",
+    "unit": "USD_B",
+    "level_label": "Next post-money",
+    "expiry_at": "2027-03-31T23:59:59.999Z",
+    "description_md": "OpenAI's next post-money in USD billions, if a print comes by 2027-03-31. With no print by then the question voids and nothing is scored. The last print was 2026 mega-round (final close) on 2026-03-31.",
+    "rulebook_md": "**OpenMarket rulebook 1.0.0**, published at /api/ref/rulebook. An OpenMarket admin resolves this question under it.\n\n**Print:** The post-money valuation of a priced primary equity round, publicly reported. A pre-money valuation plus the amount raised is the post-money. A reported range settles at its midpoint (the ingest records the midpoint). Price per share alone does not settle.\n\n**Resolves** to the post-money in USD billions on the first print after the position's instrument opened, with a qualifying post-money dated at or before expiry. Settle normally; shorts are paid.\n\n**Void:** No print by expiry voids every position with full refund of collateral. Waits until expiry for a qualifying post-money, then voids with full refund. An acquisition before a print settles at a disclosed cash-equivalent equity value; with none disclosed the forward voids when it is announced. A void voids this question, and nothing is scored.\n\n**Sources, highest rank first** (the rank is recorded as the rung):\n1. Company or lead-investor release\n2. SEC filing\n3. Two independent Tier-1 outlets citing closed terms\n4. One Tier-1 outlet citing closed terms\n\nThe scoring window ends at the settling print's public time."
+  }
+]

@@ -1,0 +1,97 @@
+.document {
+  max-width: 80ch;
+  color: var(--color-ink);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+}
+
+.document p,
+.document ul,
+.document ol {
+  margin: 0 0 var(--space-4);
+}
+
+.document > :last-child {
+  margin-bottom: 0;
+}
+
+.document h2,
+.document h3,
+.document h4 {
+  margin: var(--space-6) 0 var(--space-3);
+  line-height: var(--line-height-tight);
+  scroll-margin-top: var(--space-4);
+}
+
+.document h2 {
+  font-size: var(--font-size-lg);
+}
+
+.document h3,
+.document h4 {
+  font-size: var(--font-size-md);
+}
+
+.document > :first-child {
+  margin-top: 0;
+}
+
+.document ul,
+.document ol {
+  padding-left: var(--space-5);
+}
+
+.document li + li {
+  margin-top: var(--space-2);
+}
+
+.document a {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--color-border-strong);
+  text-underline-offset: 0.25rem;
+}
+
+.document a:hover {
+  text-decoration-color: var(--color-primary);
+}
+
+.document code {
+  padding: 0 var(--space-1);
+  overflow-wrap: anywhere;
+  background: var(--color-surface-hover);
+  font-size: var(--font-size-sm);
+}
+
+/* Each table scrolls inside its own viewport on narrow screens. */
+.scroller {
+  margin: 0 0 var(--space-4);
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.table th {
+  height: var(--row-compact);
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-hover);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+  vertical-align: top;
+}
