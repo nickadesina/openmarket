@@ -11,6 +11,7 @@ import {
   formatDateTime,
   formatDuration,
   formatHours,
+  formatQuantity,
   formatValuation,
 } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
@@ -503,6 +504,69 @@ function SourcesModule({ sources }: { readonly sources: Payload["sources"] }) {
   );
 }
 
+const KEY_TIER_LABELS: Readonly<Record<Payload["api_keys"][number]["tier"], string>> = {
+  design_partner: "Design partner",
+  standard: "Standard",
+};
+
+function keyStatus(key: Payload["api_keys"][number], asOf: string): string {
+  if (key.revoked_at !== null) return `Revoked ${formatDateTime(key.revoked_at)}`;
+  if (key.expires_at !== null && key.expires_at <= asOf) {
+    return `Expired ${formatDateTime(key.expires_at)}`;
+  }
+  return "Active";
+}
+
+function KeysModule({ data }: { readonly data: Payload }) {
+  return (
+    <Module
+      id="dealer-api-keys"
+      label="Reference API"
+      title="API keys"
+      note="Keys by tier with requests served over the last seven UTC days. The key itself is never shown; only its hash is stored."
+    >
+      {data.api_keys.length === 0 ? (
+        <Empty title="No API keys yet.">
+          Mint one with npm run api-key:create -- --name=&lt;desk&gt; --tier=design_partner.
+        </Empty>
+      ) : (
+        <div className={styles.scroller}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Tier</th>
+                <th scope="col">Status</th>
+                <th scope="col">Created</th>
+                <th scope="col">Expires</th>
+                <th scope="col" className={styles.figure}>
+                  Quota / min
+                </th>
+                <th scope="col" className={styles.figure}>
+                  Requests, 7 days
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.api_keys.map((key) => (
+                <tr key={key.id}>
+                  <td>{key.name}</td>
+                  <td>{KEY_TIER_LABELS[key.tier]}</td>
+                  <td>{keyStatus(key, data.as_of)}</td>
+                  <td>{formatDateTime(key.created_at)}</td>
+                  <td>{key.expires_at === null ? "Never" : formatDateTime(key.expires_at)}</td>
+                  <td className={styles.figure}>{formatQuantity(key.quota_per_minute)}</td>
+                  <td className={styles.figure}>{formatQuantity(key.requests_7d)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Module>
+  );
+}
+
 function DealerOperations({ onAdminRequired }: { readonly onAdminRequired: () => void }) {
   const query = useQuery({
     queryKey: queryKeys.adminDealer,
@@ -551,6 +615,7 @@ function DealerOperations({ onAdminRequired }: { readonly onAdminRequired: () =>
       <QueueModule queue={data.resolution_queue} />
       <EvidenceModule queue={data.evidence_queue} />
       <RunsModule cronRuns={data.cron_runs} />
+      <KeysModule data={data} />
       <SourcesModule sources={data.sources} />
     </div>
   );

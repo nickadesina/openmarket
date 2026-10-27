@@ -13,7 +13,7 @@ import { jsonSuccess } from "./response.js";
  * 60 seconds for anonymous requests (keyed responses are private), and drawn from the caller's `ref` quota (its network's bucket,
  * or its API key's) after the query is validated and before any read.
  */
-const REF_CACHE_SECONDS = 60;
+export const REF_CACHE_SECONDS = 60;
 
 export interface RefRouteContext extends ReadRouteContext {
   readonly searchParams: URLSearchParams;

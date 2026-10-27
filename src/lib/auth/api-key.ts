@@ -13,6 +13,19 @@ const API_KEY_PATTERN = /^om_[A-Za-z0-9_-]{43}$/;
 /** A new key's quota unless its creator sets one: ten times the public tier. */
 export const DEFAULT_KEY_QUOTA_PER_MINUTE = 600;
 
+/**
+ * Key tiers (migration 018). A design-partner key is the free trial: the
+ * default quota, expiring DESIGN_PARTNER_KEY_DAYS after creation (decided
+ * 2026-10-26). A standard key never expires.
+ */
+export const API_KEY_TIERS = ["design_partner", "standard"] as const;
+export type ApiKeyTier = (typeof API_KEY_TIERS)[number];
+export const DESIGN_PARTNER_KEY_DAYS = 365;
+
+export function isApiKeyTier(value: string): value is ApiKeyTier {
+  return (API_KEY_TIERS as readonly string[]).includes(value);
+}
+
 export function generateApiKey(): string {
   return `${API_KEY_PREFIX}${randomBytes(32).toString("base64url")}`;
 }

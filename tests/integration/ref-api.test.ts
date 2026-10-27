@@ -1,9 +1,11 @@
+import { sql } from "kysely";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { generateApiKey, hashApiKey } from "../../src/lib/auth/api-key.js";
 import { MODEL_VERSION } from "../../src/lib/config/dealer.js";
 import { BLEND_SCHEDULE, BLEND_VERSION } from "../../src/lib/engine/dealer/blend.js";
 import { RULEBOOK_VERSION } from "../../src/lib/engine/dealer/rulebook.js";
+import { getDealerAdmin } from "../../src/lib/services/dealer/get-dealer-admin.js";
 import { insertApiKey } from "../../src/lib/services/dealer/ref-access.js";
 import { runDealerJob } from "../../src/lib/services/dealer/run-dealer-job.js";
 import { insertFixtureFlags, NAMES, seedFixtureListings } from "./dealer-fixture.js";
@@ -306,6 +308,67 @@ postgresDescribe(suiteName, () => {
         expect(response.headers.get("cache-control")).toBe("no-store");
         expect((await response.json()).error.code).toBe("API_KEY_INVALID");
       }
+    });
+
+    it("mints a design-partner key that expires in 365 days and is then refused by name", async () => {
+      const key = generateApiKey();
+      const created = await insertApiKey(postgres.db, {
+        name: "Trial desk",
+        keyHash: hashApiKey(key),
+        quotaPerMinute: 600,
+        tier: "design_partner",
+      });
+      expect(created.tier).toBe("design_partner");
+      expect(created.expires_at!.getTime() - created.created_at.getTime()).toBe(365 * 86_400_000);
+
+      const keyed = { ...network, authorization: `Bearer ${key}` };
+      await expectPublished(
+        await listingsRoute(get("/api/ref/listings", keyed)),
+        "private, no-store",
+      );
+      await expectPublished(
+        await rulebookRoute(get("/api/ref/rulebook", keyed)),
+        "private, no-store",
+      );
+
+      const admin = await getDealerAdmin(postgres.db, new Date());
+      expect(admin.api_keys).toEqual([
+        expect.objectContaining({
+          id: created.id,
+          name: "Trial desk",
+          tier: "design_partner",
+          expires_at: created.expires_at,
+          requests_7d: 2,
+        }),
+      ]);
+      expect(JSON.stringify(admin.api_keys)).not.toContain(hashApiKey(key));
+
+      // Past its expiry the key is refused, never served as public.
+      const expiredAt = new Date(Date.now() - 1_000);
+      await sql`update api_keys set created_at = ${new Date(expiredAt.getTime() - 86_400_000)}, expires_at = ${expiredAt} where id = ${created.id}`.execute(
+        postgres.db,
+      );
+      const refused = await listingsRoute(get("/api/ref/listings", keyed));
+      expect(refused.status).toBe(401);
+      expect(refused.headers.get("cache-control")).toBe("no-store");
+      const body = await refused.json();
+      expect(body.error.code).toBe("API_KEY_EXPIRED");
+      expect(body.error.message).toBe(`The API key expired on ${expiredAt.toISOString()}.`);
+      expect(body.error.details).toEqual({ expired_at: expiredAt.toISOString() });
+    });
+
+    it("keeps keys minted before tiers as standard keys that never expire", async () => {
+      const created = await insertApiKey(postgres.db, {
+        name: "Standard desk",
+        keyHash: hashApiKey(generateApiKey()),
+        quotaPerMinute: 100,
+      });
+      expect(created).toMatchObject({ tier: "standard", expires_at: null });
+      await expect(
+        sql`insert into api_keys (name, key_hash, quota_per_minute, tier) values ('No expiry', ${hashApiKey(generateApiKey())}, 600, 'design_partner')`.execute(
+          postgres.db,
+        ),
+      ).rejects.toThrow(/api_keys_design_partner_expires/);
     });
   });
 });
