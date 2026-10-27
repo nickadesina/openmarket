@@ -142,6 +142,27 @@ export const RULEBOOK = {
   },
 } as const;
 
+/**
+ * Rules in RULEBOOK that are the contract's intent but that no service
+ * enforces yet (CONTRACTS.md marks them *not built*; README drift register).
+ * `rule` is the rule's path in RULEBOOK. /rulebook and /api/ref/rulebook mark
+ * them from this list; an entry leaves when its code lands.
+ */
+export const NOT_BUILT = [
+  {
+    rule: "charter",
+    note: "Charter re-centring: the mid reads scoops only, and a charter only widens the forward like any flag.",
+  },
+  {
+    rule: "review",
+    note: "Rank 3 and 4 review queue: the settle job promotes rank 1 and 2 releases only and reports rank 3 and 4 as pending.",
+  },
+  {
+    rule: "revision",
+    note: "Correcting settlement: a settlement a higher rank could still supersede is recorded final: false, and no correcting settlement is written.",
+  },
+] as const;
+
 /** Post-money in USD from extracted terms, or null when the valuation is undisclosed. */
 export function postMoneyUsd(terms: FlagTerms): number | null {
   const valuation = terms.valuation_usd;
