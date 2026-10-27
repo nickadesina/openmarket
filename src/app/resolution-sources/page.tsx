@@ -142,6 +142,15 @@ export default function ResolutionSourcesPage() {
         <a className={styles.link} href={MARKDOWN_PATH}>
           Markdown export
         </a>
+        <span>
+          Round history{" "}
+          <a className={styles.link} href="/data/round-history.csv">
+            CSV
+          </a>{" "}
+          <a className={styles.link} href="/data/round-history.json">
+            JSON
+          </a>
+        </span>
         <span>{LICENSE}</span>
       </footer>
     </article>
