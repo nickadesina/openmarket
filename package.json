@@ -30,6 +30,7 @@
     "seed:tournament": "tsx --env-file-if-exists=.env.local scripts/seed-tournament.ts",
     "seed:demo": "tsx --env-file-if-exists=.env.local scripts/seed-demo.ts",
     "provenance:batch": "tsx --env-file-if-exists=.env.local scripts/provenance-batch.ts",
+    "export:round-history": "tsx scripts/export-round-history.ts",
     "api-key:create": "tsx --env-file-if-exists=.env.local scripts/api-key-create.ts"
   },
   "devDependencies": {
