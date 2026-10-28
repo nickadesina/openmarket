@@ -51,6 +51,14 @@ button {
   border: 0;
 }
 
+/* The One Curve Rule: controls are square whatever the platform draws. */
+button,
+input,
+select,
+textarea {
+  border-radius: 0;
+}
+
 img,
 svg {
   display: block;
@@ -62,8 +70,8 @@ svg {
 }
 
 :focus-visible {
-  outline: 0.125rem solid var(--color-primary);
-  outline-offset: 0.125rem;
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
 }
 
 caption,

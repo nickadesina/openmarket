@@ -63,19 +63,25 @@ function Module({
   label,
   title,
   note,
+  count,
   children,
 }: {
   readonly id: string;
   readonly label: string;
   readonly title: string;
   readonly note?: string;
+  /** How many rows the module holds, stated in its head so a scan finds the work. */
+  readonly count?: number;
   readonly children: ReactNode;
 }) {
   return (
     <section className={styles.module} aria-labelledby={id}>
       <header className={styles.moduleHeader}>
         <p className={styles.sectionLabel}>{label}</p>
-        <h2 id={id}>{title}</h2>
+        <h2 id={id}>
+          {title}
+          {count === undefined ? null : <span className={styles.count}> · {count}</span>}
+        </h2>
         {note === undefined ? null : <p>{note}</p>}
       </header>
       {children}
@@ -98,6 +104,7 @@ function PnlModule({ pnl }: { readonly pnl: Payload["pnl"] }) {
       id="dealer-pnl"
       label="Books"
       title="Dealer P&L"
+      count={pnl.length}
       note="Per listing and epoch, from the dealer's side. Bound is Q·κ per forward and b·ln(1/p_floor) per binary."
     >
       {pnl.length === 0 ? (
@@ -105,7 +112,7 @@ function PnlModule({ pnl }: { readonly pnl: Payload["pnl"] }) {
       ) : (
         <div className={styles.scroller}>
           <table className={styles.table}>
-            <thead>
+            <thead className={styles.head}>
               <tr>
                 <th scope="col">Name</th>
                 <th scope="col">Instrument</th>
@@ -144,7 +151,7 @@ function PnlModule({ pnl }: { readonly pnl: Payload["pnl"] }) {
                   </tr>
                 ))}
                 <tr className={styles.totalRow}>
-                  <th scope="row" colSpan={3}>
+                  <th scope="row" colSpan={3} className={styles.totalLabel}>
                     {listing.company} total (bound: live instruments)
                   </th>
                   <td className={styles.figure}>
@@ -176,6 +183,7 @@ function InstrumentsModule({ data }: { readonly data: Payload }) {
       id="dealer-instruments"
       label="Quoting"
       title="Live instruments"
+      count={data.instruments.length}
       note={`A flag widens a forward until a newer mid or ${data.health.widened_over_hold.hold_hours} h pass.`}
     >
       {overHold.size > 0 ? (
@@ -189,7 +197,7 @@ function InstrumentsModule({ data }: { readonly data: Payload }) {
       ) : (
         <div className={styles.scroller}>
           <table className={styles.table}>
-            <thead>
+            <thead className={styles.head}>
               <tr>
                 <th scope="col">Name</th>
                 <th scope="col">Instrument</th>
@@ -240,13 +248,13 @@ function RunsModule({ cronRuns }: { readonly cronRuns: Payload["cron_runs"] }) {
       <div className={styles.jobs}>
         {cronRuns.map(({ job, runs }) => (
           <div key={job} className={styles.job}>
-            <h3>{job}</h3>
+            <h3 className={styles.jobName}>{job}</h3>
             {runs.length === 0 ? (
               <p className={styles.muted}>No {job} runs yet.</p>
             ) : (
               <div className={styles.scroller}>
                 <table className={styles.table}>
-                  <thead>
+                  <thead className={styles.head}>
                     <tr>
                       <th scope="col">Started</th>
                       <th scope="col">Status</th>
@@ -289,6 +297,7 @@ function QueueModule({ queue }: { readonly queue: Payload["resolution_queue"] })
       id="dealer-queue"
       label="Settlement"
       title="Resolution queue"
+      {...(queue.run_id === null ? {} : { count: queue.pending.length })}
       note={
         queue.run_id === null
           ? "Promotions the settle job could not make on its own. Read-only for now."
@@ -306,7 +315,7 @@ function QueueModule({ queue }: { readonly queue: Payload["resolution_queue"] })
       ) : (
         <div className={styles.scroller}>
           <table className={styles.table}>
-            <thead>
+            <thead className={styles.head}>
               <tr>
                 <th scope="col">Name</th>
                 <th scope="col">Flag</th>
@@ -407,11 +416,20 @@ function EvidenceRow({ row }: { readonly row: PendingRow }) {
               {candidate.same_report ? " (same report)" : ""}
             </button>
           ))}
+          {/* Rejecting is final and has no confirming flag to check it, so it stands apart and asks first. */}
           <button
             type="button"
-            className={styles.retry}
+            className={styles.reject}
             disabled={review.isPending}
-            onClick={() => review.mutate({ decision: "rejected" })}
+            onClick={() => {
+              if (
+                window.confirm(
+                  `Reject the ${EVIDENCE_KINDS[row.submitted_kind]} submission for ${row.company}? A review is final.`,
+                )
+              ) {
+                review.mutate({ decision: "rejected" });
+              }
+            }}
           >
             Reject
           </button>
@@ -432,6 +450,7 @@ function EvidenceModule({ queue }: { readonly queue: Payload["evidence_queue"] }
       id="dealer-evidence"
       label="Evidence"
       title="Submitted evidence"
+      count={queue.length}
       note="Sources forecasters filed on linked questions, at low confidence. The dealer reads none of them. Confirm one by a later independent flag for the same name, or reject it; a review is final."
     >
       {queue.length === 0 ? (
@@ -441,7 +460,7 @@ function EvidenceModule({ queue }: { readonly queue: Payload["evidence_queue"] }
       ) : (
         <div className={styles.scroller}>
           <table className={styles.table}>
-            <thead>
+            <thead className={styles.head}>
               <tr>
                 <th scope="col">Name</th>
                 <th scope="col">Claimed</th>
@@ -470,6 +489,7 @@ function SourcesModule({ sources }: { readonly sources: Payload["sources"] }) {
       id="dealer-sources"
       label="Ingest"
       title="Source health"
+      count={sources.length}
       note="Each evidence source's last success and last error, as ingest records them."
     >
       {sources.length === 0 ? (
@@ -479,7 +499,7 @@ function SourcesModule({ sources }: { readonly sources: Payload["sources"] }) {
       ) : (
         <div className={styles.scroller}>
           <table className={styles.table}>
-            <thead>
+            <thead className={styles.head}>
               <tr>
                 <th scope="col">Source</th>
                 <th scope="col">Last success</th>

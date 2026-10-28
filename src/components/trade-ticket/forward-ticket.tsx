@@ -407,6 +407,7 @@ function ForwardNotices({ order }: { readonly order: ReturnType<typeof useForwar
           {fill?.refusal === "exceeds_cap" ? (
             <button
               type="button"
+              className={styles.secondary}
               onClick={() => changeNotional((Number(fill.max_notional_cents) / 100).toFixed(2))}
             >
               Use maximum
@@ -420,7 +421,11 @@ function ForwardNotices({ order }: { readonly order: ReturnType<typeof useForwar
           <strong>{errorTitle}</strong>
           <p>{error.message}</p>
           {capMaxUsd !== null && Number(capMaxUsd) > 0 ? (
-            <button type="button" onClick={() => changeNotional(capMaxUsd)}>
+            <button
+              type="button"
+              className={styles.secondary}
+              onClick={() => changeNotional(capMaxUsd)}
+            >
               Use maximum
             </button>
           ) : null}
@@ -441,7 +446,9 @@ function ForwardNotices({ order }: { readonly order: ReturnType<typeof useForwar
 
       {result !== null ? (
         <div className={styles.success} role="status">
-          <strong>{result.side === "long" ? "Long" : "Short"} filled</strong>
+          <strong className={styles.successTitle}>
+            {result.side === "long" ? "Long" : "Short"} filled
+          </strong>
           <p>
             {formatCents(result.notional_cents)} notional at {formatPrice(result.entry_usd)};{" "}
             {formatCents(result.collateral_cents)} collateral posted, held to settlement or void.{" "}
@@ -474,7 +481,7 @@ function ForwardSubmit({ order }: { readonly order: ReturnType<typeof useForward
     submit,
   } = order;
   return (
-    <>
+    <div className={styles.submitBar}>
       {orderPending ? (
         <PendingOrderActions
           executing={phase === "executing"}
@@ -507,7 +514,7 @@ function ForwardSubmit({ order }: { readonly order: ReturnType<typeof useForward
         filled={result !== null}
         unknown={orderPending}
       />
-    </>
+    </div>
   );
 }
 

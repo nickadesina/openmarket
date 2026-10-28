@@ -70,9 +70,9 @@ export default async function MarketsPage() {
       </div>
 
       <p className={styles.disclosure}>
-        <strong>Paper trading only.</strong> Prices are the venue&apos;s own model quotes on paper
-        money and do not represent an investment, offer, or verified company valuation. Forward
-        positions are held to settlement or void.
+        <strong className={styles.disclosureLead}>Paper trading only.</strong> Prices are the
+        venue&apos;s own model quotes on paper money and do not represent an investment, offer, or
+        verified company valuation. Forward positions are held to settlement or void.
       </p>
     </div>
   );

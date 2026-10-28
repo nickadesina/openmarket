@@ -217,7 +217,7 @@ function SubmitRow({
       ) : null}
       {submit.isSuccess ? (
         <p className={styles.stamp} role="status">
-          <span>Recorded</span>
+          <span className={styles.stampLabel}>Recorded</span>
           <time dateTime={submit.data.submittedAt}>
             {formatTournamentDateTime(submit.data.submittedAt)}
           </time>

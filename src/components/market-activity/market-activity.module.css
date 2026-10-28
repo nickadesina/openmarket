@@ -49,17 +49,11 @@
 
 .refreshButton {
   padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
   color: var(--color-warning);
   background: transparent;
   font: inherit;
   font-size: var(--font-size-xs);
   cursor: pointer;
-}
-
-.refreshButton:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
 }
 
 .list {
@@ -99,7 +93,6 @@
 .tradeValues {
   flex: 0 0 auto;
   justify-items: end;
-  font-variant-numeric: tabular-nums;
 }
 
 .message {
@@ -113,22 +106,8 @@
   color: var(--color-ink);
 }
 
-.message button {
-  min-height: var(--control-height);
-  padding-inline: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  color: var(--color-ink);
-  background: var(--color-surface-elevated);
-  font: inherit;
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-}
-
-.message button:focus-visible,
-.resolution a:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
+.retry {
+  composes: secondaryButton from "../../styles/shared.module.css";
 }
 
 .skeleton {
@@ -184,7 +163,6 @@
 .resolution dd {
   margin: 0;
   color: var(--color-ink);
-  font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 52rem) {

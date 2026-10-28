@@ -34,39 +34,22 @@
 }
 
 .spec {
-  display: grid;
-  margin: 0;
-  border: 1px solid var(--color-border);
-}
-
-.spec > div {
-  display: grid;
-  grid-template-columns: 12rem minmax(0, 1fr);
-  min-height: var(--row-compact);
-  border-bottom: 1px solid var(--color-border-subtle);
-}
-
-.spec > div:last-child {
-  border-bottom: 0;
+  composes: specTable from "../../styles/shared.module.css";
+  --spec-label: 12rem;
 }
 
 .spec dt {
-  display: flex;
-  align-items: center;
   padding: var(--space-2);
-  border-right: 1px solid var(--color-border-subtle);
-  background: var(--color-surface-hover);
-  font-family: var(--font-caps);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--caps-tracking);
-  text-transform: uppercase;
 }
 
+/* Values here are hashes, links and prose, not figures: they wrap in body
+   type from the left, as running text rather than flex items. */
 .spec dd {
-  margin: 0;
+  display: block;
   padding: var(--space-2);
-  font-size: var(--font-size-sm);
+  font-family: var(--font-sans);
+  font-weight: 400;
+  text-align: left;
 }
 
 .hash {
@@ -75,25 +58,21 @@
   overflow-wrap: anywhere;
 }
 
-.match,
-.mismatch,
-.pending {
-  font-family: var(--font-caps);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--caps-tracking);
-  text-transform: uppercase;
-}
-
 .match {
+  composes: capsLabel from "../../styles/shared.module.css";
+  font-size: var(--font-size-xs);
   color: var(--color-ink);
 }
 
 .mismatch {
+  composes: capsLabel from "../../styles/shared.module.css";
+  font-size: var(--font-size-xs);
   color: var(--color-primary);
 }
 
 .pending {
+  composes: capsLabel from "../../styles/shared.module.css";
+  font-size: var(--font-size-xs);
   color: var(--color-ink-muted);
 }
 
@@ -118,11 +97,8 @@
 }
 
 .side {
-  font-family: var(--font-caps);
+  composes: capsLabel from "../../styles/shared.module.css";
   font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--caps-tracking);
-  text-transform: uppercase;
 }
 
 .recipe {
@@ -150,16 +126,7 @@
 }
 
 .statePanel {
-  display: grid;
-  max-width: 60ch;
-  gap: var(--space-2);
-  padding: var(--space-5);
-  border: 1px solid var(--color-border);
-}
-
-.statePanel p {
-  margin: 0;
-  color: var(--color-ink-muted);
+  composes: statePanel from "../../styles/shared.module.css";
 }
 
 .skeleton {

@@ -22,7 +22,7 @@ npm run verify:replay    # ledger invariants against DATABASE_URL_UNPOOLED
 ```
 
 - `biome.jsonc` is lint and format; each disabled rule carries its reason inline. `noExcessiveCognitiveComplexity` is a ratchet: functions above it carry a `biome-ignore` naming the split to make. Lower the ceiling, never add ignores.
-- `scripts/audit-styles.ts`: no literal `font-size` outside `tokens.css`, every rem on the 4px grid, no color literal outside `tokens.css` except white, the module tab only via `.moduleTab`.
+- `scripts/audit-styles.ts`: no literal `font-size` or `letter-spacing` outside `tokens.css`, every rem on the 4px grid, no color literal outside `tokens.css` except white, the module tab only via `.moduleTab`.
 - `scripts/audit-deps.ts`: engine imports engine only; services never import UI; components use services as types and get data through `/api`.
 
 ## Layout of the code
@@ -33,7 +33,7 @@ npm run verify:replay    # ledger invariants against DATABASE_URL_UNPOOLED
 - `src/lib/config/dealer.ts` reads `backtest/out/params.json`; never write a parameter in code. A rerun of `backtest/analyze.py` that changes it adds a model version with the file's digest to `PARAMS_SHA256_BY_MODEL_VERSION`; never rewrite a published one.
 - `src/lib/services` one file per operation on the ledger (`quote`, `execute-trade`, `get-market`, `get-marks`, `verify-replay`); `services/tournament` likewise for the tournament. `quote` and `execute-trade` find their book through `trade-book.ts`: a dealer binary by `market_id` (clamped, live only); `services/dealer/settle-lmsr-book.ts`'s `settleLmsrBook` pays any LMSR book.
 - `src/app/api` thin routes over services. `src/components` client UI, one folder per module with its `.module.css`.
-- `src/styles/tokens.css` the six-step type ramp, row heights, one red. `src/styles/shared.module.css` composable primitives (`.moduleTab`, `.seal`, `.buttonBase`, `.primaryButton`, `.inputFrame`, `.sectionHead`, `.visuallyHidden`, `.skeletonBlock`, …); compose them rather than restating.
+- `src/styles/tokens.css` the six-step type ramp, the four tracking roles, row heights, the one focus ring, one red. `src/styles/shared.module.css` composable primitives (`.capsLabel`, `.moduleTab`, `.sectionHead`, `.seal`, `.buttonBase`, `.primaryButton`, `.secondaryButton`, `.inputFrame`, `.specTable`, `.statePanel`, `.visuallyHidden`, `.skeletonBlock`, …); compose them rather than restating.
 
 ## Conventions
 
@@ -41,6 +41,7 @@ npm run verify:replay    # ledger invariants against DATABASE_URL_UNPOOLED
 - Client formatting lives in `src/lib/client/format.ts`, requests in `api.ts`, React Query keys in `query-keys.ts`, and trade submission in `use-trade-execution.ts`. Add a formatter there before writing an `Intl` instance in a component.
 - Contract prices (average fill, price after) are probabilities of a $1 payout and render through `formatContractPrice`; cash (cost, proceeds, marked value) renders through `formatUsd` or `formatCents`. Every trade review (forward, binary, the portfolio's sale) renders its rows through `src/components/quote-review`.
 - Module CSS never uses `!important` (Biome enforces it); a rule that must outrank a same-file default gets a scoped selector with a one-line comment saying what it outranks.
+- A module the root layout loads (`app-shell`, `tournament-nav`) cannot override a property it composes from `shared.module.css`: a page's chunk re-injects the shared sheet after it, and the shared value wins. Restate the property there, or scope the override (`.account .accountButton`).
 
 ## Local traps
 

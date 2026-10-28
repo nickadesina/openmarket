@@ -75,7 +75,7 @@ function ListingRow({ listing }: { readonly listing: ListingView }) {
         )}
       </td>
       <td className={styles.openInterestCell} data-label="Open interest">
-        <span className={styles.tabular}>{formatCompactUsd(listing.openInterest.totalUsd)}</span>
+        {formatCompactUsd(listing.openInterest.totalUsd)}
       </td>
       <td className={styles.statusCell}>
         <Link className={styles.tradeLink} href={href}>
@@ -163,7 +163,7 @@ export function MarketBoard({
             Listed names with the forward&apos;s mid and two-way quote, the level against the last
             round, the quarterly binary&apos;s YES price, and open interest
           </caption>
-          <thead>
+          <thead className={styles.head}>
             <tr>
               <th scope="col">Name</th>
               <th scope="col">Forward mid</th>

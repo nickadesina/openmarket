@@ -26,6 +26,7 @@ import type {
   MarkRange,
   TradeSelection,
 } from "./types.js";
+import { useRailFit } from "./use-rail-fit.js";
 
 interface MarketWorkspaceProps {
   readonly slug: string;
@@ -140,6 +141,7 @@ export function MarketWorkspace({
       : defaultSelection(initialListing),
   );
   const [sheetOpen, setSheetOpen] = useState(false);
+  const railRef = useRailFit();
   const [movement, setMovement] = useState<"up" | "down" | "flat">("flat");
   const previousMid = useRef(initialListing?.forward?.mid_usd);
 
@@ -219,7 +221,11 @@ export function MarketWorkspace({
                 ? "No listed name matches this address."
                 : "Market data is temporarily unavailable. Try again in a moment."}
             </p>
-            <button type="button" onClick={() => void listingQuery.refetch()}>
+            <button
+              type="button"
+              className={styles.retry}
+              onClick={() => void listingQuery.refetch()}
+            >
               Retry market
             </button>
           </div>
@@ -260,7 +266,11 @@ export function MarketWorkspace({
       {listingQuery.isError ? (
         <div className={styles.staleNotice} role="status">
           Live refresh paused. Displaying the latest confirmed market state.
-          <button type="button" onClick={() => void listingQuery.refetch()}>
+          <button
+            type="button"
+            className={styles.staleRetry}
+            onClick={() => void listingQuery.refetch()}
+          >
             Retry
           </button>
         </div>
@@ -293,7 +303,7 @@ export function MarketWorkspace({
           )}
         </div>
 
-        <aside className={styles.tradeRail} aria-label="Trade rail">
+        <aside ref={railRef} className={styles.tradeRail} aria-label="Trade rail">
           <TicketUnlessRestricted name={listing.company.name} profileHref={restrictedProfile}>
             {ticket("desktop")}
           </TicketUnlessRestricted>

@@ -105,7 +105,7 @@ export function HomeActivity({ initialData }: { readonly initialData?: ActivityP
       <div className={styles.state} role="alert">
         <strong>Activity is unavailable.</strong>
         <p>Recent public trades could not be refreshed.</p>
-        <button type="button" onClick={() => void activityQuery.refetch()}>
+        <button type="button" className={styles.retry} onClick={() => void activityQuery.refetch()}>
           Retry activity
         </button>
       </div>

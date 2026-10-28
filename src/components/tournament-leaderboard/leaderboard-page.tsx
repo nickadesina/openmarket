@@ -41,7 +41,7 @@ export function LeaderboardPage({
           </p>
         </div>
         <label className={styles.periodField}>
-          <span>Period</span>
+          <span className={styles.periodLabel}>Period</span>
           <select
             value={period}
             onChange={(event) =>
@@ -90,7 +90,7 @@ export function LeaderboardPage({
           <caption className={styles.caption}>
             {formatTournamentPeriod(period)}, resolutions dated in {leaderboardQuery.data.timeZone}
           </caption>
-          <thead>
+          <thead className={styles.head}>
             <tr>
               <th scope="col" className={styles.figure}>
                 Rank

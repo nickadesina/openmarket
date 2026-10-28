@@ -28,12 +28,9 @@
   gap: var(--space-1);
 }
 
-.periodField span {
-  font-family: var(--font-caps);
+.periodLabel {
+  composes: capsLabel from "../../styles/shared.module.css";
   font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--caps-tracking);
-  text-transform: uppercase;
 }
 
 .periodField select {
@@ -62,11 +59,14 @@
   padding: 0 var(--space-3);
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface-hover);
-  font-family: var(--font-caps);
   font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--caps-tracking);
-  text-transform: uppercase;
+}
+
+/* The caps voice inherits from the head to its cells. Letter-spacing in em
+   computes where it is declared, so the head takes the cells' label size. */
+.head {
+  composes: capsLabel from "../../styles/shared.module.css";
+  font-size: var(--font-size-xs);
 }
 
 .table td {
@@ -108,23 +108,12 @@
 }
 
 .statePanel {
-  display: grid;
-  max-width: 60ch;
-  gap: var(--space-2);
-  padding: var(--space-5);
-  border: 1px solid var(--color-border);
-}
-
-.statePanel p {
-  margin: 0;
-  color: var(--color-ink-muted);
+  composes: statePanel from "../../styles/shared.module.css";
 }
 
 .retry {
-  composes: buttonBase from "../../styles/shared.module.css";
+  composes: secondaryButton from "../../styles/shared.module.css";
   justify-self: start;
-  border: 1px solid var(--color-ink);
-  background: var(--color-surface);
 }
 
 .skeleton {

@@ -81,7 +81,7 @@ export function MarketActivity({
         {error && activity === undefined ? (
           <div className={styles.message} role="alert">
             <p>Activity could not be loaded.</p>
-            <button type="button" onClick={onRetry}>
+            <button type="button" className={styles.retry} onClick={onRetry}>
               Retry activity
             </button>
           </div>

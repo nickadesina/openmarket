@@ -48,7 +48,7 @@ export function MarketHeader({ listing, movement }: MarketHeaderProps) {
 
         <dl className={styles.cells} aria-label="Current market figures">
           <div className={styles.cell}>
-            <dt>Forward mid</dt>
+            <dt className={styles.label}>Forward mid</dt>
             <dd
               className={`${styles.price} ${movement === "up" ? styles.flashUp : movement === "down" ? styles.flashDown : ""}`}
             >
@@ -69,7 +69,7 @@ export function MarketHeader({ listing, movement }: MarketHeaderProps) {
           </div>
 
           <div className={styles.cell}>
-            <dt>Last round</dt>
+            <dt className={styles.label}>Last round</dt>
             <dd className={styles.figure}>{formatValuation(anchor.postMoneyUsd)}</dd>
             <dd className={styles.note}>
               {anchor.round} · <time dateTime={anchor.date}>{formatDate(anchor.date)}</time> ·{" "}
@@ -87,7 +87,7 @@ export function MarketHeader({ listing, movement }: MarketHeaderProps) {
 
           {distribution === null ? null : (
             <div className={styles.cell}>
-              <dt>80% band</dt>
+              <dt className={styles.label}>80% band</dt>
               <dd className={styles.figure}>
                 {formatPrice(distribution.band.p10)} – {formatPrice(distribution.band.p90)}
               </dd>
@@ -102,7 +102,7 @@ export function MarketHeader({ listing, movement }: MarketHeaderProps) {
           )}
 
           <div className={styles.cell}>
-            <dt>{binaryLabel} this quarter</dt>
+            <dt className={styles.label}>{binaryLabel} this quarter</dt>
             <dd className={styles.figure}>
               {binary === null ? "Not trading" : `YES ${formatProbability(binary.yes_price)}`}
             </dd>
@@ -115,7 +115,7 @@ export function MarketHeader({ listing, movement }: MarketHeaderProps) {
           </div>
 
           <div className={styles.cell}>
-            <dt>Open interest</dt>
+            <dt className={styles.label}>Open interest</dt>
             <dd className={styles.figure}>{formatCompactUsd(listing.openInterest.totalUsd)}</dd>
             <dd className={styles.note}>
               Forward {formatCompactUsd(listing.openInterest.forwardNotionalUsd)} · Binary{" "}
@@ -124,7 +124,7 @@ export function MarketHeader({ listing, movement }: MarketHeaderProps) {
           </div>
 
           <div className={styles.cell}>
-            <dt>Last trade</dt>
+            <dt className={styles.label}>Last trade</dt>
             <dd className={styles.figure}>
               {/* ICU output differs between Node and the browser; the client value wins. */}
               <time dateTime={listing.lastTradeAt ?? undefined} suppressHydrationWarning>

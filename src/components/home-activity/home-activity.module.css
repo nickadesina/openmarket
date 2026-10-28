@@ -21,7 +21,6 @@
   font-family: var(--font-num);
   font-size: var(--font-size-sm);
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
@@ -39,19 +38,13 @@
   line-height: 1.4;
 }
 
-.buy,
-.sell {
-  font-family: var(--font-caps);
-  font-weight: 700;
-  letter-spacing: var(--caps-tracking);
-  text-transform: uppercase;
-}
-
 .buy {
+  composes: capsLabel from "../../styles/shared.module.css";
   color: var(--color-ink);
 }
 
 .sell {
+  composes: capsLabel from "../../styles/shared.module.css";
   color: var(--color-ink-muted);
 }
 
@@ -66,7 +59,6 @@
   flex-wrap: wrap;
   gap: var(--space-1);
   font-size: var(--font-size-xs);
-  font-variant-numeric: tabular-nums;
 }
 
 .meta a {
@@ -86,39 +78,19 @@
 }
 
 .state {
+  composes: statePanel from "../../styles/shared.module.css";
+  max-width: none;
   min-height: 10rem;
   padding: var(--space-5) var(--space-3);
-  border: 1px solid var(--color-border);
-  background: var(--color-bg);
+  align-content: start;
 }
 
 .state strong {
   font-size: var(--font-size-sm);
 }
 
-.state p {
-  max-width: 38ch;
-  margin: var(--space-1) 0 var(--space-4);
-  color: var(--color-ink-muted);
-  font-size: var(--font-size-sm);
-}
-
-.state button {
-  min-height: var(--control-height);
-  padding: 0 var(--space-3);
-  border: 1px solid var(--color-border-strong);
-  background: var(--color-bg);
-  cursor: pointer;
-  font-family: var(--font-caps);
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  letter-spacing: var(--caps-tracking);
-  text-transform: uppercase;
-}
-
-.state button:hover {
-  border-color: var(--color-primary);
-  background: var(--color-primary-subtle);
+.retry {
+  composes: secondaryButton from "../../styles/shared.module.css";
 }
 
 .skeleton {

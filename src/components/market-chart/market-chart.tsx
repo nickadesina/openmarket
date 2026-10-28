@@ -248,6 +248,7 @@ export function MarketChart({
             <button
               key={item}
               type="button"
+              className={styles.range}
               aria-pressed={range === item}
               onClick={() => onRangeChange(item)}
             >
@@ -280,7 +281,7 @@ export function MarketChart({
         {error && marks === undefined ? (
           <div className={styles.message} role="alert">
             <span>History could not be loaded.</span>
-            <button type="button" onClick={onRetry}>
+            <button type="button" className={styles.retry} onClick={onRetry}>
               Retry
             </button>
           </div>

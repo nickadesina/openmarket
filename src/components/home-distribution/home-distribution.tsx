@@ -97,11 +97,11 @@ function DistributionRow({ listing }: { readonly listing: ListingView }) {
               className={styles.medianLabel}
               style={{ left: `${position(band, band.median)}%` }}
             >
-              <small>Median</small>
+              <small className={styles.tick}>Median</small>
               {formatPrice(band.median)}
             </span>
             <span className={styles.edgeLabel} style={{ left: `${position(band, band.lower)}%` }}>
-              <small>P10</small>
+              <small className={styles.tick}>P10</small>
               {formatPrice(band.lower)}
             </span>
             <span
@@ -109,7 +109,7 @@ function DistributionRow({ listing }: { readonly listing: ListingView }) {
               style={{ left: `${position(band, band.upper)}%` }}
             >
               {formatPrice(band.upper)}
-              <small>P90</small>
+              <small className={styles.tick}>P90</small>
             </span>
             {band.anchor === null ? null : (
               <>
@@ -121,7 +121,7 @@ function DistributionRow({ listing }: { readonly listing: ListingView }) {
                   className={styles.anchorLabel}
                   style={{ left: `${position(band, band.anchor)}%` }}
                 >
-                  <small>Round</small>
+                  <small className={styles.tick}>Round</small>
                   {formatValuation(band.anchor)}
                 </span>
               </>

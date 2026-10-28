@@ -60,31 +60,24 @@
   color: var(--color-ink);
 }
 
+/* A full-bleed row in the clipped main region: the ring draws inset. */
 .tailRow:focus-visible {
-  box-shadow: var(--focus-ring);
-  outline: 0;
+  outline-offset: calc(var(--focus-offset) * -2);
 }
 
 .tailKind {
+  composes: capsLabel from "../../styles/shared.module.css";
   color: var(--color-ink);
-  font-family: var(--font-caps);
-  font-weight: 700;
-  letter-spacing: var(--caps-tracking);
-  text-transform: uppercase;
 }
 
 .tailSummary {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-variant-numeric: tabular-nums;
 }
 
 .tailAction {
-  font-family: var(--font-caps);
-  font-weight: 700;
-  letter-spacing: var(--caps-tracking);
-  text-transform: uppercase;
+  composes: capsLabel from "../../styles/shared.module.css";
 }
 
 /* No vertical scroller: the folded book is short enough to read whole, and
@@ -98,10 +91,13 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-variant-numeric: tabular-nums;
 }
 
-.table thead {
+/* The caps voice inherits from the head to its cells. Letter-spacing in em
+   computes where it is declared, so the head takes the cells' label size. */
+.head {
+  composes: capsLabel from "../../styles/shared.module.css";
+  font-size: var(--font-size-xs);
   background: var(--color-surface-elevated);
 }
 
@@ -110,11 +106,7 @@
   padding: 0 var(--space-3);
   border-bottom: 1px solid var(--color-border);
   color: var(--color-ink);
-  font-family: var(--font-caps);
   font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--caps-tracking);
-  text-transform: uppercase;
   white-space: nowrap;
 }
 
@@ -179,13 +171,10 @@
 }
 
 .currentLabel {
+  composes: capsLabel from "../../styles/shared.module.css";
   margin-right: var(--space-2);
   color: var(--color-ink-muted);
-  font-family: var(--font-caps);
   font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--caps-tracking);
-  text-transform: uppercase;
 }
 
 .currentValue {

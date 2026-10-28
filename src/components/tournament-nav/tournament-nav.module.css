@@ -32,6 +32,10 @@
   gap: var(--space-1);
 }
 
+/* The header's account control loads this module with the root layout,
+   before a page re-injects shared.module.css: a property composed from
+   there cannot be overridden by a plain class here. The caps voice is
+   restated; the account button's overrides are scoped (below). */
 .link {
   display: inline-flex;
   min-height: var(--control-height-sm);
@@ -41,7 +45,7 @@
   font-family: var(--font-caps);
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tracking-plate);
   text-transform: uppercase;
   transition: background-color var(--duration-fast) var(--ease-out);
 }
@@ -111,17 +115,15 @@ button.link {
 }
 
 .accountButton {
-  composes: buttonBase from "../../styles/shared.module.css";
-  min-height: var(--control-height-sm);
-  padding: 0 var(--space-3);
-  border: 1px solid var(--color-ink);
-  background: var(--color-surface);
-  font-size: var(--font-size-xs);
+  composes: secondaryButton from "../../styles/shared.module.css";
 }
 
-.accountButton:hover {
-  border-color: var(--color-primary);
-  background: var(--color-primary-subtle);
+/* Outranks the composed control size whatever order the sheets load in. */
+.account .accountButton,
+.devForm .accountButton {
+  min-height: var(--control-height-sm);
+  padding: 0 var(--space-3);
+  font-size: var(--font-size-xs);
 }
 
 .accountError {

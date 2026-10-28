@@ -14,13 +14,13 @@
   list-style: none;
 }
 
-.section summary::-webkit-details-marker {
-  display: none;
+/* A full-bleed row in the clipped main region: the ring draws inset. */
+.section summary:focus-visible {
+  outline-offset: calc(var(--focus-offset) * -2);
 }
 
-.section summary:focus-visible {
-  outline: none;
-  box-shadow: inset var(--focus-ring);
+.section summary::-webkit-details-marker {
+  display: none;
 }
 
 .section summary > span:first-child {

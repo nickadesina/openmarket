@@ -48,24 +48,18 @@
 }
 
 .link {
-  font-family: var(--font-caps);
+  composes: capsLabel from "../../styles/shared.module.css";
   font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--caps-tracking);
-  text-transform: uppercase;
 }
 
 .link:hover {
   color: var(--color-primary);
 }
 
-.question details > summary {
+.actionSummary {
+  composes: capsLabel from "../../styles/shared.module.css";
   cursor: pointer;
-  font-family: var(--font-caps);
   font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--caps-tracking);
-  text-transform: uppercase;
 }
 
 .form {
@@ -85,12 +79,9 @@
   gap: var(--space-1);
 }
 
-.field > span {
-  font-family: var(--font-caps);
+.fieldLabel {
+  composes: capsLabel from "../../styles/shared.module.css";
   font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--caps-tracking);
-  text-transform: uppercase;
 }
 
 .field input,
@@ -147,16 +138,7 @@
 }
 
 .statePanel {
-  display: grid;
-  max-width: 60ch;
-  gap: var(--space-2);
-  padding: var(--space-5);
-  border: 1px solid var(--color-border);
-}
-
-.statePanel p {
-  margin: 0;
-  color: var(--color-ink-muted);
+  composes: statePanel from "../../styles/shared.module.css";
 }
 
 .skeleton {

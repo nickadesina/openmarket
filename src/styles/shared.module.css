@@ -1,17 +1,23 @@
 /* Primitives composed into page modules via `composes:`. */
 
+/* The caps voice (DESIGN.md → The Caps Voice Rule): every structural label,
+   head, stamp and button. Size and color stay with the composing class; a
+   plate widens the tracking to --tracking-plate after composing. */
+.capsLabel {
+  font-family: var(--font-caps);
+  font-weight: 700;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
 .buttonBase {
+  composes: capsLabel;
   display: inline-flex;
   min-height: var(--control-height);
   align-items: center;
   justify-content: center;
   padding: 0 var(--space-4);
-  font: inherit;
-  font-family: var(--font-caps);
   font-size: var(--font-size-sm);
-  font-weight: 700;
-  letter-spacing: var(--caps-tracking);
-  text-transform: uppercase;
   line-height: 1;
   text-decoration: none;
   white-space: nowrap;
@@ -32,10 +38,6 @@
   transform: none;
 }
 
-.buttonBase:focus-visible {
-  box-shadow: var(--focus-ring);
-}
-
 .primaryButton {
   composes: buttonBase;
   border: 1px solid var(--color-primary-action);
@@ -43,43 +45,52 @@
   color: #ffffff;
 }
 
-.primaryButton:hover {
+.primaryButton:hover:not(:disabled) {
   border-color: var(--color-primary-action-hover);
   background: var(--color-primary-action-hover);
+}
+
+/* Secondary and retry: white, ruled in ink; hover washes red. */
+.secondaryButton {
+  composes: buttonBase;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+
+.secondaryButton:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
 }
 
 /* Module tab: the small solid red plate that names every module. One
    compact row tall (2rem), so tabs and compact rows share a rhythm. */
 .moduleTab {
+  composes: capsLabel;
   display: inline-flex;
   margin: 0;
   padding: 0.5rem 1rem;
   align-items: center;
   background: var(--color-primary);
   color: #ffffff;
-  font-family: var(--font-caps);
   font-size: var(--font-size-sm);
-  font-weight: 700;
-  letter-spacing: 0.09em;
+  letter-spacing: var(--tracking-plate);
   line-height: 1;
-  text-transform: uppercase;
 }
 
 /* Section head: ink caps behind a short red tick. Names every module
    that is read rather than acted in; the solid plate above is kept for
    the module you act in (the trade ticket) and the selected tab. */
 .sectionHead {
+  composes: capsLabel;
   display: inline-flex;
   margin: 0;
   align-items: baseline;
   gap: var(--space-2);
   color: var(--color-ink);
-  font-family: var(--font-caps);
   font-size: var(--font-size-sm);
-  font-weight: 700;
-  letter-spacing: 0.09em;
+  letter-spacing: var(--tracking-plate);
   line-height: 1;
-  text-transform: uppercase;
 }
 
 .sectionHead::before {
@@ -94,6 +105,7 @@
 /* Hanko seal: a double-ringed circle in one color, pressed a few degrees
    off-square the way a hand stamp lands. Status, never decoration. */
 .seal {
+  composes: capsLabel;
   --seal-color: var(--color-primary);
   display: inline-grid;
   width: 2.5rem;
@@ -105,13 +117,9 @@
     inset 0 0 0 2px #ffffff,
     inset 0 0 0 3px var(--seal-color);
   color: var(--seal-color);
-  font-family: var(--font-caps);
   font-size: var(--font-size-micro);
-  font-weight: 700;
-  letter-spacing: 0.06em;
   line-height: 1;
   place-items: center;
-  text-transform: uppercase;
   transform: rotate(-8deg);
 }
 
@@ -124,14 +132,14 @@
   min-height: var(--control-height);
   padding-inline: var(--space-3);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
   color: var(--color-ink-muted);
   background: var(--color-bg);
 }
 
+/* The frame carries the focus ring for the input inside it. */
 .inputFrame:focus-within {
-  outline: none;
-  box-shadow: var(--focus-ring);
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
 }
 
 .inputFrame input {
@@ -142,7 +150,6 @@
   color: var(--color-ink);
   background: transparent;
   font: inherit;
-  font-variant-numeric: tabular-nums;
 }
 
 .inputFrame input::placeholder {
@@ -184,7 +191,7 @@
   font-family: var(--font-caps);
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: var(--caps-tracking);
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
 }
 
@@ -221,7 +228,6 @@
   font-family: var(--font-num);
   font-size: var(--font-size-xs);
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
 }
 
 .quickAmounts button:hover:not(:disabled) {
@@ -235,8 +241,72 @@
   color: #ffffff;
 }
 
-.quickAmounts button:focus-visible {
-  box-shadow: var(--focus-ring);
+/* Spec table (商品情報): a hairline-boxed dl of div > dt + dd, gray caps
+   label cells beside white right-aligned figures, every row compact and
+   ruled. A module may set --spec-label (the label column) and --spec-pad. */
+.specTable {
+  display: grid;
+  margin: 0;
+  border: 1px solid var(--color-border);
+}
+
+.specTable > div {
+  display: grid;
+  grid-template-columns: var(--spec-label, 8.5rem) minmax(0, 1fr);
+}
+
+.specTable > div + div {
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.specTable dt,
+.specTable dd {
+  display: flex;
+  min-height: var(--row-compact);
+  margin: 0;
+  padding: 0 var(--spec-pad, var(--space-3));
+  align-items: center;
+}
+
+.specTable dt {
+  border-right: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-hover);
+  color: var(--color-ink);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+.specTable dd {
+  justify-content: flex-end;
+  font-family: var(--font-num);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-align: right;
+}
+
+/* State panel: a hairline box holding a bold one-liner, a muted
+   explanation and, when there is one, a secondary RETRY. */
+.statePanel {
+  display: grid;
+  max-width: 60ch;
+  justify-items: start;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.statePanel strong {
+  color: var(--color-ink);
+}
+
+.statePanel p {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
 }
 
 .visuallyHidden {
@@ -254,7 +324,6 @@
 
 .skeletonBlock {
   display: block;
-  border-radius: var(--radius-sm);
   background: var(--color-skeleton);
   animation: skeletonPulse 1.6s ease-in-out infinite;
 }

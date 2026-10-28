@@ -504,7 +504,7 @@ function BinaryNotices({ order }: { readonly order: ReturnType<typeof useBinaryO
           <strong>{errorTitle}</strong>
           <p>{error.message}</p>
           {error.code === "PRICE_MOVED" && movedPrice === null ? (
-            <button type="button" onClick={() => void requestQuote()}>
+            <button type="button" className={styles.secondary} onClick={() => void requestQuote()}>
               Refresh quote
             </button>
           ) : null}
@@ -525,7 +525,7 @@ function BinaryNotices({ order }: { readonly order: ReturnType<typeof useBinaryO
 
       {result !== null ? (
         <div className={styles.success} role="status">
-          <strong>Trade completed</strong>
+          <strong className={styles.successTitle}>Trade completed</strong>
           <p>
             {formatQuantity(result.shares)} {result.side.toUpperCase()} shares at{" "}
             {formatContractPrice(result.average_price)} average.{" "}
@@ -596,7 +596,7 @@ function BinaryOrderButton({ order }: { readonly order: ReturnType<typeof useBin
 function BinarySubmit({ order }: { readonly order: ReturnType<typeof useBinaryOrder> }) {
   const { view, result, orderPending, phase } = order;
   return (
-    <>
+    <div className={styles.submitBar}>
       <BinaryOrderButton order={order} />
       <ApprovalStrip
         quoted={view !== null || result !== null || orderPending}
@@ -604,7 +604,7 @@ function BinarySubmit({ order }: { readonly order: ReturnType<typeof useBinaryOr
         filled={result !== null}
         unknown={orderPending}
       />
-    </>
+    </div>
   );
 }
 

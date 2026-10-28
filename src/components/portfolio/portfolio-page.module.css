@@ -34,13 +34,12 @@
   margin: var(--space-1) 0 var(--space-2);
   font-size: var(--font-size-xl);
   line-height: 1.2;
-  letter-spacing: -0.01em;
+  letter-spacing: var(--tracking-headline);
   text-wrap: balance;
 }
 
 .pageHeader p,
 .sectionHeader p,
-.emptyState p,
 .statePanel p,
 .sellFlowHeader p,
 .quoteTime {
@@ -80,15 +79,11 @@
   border-right: 0;
 }
 
-.summaryBand dt,
-.positionMetrics dt,
-.quoteReview dt {
+/* Every label in the summary band, a position's metrics and the sale review. */
+.label {
+  composes: capsLabel from "../../styles/shared.module.css";
   color: var(--color-ink);
-  font-family: var(--font-caps);
   font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--caps-tracking);
-  text-transform: uppercase;
 }
 
 .summaryBand dd {
@@ -96,8 +91,7 @@
   font-family: var(--font-num);
   font-size: var(--font-size-lg);
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
+  letter-spacing: var(--tracking-headline);
 }
 
 .accountValue dd {
@@ -162,7 +156,6 @@
 
 .marketHeader > strong {
   font-size: var(--font-size-md);
-  font-variant-numeric: tabular-nums;
 }
 
 .positionList,
@@ -209,7 +202,6 @@
 .quoteReview dd {
   margin: var(--space-1) 0 0;
   font-size: var(--font-size-sm);
-  font-variant-numeric: tabular-nums;
 }
 
 .positionAction {
@@ -220,16 +212,8 @@
   color: var(--color-positive);
 }
 
-.positive::before {
-  content: "Gain ";
-}
-
 .negative {
   color: var(--color-negative);
-}
-
-.negative::before {
-  content: "Loss ";
 }
 
 .flat {
@@ -240,7 +224,6 @@
   padding: var(--space-4);
   margin: 0 0 var(--space-4);
   border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
   background: var(--color-surface-elevated);
 }
 
@@ -267,11 +250,9 @@
   height: var(--control-height);
   padding: 0 var(--space-3);
   border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-ink);
   font: inherit;
-  font-variant-numeric: tabular-nums;
 }
 
 .fieldSupport {
@@ -306,19 +287,7 @@
 }
 
 .secondaryButton {
-  composes: buttonBase from "../../styles/shared.module.css";
-  border: 1px solid var(--color-border-strong);
-  background: var(--color-surface);
-  color: var(--color-ink);
-}
-
-.secondaryLink {
-  composes: secondaryButton;
-}
-
-.secondaryButton:hover {
-  border-color: var(--color-primary);
-  background: var(--color-surface-elevated);
+  composes: secondaryButton from "../../styles/shared.module.css";
 }
 
 .textButton {
@@ -340,12 +309,6 @@
   cursor: not-allowed;
 }
 
-.textButton:focus-visible,
-.marketHeader a:focus-visible,
-.field input:focus-visible {
-  box-shadow: var(--focus-ring);
-}
-
 .inlineError {
   margin: var(--space-3) 0 0;
   color: var(--color-primary);
@@ -357,7 +320,6 @@
   padding: var(--space-3) var(--space-4);
   margin-bottom: var(--space-5);
   border: 1px solid var(--color-primary);
-  border-radius: var(--radius-sm);
   color: var(--color-ink);
   font-size: var(--font-size-md);
 }
@@ -377,7 +339,6 @@
 .historyValues {
   align-items: flex-end;
   text-align: right;
-  font-variant-numeric: tabular-nums;
 }
 
 .pagination {
@@ -385,20 +346,32 @@
   margin-top: var(--space-4);
 }
 
-.emptyState,
 .statePanel {
   padding: var(--space-6);
   border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
   background: var(--color-surface);
 }
 
-.emptyState h3 {
-  margin: 0 0 var(--space-2);
-  font-size: var(--font-size-md);
+/* An empty section is one ruled line: what is missing, then the next step. */
+.emptyLine {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
 }
 
-.emptyState a,
+.emptyLine strong {
+  color: var(--color-ink);
+}
+
+.emptyLine a {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--color-primary);
+  text-underline-offset: 0.1875em;
+}
+
 .statePanel a,
 .statePanel button {
   margin-top: var(--space-4);
@@ -412,7 +385,6 @@
 .skeletonTitle,
 .skeletonSummary div,
 .skeletonPanel {
-  border-radius: var(--radius-sm);
   background: var(--color-surface-elevated);
   animation: pulse 1.4s var(--ease-out) infinite alternate;
 }
@@ -571,7 +543,6 @@
     flex: 1;
   }
 
-  .emptyState,
   .statePanel {
     padding: var(--space-5);
   }

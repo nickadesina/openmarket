@@ -6,7 +6,7 @@
 .header h1 {
   margin: 0 0 var(--space-2);
   font-size: var(--font-size-xl);
-  letter-spacing: -0.01em;
+  letter-spacing: var(--tracking-headline);
 }
 
 .header p {
@@ -23,9 +23,7 @@
   font-size: var(--font-size-xs);
 }
 
-.disclosure strong {
+.disclosureLead {
+  composes: capsLabel from "../../styles/shared.module.css";
   color: var(--color-ink);
-  font-family: var(--font-caps);
-  letter-spacing: var(--caps-tracking);
-  text-transform: uppercase;
 }

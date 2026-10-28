@@ -19,11 +19,8 @@
 }
 
 .label {
-  font-family: var(--font-caps);
+  composes: capsLabel from "../../styles/shared.module.css";
   font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--caps-tracking);
-  text-transform: uppercase;
 }
 
 .input {
@@ -34,14 +31,7 @@
 }
 
 .button {
-  composes: buttonBase from "../../styles/shared.module.css";
-  border: 1px solid var(--color-ink);
-  background: var(--color-surface);
-}
-
-.button:hover:not(:disabled) {
-  border-color: var(--color-primary);
-  background: var(--color-primary-subtle);
+  composes: secondaryButton from "../../styles/shared.module.css";
 }
 
 .primary {
