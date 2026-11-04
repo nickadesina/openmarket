@@ -46,8 +46,8 @@ export type NameKind = "company" | "lab";
 
 /**
  * Events after which filers re-mark a name on information its insiders had
- * first. One announced inside a contract's window voids the contract
- * (RULEBOOK.contracts.repricing).
+ * first. One announced inside the window of a contract that settles on
+ * marks voids it (RULEBOOK.contracts.repricing).
  */
 export const REPRICING_EVENTS = [
   "priced_round",
@@ -319,24 +319,33 @@ export const RULEBOOK = {
       "perp basis",
       "structure spread",
     ],
+    settles_on_marks:
+      "The mark-level binary and the dispersion range settle on filer marks: a named filer's next disclosed mark, or the spread of every filer's marks on a quarter.",
+    settles_on_prints:
+      "Mark versus print, perp basis and structure spread settle on the next priced round, through its certificate.",
     versions:
-      "A contract names the methodology_version and rulebook_version it settles under; a later version never changes its settlement.",
+      "A contract names the methodology_version, ce_version where it uses one, and rulebook_version it settles under; a later version never changes its settlement.",
     observation_lag_days: 75,
     observation:
-      "A contract on calendar quarter Q reads the index as published at 00:00 UTC on the 75th day after Q's last day. A row published later does not enter.",
+      "A contract on calendar quarter Q reads the index as published at 00:00 UTC on the 75th day after Q's last day. A row published after a contract's observation date or deadline does not enter.",
     listing_floor_days: 21,
     listing:
-      "A contract observes the calendar quarter it lists in if at least 21 days remain, otherwise the next one.",
+      "A contract on a calendar quarter observes the quarter it lists in if at least 21 days remain, otherwise the next one.",
     repricing:
-      "A priced round, tender or secondary, public S-1, IPO or acquisition of the name announced strictly after listing and at or before Q's last millisecond, at any rank and with its valuation disclosed or not, voids the contract.",
+      "A contract that settles on marks voids on a priced round, tender or secondary, public S-1, IPO or acquisition of the name announced strictly after listing and at or before the as-of of the marks it reads, at any rank, valuation disclosed or not. A contract that settles on a print does not: the round is its settlement event.",
+    next_round:
+      "A contract that settles on a print settles on the next priced round: the first announced strictly after listing and at or before the contract's deadline, at any rank, valuation disclosed or not. The venue closes it to new positions at the round's first public report.",
+    exit: "An acquisition or IPO announced after listing and before the next priced round voids a contract that settles on a print.",
     no_print:
-      "A contract whose series needs a print voids when none qualifies by the observation date.",
+      "A contract that settles on a print voids when no priced round is announced by its deadline.",
+    no_certificate:
+      "A contract that settles on a print also voids when, by its settlement date (the deadline plus the venue's certificate lag), the index holds no certificate for the round giving a per-share price for the new series.",
     no_filing:
-      "No filer mark on the contract's label for Q by the observation date, or fewer filer families than the contract's minimum, voids it.",
+      "A contract that settles on marks voids when the filers it reads publish no mark on its label by its observation date or deadline, or fewer families than its minimum.",
     filer_stops:
-      "A filer that stops filing is a missing row: its last mark is never carried forward, and the series is computed from the families present.",
+      "A filer that stops filing is a missing row: its last mark is never carried forward, and a series is computed from the families present.",
     correction:
-      "A correction published before the observation date enters. One published after it does not re-settle: the index publishes the correction with its diff and the settled value stands.",
+      "A correction published before a contract's observation date or settlement date enters. One published after it does not re-settle: the index publishes the correction with its diff and the settled value stands.",
     void: "A void cancels every position; the listing venue refunds under its own rulebook.",
   },
 } as const;
@@ -465,34 +474,85 @@ export type RepricingResolution =
 export interface ContractWindow {
   /** The contract's listing time; an event at exactly this instant is outside. */
   readonly opensAt: Date;
-  /** The observed quarter's cutoff (observedQuarterEnd). */
+  /**
+   * The as-of of the marks a mark-settled contract reads (the observed
+   * quarter's cutoff, or the named filer's next mark date), or a
+   * print-settled contract's deadline.
+   */
   readonly cutoff: Date;
 }
 
+/** The first event in (opensAt, cutoff] and at or before asOf that `matches`. */
+function firstInWindow(
+  window: ContractWindow,
+  events: readonly RulebookEvent[],
+  asOf: Date,
+  matches: (eventType: EventType) => boolean,
+): RulebookEvent | undefined {
+  assertDate(window.opensAt, "opensAt");
+  assertDate(window.cutoff, "cutoff");
+  validateEvents(events, asOf);
+  return earliest(
+    events.filter(
+      (event) =>
+        matches(event.eventType) &&
+        event.announcedAt > window.opensAt &&
+        event.announcedAt <= window.cutoff &&
+        event.announcedAt <= asOf,
+    ),
+  );
+}
+
 /**
- * RULEBOOK.contracts.repricing: void on the first repricing event announced
- * in (opensAt, cutoff], valuation disclosed or not; clear once the cutoff and
- * the observation grace have passed with none; open until then.
+ * RULEBOOK.contracts.repricing, for a contract that settles on marks: void
+ * on the first repricing event announced in (opensAt, cutoff], valuation
+ * disclosed or not; clear once the cutoff and the observation grace have
+ * passed with none; open until then.
  */
 export function resolveRepricing(
   window: ContractWindow,
   events: readonly RulebookEvent[],
   asOf: Date,
 ): RepricingResolution {
-  assertDate(window.opensAt, "opensAt");
-  assertDate(window.cutoff, "cutoff");
-  validateEvents(events, asOf);
-  const first = earliest(
-    events.filter(
-      (event) =>
-        isRepricing(event.eventType) &&
-        event.announcedAt > window.opensAt &&
-        event.announcedAt <= window.cutoff &&
-        event.announcedAt <= asOf,
-    ),
-  );
+  const first = firstInWindow(window, events, asOf, isRepricing);
   if (first !== undefined) return { status: "void", eventId: first.id, at: first.announcedAt };
   return afterGrace(window.cutoff, asOf) ? { status: "clear" } : { status: "open" };
+}
+
+export type NextRoundResolution =
+  | { readonly status: "open" }
+  | { readonly status: "round"; readonly eventId: string; readonly at: Date }
+  | { readonly status: "void"; readonly reason: "no_print" }
+  | { readonly status: "void"; readonly reason: "exit"; readonly eventId: string };
+
+/**
+ * RULEBOOK.contracts.next_round, for a contract that settles on a print: the
+ * first priced round announced in (opensAt, cutoff], at any rank and with its
+ * valuation disclosed or not. An acquisition or IPO before it voids (exit);
+ * none by the cutoff and the observation grace voids (no_print). The round's
+ * certificate is the settlement source; whether it gives a per-share price
+ * for the new series (no_certificate) is the index's to say, not the events'.
+ */
+export function resolveNextRound(
+  window: ContractWindow,
+  events: readonly RulebookEvent[],
+  asOf: Date,
+): NextRoundResolution {
+  const first = firstInWindow(
+    window,
+    events,
+    asOf,
+    (type) => type === "priced_round" || type === "acquisition" || type === "ipo",
+  );
+  if (first === undefined) {
+    return afterGrace(window.cutoff, asOf)
+      ? { status: "void", reason: "no_print" }
+      : { status: "open" };
+  }
+  if (first.eventType !== "priced_round") {
+    return { status: "void", reason: "exit", eventId: first.id };
+  }
+  return { status: "round", eventId: first.id, at: first.announcedAt };
 }
 
 /** One print as the rulebook stands it: the source that won its revision window. */
@@ -554,7 +614,11 @@ export function resolvePrints(
   return prints;
 }
 
-/** The print in force at `asOf`, or null: RULEBOOK.contracts.no_print voids a contract that needs one. */
+/**
+ * The print in force at `asOf`, or null. A print-settled contract reads the
+ * next round's headline post-money from the print whose first report is that
+ * round's announcement.
+ */
 export function lastPrint(
   nameKind: NameKind,
   events: readonly RulebookEvent[],

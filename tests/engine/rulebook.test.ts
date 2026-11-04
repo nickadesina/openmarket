@@ -12,6 +12,7 @@ import {
   quarterEndCutoff,
   RULEBOOK,
   type RulebookEvent,
+  resolveNextRound,
   resolvePrints,
   resolveRepricing,
   SOURCE_CLASSES,
@@ -165,6 +166,44 @@ describe("resolveRepricing", () => {
     expect(resolveRepricing(window, [atListing, after], at("2027-02-01T00:00:00Z")).status).toBe(
       "clear",
     );
+  });
+});
+
+describe("resolveNextRound", () => {
+  const window = { opensAt: at("2026-10-01T00:00:00Z"), cutoff: at("2027-06-30T23:59:59.999Z") };
+
+  it("settles on the first priced round, valuation disclosed or not, and a tender does not void", () => {
+    const tender = event({ id: "t", eventType: "tender_or_secondary" });
+    const round = event({ id: "r", postMoneyUsd: null, announcedAt: at("2026-12-01T00:00:00Z") });
+    expect(resolveNextRound(window, [tender, round], at("2026-12-02T00:00:00Z"))).toEqual({
+      status: "round",
+      eventId: "r",
+      at: round.announcedAt,
+    });
+  });
+
+  it("voids on an exit before the round, and on no print by the deadline and grace", () => {
+    const acquisition = event({ id: "acq", eventType: "acquisition" });
+    const later = event({ id: "r", announcedAt: at("2026-12-01T00:00:00Z") });
+    expect(resolveNextRound(window, [later, acquisition], at("2027-01-01T00:00:00Z"))).toEqual({
+      status: "void",
+      reason: "exit",
+      eventId: "acq",
+    });
+    expect(resolveNextRound(window, [], at("2027-07-01T12:00:00Z")).status).toBe("open");
+    expect(resolveNextRound(window, [], at("2027-07-02T00:00:00Z"))).toEqual({
+      status: "void",
+      reason: "no_print",
+    });
+  });
+
+  it("ignores a round at the listing instant or after the deadline", () => {
+    const atListing = event({ id: "l", announcedAt: window.opensAt });
+    const late = event({ id: "x", announcedAt: at("2027-07-01T00:00:00Z") });
+    expect(resolveNextRound(window, [atListing, late], at("2027-08-01T00:00:00Z"))).toEqual({
+      status: "void",
+      reason: "no_print",
+    });
   });
 });
 

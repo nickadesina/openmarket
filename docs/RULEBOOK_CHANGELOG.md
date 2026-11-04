@@ -32,13 +32,20 @@ Added:
   sources within one purpose and never across them, and never weighs
   one filer against another. `sourceRank` gives the rank ingest stores
   on `source_documents.source_rank`.
-- The rules every contract on the index shares: the observation date
-  (75 days after the quarter ends), the listing floor (21 days, decision
-  0002's), the repricing void (a priced round, tender, public S-1, IPO
-  or acquisition announced inside the window, valuation disclosed or
-  not), void on no print, void on no filing, a filer that stops filing,
-  corrections after the observation date (no re-settlement), and
-  versions.
+- The rules the contracts on the index share, in two families. Those
+  that settle on marks (mark-level binary, dispersion range): the
+  observation date (75 days after the quarter ends), the listing floor
+  (21 days, decision 0002's), the repricing void (a priced round,
+  tender, public S-1, IPO or acquisition announced before the marks'
+  as-of, valuation disclosed or not), void on no filing, a filer that
+  stops filing. Those that settle on the next priced round (mark versus
+  print, perp basis, structure spread): the round is the settlement
+  event and does not void them; void on no print by the deadline; void
+  on no certificate price for the new series; an acquisition or IPO
+  first voids. For all: corrections after settlement do not re-settle,
+  and versions.
+- `resolveNextRound`: the next priced round after listing, or a void on
+  no print or on an exit.
 - `resolvePrints` and `lastPrint`: every print a name has had, each
   standing on the best-ranked source in its revision window, and the
   print in force at a date.
@@ -58,9 +65,10 @@ Removed, with the reason:
   refund collateral on no print, acquisitions, roll). They were the
   dealer's two instruments, archived at `archive/dealer-v1`. What the v2
   contracts reuse survives under new names: the binary's window test
-  as `resolveRepricing` (now on every repricing event), its 21-day
-  expiry floor as `observedQuarterEnd`, and the forward's revision
-  logic and void on no print as `resolvePrints`.
+  as `resolveRepricing` (now on every repricing event) and
+  `resolveNextRound`, its 21-day expiry floor as `observedQuarterEnd`,
+  and the forward's revision logic as `resolvePrints` and its void on
+  no print in `resolveNextRound`.
 - `resolveBinary`, `resolveForward`, `binaryExpiry`, `resolvesBinary`,
   the `BinaryEvent` type (a name's lab status is now `NameKind`) and the
   dealer's flag fields on the round terms type (`lead`, `pps_usd`,
