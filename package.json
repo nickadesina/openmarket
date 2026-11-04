@@ -29,7 +29,9 @@
     "export:resolution-sources": "tsx scripts/export-resolution-sources.ts",
     "export:round-history": "tsx scripts/export-round-history.ts",
     "api-key:create": "tsx --env-file-if-exists=.env.local scripts/api-key-create.ts",
-    "export:tradeables": "npm run export:resolution-sources && npm run export:round-history"
+    "export:tradeables": "npm run export:resolution-sources && npm run export:round-history",
+    "index:search": "tsx --env-file-if-exists=.env.local scripts/index-search.ts",
+    "index:families": "tsx --env-file-if-exists=.env.local scripts/index-families.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.11",

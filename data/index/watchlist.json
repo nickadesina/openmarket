@@ -1,11 +1,11 @@
 {
   "version": "0.1.0",
-  "note": "Provisional watchlist (decision 0003, build week 1). Selection is Nick's; search_phrases and match_pattern are first guesses that P2 verifies against real EDGAR full-text search hits. incorporation_state is filled only from a filing. candidates are counted by the week-1 search but not watchlisted.",
+  "note": "Provisional watchlist (decision 0003, build week 1). Selection is Nick's; search_phrases and match_pattern were checked by P2 (2026-11-04) against EDGAR full-text search hits and ingested N-PORT holdings: spacex excludes holdings named as an ETF (Kurv SpaceX Enhanced Income ETF), xai requires Holdings or Corp (a bare xAI matched the XAI E-mini futures contract), mercor adds the phrase Mercor.io (full-text search reads it as one token). incorporation_state is filled only from a filing. candidates are counted by the week-1 search but not watchlisted.",
   "names": [
     { "slug": "openai", "name": "OpenAI", "legal_name": null, "search_phrases": ["OpenAI"], "match_pattern": "\\bOpen ?AI\\b" },
     { "slug": "anthropic", "name": "Anthropic", "legal_name": "Anthropic, PBC", "search_phrases": ["Anthropic"], "match_pattern": "\\bAnthropic\\b" },
-    { "slug": "spacex", "name": "SpaceX", "legal_name": "Space Exploration Technologies Corp.", "search_phrases": ["Space Exploration Technologies", "SpaceX"], "match_pattern": "\\bSpace Exploration Tech|\\bSpaceX\\b" },
-    { "slug": "xai", "name": "xAI", "legal_name": null, "search_phrases": ["X.AI Holdings", "X.AI Corp", "xAI Holdings"], "match_pattern": "\\bX\\.?AI (Holdings|Corp)|\\bxAI\\b" },
+    { "slug": "spacex", "name": "SpaceX", "legal_name": "Space Exploration Technologies Corp.", "search_phrases": ["Space Exploration Technologies", "SpaceX"], "match_pattern": "^(?!.*\\bETF\\b).*(?:\\bSpace Exploration Tech|\\bSpaceX\\b)" },
+    { "slug": "xai", "name": "xAI", "legal_name": null, "search_phrases": ["X.AI Holdings", "X.AI Corp", "xAI Holdings"], "match_pattern": "\\bX\\.?AI (Holdings|Corp)" },
     { "slug": "databricks", "name": "Databricks", "legal_name": "Databricks, Inc.", "search_phrases": ["Databricks"], "match_pattern": "\\bDatabricks\\b" },
     { "slug": "stripe", "name": "Stripe", "legal_name": "Stripe, Inc.", "search_phrases": ["Stripe, Inc."], "match_pattern": "\\bStripe,? Inc\\b|\\bStripe (Series|Class|Common|Pfd|Preferred)" },
     { "slug": "anduril", "name": "Anduril", "legal_name": "Anduril Industries, Inc.", "search_phrases": ["Anduril"], "match_pattern": "\\bAnduril\\b" },
@@ -20,7 +20,7 @@
     { "slug": "epic-games", "name": "Epic Games", "legal_name": "Epic Games, Inc.", "search_phrases": ["Epic Games"], "match_pattern": "\\bEpic Games\\b" },
     { "slug": "cognition", "name": "Cognition", "legal_name": null, "search_phrases": ["Cognition AI"], "match_pattern": "\\bCognition AI\\b" },
     { "slug": "harvey", "name": "Harvey", "legal_name": "Counsel AI Corporation", "search_phrases": ["Counsel AI", "Harvey AI"], "match_pattern": "\\bCounsel AI\\b|\\bHarvey AI\\b" },
-    { "slug": "mercor", "name": "Mercor", "legal_name": null, "search_phrases": ["Mercor"], "match_pattern": "\\bMercor\\b" },
+    { "slug": "mercor", "name": "Mercor", "legal_name": null, "search_phrases": ["Mercor", "Mercor.io"], "match_pattern": "\\bMercor\\b" },
     { "slug": "modal", "name": "Modal", "legal_name": "Modal Labs, Inc.", "search_phrases": ["Modal Labs"], "match_pattern": "\\bModal Labs\\b" }
   ],
   "candidates": [
