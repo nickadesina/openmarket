@@ -51,6 +51,7 @@ const SERVICE_ERROR_STATUS: Readonly<Record<ErrorCode, number>> = {
   RESTRICTED_PERSON: 403,
   EVIDENCE_NOT_FOUND: 404,
   EVIDENCE_REVIEWED: 409,
+  INGEST_UNAVAILABLE: 503,
 };
 
 function jsonBody(value: unknown): string {

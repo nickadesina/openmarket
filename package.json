@@ -30,7 +30,9 @@
     "export:round-history": "tsx scripts/export-round-history.ts",
     "api-key:create": "tsx --env-file-if-exists=.env.local scripts/api-key-create.ts",
     "export:tradeables": "npm run export:resolution-sources && npm run export:round-history",
+    "index:watchlist": "tsx --env-file-if-exists=.env.local scripts/index-watchlist.ts",
     "index:search": "tsx --env-file-if-exists=.env.local scripts/index-search.ts",
+    "index:ingest": "tsx --env-file-if-exists=.env.local scripts/index-ingest.ts",
     "index:families": "tsx --env-file-if-exists=.env.local scripts/index-families.ts"
   },
   "devDependencies": {
