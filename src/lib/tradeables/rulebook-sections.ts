@@ -1,9 +1,10 @@
 import { NOT_BUILT, RULEBOOK } from "../engine/rulebook.js";
 
 /**
- * How /rulebook lays RULEBOOK out: sections in the order of CONTRACTS.md's
- * Definitions, each rule a path into RULEBOOK with its own anchor
- * (`#forward-acquisition`), so a reviewer can link one rule. Every label is
+ * How /rulebook lays RULEBOOK out: the print side, then the mark side's
+ * source classes, then the rules every contract on the index shares
+ * (CONTRACTS.md), each rule a path into RULEBOOK with its own anchor
+ * (`#contracts-repricing`), so a reviewer can link one rule. Every label is
  * the rule's key; every value is RULEBOOK's. tests/tradeables/rulebook-page
  * fails if a rule is left out.
  */
@@ -15,7 +16,7 @@ export interface RuleSection {
   readonly rules: readonly RulePath[];
 }
 
-const keys = (group: "binary" | "forward"): RulePath[] =>
+const keys = (group: "marks" | "contracts"): RulePath[] =>
   Object.keys(RULEBOOK[group]).map((key) => [group, key]);
 
 export const RULEBOOK_SECTIONS: readonly RuleSection[] = [
@@ -31,14 +32,15 @@ export const RULEBOOK_SECTIONS: readonly RuleSection[] = [
   { title: "Announcement", rules: [["announcement"]] },
   {
     title: "Source ranks",
-    rules: [["source_ranks"], ["tier1_outlets"], ["syndication"], ["charter"], ["review"]],
+    rules: [["source_ranks"], ["tier1_outlets"], ["syndication"], ["certificate"]],
   },
   {
     title: "Revision window and grace",
     rules: [["revision_window_days"], ["revision"], ["observation_grace_days"]],
   },
-  { title: "Binary", rules: keys("binary") },
-  { title: "Forward", rules: keys("forward") },
+  { title: "Marks", rules: keys("marks") },
+  { title: "Source classes", rules: [["source_purposes"], ["source_classes"]] },
+  { title: "Index contracts", rules: keys("contracts") },
 ];
 
 export function anchorOf(path: RulePath): string {

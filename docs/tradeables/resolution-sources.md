@@ -1,6 +1,6 @@
 # How private-company valuation venues settle
 
-As of 2026-10-26. One row per venue or product that prices a private company's valuation. OpenMarket's row is computed from its rulebook (v1.0.0, https://openmarket.systems/api/ref/rulebook). Rows marked unverified have not been confirmed against a primary source. "Unknown" marks a field the research did not establish.
+As of 2026-10-26. One row per venue or product that prices a private company's valuation. OpenMarket's row is computed from its rulebook (v2.0.0, https://openmarket.systems/api/ref/rulebook). Rows marked unverified have not been confirmed against a primary source. "Unknown" marks a field the research did not establish.
 
 License: CC BY 4.0, cite OpenMarket.
 
@@ -16,7 +16,7 @@ License: CC BY 4.0, cite OpenMarket.
 | Freeport Markets (unverified) | Trading front end for pre-IPO shares, equities, crypto and perpetuals with AI-generated trade ideas (YC F25) | front end (shares, perpetuals) | No published pricing methodology for the pre-IPO names it shows | no | Unknown | Unknown | live |
 | American Perpetuals Exchange (APEC) | Planned CFTC-regulated perpetual futures on single-name public equities and indices under joint CFTC/SEC oversight | perpetual (planned) | Public equity prices; no private names proposed | yes | Unknown | Unknown | pre-launch; DCM and DCO applications planned |
 | Kalshi (unverified) | CFTC-regulated event contracts; BTCPERP approved May 2026; no private-company valuation contracts found | none on private names | Not applicable; Kalshi has no published settlement source for private-company valuations | no | Unknown | Unknown | no private-name contracts as of the as_of date |
-| OpenMarket | Quarterly timing binary (a priced round by quarter-end; a public S-1 for the labs) and a cash-settled forward on the next post-money, as the rulebook specifies them; OpenMarket quotes neither | binary and forward | The post-money valuation of a priced primary equity round, publicly reported. For the labs, also an IPO's first-day closing market capitalisation. Ranked sources: 1 Company or lead-investor release; 2 SEC filing; 3 Two independent Tier-1 outlets citing closed terms; 4 One Tier-1 outlet citing closed terms. Tier-1 outlets: Bloomberg, Reuters, The Wall Street Journal, Financial Times, The Information, TechCrunch, Axios, The New York Times. | yes | 7 days for a higher-ranked source, plus 1 day of observation grace after the deadline | No print by expiry voids every position with full refund of collateral. | rulebook published; no market live (the v1 paper markets are archived) |
+| OpenMarket | Contracts that settle on the marks index (mark-level binary, dispersion range, mark versus print, perp basis, structure spread), as CONTRACTS.md and the rulebook specify them; OpenMarket quotes, lists and settles none | mark-level binary, dispersion range, mark versus print, perp basis, structure spread | Filer marks in the index, ranked by source class: 1 ncsr; 2 nport; 3 fund_holdings_page; 4 closed_end_nav. Prints: The post-money valuation of a priced primary equity round, publicly reported. For the labs, also an IPO's first-day closing market capitalisation. Ranked sources: 1 Company or lead-investor release; 2 SEC filing; 3 Two independent Tier-1 outlets citing closed terms; 4 One Tier-1 outlet citing closed terms. Tier-1 outlets: Bloomberg, Reuters, The Wall Street Journal, Financial Times, The Information, TechCrunch, Axios, The New York Times. | yes | 7 days for a higher-ranked source, plus 1 day of observation grace after the deadline | A contract whose series needs a print voids when none qualifies by the observation date. | rulebook published; no market live (the v1 paper markets are archived) |
 
 ## Notes
 
@@ -40,7 +40,7 @@ License: CC BY 4.0, cite OpenMarket.
 
 **Kalshi.** The DCM a US listing would resemble. Kalshi's contract rules go through CFTC self-certification; its head of research has described the resolvability test on the record. A third-party reference price is what Kalshi would need to list these names. Sources read 2026-10-26.
 
-**OpenMarket.** The rulebook is code, versioned (v1.0.0), and published as JSON at /api/ref/rulebook. Sources read 2026-10-26.
+**OpenMarket.** The rulebook is code, versioned (v2.0.0), and published as JSON at /api/ref/rulebook. Sources read 2026-10-26.
 
 ## Context
 

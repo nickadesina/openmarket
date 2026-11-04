@@ -219,6 +219,59 @@
   font-size: var(--font-size-sm);
 }
 
+.purposes {
+  display: grid;
+  gap: var(--space-4);
+}
+
+/* Outranks `.ruleText p`'s flush margin: a purpose's line sits above its table. */
+.purposes p {
+  margin: 0 0 var(--space-2);
+}
+
+/* Outranks `.purposes p`: the note sits under its table. */
+.purposes .muted {
+  margin: var(--space-2) 0 0;
+}
+
+/* Each table scrolls inside its own viewport on narrow screens. */
+.scroller {
+  overflow-x: auto;
+}
+
+/* The source tables follow the document tables (components/document). */
+.table {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.table th {
+  height: var(--row-compact);
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-hover);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+  vertical-align: top;
+}
+
+.num {
+  font-family: var(--font-num);
+  font-weight: 700;
+}
+
 @media (max-width: 58rem) {
   .layout {
     grid-template-columns: minmax(0, 1fr);

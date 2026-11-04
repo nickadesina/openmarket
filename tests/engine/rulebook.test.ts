@@ -1,14 +1,22 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  binaryExpiry,
   isPrint,
+  isRepricing,
+  isSourceClass,
+  lastPrint,
+  observationDate,
+  observedQuarterEnd,
   postMoneyUsd,
   pressRank,
   quarterEndCutoff,
+  RULEBOOK,
   type RulebookEvent,
-  resolveBinary,
-  resolveForward,
+  resolvePrints,
+  resolveRepricing,
+  SOURCE_CLASSES,
+  SOURCE_PURPOSES,
+  sourceRank,
 } from "../../src/lib/engine/rulebook.js";
 
 const at = (iso: string) => new Date(iso);
@@ -23,16 +31,22 @@ function event(overrides: Partial<RulebookEvent> & Pick<RulebookEvent, "id">): R
   };
 }
 
-const forward = {
-  binaryEvent: "priced_round" as const,
-  opensAt: at("2026-10-01T00:00:00Z"),
-  expiresAt: at("2027-01-29T00:00:00Z"),
-};
-const binary = {
-  binaryEvent: "priced_round" as const,
-  opensAt: at("2026-10-01T00:00:00Z"),
-  cutoff: quarterEndCutoff(at("2026-10-01T00:00:00Z")),
-};
+/**
+ * `source_documents.source_class` as docs/prompts/v2/README.md (the shared
+ * contract for migration 020_marks_index) lists it. A class added to the
+ * migration is added here and to the rulebook in the same commit.
+ */
+const MIGRATION_SOURCE_CLASSES = [
+  "ncsr",
+  "nport",
+  "fund_holdings_page",
+  "closed_end_nav",
+  "delaware_coi",
+  "form_d",
+  "spv_quote_page",
+  "company_statement",
+  "press",
+];
 
 describe("postMoneyUsd", () => {
   it("takes a post-money as stated and converts pre-money plus the amount raised", () => {
@@ -48,7 +62,7 @@ describe("postMoneyUsd", () => {
     expect(postMoneyUsd({ amount_usd: 2e9, valuation_basis: "post" })).toBeNull();
   });
 
-  it("refuses non-finite figures rather than settling at infinity", () => {
+  it("refuses non-finite figures rather than recording infinity", () => {
     expect(
       postMoneyUsd({
         valuation_usd: 1e9,
@@ -73,11 +87,20 @@ describe("pressRank", () => {
 
 describe("what counts as a print", () => {
   it("is a priced round, plus an IPO for the labs; never a tender or an S-1", () => {
-    expect(isPrint("priced_round", "priced_round")).toBe(true);
-    expect(isPrint("ipo", "public_s1")).toBe(true);
-    expect(isPrint("ipo", "priced_round")).toBe(false);
-    expect(isPrint("tender_or_secondary", "priced_round")).toBe(false);
-    expect(isPrint("public_s1", "public_s1")).toBe(false);
+    expect(isPrint("priced_round", "company")).toBe(true);
+    expect(isPrint("ipo", "lab")).toBe(true);
+    expect(isPrint("ipo", "company")).toBe(false);
+    expect(isPrint("tender_or_secondary", "company")).toBe(false);
+    expect(isPrint("public_s1", "lab")).toBe(false);
+  });
+
+  it("is narrower than what reprices a name", () => {
+    for (const type of ["priced_round", "tender_or_secondary", "public_s1", "ipo", "acquisition"]) {
+      expect(isRepricing(type as RulebookEvent["eventType"])).toBe(true);
+    }
+    for (const type of ["same_price_extension", "safe_or_note", "debt"] as const) {
+      expect(isRepricing(type)).toBe(false);
+    }
   });
 });
 
@@ -92,110 +115,195 @@ describe("quarterEndCutoff", () => {
   });
 });
 
-describe("binaryExpiry", () => {
-  it("is this quarter-end with at least 21 days left, otherwise the next (decision 0002)", () => {
-    expect(binaryExpiry(at("2026-12-10T15:00:00Z")).toISOString()).toBe("2026-12-31T23:59:59.999Z");
-    expect(binaryExpiry(at("2026-12-11T00:00:00Z")).toISOString()).toBe("2027-03-31T23:59:59.999Z");
-    // A successor listed at a predecessor's expiry rolls to the next quarter.
-    expect(binaryExpiry(at("2026-09-30T23:59:59.999Z")).toISOString()).toBe(
+describe("observedQuarterEnd and observationDate", () => {
+  it("observes this quarter with at least 21 days left, otherwise the next", () => {
+    expect(observedQuarterEnd(at("2026-12-10T15:00:00Z")).toISOString()).toBe(
       "2026-12-31T23:59:59.999Z",
+    );
+    expect(observedQuarterEnd(at("2026-12-11T00:00:00Z")).toISOString()).toBe(
+      "2027-03-31T23:59:59.999Z",
+    );
+    expect(observedQuarterEnd(at("2026-09-30T23:59:59.999Z")).toISOString()).toBe(
+      "2026-12-31T23:59:59.999Z",
+    );
+  });
+
+  it("reads the index at 00:00 UTC on the 75th day after the quarter's last day", () => {
+    expect(RULEBOOK.contracts.observation_lag_days).toBe(75);
+    expect(observationDate(at("2026-12-31T23:59:59.999Z")).toISOString()).toBe(
+      "2027-03-16T00:00:00.000Z",
     );
   });
 });
 
-describe("resolveBinary", () => {
-  it("resolves YES on a round with an undisclosed valuation", () => {
+describe("resolveRepricing", () => {
+  const window = {
+    opensAt: at("2026-10-01T00:00:00Z"),
+    cutoff: quarterEndCutoff(at("2026-10-01T00:00:00Z")),
+  };
+
+  it("voids on a round with an undisclosed valuation, and on a tender", () => {
     const round = event({ id: "a", postMoneyUsd: null });
-    expect(resolveBinary(binary, [round], at("2026-11-11T00:00:00Z"))).toMatchObject({
-      status: "yes",
+    expect(resolveRepricing(window, [round], at("2026-11-11T00:00:00Z"))).toMatchObject({
+      status: "void",
       eventId: "a",
     });
-  });
-
-  it("ignores tenders, and stays open until a day after quarter-end", () => {
     const tender = event({ id: "t", eventType: "tender_or_secondary" });
-    expect(resolveBinary(binary, [tender], at("2027-01-01T12:00:00Z")).status).toBe("open");
-    expect(resolveBinary(binary, [tender], at("2027-01-02T00:00:00Z")).status).toBe("no");
+    expect(resolveRepricing(window, [tender], at("2026-11-11T00:00:00Z")).status).toBe("void");
   });
 
-  it("resolves a lab's binary on a public S-1, not on a round", () => {
-    const lab = { ...binary, binaryEvent: "public_s1" as const };
-    const round = event({ id: "r" });
-    const s1 = event({ id: "s1", eventType: "public_s1", announcedAt: at("2026-12-15T00:00:00Z") });
-    expect(resolveBinary(lab, [round], at("2027-01-05T00:00:00Z")).status).toBe("no");
-    expect(resolveBinary(lab, [round, s1], at("2027-01-05T00:00:00Z"))).toMatchObject({
-      status: "yes",
-      eventId: "s1",
-    });
+  it("ignores debt and notes, and stays open until a day after quarter-end", () => {
+    const debt = event({ id: "d", eventType: "debt" });
+    const note = event({ id: "n", eventType: "safe_or_note" });
+    expect(resolveRepricing(window, [debt, note], at("2027-01-01T12:00:00Z")).status).toBe("open");
+    expect(resolveRepricing(window, [debt, note], at("2027-01-02T00:00:00Z")).status).toBe("clear");
+  });
+
+  it("counts nothing at the listing instant or after the cutoff", () => {
+    const atListing = event({ id: "l", announcedAt: window.opensAt });
+    const after = event({ id: "x", announcedAt: at("2027-01-01T00:00:00Z") });
+    expect(resolveRepricing(window, [atListing, after], at("2027-02-01T00:00:00Z")).status).toBe(
+      "clear",
+    );
   });
 });
 
-describe("resolveForward", () => {
-  it("settles on the first print at ln(post-money)", () => {
-    const resolution = resolveForward(forward, [event({ id: "a" })], at("2026-11-30T00:00:00Z"));
-    expect(resolution).toMatchObject({ status: "settled", eventId: "a", final: true });
-    expect(resolution.status === "settled" && resolution.settleLn).toBe(Math.log(20e9));
+describe("resolvePrints and lastPrint", () => {
+  it("records a print at its post-money, final at once on a rank-1 source", () => {
+    const prints = resolvePrints("company", [event({ id: "a" })], at("2026-11-30T00:00:00Z"));
+    expect(prints).toEqual([
+      {
+        eventId: "a",
+        at: at("2026-11-10T12:00:00Z"),
+        firstAt: at("2026-11-10T12:00:00Z"),
+        rank: 1,
+        postMoneyUsd: 20e9,
+        final: true,
+      },
+    ]);
   });
 
-  it("waits through an undisclosed valuation and voids at expiry", () => {
+  it("skips a round whose valuation is undisclosed: no print, so lastPrint is null", () => {
     const undisclosed = event({ id: "u", postMoneyUsd: null });
-    expect(resolveForward(forward, [undisclosed], at("2027-01-29T12:00:00Z")).status).toBe("open");
-    expect(resolveForward(forward, [undisclosed], at("2027-01-30T00:00:01Z")).status).toBe("void");
+    expect(lastPrint("company", [undisclosed], at("2027-01-30T00:00:00Z"))).toBeNull();
   });
 
   it("lets a higher-ranked source inside seven days supersede, and nothing after", () => {
     const scoop = event({ id: "press", rank: 4, postMoneyUsd: 18e9 });
     const release = event({ id: "release", rank: 1, announcedAt: at("2026-11-15T00:00:00Z") });
     const late = event({ id: "late", rank: 1, announcedAt: at("2026-11-20T00:00:00Z") });
-    expect(resolveForward(forward, [scoop], at("2026-11-11T00:00:00Z"))).toMatchObject({
+    expect(lastPrint("company", [scoop], at("2026-11-11T00:00:00Z"))).toMatchObject({
       eventId: "press",
       final: false,
     });
-    expect(resolveForward(forward, [scoop, release], at("2026-11-30T00:00:00Z"))).toMatchObject({
+    expect(lastPrint("company", [scoop, release], at("2026-11-30T00:00:00Z"))).toMatchObject({
       eventId: "release",
+      firstAt: scoop.announcedAt,
+      postMoneyUsd: 20e9,
       final: true,
     });
-    expect(resolveForward(forward, [scoop, late], at("2026-11-30T00:00:00Z"))).toMatchObject({
-      eventId: "press",
-    });
+    // A report after the window is the next print, not a revision of this one.
+    expect(
+      resolvePrints("company", [scoop, late], at("2026-11-30T00:00:00Z")).map((p) => p.eventId),
+    ).toEqual(["press", "late"]);
   });
 
-  it("is final at once on a rank-1 source, and otherwise only after window and grace", () => {
-    const release = event({ id: "release", rank: 1 });
-    expect(resolveForward(forward, [release], at("2026-11-11T00:00:00Z"))).toMatchObject({
-      final: true,
-    });
+  it("is final, below rank 1, only after the window and the grace", () => {
     const press = event({ id: "press", rank: 4 });
-    // First print 11-10 12:00: the window closes 11-17 12:00, the grace a day later.
-    expect(resolveForward(forward, [press], at("2026-11-18T00:00:00Z"))).toMatchObject({
+    // First report 11-10 12:00: the window closes 11-17 12:00, the grace a day later.
+    expect(lastPrint("company", [press], at("2026-11-18T00:00:00Z"))).toMatchObject({
       final: false,
     });
-    expect(resolveForward(forward, [press], at("2026-11-18T12:00:01Z"))).toMatchObject({
+    expect(lastPrint("company", [press], at("2026-11-18T12:00:01Z"))).toMatchObject({
       final: true,
     });
   });
 
-  it("accepts a higher-ranked revision dated after expiry", () => {
-    const press = event({ id: "press", rank: 4, announcedAt: at("2027-01-28T00:00:00Z") });
-    const release = event({ id: "release", rank: 1, announcedAt: at("2027-01-30T00:00:00Z") });
-    expect(resolveForward(forward, [press, release], at("2027-02-10T00:00:00Z"))).toMatchObject({
-      status: "settled",
-      eventId: "release",
-    });
+  it("keeps the first among equal ranks, and ignores reports after asOf", () => {
+    const first = event({ id: "first", rank: 3 });
+    const second = event({ id: "second", rank: 3, announcedAt: at("2026-11-12T00:00:00Z") });
+    expect(lastPrint("company", [second, first], at("2026-11-30T00:00:00Z"))?.eventId).toBe(
+      "first",
+    );
+    expect(lastPrint("company", [first], at("2026-11-01T00:00:00Z"))).toBeNull();
   });
 
-  it("settles on an acquisition's disclosed equity value and voids on an undisclosed one", () => {
-    const disclosed = event({ id: "acq", eventType: "acquisition", postMoneyUsd: 30e9 });
-    expect(resolveForward(forward, [disclosed], at("2026-11-11T00:00:00Z"))).toMatchObject({
-      status: "settled",
-      eventId: "acq",
-    });
-    const blind = event({ id: "acq", eventType: "acquisition", postMoneyUsd: null });
-    expect(resolveForward(forward, [blind], at("2026-11-11T00:00:00Z")).status).toBe("void");
+  it("never counts an acquisition, and counts an IPO for a lab only", () => {
+    const acquisition = event({ id: "acq", eventType: "acquisition", postMoneyUsd: 30e9 });
+    const ipo = event({ id: "ipo", eventType: "ipo", postMoneyUsd: 900e9 });
+    expect(lastPrint("company", [acquisition, ipo], at("2026-12-01T00:00:00Z"))).toBeNull();
+    expect(lastPrint("lab", [acquisition, ipo], at("2026-12-01T00:00:00Z"))?.eventId).toBe("ipo");
   });
 
-  it("never settles on the print it was anchored on", () => {
-    const anchor = event({ id: "anchor", announcedAt: forward.opensAt });
-    expect(resolveForward(forward, [anchor], at("2026-11-30T00:00:00Z")).status).toBe("open");
+  it("refuses an invalid date", () => {
+    const bad = event({ id: "bad", announcedAt: new Date(Number.NaN) });
+    expect(() => resolvePrints("company", [bad], at("2026-12-01T00:00:00Z"))).toThrow(RangeError);
+  });
+});
+
+describe("the mark-side source classes", () => {
+  it("covers every source_class in the migration enum, each once", () => {
+    expect([...SOURCE_CLASSES]).toEqual(MIGRATION_SOURCE_CLASSES);
+    const tabled = RULEBOOK.source_classes.map((row) => row.source_class);
+    expect(tabled).toEqual(MIGRATION_SOURCE_CLASSES);
+    for (const row of RULEBOOK.source_classes) {
+      expect(row.document.length).toBeGreaterThan(0);
+      expect(row.cadence.length).toBeGreaterThan(0);
+      expect(row.lag.length).toBeGreaterThan(0);
+      expect(["free", "paid_per_document", "public_page"]).toContain(row.access);
+    }
+  });
+
+  it("states every purpose once, with ranks unique within it", () => {
+    expect(RULEBOOK.source_purposes.map((row) => row.purpose)).toEqual([...SOURCE_PURPOSES]);
+    for (const { ranks } of RULEBOOK.source_purposes) {
+      const numbers = ranks.map((row) => row.rank);
+      const classes = ranks.map((row) => row.source_class);
+      expect(new Set(numbers).size).toBe(numbers.length);
+      expect(new Set(classes).size).toBe(classes.length);
+      expect(numbers).toEqual([...numbers].sort((a, b) => a - b));
+      expect(numbers[0]).toBe(1);
+    }
+  });
+
+  it("ranks every class in its own purpose, which sourceRank answers by default", () => {
+    for (const row of RULEBOOK.source_classes) {
+      const purpose = RULEBOOK.source_purposes.find((entry) => entry.purpose === row.purpose);
+      const ranked = purpose?.ranks.find((entry) => entry.source_class === row.source_class);
+      expect(ranked).toBeDefined();
+      expect(sourceRank(row.source_class)).toBe(ranked!.rank);
+      expect(sourceRank(row.source_class, row.purpose)).toBe(ranked!.rank);
+    }
+  });
+
+  it("puts the audited N-CSR above the N-PORT and the certificate first for price", () => {
+    expect(sourceRank("ncsr")).toBe(1);
+    expect(sourceRank("nport")).toBe(2);
+    expect(sourceRank("ncsr", "filer_mark")).toBeLessThan(sourceRank("nport", "filer_mark"));
+    expect(sourceRank("delaware_coi")).toBe(1);
+    expect(sourceRank("delaware_coi", "print_price_and_terms")).toBe(1);
+  });
+
+  it("answers another purpose when asked, and refuses one the class cannot establish", () => {
+    expect(sourceRank("form_d")).toBe(1);
+    expect(sourceRank("form_d", "round_size_and_date")).toBe(2);
+    expect(sourceRank("spv_quote_page", "spv_existence_and_terms")).toBe(2);
+    expect(() => sourceRank("press", "filer_mark")).toThrow(RangeError);
+    expect(() => sourceRank("nport", "unit_quote")).toThrow(RangeError);
+    expect(() => sourceRank("vendor" as never)).toThrow(RangeError);
+  });
+
+  it("restates the print-side ranks for a round's size and date", () => {
+    const bySource = new Map(RULEBOOK.source_ranks.map((row) => [row.source, row.rank]));
+    expect(sourceRank("company_statement", "round_size_and_date")).toBe(
+      bySource.get("Company or lead-investor release"),
+    );
+    expect(sourceRank("form_d", "round_size_and_date")).toBe(bySource.get("SEC filing"));
+    expect(sourceRank("press")).toBe(pressRank(["Reuters"]));
+  });
+
+  it("recognises a stored class string", () => {
+    expect(isSourceClass("nport")).toBe(true);
+    expect(isSourceClass("forge")).toBe(false);
   });
 });
