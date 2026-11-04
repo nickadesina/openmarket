@@ -132,8 +132,10 @@ npm run dev              # http://localhost:3000, never 127.0.0.1
   `x-vercel-forwarded-for` header with `VERCEL=1`; local development
   shares one unlimited loopback caller. Limits return HTTP 429 with
   `Retry-After`.
-- EDGAR: `SEC_USER_AGENT` (a name and a contact) is required by every
-  EDGAR request (`scripts/research/edgar-nport-marks.ts` today).
+- EDGAR: `SEC_USER_AGENT` (a name and a contact: an email or an https
+  URL) is required by every EDGAR request; the SEC client
+  (`src/lib/ingest/fetch/sec.ts`) refuses to run without it and keeps
+  one request start per 150 ms, backing off on 429 and 5xx.
 - Data exports: `npm run export:round-history` writes
   `public/data/round-history.*` from `data/round-history/events.csv`
   and `sources.csv`; `npm run export:resolution-sources` regenerates

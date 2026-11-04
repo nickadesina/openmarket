@@ -1,0 +1,285 @@
+{
+ "took": 186,
+ "timed_out": false,
+ "_shards": {
+  "total": 50,
+  "successful": 50,
+  "skipped": 0,
+  "failed": 0
+ },
+ "hits": {
+  "total": {
+   "value": 926,
+   "relation": "eq"
+  },
+  "max_score": 19.263664,
+  "hits": [
+   {
+    "_index": "edgar_file",
+    "_id": "0000035402-26-006778:QTLY_7524_20260831.htm",
+    "_score": 19.263664,
+    "_source": {
+     "ciks": [
+      "0000707823"
+     ],
+     "period_ending": "2026-08-31",
+     "file_num": [
+      "811-03583"
+     ],
+     "display_names": [
+      "FIDELITY MT VERNON STREET TRUST  (CIK 0000707823)"
+     ],
+     "xsl": null,
+     "sequence": "2",
+     "root_forms": [
+      "NPORT-P"
+     ],
+     "file_date": "2026-10-26",
+     "biz_states": [
+      "MA"
+     ],
+     "sics": [],
+     "form": "NPORT-P",
+     "adsh": "0000035402-26-006778",
+     "film_num": [
+      "261484577"
+     ],
+     "biz_locations": [
+      "Boston, MA"
+     ],
+     "file_type": "NPORT-EX",
+     "ma_i_individual": null,
+     "file_description": null,
+     "inc_states": [],
+     "items": []
+    }
+   },
+   {
+    "_index": "edgar_file",
+    "_id": "0000035402-26-006778:primary_doc.xml",
+    "_score": 18.174778,
+    "_source": {
+     "ciks": [
+      "0000707823"
+     ],
+     "period_ending": "2026-08-31",
+     "file_num": [
+      "811-03583"
+     ],
+     "display_names": [
+      "FIDELITY MT VERNON STREET TRUST  (CIK 0000707823)"
+     ],
+     "xsl": "xslFormNPORT-P_X01",
+     "sequence": 1,
+     "root_forms": [
+      "NPORT-P"
+     ],
+     "file_date": "2026-10-26",
+     "biz_states": [
+      "MA"
+     ],
+     "sics": [],
+     "form": "NPORT-P",
+     "adsh": "0000035402-26-006778",
+     "film_num": [
+      "261484577"
+     ],
+     "biz_locations": [
+      "Boston, MA"
+     ],
+     "file_type": "NPORT-P",
+     "ma_i_individual": null,
+     "file_description": null,
+     "inc_states": [],
+     "items": []
+    }
+   },
+   {
+    "_index": "edgar_file",
+    "_id": "0000035402-25-002863:primary_doc.xml",
+    "_score": 19.110147,
+    "_source": {
+     "ciks": [
+      "0000315700"
+     ],
+     "period_ending": "2025-10-31",
+     "file_num": [
+      "811-03010"
+     ],
+     "display_names": [
+      "FIDELITY ADVISOR SERIES VII  (CIK 0000315700)"
+     ],
+     "xsl": "xslFormNPORT-P_X01",
+     "sequence": 1,
+     "root_forms": [
+      "NPORT-P"
+     ],
+     "file_date": "2025-12-23",
+     "biz_states": [
+      "MA"
+     ],
+     "sics": [],
+     "form": "NPORT-P",
+     "adsh": "0000035402-25-002863",
+     "film_num": [
+      "251599694"
+     ],
+     "biz_locations": [
+      "Boston, MA"
+     ],
+     "file_type": "NPORT-P",
+     "file_description": null,
+     "inc_states": [
+      "MA"
+     ],
+     "items": []
+    }
+   },
+   {
+    "_index": "edgar_file",
+    "_id": "0000035402-26-004618:primary_doc.xml",
+    "_score": 18.948505,
+    "_source": {
+     "ciks": [
+      "0000722574"
+     ],
+     "period_ending": "2026-05-31",
+     "file_num": [
+      "811-03785"
+     ],
+     "display_names": [
+      "FIDELITY ADVISOR SERIES I  (CIK 0000722574)"
+     ],
+     "xsl": "xslFormNPORT-P_X01",
+     "sequence": 1,
+     "root_forms": [
+      "NPORT-P"
+     ],
+     "file_date": "2026-07-24",
+     "biz_states": [
+      "MA"
+     ],
+     "sics": [],
+     "form": "NPORT-P",
+     "adsh": "0000035402-26-004618",
+     "film_num": [
+      "261199215"
+     ],
+     "biz_locations": [
+      "Boston, MA"
+     ],
+     "file_type": "NPORT-P",
+     "file_description": null,
+     "inc_states": [
+      "MA"
+     ],
+     "items": []
+    }
+   },
+   {
+    "_index": "edgar_file",
+    "_id": "0001041673-26-000026:primary_doc.xml",
+    "_score": 18.89132,
+    "_source": {
+     "ciks": [
+      "0001041673"
+     ],
+     "period_ending": "2026-01-31",
+     "file_num": [
+      "811-08333"
+     ],
+     "display_names": [
+      "NUVEEN INVESTMENT TRUST II  (CIK 0001041673)"
+     ],
+     "xsl": "xslFormNPORT-P_X01",
+     "sequence": 1,
+     "root_forms": [
+      "NPORT-P"
+     ],
+     "file_date": "2026-03-25",
+     "biz_states": [
+      "IL"
+     ],
+     "sics": [],
+     "form": "NPORT-P",
+     "adsh": "0001041673-26-000026",
+     "film_num": [
+      "26788813"
+     ],
+     "biz_locations": [
+      "Chicago, IL"
+     ],
+     "file_type": "NPORT-P",
+     "file_description": null,
+     "inc_states": [],
+     "items": []
+    }
+   }
+  ]
+ },
+ "query": {
+  "_source": {
+   "exclude": [
+    "doc_text"
+   ]
+  },
+  "query": {
+   "bool": {
+    "must": [
+     {
+      "match_phrase": {
+       "doc_text": "Anthropic"
+      }
+     }
+    ],
+    "must_not": [],
+    "should": [],
+    "filter": [
+     {
+      "terms": {
+       "root_forms": [
+        "NPORT-P"
+       ]
+      }
+     },
+     {
+      "range": {
+       "file_date": {
+        "gte": "2024-01-01",
+        "lte": "2026-11-04"
+       }
+      }
+     }
+    ]
+   }
+  },
+  "from": 0,
+  "size": 100,
+  "aggregations": {
+   "form_filter": {
+    "terms": {
+     "field": "root_forms",
+     "size": 30
+    }
+   },
+   "entity_filter": {
+    "terms": {
+     "field": "display_names.raw",
+     "size": 30
+    }
+   },
+   "sic_filter": {
+    "terms": {
+     "field": "sics",
+     "size": 30
+    }
+   },
+   "biz_states_filter": {
+    "terms": {
+     "field": "biz_states",
+     "size": 30
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,38 @@
+{
+ "cik": "0000707823",
+ "name": "FIDELITY MT VERNON STREET TRUST",
+ "entityType": "investment",
+ "filings": {
+  "recent": {
+   "accessionNumber": [
+    "0000035402-26-006832",
+    "0000035402-26-006803",
+    "0000035402-26-006790",
+    "0000035402-26-000575",
+    "0001752724-25-022507"
+   ],
+   "filingDate": [
+    "2026-10-26",
+    "2026-10-26",
+    "2026-10-26",
+    "2026-02-11",
+    "2025-02-12"
+   ],
+   "form": [
+    "NPORT-P",
+    "NPORT-P",
+    "NPORT-P",
+    "N-CEN",
+    "N-CEN"
+   ],
+   "primaryDocument": [
+    "xslFormNPORT-P_X01/primary_doc.xml",
+    "xslFormNPORT-P_X01/primary_doc.xml",
+    "xslFormNPORT-P_X01/primary_doc.xml",
+    "xslFormN-CEN_X01/primary_doc.xml",
+    "xslFormN-CEN_X01/primary_doc.xml"
+   ]
+  },
+  "files": []
+ }
+}

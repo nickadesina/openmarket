@@ -49,7 +49,8 @@ What is in the tree now:
 - `src/app`: the holding page `/`, `/rulebook`, `/rulebook/changelog`, `/resolution-sources` (and `.md`), `/ref`, `GET /api/ref/rulebook`. `next.config.ts` redirects v1's paths to `/`.
 - `src/components`: `app-shell` and `document`, one folder per module with its `.module.css`.
 - `src/styles/tokens.css` the six-step type ramp, row heights, one red. `src/styles/shared.module.css` composable primitives (`.moduleTab`, `.seal`, `.buttonBase`, `.primaryButton`, `.inputFrame`, `.sectionHead`, `.visuallyHidden`, `.skeletonBlock`, …); compose them rather than restating.
-- `scripts/research/edgar-nport-marks.ts` and `lib.ts`: the N-PORT research script P2 promotes into `src/lib/ingest`.
+- `src/lib/ingest/fetch`: `sec.ts` (the SEC client: `createSecClient`, `requireSecUserAgent`, `politeFetcher`, archive URLs), `efts.ts` (`searchFullText`: pages, and the 10,000-hit ceiling narrowed by date), `disk-cache.ts` (`--cache=<dir>` for development reruns). The only network code.
+- `src/lib/ingest/parse`: `nport.ts`, `efts.ts`, `ncen.ts`, `submissions.ts`, `watchlist.ts`, `families.ts` (zod-validated data files), `xml.ts`, `source-class.ts` (the mark-side source classes and their interim default ranks, replaced by the rulebook's `sourceRank` when P6 lands) and `security-label.ts` (ingest's interim `classifySecurity`, reconciled with P3's `engine/index/series.ts`). Fixtures: `tests/fixtures/index/` (real EDGAR documents, trimmed; its README says how).
 
 ## Conventions
 

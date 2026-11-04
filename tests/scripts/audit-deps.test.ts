@@ -58,3 +58,51 @@ describe("layer audit syntax coverage", () => {
     expect(result.stdout).toContain("engine imports engine only");
   });
 });
+
+describe("layer audit: ingest", () => {
+  it("keeps parsers pure: engine, other parsers and zod only", async () => {
+    for (const source of [
+      'import { assertDate } from "../../engine/assert.js";',
+      'import { tagText } from "./xml.js";',
+      'import { z } from "zod";',
+    ]) {
+      expect((await audit(source, "src/lib/ingest/parse/example.ts")).status, source).toBe(0);
+    }
+    for (const source of [
+      'import { createSecClient } from "../fetch/sec.js";',
+      'import type { Database } from "../../db/schema.js";',
+      'import { readFileSync } from "node:fs";',
+    ]) {
+      const result = await audit(source, "src/lib/ingest/parse/example.ts");
+      expect(result.status, source).toBe(1);
+      expect(result.stdout).toContain("ingest/parse imports engine, ingest/parse and zod only");
+    }
+  });
+
+  it("lets the source clients use ingest and node builtins, nothing else", async () => {
+    for (const source of [
+      'import { parseNport } from "../parse/nport.js";',
+      'import { createHash } from "node:crypto";',
+    ]) {
+      expect((await audit(source, "src/lib/ingest/fetch/example.ts")).status, source).toBe(0);
+    }
+    for (const source of [
+      'import { getRuntimeDatabase } from "../../db/runtime.js";',
+      'import { searchIssuers } from "../../services/index/search-filings.js";',
+      'import { z } from "zod";',
+    ]) {
+      const result = await audit(source, "src/lib/ingest/fetch/example.ts");
+      expect(result.status, source).toBe(1);
+      expect(result.stdout).toContain("ingest/fetch imports ingest and node builtins only");
+    }
+  });
+
+  it("keeps the engine out of ingest", async () => {
+    const result = await audit(
+      'import { parseNport } from "../../ingest/parse/nport.js";',
+      "src/lib/engine/example.ts",
+    );
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("engine imports engine only");
+  });
+});

@@ -1,0 +1,609 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<edgarSubmission xmlns="http://www.sec.gov/edgar/ncen" xmlns:com="http://www.sec.gov/edgar/common">
+  <schemaVersion>X0505</schemaVersion>
+  <headerData>
+    <submissionType>N-CEN</submissionType>
+    <filerInfo>
+      <liveTestFlag>LIVE</liveTestFlag>
+      <filer>
+        <issuerCredentials>
+          <cik>0000707823</cik>
+          <ccc>XXXXXXXX</ccc>
+        </issuerCredentials>
+        <fileNumber>811-03583</fileNumber>
+      </filer>
+      <flags>
+        <overrideInternetFlag>false</overrideInternetFlag>
+        <confirmingCopyFlag>false</confirmingCopyFlag>
+      </flags>
+      <investmentCompanyType>N-1A</investmentCompanyType>
+    </filerInfo>
+    <seriesClass>
+      <reportSeriesClass>
+        <rptIncludeAllSeriesFlag>true</rptIncludeAllSeriesFlag>
+      </reportSeriesClass>
+    </seriesClass>
+  </headerData>
+  <formData>
+    <generalInfo reportEndingPeriod="2025-11-30" isReportPeriodLt12="N"/>
+    <registrantInfo>
+      <registrantFullName>Fidelity Mt Vernon Street Trust</registrantFullName>
+      <investmentCompFileNo>811-03583</investmentCompFileNo>
+      <registrantCik>0000707823</registrantCik>
+      <registrantLei>0UZTS2D38E1WD4MK3K98</registrantLei>
+      <registrantstreet1>245 Summer Street</registrantstreet1>
+      <registrantcity>Boston</registrantcity>
+      <registrantzipCode>02210</registrantzipCode>
+      <registrantstate>US-MA</registrantstate>
+      <registrantcountry>US</registrantcountry>
+      <registrantphoneNumber>1-800-FIDELITY</registrantphoneNumber>
+      <websites>
+        <website webpage="http://fidelity.com "/>
+        <website webpage="http://institutional.fidelity.com"/>
+      </websites>
+      <locationBooksRecords>
+        <locationBooksRecord>
+          <officeName>Fidelity Service Company</officeName>
+          <officeAddress1>245 Summer Street</officeAddress1>
+          <officeCity>BOST</officeCity>
+          <officeStateCountry officeCountry="US" officeState="US-MA"/>
+          <officeRecordsZipCode>02210</officeRecordsZipCode>
+          <officePhone>1-800-FIDELITY</officePhone>
+          <booksRecordsDesc>Books and Records of the Fund as required to be maintained by the Investment Company Act</booksRecordsDesc>
+        </locationBooksRecord>
+      </locationBooksRecords>
+      <isRegistrantFirstFiling>N</isRegistrantFirstFiling>
+      <isRegistrantLastFiling>N</isRegistrantLastFiling>
+      <registrantFamilyInvComp isRegistrantFamilyInvComp="Y" familyInvCompFullName="Fidelity Group of Funds"/>
+      <registrantClassificationType>N-1A</registrantClassificationType>
+      <totalSeries>7</totalSeries>
+      <isSecuritiesActRegistration>Y</isSecuritiesActRegistration>
+      <directors>
+        <director>
+          <directorName>Oscar Munoz</directorName>
+          <crdNumber>N/A</crdNumber>
+          <isDirectorInterestedPerson>N</isDirectorInterestedPerson>
+          <fileNumbers>
+            <fileNumberInfo fileNumber="811-03759"/>
+            <fileNumberInfo fileNumber="811-07205"/>
+            <fileNumberInfo fileNumber="811-02841"/>
+            <fileNumberInfo fileNumber="811-02737"/>
+            <fileNumberInfo fileNumber="811-04118"/>
+            <fileNumberInfo fileNumber="811-00649"/>
+            <fileNumberInfo fileNumber="811-03855"/>
+            <fileNumberInfo fileNumber="811-03114"/>
+            <fileNumberInfo fileNumber="811-21667"/>
+            <fileNumberInfo fileNumber="811-03587"/>
+            <fileNumberInfo fileNumber="811-03010"/>
+            <fileNumberInfo fileNumber="811-05251"/>
+            <fileNumberInfo fileNumber="811-03466"/>
+            <fileNumberInfo fileNumber="811-01796"/>
+            <fileNumberInfo fileNumber="811-01352"/>
+            <fileNumberInfo fileNumber="811-00790"/>
+            <fileNumberInfo fileNumber="811-01193"/>
+            <fileNumberInfo fileNumber="811-01400"/>
+            <fileNumberInfo fileNumber="811-05511"/>
+            <fileNumberInfo fileNumber="811-03785"/>
+            <fileNumberInfo fileNumber="811-07319"/>
+            <fileNumberInfo fileNumber="811-03329"/>
+            <fileNumberInfo fileNumber="811-02546"/>
+            <fileNumberInfo fileNumber="811-04008"/>
+            <fileNumberInfo fileNumber="811-00215"/>
+          </fileNumbers>
+        </director>
+        <director>
+          <directorName>Karen Peetz</directorName>
+          <crdNumber>N/A</crdNumber>
+          <isDirectorInterestedPerson>N</isDirectorInterestedPerson>
+          <fileNumbers>
+            <fileNumberInfo fileNumber="811-04008"/>
+            <fileNumberInfo fileNumber="811-00649"/>
+            <fileNumberInfo fileNumber="811-03329"/>
+            <fileNumberInfo fileNumber="811-05511"/>
+            <fileNumberInfo fileNumber="811-00215"/>
+            <fileNumberInfo fileNumber="811-21667"/>
+            <fileNumberInfo fileNumber="811-04118"/>
+            <fileNumberInfo fileNumber="811-03114"/>
+            <fileNumberInfo fileNumber="811-03010"/>
+            <fileNumberInfo fileNumber="811-03759"/>
+            <fileNumberInfo fileNumber="811-03855"/>
+            <fileNumberInfo fileNumber="811-03587"/>
+            <fileNumberInfo fileNumber="811-01193"/>
+            <fileNumberInfo fileNumber="811-07205"/>
+            <fileNumberInfo fileNumber="811-02841"/>
+            <fileNumberInfo fileNumber="811-00790"/>
+            <fileNumberInfo fileNumber="811-02737"/>
+            <fileNumberInfo fileNumber="811-01352"/>
+            <fileNumberInfo fileNumber="811-01400"/>
+            <fileNumberInfo fileNumber="811-03466"/>
+            <fileNumberInfo fileNumber="811-05251"/>
+            <fileNumberInfo fileNumber="811-01796"/>
+            <fileNumberInfo fileNumber="811-07319"/>
+            <fileNumberInfo fileNumber="811-02546"/>
+            <fileNumberInfo fileNumber="811-03785"/>
+          </fileNumbers>
+        </director>
+        <director>
+          <directorName>Robert A Lawrence</directorName>
+          <crdNumber>N/A</crdNumber>
+          <isDirectorInterestedPerson>Y</isDirectorInterestedPerson>
+          <fileNumbers>
+            <fileNumberInfo fileNumber="811-02546"/>
+            <fileNumberInfo fileNumber="811-01400"/>
+            <fileNumberInfo fileNumber="811-07205"/>
+            <fileNumberInfo fileNumber="811-03010"/>
+            <fileNumberInfo fileNumber="811-07319"/>
+            <fileNumberInfo fileNumber="811-00649"/>
+            <fileNumberInfo fileNumber="811-03466"/>
+            <fileNumberInfo fileNumber="811-00790"/>
+            <fileNumberInfo fileNumber="811-05251"/>
+            <fileNumberInfo fileNumber="811-00215"/>
+            <fileNumberInfo fileNumber="811-04008"/>
+            <fileNumberInfo fileNumber="811-03587"/>
+            <fileNumberInfo fileNumber="811-01796"/>
+            <fileNumberInfo fileNumber="811-21667"/>
+            <fileNumberInfo fileNumber="811-03114"/>
+            <fileNumberInfo fileNumber="811-03329"/>
+            <fileNumberInfo fileNumber="811-01193"/>
+            <fileNumberInfo fileNumber="811-05511"/>
+            <fileNumberInfo fileNumber="811-01352"/>
+            <fileNumberInfo fileNumber="811-02841"/>
+            <fileNumberInfo fileNumber="811-03785"/>
+            <fileNumberInfo fileNumber="811-03855"/>
+            <fileNumberInfo fileNumber="811-02737"/>
+            <fileNumberInfo fileNumber="811-03759"/>
+            <fileNumberInfo fileNumber="811-04118"/>
+          </fileNumbers>
+        </director>
+        <director>
+          <directorName>Thomas A Kennedy</directorName>
+          <crdNumber>N/A</crdNumber>
+          <isDirectorInterestedPerson>N</isDirectorInterestedPerson>
+          <fileNumbers>
+            <fileNumberInfo fileNumber="811-07205"/>
+            <fileNumberInfo fileNumber="811-05511"/>
+            <fileNumberInfo fileNumber="811-00649"/>
+            <fileNumberInfo fileNumber="811-02546"/>
+            <fileNumberInfo fileNumber="811-01796"/>
+            <fileNumberInfo fileNumber="811-05251"/>
+            <fileNumberInfo fileNumber="811-03466"/>
+            <fileNumberInfo fileNumber="811-02737"/>
+            <fileNumberInfo fileNumber="811-03785"/>
+            <fileNumberInfo fileNumber="811-01193"/>
+            <fileNumberInfo fileNumber="811-00215"/>
+            <fileNumberInfo fileNumber="811-01400"/>
+            <fileNumberInfo fileNumber="811-03855"/>
+            <fileNumberInfo fileNumber="811-04008"/>
+            <fileNumberInfo fileNumber="811-03010"/>
+            <fileNumberInfo fileNumber="811-03114"/>
+            <fileNumberInfo fileNumber="811-01352"/>
+            <fileNumberInfo fileNumber="811-00790"/>
+            <fileNumberInfo fileNumber="811-03329"/>
+            <fileNumberInfo fileNumber="811-03587"/>
+            <fileNumberInfo fileNumber="811-04118"/>
+            <fileNumberInfo fileNumber="811-21667"/>
+            <fileNumberInfo fileNumber="811-02841"/>
+            <fileNumberInfo fileNumber="811-07319"/>
+            <fileNumberInfo fileNumber="811-03759"/>
+          </fileNumbers>
+        </director>
+        <director>
+          <directorName>Bettina Doulton</directorName>
+          <crdNumber>N/A</crdNumber>
+          <isDirectorInterestedPerson>Y</isDirectorInterestedPerson>
+          <fileNumbers>
+            <fileNumberInfo fileNumber="811-01796"/>
+            <fileNumberInfo fileNumber="811-07319"/>
+            <fileNumberInfo fileNumber="811-00790"/>
+            <fileNumberInfo fileNumber="811-03114"/>
+            <fileNumberInfo fileNumber="811-03329"/>
+            <fileNumberInfo fileNumber="811-00215"/>
+            <fileNumberInfo fileNumber="811-04008"/>
+            <fileNumberInfo fileNumber="811-03855"/>
+            <fileNumberInfo fileNumber="811-03759"/>
+            <fileNumberInfo fileNumber="811-00649"/>
+            <fileNumberInfo fileNumber="811-05511"/>
+            <fileNumberInfo fileNumber="811-01352"/>
+            <fileNumberInfo fileNumber="811-03785"/>
+            <fileNumberInfo fileNumber="811-07205"/>
+            <fileNumberInfo fileNumber="811-01400"/>
+            <fileNumberInfo fileNumber="811-04118"/>
+            <fileNumberInfo fileNumber="811-02841"/>
+            <fileNumberInfo fileNumber="811-02546"/>
+            <fileNumberInfo fileNumber="811-03010"/>
+            <fileNumberInfo fileNumber="811-02737"/>
+            <fileNumberInfo fileNumber="811-03587"/>
+            <fileNumberInfo fileNumber="811-03466"/>
+            <fileNumberInfo fileNumber="811-01193"/>
+            <fileNumberInfo fileNumber="811-05251"/>
+            <fileNumberInfo fileNumber="811-21667"/>
+          </fileNumbers>
+        </director>
+        <director>
+          <directorName>Vicki L Fuller</directorName>
+          <crdNumber>N/A</crdNumber>
+          <isDirectorInterestedPerson>N</isDirectorInterestedPerson>
+          <fileNumbers>
+            <fileNumberInfo fileNumber="811-01796"/>
+            <fileNumberInfo fileNumber="811-03587"/>
+            <fileNumberInfo fileNumber="811-02546"/>
+            <fileNumberInfo fileNumber="811-03114"/>
+            <fileNumberInfo fileNumber="811-00215"/>
+            <fileNumberInfo fileNumber="811-03010"/>
+            <fileNumberInfo fileNumber="811-03855"/>
+            <fileNumberInfo fileNumber="811-07319"/>
+            <fileNumberInfo fileNumber="811-04008"/>
+            <fileNumberInfo fileNumber="811-05511"/>
+            <fileNumberInfo fileNumber="811-03785"/>
+            <fileNumberInfo fileNumber="811-07205"/>
+            <fileNumberInfo fileNumber="811-02841"/>
+            <fileNumberInfo fileNumber="811-05251"/>
+            <fileNumberInfo fileNumber="811-03466"/>
+            <fileNumberInfo fileNumber="811-03329"/>
+            <fileNumberInfo fileNumber="811-01400"/>
+            <fileNumberInfo fileNumber="811-01193"/>
+            <fileNumberInfo fileNumber="811-01352"/>
+            <fileNumberInfo fileNumber="811-00649"/>
+            <fileNumberInfo fileNumber="811-00790"/>
+            <fileNumberInfo fileNumber="811-21667"/>
+            <fileNumberInfo fileNumber="811-02737"/>
+            <fileNumberInfo fileNumber="811-04118"/>
+            <fileNumberInfo fileNumber="811-03759"/>
+          </fileNumbers>
+        </director>
+        <director>
+          <directorName>Vijay Advani</directorName>
+          <crdNumber>N/A</crdNumber>
+          <isDirectorInterestedPerson>N</isDirectorInterestedPerson>
+          <fileNumbers>
+            <fileNumberInfo fileNumber="811-03010"/>
+            <fileNumberInfo fileNumber="811-03587"/>
+            <fileNumberInfo fileNumber="811-07205"/>
+            <fileNumberInfo fileNumber="811-00790"/>
+            <fileNumberInfo fileNumber="811-01400"/>
+            <fileNumberInfo fileNumber="811-02737"/>
+            <fileNumberInfo fileNumber="811-01352"/>
+            <fileNumberInfo fileNumber="811-00215"/>
+            <fileNumberInfo fileNumber="811-07319"/>
+            <fileNumberInfo fileNumber="811-03759"/>
+            <fileNumberInfo fileNumber="811-03466"/>
+            <fileNumberInfo fileNumber="811-00649"/>
+            <fileNumberInfo fileNumber="811-03114"/>
+            <fileNumberInfo fileNumber="811-03855"/>
+            <fileNumberInfo fileNumber="811-04118"/>
+            <fileNumberInfo fileNumber="811-03329"/>
+            <fileNumberInfo fileNumber="811-01193"/>
+            <fileNumberInfo fileNumber="811-04008"/>
+            <fileNumberInfo fileNumber="811-05511"/>
+            <fileNumberInfo fileNumber="811-21667"/>
+            <fileNumberInfo fileNumber="811-02546"/>
+            <fileNumberInfo fileNumber="811-03785"/>
+            <fileNumberInfo fileNumber="811-05251"/>
+            <fileNumberInfo fileNumber="811-02841"/>
+            <fileNumberInfo fileNumber="811-01796"/>
+          </fileNumbers>
+        </director>
+        <director>
+          <directorName>Thomas P Bostick</directorName>
+          <crdNumber>N/A</crdNumber>
+          <isDirectorInterestedPerson>N</isDirectorInterestedPerson>
+          <fileNumbers>
+            <fileNumberInfo fileNumber="811-03785"/>
+            <fileNumberInfo fileNumber="811-07205"/>
+            <fileNumberInfo fileNumber="811-04118"/>
+            <fileNumberInfo fileNumber="811-03010"/>
+            <fileNumberInfo fileNumber="811-00790"/>
+            <fileNumberInfo fileNumber="811-01352"/>
+            <fileNumberInfo fileNumber="811-03329"/>
+            <fileNumberInfo fileNumber="811-05511"/>
+            <fileNumberInfo fileNumber="811-03114"/>
+            <fileNumberInfo fileNumber="811-00215"/>
+            <fileNumberInfo fileNumber="811-01193"/>
+            <fileNumberInfo fileNumber="811-05251"/>
+            <fileNumberInfo fileNumber="811-01400"/>
+            <fileNumberInfo fileNumber="811-03466"/>
+            <fileNumberInfo fileNumber="811-02737"/>
+            <fileNumberInfo fileNumber="811-04008"/>
+            <fileNumberInfo fileNumber="811-07319"/>
+            <fileNumberInfo fileNumber="811-01796"/>
+            <fileNumberInfo fileNumber="811-03855"/>
+            <fileNumberInfo fileNumber="811-02841"/>
+            <fileNumberInfo fileNumber="811-03587"/>
+            <fileNumberInfo fileNumber="811-02546"/>
+            <fileNumberInfo fileNumber="811-21667"/>
+            <fileNumberInfo fileNumber="811-03759"/>
+            <fileNumberInfo fileNumber="811-00649"/>
+          </fileNumbers>
+        </director>
+        <director>
+          <directorName>Patricia L Kampling</directorName>
+          <crdNumber>N/A</crdNumber>
+          <isDirectorInterestedPerson>N</isDirectorInterestedPerson>
+          <fileNumbers>
+            <fileNumberInfo fileNumber="811-03329"/>
+            <fileNumberInfo fileNumber="811-01193"/>
+            <fileNumberInfo fileNumber="811-00649"/>
+            <fileNumberInfo fileNumber="811-05251"/>
+            <fileNumberInfo fileNumber="811-03114"/>
+            <fileNumberInfo fileNumber="811-03785"/>
+            <fileNumberInfo fileNumber="811-02546"/>
+            <fileNumberInfo fileNumber="811-03587"/>
+            <fileNumberInfo fileNumber="811-04118"/>
+            <fileNumberInfo fileNumber="811-03466"/>
+            <fileNumberInfo fileNumber="811-21667"/>
+            <fileNumberInfo fileNumber="811-01352"/>
+            <fileNumberInfo fileNumber="811-02737"/>
+            <fileNumberInfo fileNumber="811-01796"/>
+            <fileNumberInfo fileNumber="811-01400"/>
+            <fileNumberInfo fileNumber="811-02841"/>
+            <fileNumberInfo fileNumber="811-03010"/>
+            <fileNumberInfo fileNumber="811-00215"/>
+            <fileNumberInfo fileNumber="811-07205"/>
+            <fileNumberInfo fileNumber="811-03759"/>
+            <fileNumberInfo fileNumber="811-07319"/>
+            <fileNumberInfo fileNumber="811-05511"/>
+            <fileNumberInfo fileNumber="811-04008"/>
+            <fileNumberInfo fileNumber="811-03855"/>
+            <fileNumberInfo fileNumber="811-00790"/>
+          </fileNumbers>
+        </director>
+        <director>
+          <directorName>Donald F Donahue</directorName>
+          <crdNumber>N/A</crdNumber>
+          <isDirectorInterestedPerson>N</isDirectorInterestedPerson>
+          <fileNumbers>
+            <fileNumberInfo fileNumber="811-00649"/>
+            <fileNumberInfo fileNumber="811-03855"/>
+            <fileNumberInfo fileNumber="811-04008"/>
+            <fileNumberInfo fileNumber="811-02841"/>
+            <fileNumberInfo fileNumber="811-03466"/>
+            <fileNumberInfo fileNumber="811-03587"/>
+            <fileNumberInfo fileNumber="811-03329"/>
+            <fileNumberInfo fileNumber="811-01352"/>
+            <fileNumberInfo fileNumber="811-05511"/>
+            <fileNumberInfo fileNumber="811-04118"/>
+            <fileNumberInfo fileNumber="811-01400"/>
+            <fileNumberInfo fileNumber="811-07319"/>
+            <fileNumberInfo fileNumber="811-07205"/>
+            <fileNumberInfo fileNumber="811-03759"/>
+            <fileNumberInfo fileNumber="811-00790"/>
+            <fileNumberInfo fileNumber="811-02546"/>
+            <fileNumberInfo fileNumber="811-21667"/>
+            <fileNumberInfo fileNumber="811-00215"/>
+            <fileNumberInfo fileNumber="811-03010"/>
+            <fileNumberInfo fileNumber="811-01796"/>
+            <fileNumberInfo fileNumber="811-03114"/>
+            <fileNumberInfo fileNumber="811-02737"/>
+            <fileNumberInfo fileNumber="811-03785"/>
+            <fileNumberInfo fileNumber="811-05251"/>
+            <fileNumberInfo fileNumber="811-01193"/>
+          </fileNumbers>
+        </director>
+        <director>
+          <directorName>Susan Tomasky</directorName>
+          <crdNumber>N/A</crdNumber>
+          <isDirectorInterestedPerson>N</isDirectorInterestedPerson>
+          <fileNumbers>
+            <fileNumberInfo fileNumber="811-02737"/>
+            <fileNumberInfo fileNumber="811-03785"/>
+            <fileNumberInfo fileNumber="811-03114"/>
+            <fileNumberInfo fileNumber="811-01400"/>
+            <fileNumberInfo fileNumber="811-02841"/>
+            <fileNumberInfo fileNumber="811-02546"/>
+            <fileNumberInfo fileNumber="811-07319"/>
+            <fileNumberInfo fileNumber="811-00649"/>
+            <fileNumberInfo fileNumber="811-03587"/>
+            <fileNumberInfo fileNumber="811-00215"/>
+            <fileNumberInfo fileNumber="811-03855"/>
+            <fileNumberInfo fileNumber="811-05511"/>
+            <fileNumberInfo fileNumber="811-05251"/>
+            <fileNumberInfo fileNumber="811-04008"/>
+            <fileNumberInfo fileNumber="811-03759"/>
+            <fileNumberInfo fileNumber="811-01352"/>
+            <fileNumberInfo fileNumber="811-00790"/>
+            <fileNumberInfo fileNumber="811-01193"/>
+            <fileNumberInfo fileNumber="811-03466"/>
+            <fileNumberInfo fileNumber="811-01796"/>
+            <fileNumberInfo fileNumber="811-07205"/>
+            <fileNumberInfo fileNumber="811-03329"/>
+            <fileNumberInfo fileNumber="811-04118"/>
+            <fileNumberInfo fileNumber="811-21667"/>
+            <fileNumberInfo fileNumber="811-03010"/>
+          </fileNumbers>
+        </director>
+        <director>
+          <directorName>Sabra Purtill</directorName>
+          <crdNumber>N/A</crdNumber>
+          <isDirectorInterestedPerson>N</isDirectorInterestedPerson>
+          <fileNumbers>
+            <fileNumberInfo fileNumber="811-02841"/>
+            <fileNumberInfo fileNumber="811-05251"/>
+            <fileNumberInfo fileNumber="811-01193"/>
+            <fileNumberInfo fileNumber="811-03785"/>
+            <fileNumberInfo fileNumber="811-00649"/>
+            <fileNumberInfo fileNumber="811-21667"/>
+            <fileNumberInfo fileNumber="811-03329"/>
+            <fileNumberInfo fileNumber="811-03855"/>
+            <fileNumberInfo fileNumber="811-03114"/>
+            <fileNumberInfo fileNumber="811-03010"/>
+            <fileNumberInfo fileNumber="811-01400"/>
+            <fileNumberInfo fileNumber="811-00215"/>
+            <fileNumberInfo fileNumber="811-03466"/>
+            <fileNumberInfo fileNumber="811-05511"/>
+            <fileNumberInfo fileNumber="811-04118"/>
+            <fileNumberInfo fileNumber="811-07205"/>
+            <fileNumberInfo fileNumber="811-03759"/>
+            <fileNumberInfo fileNumber="811-00790"/>
+            <fileNumberInfo fileNumber="811-02737"/>
+            <fileNumberInfo fileNumber="811-04008"/>
+            <fileNumberInfo fileNumber="811-03587"/>
+            <fileNumberInfo fileNumber="811-02546"/>
+            <fileNumberInfo fileNumber="811-01796"/>
+            <fileNumberInfo fileNumber="811-07319"/>
+            <fileNumberInfo fileNumber="811-01352"/>
+          </fileNumbers>
+        </director>
+      </directors>
+      <chiefComplianceOfficers>
+        <chiefComplianceOfficer>
+          <ccoName>Jason Pogorelec</ccoName>
+          <crdNumber>007269504</crdNumber>
+          <ccoStreet1>245 SUMMER STREET</ccoStreet1>
+          <ccoCity>BOSTON</ccoCity>
+          <ccoStateCountry ccoCountry="US" ccoState="US-MA"/>
+          <ccoZipCode>02210-1129</ccoZipCode>
+          <ccoPhone>XXXXXX</ccoPhone>
+          <isCcoChangedSinceLastFiling>N</isCcoChangedSinceLastFiling>
+          <ccoEmployers>
+            <ccoEmployer ccoEmployerName="N/A" ccoEmployerId="N/A"/>
+          </ccoEmployers>
+        </chiefComplianceOfficer>
+      </chiefComplianceOfficers>
+      <isRegistrantSubmittedMatter>N</isRegistrantSubmittedMatter>
+      <isPreviousLegalProceeding>N</isPreviousLegalProceeding>
+      <isPreviousProceedingTerminated>N</isPreviousProceedingTerminated>
+      <isClaimFiled>N</isClaimFiled>
+      <coveredByInsurancePolicy isCoveredByInsurancePolicy="Y" isClaimFiledDuringPeriod="N"/>
+      <isFinancialSupportDuringPeriod>N</isFinancialSupportDuringPeriod>
+      <releaseNumbers isExemptionFromAct="Y">
+        <releaseNumberInfo releaseNumber="IC-16418"/>
+        <releaseNumberInfo releaseNumber="IC-30288"/>
+      </releaseNumbers>
+      <principalUnderwriters>
+        <principalUnderwriter>
+          <principalUnderwriterName>Fidelity Distributors Company LLC</principalUnderwriterName>
+          <principalUnderwriterFileNumber>8-35097</principalUnderwriterFileNumber>
+          <principalUnderwriterCrdNumber>000017507</principalUnderwriterCrdNumber>
+          <principalUnderwriterLei>2549002Y53BVDC91U856</principalUnderwriterLei>
+          <principalUnderwriterRssdId>N/A</principalUnderwriterRssdId>
+          <principalUnderWriterStateCountry principalUnderWriterCountry="US" principalUnderWriterState="US-RI"/>
+          <isPrincipalUnderwriterAffiliatedWithRegistrant>Y</isPrincipalUnderwriterAffiliatedWithRegistrant>
+        </principalUnderwriter>
+      </principalUnderwriters>
+      <isUnderwriterHiredOrTerminated>N</isUnderwriterHiredOrTerminated>
+      <publicAccountants>
+        <publicAccountant>
+          <publicAccountantName>PricewaterhouseCoopers LLP</publicAccountantName>
+          <pcaobNumber>238</pcaobNumber>
+          <publicAccountantLei>5493002GVO7EO8RNNS37</publicAccountantLei>
+          <publicAccountantRssdId>N/A</publicAccountantRssdId>
+          <publicAccountantStateCountry publicAccountantCountry="US" publicAccountantState="US-MA"/>
+        </publicAccountant>
+        <publicAccountant>
+          <publicAccountantName>Deloitte &amp; Touche LLP</publicAccountantName>
+          <pcaobNumber>34</pcaobNumber>
+          <publicAccountantLei>254900WYZPGQGKV3RF07</publicAccountantLei>
+          <publicAccountantRssdId>N/A</publicAccountantRssdId>
+          <publicAccountantStateCountry publicAccountantCountry="US" publicAccountantState="US-MA"/>
+        </publicAccountant>
+      </publicAccountants>
+      <isPublicAccountantChanged>N</isPublicAccountantChanged>
+      <isMaterialWeakness>N</isMaterialWeakness>
+      <isOpinionOffered>N</isOpinionOffered>
+      <isMaterialChange>N</isMaterialChange>
+      <isAccountingPrincipleChange>N</isAccountingPrincipleChange>
+      <isPaymentErrorInNetAssetValue>N</isPaymentErrorInNetAssetValue>
+      <isPaymentDividend>N</isPaymentDividend>
+    </registrantInfo>
+    <managementInvestmentQuestionSeriesInfo>
+      <managementInvestmentQuestion>
+        <mgmtInvFundName>Fidelity Growth Company K6 Fund</mgmtInvFundName>
+        <mgmtInvSeriesId>S000065696</mgmtInvSeriesId>
+        <investmentAdvisers>
+          <investmentAdviser>
+            <investmentAdviserName>Fidelity Management &amp; Research Company LLC</investmentAdviserName>
+            <investmentAdviserFileNo>801-7884</investmentAdviserFileNo>
+            <investmentAdviserCrdNo>000108281</investmentAdviserCrdNo>
+            <investmentAdviserLei>5493001Z012YSB2A0K51</investmentAdviserLei>
+            <investmentAdviserRssdId>N/A</investmentAdviserRssdId>
+            <investmentAdviserStateCountry investmentAdviserState="US-MA" investmentAdviserCountry="US"/>
+            <isInvestmentAdviserHired>N</isInvestmentAdviserHired>
+          </investmentAdviser>
+        </investmentAdvisers>
+        <subAdvisers>
+          <subAdviser>
+            <subAdviserName>Fidelity Management &amp; Research (Japan) Limited</subAdviserName>
+            <subAdviserFileNo>801-69571</subAdviserFileNo>
+            <subAdviserCrdNo>000148239</subAdviserCrdNo>
+            <subAdviserLei>549300FF7J6H5TZ22Y05</subAdviserLei>
+            <subAdviserRssdId>N/A</subAdviserRssdId>
+            <isSubAdviserAffiliated>Y</isSubAdviserAffiliated>
+            <subAdviserCountry>JP</subAdviserCountry>
+            <isSubAdviserHired>N</isSubAdviserHired>
+          </subAdviser>
+          <subAdviser>
+            <subAdviserName>FMR Investment Management (UK) Limited</subAdviserName>
+            <subAdviserFileNo>801-28773</subAdviserFileNo>
+            <subAdviserCrdNo>000108273</subAdviserCrdNo>
+            <subAdviserLei>549300DJ0TLKPO1HIS84</subAdviserLei>
+            <subAdviserRssdId>N/A</subAdviserRssdId>
+            <isSubAdviserAffiliated>Y</isSubAdviserAffiliated>
+            <subAdviserCountry>GB</subAdviserCountry>
+            <isSubAdviserHired>N</isSubAdviserHired>
+          </subAdviser>
+          <subAdviser>
+            <subAdviserName>Fidelity Management &amp; Research (Hong Kong) Limited</subAdviserName>
+            <subAdviserFileNo>801-69507</subAdviserFileNo>
+            <subAdviserCrdNo>000148045</subAdviserCrdNo>
+            <subAdviserLei>549300VLVPR60I312N68</subAdviserLei>
+            <subAdviserRssdId>N/A</subAdviserRssdId>
+            <isSubAdviserAffiliated>Y</isSubAdviserAffiliated>
+            <subAdviserCountry>HK</subAdviserCountry>
+            <isSubAdviserHired>N</isSubAdviserHired>
+          </subAdviser>
+        </subAdvisers>
+      </managementInvestmentQuestion>
+      <managementInvestmentQuestion>
+        <mgmtInvFundName>Fidelity Growth Strategies K6 Fund</mgmtInvFundName>
+        <mgmtInvSeriesId>S000057290</mgmtInvSeriesId>
+        <investmentAdvisers>
+          <investmentAdviser>
+            <investmentAdviserName>Fidelity Management &amp; Research Company LLC</investmentAdviserName>
+            <investmentAdviserFileNo>801-7884</investmentAdviserFileNo>
+            <investmentAdviserCrdNo>000108281</investmentAdviserCrdNo>
+            <investmentAdviserLei>5493001Z012YSB2A0K51</investmentAdviserLei>
+            <investmentAdviserRssdId>N/A</investmentAdviserRssdId>
+            <investmentAdviserStateCountry investmentAdviserState="US-MA" investmentAdviserCountry="US"/>
+            <isInvestmentAdviserHired>N</isInvestmentAdviserHired>
+          </investmentAdviser>
+        </investmentAdvisers>
+        <subAdvisers>
+          <subAdviser>
+            <subAdviserName>Fidelity Management &amp; Research (Hong Kong) Limited</subAdviserName>
+            <subAdviserFileNo>801-69507</subAdviserFileNo>
+            <subAdviserCrdNo>000148045</subAdviserCrdNo>
+            <subAdviserLei>549300VLVPR60I312N68</subAdviserLei>
+            <subAdviserRssdId>N/A</subAdviserRssdId>
+            <isSubAdviserAffiliated>Y</isSubAdviserAffiliated>
+            <subAdviserCountry>HK</subAdviserCountry>
+            <isSubAdviserHired>N</isSubAdviserHired>
+          </subAdviser>
+          <subAdviser>
+            <subAdviserName>FMR Investment Management (UK) Limited</subAdviserName>
+            <subAdviserFileNo>801-28773</subAdviserFileNo>
+            <subAdviserCrdNo>000108273</subAdviserCrdNo>
+            <subAdviserLei>549300DJ0TLKPO1HIS84</subAdviserLei>
+            <subAdviserRssdId>N/A</subAdviserRssdId>
+            <isSubAdviserAffiliated>Y</isSubAdviserAffiliated>
+            <subAdviserCountry>GB</subAdviserCountry>
+            <isSubAdviserHired>N</isSubAdviserHired>
+          </subAdviser>
+          <subAdviser>
+            <subAdviserName>Fidelity Management &amp; Research (Japan) Limited</subAdviserName>
+            <subAdviserFileNo>801-69571</subAdviserFileNo>
+            <subAdviserCrdNo>000148239</subAdviserCrdNo>
+            <subAdviserLei>549300FF7J6H5TZ22Y05</subAdviserLei>
+            <subAdviserRssdId>N/A</subAdviserRssdId>
+            <isSubAdviserAffiliated>Y</isSubAdviserAffiliated>
+            <subAdviserCountry>JP</subAdviserCountry>
+            <isSubAdviserHired>N</isSubAdviserHired>
+          </subAdviser>
+        </subAdvisers>
+      </managementInvestmentQuestion>
+    </managementInvestmentQuestionSeriesInfo>
+    <attachmentsTab>
+      <isIPAReportInternalControl>true</isIPAReportInternalControl>
+    </attachmentsTab>
+    <signature registrantSignedName="Fidelity Mt Vernon Street Trust" signedDate="2026-02-05" signature="Stacie M. Smith" title="President and Treasurer"/>
+  </formData>
+</edgarSubmission>
