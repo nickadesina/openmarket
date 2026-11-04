@@ -142,8 +142,10 @@ npm run dev              # http://localhost:3000, never 127.0.0.1
   `docs/tradeables/resolution-sources.md`; `npm run export:objections`
   writes the anonymised objection catalog. The first two take
   `-- --check` (exit 1 when the committed file is stale).
-- Vercel Cron: `vercel.json` has no schedules until ingest lands
-  (P2). Cron routes require `Authorization: Bearer $CRON_SECRET` (at
+- Vercel Cron: `vercel.json` runs `GET /api/cron/ingest` daily at
+  07:23 UTC: each EDGAR source (N-PORT today) incrementally from a week
+  before its last ok `ingest_runs` row, stopping before the 300 s limit.
+  Cron routes require `Authorization: Bearer $CRON_SECRET` (at
   least 16 characters; production build validation requires it).
 
 ## 5. CI and deployment
