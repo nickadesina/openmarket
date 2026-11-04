@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { AccountSlot } from "./account-slot.js";
 import styles from "./app-shell.module.css";
 import { NavLinks } from "./nav-links.js";
 
@@ -17,9 +16,6 @@ export function AppShell({ children }: { readonly children: ReactNode }) {
             <span className={styles.brandName}>OpenMarket</span>
           </Link>
           <NavLinks />
-          <div className={styles.accountSlot}>
-            <AccountSlot />
-          </div>
         </div>
       </header>
       <main className={styles.main} id="main-content" tabIndex={-1}>
@@ -27,12 +23,7 @@ export function AppShell({ children }: { readonly children: ReactNode }) {
       </main>
       <footer className={styles.footer}>
         <span className={styles.footerCopyright}>© {new Date().getFullYear()} OpenMarket</span>
-        <span className={styles.footerDisclosure}>
-          Paper trading only. Not real money. No purchases or withdrawals.
-        </span>
-        <Link className={styles.footerLink} href="/admin">
-          Admin
-        </Link>
+        <span className={styles.footerDisclosure}>Built only from public filings.</span>
       </footer>
     </div>
   );

@@ -3,8 +3,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { DocumentBody, headingId, parseDocument } from "../../components/document/document.js";
-import { MODEL_VERSION } from "../../lib/config/dealer.js";
-import { NOT_BUILT, RULEBOOK_VERSION } from "../../lib/engine/dealer/rulebook.js";
+import { NOT_BUILT, RULEBOOK_VERSION } from "../../lib/engine/rulebook.js";
 import { RULEBOOK_REVIEWERS_PATH, readRepoDoc } from "../../lib/tradeables/repo-docs.js";
 import {
   anchorOf,
@@ -95,10 +94,6 @@ export default function RulebookPage() {
           <div>
             <dt>Rulebook</dt>
             <dd>{RULEBOOK_VERSION}</dd>
-          </div>
-          <div>
-            <dt>Model</dt>
-            <dd>{MODEL_VERSION}</dd>
           </div>
         </dl>
         <p>Rules marked not built are the contract's intent; the code does not enforce them yet.</p>

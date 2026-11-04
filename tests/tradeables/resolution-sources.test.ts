@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { RULEBOOK } from "../../src/lib/engine/dealer/rulebook.js";
+import { RULEBOOK } from "../../src/lib/engine/rulebook.js";
 import {
   openMarketRow,
   renderResolutionSourcesMarkdown,

@@ -9,7 +9,7 @@
       "*.ts",
       "!!.impeccable",
       "!next-env.d.ts",
-      // Generated fixtures: their generators own the bytes, and the ingest must reproduce event-flags.json exactly.
+      // Generated fixtures: their generators own the bytes (rulebook-events.json is a vitest file snapshot).
       "!tests/fixtures"
     ]
   },

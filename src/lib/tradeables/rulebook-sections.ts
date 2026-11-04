@@ -1,4 +1,4 @@
-import { NOT_BUILT, RULEBOOK } from "../engine/dealer/rulebook.js";
+import { NOT_BUILT, RULEBOOK } from "../engine/rulebook.js";
 
 /**
  * How /rulebook lays RULEBOOK out: sections in the order of CONTRACTS.md's

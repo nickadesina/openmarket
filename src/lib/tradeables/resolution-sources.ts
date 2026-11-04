@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import data from "../../../docs/tradeables/resolution-sources.json";
-import { RULEBOOK } from "../engine/dealer/rulebook.js";
+import { RULEBOOK } from "../engine/rulebook.js";
 
 /**
  * The resolution-source map (docs/prompts/tradeables, item 1): how each venue
@@ -83,14 +83,14 @@ export function openMarketRow(asOf: string): ResolutionSourceRow {
   return {
     venue: OPENMARKET,
     product:
-      "Quarterly timing binary (a priced round by quarter-end; a public S-1 for the labs) and a cash-settled forward on the next post-money, both quoted by the venue as dealer",
+      "Quarterly timing binary (a priced round by quarter-end; a public S-1 for the labs) and a cash-settled forward on the next post-money, as the rulebook specifies them; OpenMarket quotes neither",
     launched: null,
     instrument: kinds.join(" and "),
     settlement_source: `${RULEBOOK.print.definition} For the labs, also ${lowerFirst(RULEBOOK.print.also_for_labs)} Ranked sources: ${ranks}. Tier-1 outlets: ${RULEBOOK.tier1_outlets.join(", ")}.`,
     source_published: true,
     revision_window: `${RULEBOOK.revision_window_days} days for a higher-ranked source, plus ${RULEBOOK.observation_grace_days} day of observation grace after the deadline`,
     void_rule: RULEBOOK.forward.void,
-    status: "paper markets live",
+    status: "rulebook published; no market live (the v1 paper markets are archived)",
     notes: `The rulebook is code, versioned (v${RULEBOOK.version}), and published as JSON at ${RULEBOOK_PATH}.`,
     sources: [`${SITE_ORIGIN}${RULEBOOK_PATH}`],
     verified: asOf,

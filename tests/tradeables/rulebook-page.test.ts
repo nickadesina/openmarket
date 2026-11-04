@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 
 import RulebookChangelogPage from "../../src/app/rulebook/changelog/page.js";
 import RulebookPage from "../../src/app/rulebook/page.js";
-import { NOT_BUILT, RULEBOOK, RULEBOOK_VERSION } from "../../src/lib/engine/dealer/rulebook.js";
-import { getRulebook } from "../../src/lib/services/dealer/get-rulebook.js";
+import { NOT_BUILT, RULEBOOK, RULEBOOK_VERSION } from "../../src/lib/engine/rulebook.js";
+import { getRulebook } from "../../src/lib/services/get-rulebook.js";
 import {
   anchorOf,
   leafRules,
@@ -57,7 +57,7 @@ describe("/rulebook", () => {
     expect(payload.rulebook_version).toBe(RULEBOOK_VERSION);
     expect(payload.not_built).toBe(NOT_BUILT);
     expect(html).toContain(`<dd>${payload.rulebook_version}</dd>`);
-    expect(html).toContain(`<dd>${payload.model_version}</dd>`);
+    expect(payload).not.toHaveProperty("model_version");
   });
 
   it("renders the reviewers file under Reviewed by and links the changelog", () => {

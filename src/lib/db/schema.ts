@@ -1,6 +1,24 @@
 import type { ColumnType, Generated, Insertable, Selectable, Updateable } from "kysely";
-import type { FlagKind } from "../engine/dealer/lifecycle.js";
-import type { Tier } from "../engine/dealer/prior.js";
+
+/*
+ * Most tables below are v1's (the dealer and the tournament, archived at the
+ * tags `archive/dealer-v1` and `archive/tournament-v1`). They stay in the
+ * database and in this schema because migrations 001-019 created them; v2
+ * code reads only `api_keys`, `api_key_usage` and `rate_limits`.
+ */
+
+/** `event_flags.kind` (decision 0001); inlined from v1's dealer lifecycle (tag archive/dealer-v1). */
+export type FlagKind =
+  | "form_d"
+  | "form_d_amend"
+  | "charter"
+  | "scoop"
+  | "release"
+  | "s1_public"
+  | "print"
+  | "user_submitted";
+/** `listings.tier`; inlined from v1's dealer prior (tag archive/dealer-v1). */
+export type Tier = "mega" | "redhot";
 
 export type MarketStatus = "open" | "settled";
 /**

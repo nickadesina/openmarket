@@ -1,35 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 
 import { parseMutationBody } from "../../src/lib/api/mutation-route.js";
-import { commentInputSchema } from "../../src/lib/api/schemas.js";
 import { commentNetworkKey } from "../../src/lib/security/comment-address.js";
 
 const ID = "00000000-0000-4000-8000-000000000001";
-const input = {
-  body: " A plain <script> string\nwith lines ",
-  clientRequestId: ID,
-  expectedUserId: ID,
-};
+/** A body of up to 2,000 characters with a request id: the shape v1's comment input had. */
+const bodySchema = z
+  .object({ body: z.string().max(2_000), clientRequestId: z.uuid(), expectedUserId: z.uuid() })
+  .strict();
 
 function addressRequest(headers: HeadersInit): Request {
   return new Request("https://openmarket.test/api/comments", { headers });
 }
 
-describe("comment input boundary", () => {
-  it("trims only the boundary and rejects empty, oversized, NUL and injected identity fields", () => {
-    expect(commentInputSchema.parse(input).body).toBe("A plain <script> string\nwith lines");
-    expect(commentInputSchema.parse({ ...input, body: "x".repeat(2_000) }).body).toHaveLength(
-      2_000,
-    );
-    for (const body of [" \n\t ", "x".repeat(2_001), "before\0after"]) {
-      expect(commentInputSchema.safeParse({ ...input, body }).success).toBe(false);
-    }
-    expect(commentInputSchema.safeParse({ ...input, userId: ID }).success).toBe(false);
-    expect(commentInputSchema.safeParse({ ...input, username: "SomebodyElse" }).success).toBe(
-      false,
-    );
-  });
-
+describe("mutation body boundary", () => {
   it("bounds streamed bytes without trusting a Content-Length claim", async () => {
     const cancel = vi.fn();
     const request = new Request("https://openmarket.test", {
@@ -43,7 +28,7 @@ describe("comment input boundary", () => {
       }),
       duplex: "half",
     } as RequestInit & { duplex: "half" });
-    await expect(parseMutationBody(request, commentInputSchema, 16_384)).rejects.toMatchObject({
+    await expect(parseMutationBody(request, bodySchema, 16_384)).rejects.toMatchObject({
       code: "INVALID_INPUT",
     });
     expect(cancel).toHaveBeenCalledOnce();
@@ -54,7 +39,7 @@ describe("comment input boundary", () => {
       method: "POST",
       body: `{"body":"${"\\u0061".repeat(2_000)}","clientRequestId":"${ID}","expectedUserId":"${ID}"}`,
     });
-    const parsed = await parseMutationBody(request, commentInputSchema, 16_384);
+    const parsed = await parseMutationBody(request, bodySchema, 16_384);
     expect(parsed.body).toBe("a".repeat(2_000));
   });
 });

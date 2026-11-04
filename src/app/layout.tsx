@@ -3,7 +3,6 @@ import { Archivo_Black, Noto_Sans, Roboto_Condensed } from "next/font/google";
 import type { ReactNode } from "react";
 
 import { AppShell } from "../components/app-shell/app-shell.js";
-import { QueryProvider } from "../components/providers/query-provider.js";
 import "./globals.css";
 
 const notoSans = Noto_Sans({
@@ -29,7 +28,7 @@ export const metadata: Metadata = {
     default: "OpenMarket",
     template: "%s | OpenMarket",
   },
-  description: "Paper-money markets for evaluating private-company valuation expectations.",
+  description: "A published index of private-company fund marks, built only from public filings.",
 };
 
 export const viewport: Viewport = {
@@ -44,9 +43,7 @@ export default function RootLayout({ children }: { readonly children: ReactNode 
       className={`${notoSans.variable} ${robotoCondensed.variable} ${archivoBlack.variable}`}
     >
       <body>
-        <QueryProvider>
-          <AppShell>{children}</AppShell>
-        </QueryProvider>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

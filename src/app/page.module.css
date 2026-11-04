@@ -1,0 +1,50 @@
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+  padding: var(--space-6) 0 var(--space-7);
+}
+
+.pageHeader {
+  display: grid;
+  max-width: 48rem;
+  gap: var(--space-2);
+}
+
+.pageHeader h1 {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-tight);
+}
+
+.pageHeader p {
+  max-width: 72ch;
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+.sectionLabel {
+  composes: sectionHead from "../styles/shared.module.css";
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  gap: var(--space-4);
+  list-style: none;
+}
+
+.link {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--color-border-strong);
+  text-underline-offset: 0.25rem;
+}
+
+.link:hover {
+  text-decoration-color: var(--color-primary);
+}

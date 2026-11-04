@@ -1,29 +1,32 @@
 /**
- * Writes public/data/round-history.csv and .json from backtest/events.csv,
- * backtest/data/sources.csv and backtest/out/params.json
+ * Writes public/data/round-history.csv and .json from
+ * data/round-history/events.csv and data/round-history/sources.csv
  * (src/lib/tradeables/round-history.ts says how they join).
  *
  *   npm run export:round-history
  *   npm run export:round-history -- --check   # exit 1 if a file is stale
  */
+import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 
-import params from "../backtest/out/params.json";
-import { DEALER_PARAMS } from "../src/lib/config/dealer.js";
-import { EVENTS_CSV_PATH, SOURCES_CSV_PATH } from "../src/lib/config/listing-anchors.js";
-import { RULEBOOK_VERSION } from "../src/lib/engine/dealer/rulebook.js";
+import { RULEBOOK_VERSION } from "../src/lib/engine/rulebook.js";
 import {
+  DATA_THROUGH,
+  EVENTS_CSV_PATH,
+  MEGA_THRESHOLD_USD,
   renderRoundHistoryCsv,
   renderRoundHistoryJson,
   roundHistoryRows,
+  SOURCES_CSV_PATH,
 } from "../src/lib/tradeables/round-history.js";
 
+const eventsCsv = readFileSync(EVENTS_CSV_PATH, "utf8");
 const inputs = {
-  eventsCsv: readFileSync(EVENTS_CSV_PATH, "utf8"),
+  eventsCsv,
   sourcesCsv: readFileSync(SOURCES_CSV_PATH, "utf8"),
-  dataThrough: params.data_through,
-  eventsSha256: params.inputs_sha256["events.csv"],
-  megaThresholdUsd: DEALER_PARAMS.tier.mega_threshold_usd,
+  dataThrough: DATA_THROUGH,
+  eventsSha256: createHash("sha256").update(eventsCsv).digest("hex"),
+  megaThresholdUsd: MEGA_THRESHOLD_USD,
   rulebookVersion: RULEBOOK_VERSION,
 };
 const rows = roundHistoryRows(inputs);

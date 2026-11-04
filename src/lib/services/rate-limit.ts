@@ -6,13 +6,8 @@ import { ServiceError } from "../api/errors.js";
 import type { Database } from "../db/schema.js";
 import { trustedClientAddress } from "../security/comment-address.js";
 
-export type RateLimitScope =
-  | "quote"
-  | "trade"
-  | "tournament_register"
-  | "tournament_login"
-  | "ref"
-  | "evidence";
+/** The only scope v2 counts; v1's quote, trade, tournament and evidence scopes are archived. */
+export type RateLimitScope = "ref";
 
 export interface RateLimitPolicy {
   readonly limit: number;
@@ -20,27 +15,8 @@ export interface RateLimitPolicy {
 }
 
 export const RATE_LIMIT_POLICIES: Readonly<Record<RateLimitScope, RateLimitPolicy>> = {
-  quote: { limit: 120, windowMs: 60_000 },
-  trade: { limit: 30, windowMs: 60_000 },
-  // Tournament password accounts: new accounts per network, and failed
-  // sign-ins only (per network and per username); the login route checks
-  // availability before verifying and consumes quota only on a failure.
-  tournament_register: { limit: 5, windowMs: 60 * 60_000 },
-  tournament_login: { limit: 10, windowMs: 15 * 60_000 },
-  // The public reference API, per network (README D14); a keyed request uses its key's quota.
+  // The public reference API, per network; a keyed request uses its key's quota.
   ref: { limit: 60, windowMs: 60_000 },
-  // Evidence submissions (POST /api/t/questions/[slug]/evidence), per user.
-  evidence: { limit: 10, windowMs: 60 * 60_000 },
-};
-
-/** Per-network ceilings consumed alongside the per-user policy, so signing
- * in as fresh accounts cannot reset a caller's quote/trade quota. */
-export const RATE_LIMIT_NETWORK_POLICIES: Readonly<
-  Record<"quote" | "trade" | "evidence", RateLimitPolicy>
-> = {
-  quote: { limit: 600, windowMs: 60_000 },
-  trade: { limit: 120, windowMs: 60_000 },
-  evidence: { limit: 30, windowMs: 60 * 60_000 },
 };
 
 export interface RateLimitWindowState {
@@ -82,8 +58,7 @@ export function evaluateRateLimitWindow(
 }
 
 /**
- * Hashed bucket key for the caller's network. Unlike comment posting this
- * never fails the request: without a trusted address every caller shares
+ * Hashed bucket key for the caller's network. This never fails the request: without a trusted address every caller shares
  * one unattributed bucket, which limits abuse instead of disabling the route.
  */
 export function rateLimitNetworkKey(
@@ -175,7 +150,7 @@ export async function assertRateLimitAvailable(
  * synthetic "loopback" address, which is not a real network identity:
  * applying per-network policies to it would throttle the developer and
  * the browser test suite itself. Those deployments skip network buckets;
- * per-user limits still apply, and production without a trusted address
+ * keyed limits still apply, and production without a trusted address
  * keeps the shared unattributed bucket.
  */
 function networkKeyUnlessLocal(request: Request, keyPrefix: string): string | null {

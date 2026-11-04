@@ -138,17 +138,6 @@
   padding: var(--space-2) var(--space-3);
 }
 
-.example {
-  max-height: 32rem;
-  margin: 0;
-  padding: var(--space-3);
-  overflow: auto;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface-elevated);
-  font-size: var(--font-size-xs);
-  line-height: var(--line-height-normal);
-}
-
 @media (max-width: 42rem) {
   .fields > div {
     grid-template-columns: minmax(0, 1fr);
@@ -158,11 +147,4 @@
     border-right: 0;
     border-bottom: 1px solid var(--color-border-subtle);
   }
-}
-
-/* Outranks `.section code`'s inline chip: the example is one block. */
-.section .example code {
-  padding: 0;
-  background: none;
-  font-size: inherit;
 }

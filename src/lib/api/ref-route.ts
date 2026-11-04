@@ -1,4 +1,4 @@
-import { consumeRefQuota } from "../services/dealer/ref-access.js";
+import { consumeRefQuota } from "../services/ref-access.js";
 import { ServiceError } from "./errors.js";
 import {
   assertOnlyQueryParameters,
@@ -9,7 +9,7 @@ import { type ReadRouteContext, withReadRoute } from "./request-context.js";
 import { jsonSuccess } from "./response.js";
 
 /**
- * Every /api/ref/* route (README D14): public, read-only, shared-cached for
+ * Every /api/ref/* route (v1 README D14, kept in v2): public, read-only, shared-cached for
  * 60 seconds for anonymous requests (keyed responses are private), and drawn from the caller's `ref` quota (its network's bucket,
  * or its API key's) after the query is validated and before any read.
  */

@@ -1,5 +1,5 @@
 import { withRefRoute } from "../../../../lib/api/ref-route.js";
-import { getRulebook } from "../../../../lib/services/dealer/get-rulebook.js";
+import { getRulebook } from "../../../../lib/services/get-rulebook.js";
 
 export const runtime = "nodejs";
 

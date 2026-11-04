@@ -1,14 +1,33 @@
-import { parseCsv } from "../config/listing-anchors.js";
-import { tierOf } from "../engine/dealer/prior.js";
-import { csvLine, pythonJson } from "./csv.js";
+import { assertPositive } from "../engine/assert.js";
+import { csvLine, parseCsv, pythonJson } from "./csv.js";
 
 /**
  * The round-history dataset (docs/prompts/tradeables, item 2): every row of
- * backtest/events.csv joined to its source in backtest/data/sources.csv on
- * (company, round_name), with the tier the company's previous priced round
- * set (README D10), sorted by company then date. Values pass through as the
- * files record them. Pure: callers pass the files' text.
+ * data/round-history/events.csv joined to its source in
+ * data/round-history/sources.csv on (company, round_name), with the tier the
+ * company's previous priced round set (v1 README D10), sorted by company then
+ * date. Values pass through as the files record them. Pure: callers pass the
+ * files' text.
  */
+
+export const EVENTS_CSV_PATH = "data/round-history/events.csv";
+export const SOURCES_CSV_PATH = "data/round-history/sources.csv";
+
+/**
+ * Constants the dataset was first exported under, inlined from v1's
+ * backtest/out/params.json (tag `archive/dealer-v1`) when the backtest was
+ * archived: the date the data runs through, and the post-money at or above
+ * which a company's last print made it `mega` rather than `redhot`.
+ */
+export const DATA_THROUGH = "2026-10-19";
+export const MEGA_THRESHOLD_USD = 10_000_000_000;
+
+/** The tier a last print sets: `mega` at or above the threshold, `redhot` below. */
+export function tierOf(lastPostMoneyUsd: number, megaThresholdUsd: number): "mega" | "redhot" {
+  assertPositive(lastPostMoneyUsd, "lastPostMoneyUsd");
+  assertPositive(megaThresholdUsd, "megaThresholdUsd");
+  return lastPostMoneyUsd >= megaThresholdUsd ? "mega" : "redhot";
+}
 
 export const ROUND_HISTORY_COLUMNS = [
   "company",
@@ -32,9 +51,9 @@ export type RoundHistoryRow = Record<(typeof ROUND_HISTORY_COLUMNS)[number], str
 export interface RoundHistoryInputs {
   readonly eventsCsv: string;
   readonly sourcesCsv: string;
-  /** params.json `data_through`. */
+  /** DATA_THROUGH. */
   readonly dataThrough: string;
-  /** params.json `inputs_sha256["events.csv"]`, so a stale export is visible. */
+  /** The SHA-256 of events.csv, so a stale export is visible. */
   readonly eventsSha256: string;
   readonly megaThresholdUsd: number;
   readonly rulebookVersion: string;

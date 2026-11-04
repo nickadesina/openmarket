@@ -10,6 +10,11 @@ const LEGACY_HOSTS = [
   "openmarket-rho-three.vercel.app",
 ];
 
+// v1's pages (the dealer's markets, the tournament, the portfolio and the
+// admin screens), archived at the tags archive/dealer-v1 and
+// archive/tournament-v1. Temporary: v2 may reuse a path.
+const V1_PATHS = ["/m", "/t", "/portfolio", "/admin", "/for-policy"];
+
 const nextConfig: NextConfig = {
   webpack(config) {
     config.resolve.extensionAlias = {
@@ -19,14 +24,16 @@ const nextConfig: NextConfig = {
     return config;
   },
   redirects() {
-    return Promise.resolve(
-      LEGACY_HOSTS.map((host) => ({
+    return Promise.resolve([
+      ...LEGACY_HOSTS.map((host) => ({
         source: "/:path*",
         has: [{ type: "host" as const, value: host }],
         destination: `https://${CANONICAL_HOST}/:path*`,
         permanent: true,
       })),
-    );
+      ...V1_PATHS.map((path) => ({ source: `${path}/:path*`, destination: "/", permanent: false })),
+      { source: "/ref/trial", destination: "/ref", permanent: false },
+    ]);
   },
 };
 

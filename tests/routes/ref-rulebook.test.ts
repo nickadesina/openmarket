@@ -7,23 +7,21 @@ vi.mock("../../src/lib/logging/server-log.js", () => ({
 }));
 
 import { GET } from "../../src/app/api/ref/rulebook/route.js";
-import { MODEL_VERSION } from "../../src/lib/config/dealer.js";
-import { BLEND_VERSION } from "../../src/lib/engine/dealer/blend.js";
-import { RULEBOOK_VERSION } from "../../src/lib/engine/dealer/rulebook.js";
+import { RULEBOOK_VERSION } from "../../src/lib/engine/rulebook.js";
 
 describe("GET /api/ref/rulebook", () => {
-  it("publishes the rulebook with its versions", async () => {
+  it("publishes the rulebook with its version and nothing of v1's dealer envelope", async () => {
     const response = await GET(new Request("http://localhost:3000/api/ref/rulebook"));
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("public, max-age=60, s-maxage=60");
     const body = await response.json();
     expect(body).toMatchObject({
       rulebook_version: RULEBOOK_VERSION,
-      model_version: MODEL_VERSION,
-      blend_version: BLEND_VERSION,
       rulebook: { version: RULEBOOK_VERSION, revision_window_days: 7 },
     });
     expect(Number.isNaN(Date.parse(body.as_of))).toBe(false);
+    expect(body).not.toHaveProperty("model_version");
+    expect(body).not.toHaveProperty("blend_version");
     expect(body.rulebook.source_ranks.map((row: { rank: number }) => row.rank)).toEqual([
       1, 2, 3, 4,
     ]);

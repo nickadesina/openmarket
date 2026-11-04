@@ -73,14 +73,6 @@
   color: #ffffff;
 }
 
-.accountSlot {
-  display: flex;
-  min-width: 0;
-  height: 100%;
-  align-items: stretch;
-  margin-left: auto;
-}
-
 .main {
   width: 100%;
   flex: 1;
@@ -114,22 +106,6 @@
   text-transform: uppercase;
 }
 
-.footerLink {
-  display: inline-flex;
-  min-height: 2.75rem;
-  align-items: center;
-  color: var(--color-ink);
-  font-family: var(--font-caps);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: var(--caps-tracking);
-  text-transform: uppercase;
-}
-
-.footerLink:hover {
-  color: var(--color-primary);
-}
-
 .skipLink {
   position: fixed;
   z-index: var(--z-popover);
@@ -157,8 +133,8 @@
     font-size: var(--font-size-xl);
   }
 
-  /* Three sections do not fit beside the wordmark and account at phone
-     width; the links become a strip that scrolls sideways. */
+  /* The sections do not fit beside the wordmark at phone width; the links
+     become a strip that scrolls sideways. */
   .nav {
     min-width: 0;
     flex: 1 1 auto;
@@ -171,10 +147,6 @@
     flex: 0 0 auto;
     padding: var(--space-1) var(--space-2);
     font-size: var(--font-size-sm);
-  }
-
-  .accountSlot {
-    flex: 0 0 auto;
   }
 
   .main {
