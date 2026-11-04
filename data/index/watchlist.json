@@ -1,11 +1,11 @@
 {
   "version": "0.1.0",
-  "note": "Provisional watchlist (decision 0003, build week 1). Selection is Nick's; search_phrases and match_pattern were checked by P2 (2026-11-04) against EDGAR full-text search hits and ingested N-PORT holdings: spacex excludes holdings named as an ETF (Kurv SpaceX Enhanced Income ETF), xai requires Holdings or Corp (a bare xAI matched the XAI E-mini futures contract), mercor adds the phrase Mercor.io (full-text search reads it as one token). incorporation_state is filled only from a filing. candidates are counted by the week-1 search but not watchlisted.",
+  "note": "Provisional watchlist (decision 0003, build week 1). Selection is Nick's; search_phrases and match_pattern were checked by P2 (2026-11-04) against EDGAR full-text search hits and ingested N-PORT holdings: spacex excludes holdings named as an ETF (Kurv SpaceX Enhanced Income ETF), xai requires the entity after the name, as filers write it (X.AI Holdings Corp, X.AI, Corp., X.AI LLC, X AI Term Loan, x.AI, Inc.; a bare xAI matched the XAI E-mini futures contract), mercor adds the phrase Mercor.io (full-text search reads it as one token). incorporation_state is filled only from a filing. candidates are counted by the week-1 search but not watchlisted.",
   "names": [
     { "slug": "openai", "name": "OpenAI", "legal_name": null, "search_phrases": ["OpenAI"], "match_pattern": "\\bOpen ?AI\\b" },
     { "slug": "anthropic", "name": "Anthropic", "legal_name": "Anthropic, PBC", "search_phrases": ["Anthropic"], "match_pattern": "\\bAnthropic\\b" },
     { "slug": "spacex", "name": "SpaceX", "legal_name": "Space Exploration Technologies Corp.", "search_phrases": ["Space Exploration Technologies", "SpaceX"], "match_pattern": "^(?!.*\\bETF\\b).*(?:\\bSpace Exploration Tech|\\bSpaceX\\b)" },
-    { "slug": "xai", "name": "xAI", "legal_name": null, "search_phrases": ["X.AI Holdings", "X.AI Corp", "xAI Holdings"], "match_pattern": "\\bX\\.?AI (Holdings|Corp)" },
+    { "slug": "xai", "name": "xAI", "legal_name": null, "search_phrases": ["X.AI Holdings", "X.AI Corp", "xAI Holdings"], "match_pattern": "\\bX\\.? ?AI,? (Holdings|Corp|LLC|Inc|Co Issuer|Term)\\b" },
     { "slug": "databricks", "name": "Databricks", "legal_name": "Databricks, Inc.", "search_phrases": ["Databricks"], "match_pattern": "\\bDatabricks\\b" },
     { "slug": "stripe", "name": "Stripe", "legal_name": "Stripe, Inc.", "search_phrases": ["Stripe, Inc."], "match_pattern": "\\bStripe,? Inc\\b|\\bStripe (Series|Class|Common|Pfd|Preferred)" },
     { "slug": "anduril", "name": "Anduril", "legal_name": "Anduril Industries, Inc.", "search_phrases": ["Anduril"], "match_pattern": "\\bAnduril\\b" },
