@@ -9,6 +9,7 @@ const LEGACY_HOSTS = [
   "openmkt.vercel.app",
   "openmarket-rho-three.vercel.app",
 ];
+const TAPE_ORIGIN = "https://tape-nick-21c4.vercel.app";
 
 const nextConfig: NextConfig = {
   webpack(config) {
@@ -17,6 +18,16 @@ const nextConfig: NextConfig = {
       ".jsx": [".tsx", ".jsx"],
     };
     return config;
+  },
+  // The Positioning Tape (github.com/nickadesina/tape) is its own Vercel
+  // project, built with basePath /tape so every asset path survives the proxy.
+  rewrites() {
+    return Promise.resolve([
+      {
+        source: "/tape/:path*",
+        destination: `${TAPE_ORIGIN}/tape/:path*`,
+      },
+    ]);
   },
   redirects() {
     return Promise.resolve(
