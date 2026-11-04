@@ -45,6 +45,20 @@ Each decision carries its status against the current code.
 the older design document and must change. "Open" means the decision is
 still Nick's to make and is not to be treated as settled.
 
+### D15. v2: a published marks index, not a venue — Adopted
+
+OpenMarket stops being a venue and becomes a published index of
+private-company marks built only from public filings, under Nick's own
+name (decision `0003`). The unit is one per-share mark on one security,
+from one filer, as of one date, with its source document; consensus,
+dispersion, mark versus print, revisions, SPV premium and structure gap
+are derived from those rows under a versioned methodology. No contract
+is quoted, listed or settled by OpenMarket; `CONTRACTS.md` specifies
+contracts others may list against the index. D1, D9–D12 and D14 are
+superseded as product decisions; D13 is kept and extended with the
+mark-side source classes. v1 lives at the tags `archive/dealer-v1` and
+`archive/tournament-v1`. The build: `docs/prompts/v2/README.md`.
+
 ### D1. Account: tournament sign-in, $100,000 paper balance — Implemented
 
 Decided 2026-10-21, superseding the shared-username paper account and

@@ -1,0 +1,35 @@
+{
+  "version": "0.1.0",
+  "note": "Provisional watchlist (decision 0003, build week 1). Selection is Nick's; search_phrases and match_pattern are first guesses that P2 verifies against real EDGAR full-text search hits. incorporation_state is filled only from a filing. candidates are counted by the week-1 search but not watchlisted.",
+  "names": [
+    { "slug": "openai", "name": "OpenAI", "legal_name": null, "search_phrases": ["OpenAI"], "match_pattern": "\\bOpen ?AI\\b" },
+    { "slug": "anthropic", "name": "Anthropic", "legal_name": "Anthropic, PBC", "search_phrases": ["Anthropic"], "match_pattern": "\\bAnthropic\\b" },
+    { "slug": "spacex", "name": "SpaceX", "legal_name": "Space Exploration Technologies Corp.", "search_phrases": ["Space Exploration Technologies", "SpaceX"], "match_pattern": "\\bSpace Exploration Tech|\\bSpaceX\\b" },
+    { "slug": "xai", "name": "xAI", "legal_name": null, "search_phrases": ["X.AI Holdings", "X.AI Corp", "xAI Holdings"], "match_pattern": "\\bX\\.?AI (Holdings|Corp)|\\bxAI\\b" },
+    { "slug": "databricks", "name": "Databricks", "legal_name": "Databricks, Inc.", "search_phrases": ["Databricks"], "match_pattern": "\\bDatabricks\\b" },
+    { "slug": "stripe", "name": "Stripe", "legal_name": "Stripe, Inc.", "search_phrases": ["Stripe, Inc."], "match_pattern": "\\bStripe,? Inc\\b|\\bStripe (Series|Class|Common|Pfd|Preferred)" },
+    { "slug": "anduril", "name": "Anduril", "legal_name": "Anduril Industries, Inc.", "search_phrases": ["Anduril"], "match_pattern": "\\bAnduril\\b" },
+    { "slug": "scale-ai", "name": "Scale AI", "legal_name": "Scale AI, Inc.", "search_phrases": ["Scale AI"], "match_pattern": "\\bScale AI\\b" },
+    { "slug": "perplexity", "name": "Perplexity", "legal_name": null, "search_phrases": ["Perplexity AI"], "match_pattern": "\\bPerplexity\\b" },
+    { "slug": "safe-superintelligence", "name": "Safe Superintelligence", "legal_name": null, "search_phrases": ["Safe Superintelligence"], "match_pattern": "\\bSafe Superintelligence\\b" },
+    { "slug": "thinking-machines", "name": "Thinking Machines Lab", "legal_name": null, "search_phrases": ["Thinking Machines"], "match_pattern": "\\bThinking Machines\\b" },
+    { "slug": "anysphere", "name": "Anysphere (Cursor)", "legal_name": "Anysphere, Inc.", "search_phrases": ["Anysphere"], "match_pattern": "\\bAnysphere\\b" },
+    { "slug": "figure-ai", "name": "Figure AI", "legal_name": null, "search_phrases": ["Figure AI"], "match_pattern": "\\bFigure AI\\b" },
+    { "slug": "ramp", "name": "Ramp", "legal_name": "Ramp Business Corporation", "search_phrases": ["Ramp Business"], "match_pattern": "\\bRamp Business\\b" },
+    { "slug": "rippling", "name": "Rippling", "legal_name": "People Center, Inc.", "search_phrases": ["Rippling", "People Center"], "match_pattern": "\\bRippling\\b|\\bPeople Center\\b" },
+    { "slug": "epic-games", "name": "Epic Games", "legal_name": "Epic Games, Inc.", "search_phrases": ["Epic Games"], "match_pattern": "\\bEpic Games\\b" },
+    { "slug": "cognition", "name": "Cognition", "legal_name": null, "search_phrases": ["Cognition AI"], "match_pattern": "\\bCognition AI\\b" },
+    { "slug": "harvey", "name": "Harvey", "legal_name": "Counsel AI Corporation", "search_phrases": ["Counsel AI", "Harvey AI"], "match_pattern": "\\bCounsel AI\\b|\\bHarvey AI\\b" },
+    { "slug": "mercor", "name": "Mercor", "legal_name": null, "search_phrases": ["Mercor"], "match_pattern": "\\bMercor\\b" },
+    { "slug": "modal", "name": "Modal", "legal_name": "Modal Labs, Inc.", "search_phrases": ["Modal Labs"], "match_pattern": "\\bModal Labs\\b" }
+  ],
+  "candidates": [
+    { "slug": "bytedance", "name": "ByteDance", "search_phrases": ["ByteDance"], "match_pattern": "\\bByte ?Dance\\b" },
+    { "slug": "canva", "name": "Canva", "search_phrases": ["Canva"], "match_pattern": "\\bCanva\\b" },
+    { "slug": "revolut", "name": "Revolut", "search_phrases": ["Revolut"], "match_pattern": "\\bRevolut\\b" },
+    { "slug": "neuralink", "name": "Neuralink", "search_phrases": ["Neuralink"], "match_pattern": "\\bNeuralink\\b" },
+    { "slug": "shein", "name": "Shein", "search_phrases": ["Shein", "Roadget"], "match_pattern": "\\bShein\\b|\\bRoadget\\b" },
+    { "slug": "plaid", "name": "Plaid", "search_phrases": ["Plaid Inc"], "match_pattern": "\\bPlaid,? Inc\\b" },
+    { "slug": "instinct", "name": "Instinct", "search_phrases": ["Instinct"], "match_pattern": "\\bInstinct (Bio|Inc|Holdings)" }
+  ]
+}
