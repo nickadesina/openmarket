@@ -32,13 +32,12 @@ export const REF_ROUTES: readonly RouteDoc[] = [
   {
     path: "/api/ref/rulebook",
     query: [],
-    summary:
-      "The settlement rulebook as data, with the rules not yet enforced. In prose at /rulebook.",
+    summary: "The rulebook as data, with the rules not yet served. In prose at /rulebook.",
     fields: {
       ...ENVELOPE_FIELDS,
       rulebook:
-        "The rules: print, announcement, source ranks, revision, the binary's and the forward's.",
-      not_built: "Rules that are the contract's intent but not enforced by the code yet.",
+        "The rules: print, announcement, source ranks, revision, the mark-side source classes ranked within each purpose, and the rules every contract on the index shares.",
+      not_built: "Rules that are the contracts' intent but not served by the code yet.",
     } satisfies FieldDocs<RulebookPayload>,
     id: "rulebook",
   },

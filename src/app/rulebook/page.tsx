@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { DocumentBody, headingId, parseDocument } from "../../components/document/document.js";
-import { NOT_BUILT, RULEBOOK_VERSION } from "../../lib/engine/rulebook.js";
+import { NOT_BUILT, RULEBOOK, RULEBOOK_VERSION, sourceRank } from "../../lib/engine/rulebook.js";
 import { RULEBOOK_REVIEWERS_PATH, readRepoDoc } from "../../lib/tradeables/repo-docs.js";
 import {
   anchorOf,
@@ -21,11 +21,101 @@ export const dynamic = "force-static";
 export const metadata: Metadata = {
   title: "Rulebook",
   description:
-    "OpenMarket's settlement rulebook: what is a print, how sources rank, and how each contract resolves.",
+    "OpenMarket's rulebook: what a print is, how each source class ranks within its purpose, and the rules every contract on the index shares.",
   robots: { index: false, follow: false },
 };
 
+const ACCESS_LABEL: Readonly<Record<string, string>> = {
+  free: "Free",
+  paid_per_document: "Paid per document",
+  public_page: "Public page",
+};
+
+/** Each purpose's ranking: what it establishes, then its classes in rank order. */
+function SourcePurposes() {
+  const documentOf = new Map(
+    RULEBOOK.source_classes.map((row) => [row.source_class as string, row.document]),
+  );
+  return (
+    <div className={styles.purposes}>
+      {RULEBOOK.source_purposes.map((purpose) => (
+        <div key={purpose.purpose} id={`purpose-${anchorOf([purpose.purpose])}`}>
+          <p>
+            <code>{purpose.purpose}</code> {purpose.establishes}
+          </p>
+          <div className={styles.scroller}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th scope="col">Rank</th>
+                  <th scope="col">Class</th>
+                  <th scope="col">Document</th>
+                </tr>
+              </thead>
+              <tbody>
+                {purpose.ranks.map((row) => (
+                  <tr key={row.source_class}>
+                    <td className={styles.num}>{row.rank}</td>
+                    <td>
+                      <code>{row.source_class}</code>
+                    </td>
+                    <td>{documentOf.get(row.source_class)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {"note" in purpose ? <p className={styles.muted}>{purpose.note}</p> : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** One row per source class: the rank ingest stores for it, its cadence, lag and access. */
+function SourceClasses() {
+  return (
+    <div className={styles.scroller}>
+      <table className={styles.table}>
+        <thead>
+          <tr>
+            <th scope="col">Class</th>
+            <th scope="col">Stored rank</th>
+            <th scope="col">Cadence</th>
+            <th scope="col">Lag</th>
+            <th scope="col">Access</th>
+          </tr>
+        </thead>
+        <tbody>
+          {RULEBOOK.source_classes.map((row) => (
+            <tr key={row.source_class}>
+              <td>
+                <code>{row.source_class}</code>
+              </td>
+              <td>
+                <span className={styles.num}>{sourceRank(row.source_class)}</span> in{" "}
+                <code>{row.purpose}</code>
+              </td>
+              <td>{row.cadence}</td>
+              <td>{row.lag}</td>
+              <td>{ACCESS_LABEL[row.access]}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/** Rules whose value is a table, by path. */
+const TABLES: Readonly<Record<string, () => ReactNode>> = {
+  source_purposes: SourcePurposes,
+  source_classes: SourceClasses,
+};
+
 function value(path: RulePath, rule: unknown): ReactNode {
+  const table = TABLES[path.join(".")];
+  if (table !== undefined) return table();
   if (typeof rule === "string") return <p>{rule}</p>;
   if (typeof rule === "number") return <p>{quantity(path.at(-1)!, rule)}</p>;
   if (Array.isArray(rule)) {
@@ -96,7 +186,12 @@ export default function RulebookPage() {
             <dd>{RULEBOOK_VERSION}</dd>
           </div>
         </dl>
-        <p>Rules marked not built are the contract's intent; the code does not enforce them yet.</p>
+        <p>
+          What a print is and how its sources rank; how each mark-side source class ranks within the
+          purpose it serves; and the rules every contract on the index shares. OpenMarket quotes,
+          lists and settles none of those contracts. Rules marked not built are the contracts'
+          intent; the code does not serve them yet.
+        </p>
         <p className={styles.links}>
           <a className={styles.link} href="/api/ref/rulebook">
             JSON
@@ -133,6 +228,7 @@ export default function RulebookPage() {
           <h2 className={styles.sectionLabel} id="not-built">
             Not built
           </h2>
+          {NOT_BUILT.length === 0 ? <p className={styles.muted}>None at this version.</p> : null}
           <ul className={styles.notBuiltList}>
             {NOT_BUILT.map((entry) => (
               <li key={entry.rule}>

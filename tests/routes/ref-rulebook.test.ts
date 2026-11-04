@@ -7,7 +7,7 @@ vi.mock("../../src/lib/logging/server-log.js", () => ({
 }));
 
 import { GET } from "../../src/app/api/ref/rulebook/route.js";
-import { RULEBOOK_VERSION } from "../../src/lib/engine/rulebook.js";
+import { RULEBOOK_VERSION, SOURCE_CLASSES } from "../../src/lib/engine/rulebook.js";
 
 describe("GET /api/ref/rulebook", () => {
   it("publishes the rulebook with its version and nothing of v1's dealer envelope", async () => {
@@ -24,6 +24,27 @@ describe("GET /api/ref/rulebook", () => {
     expect(body).not.toHaveProperty("blend_version");
     expect(body.rulebook.source_ranks.map((row: { rank: number }) => row.rank)).toEqual([
       1, 2, 3, 4,
+    ]);
+    expect(body.rulebook).not.toHaveProperty("binary");
+    expect(body.rulebook).not.toHaveProperty("forward");
+  });
+
+  it("publishes the source-class table ingest stores ranks from", async () => {
+    const body = await (await GET(new Request("http://localhost:3000/api/ref/rulebook"))).json();
+    const classes = body.rulebook.source_classes.map(
+      (row: { source_class: string }) => row.source_class,
+    );
+    expect(classes).toEqual([...SOURCE_CLASSES]);
+    const filerMark = body.rulebook.source_purposes.find(
+      (row: { purpose: string }) => row.purpose === "filer_mark",
+    );
+    expect(filerMark.ranks.slice(0, 2)).toEqual([
+      { rank: 1, source_class: "ncsr" },
+      { rank: 2, source_class: "nport" },
+    ]);
+    expect(body.not_built.map((row: { rule: string }) => row.rule)).toEqual([
+      "contracts.observation",
+      "contracts.versions",
     ]);
   });
 
