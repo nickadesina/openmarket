@@ -9,3 +9,4 @@ playwright-report/
 !.env.example
 .vercel
 __pycache__/
+.claude/worktrees/
