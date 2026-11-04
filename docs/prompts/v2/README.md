@@ -29,7 +29,8 @@ Read `AGENTS.md`, this file, decision `0003`, and your part's brief.
 - **Never adjust a filer's mark.** No interpolation, smoothing, carry
   forward or fill. A missing filing is a missing row.
 - **SEC fair access.** Every EDGAR request sends `SEC_USER_AGENT` (a name
-  and a contact email; code refuses to run without it) and stays under
+  and a contact: an email, or an https URL; code refuses to run without
+  one; agents use `OpenMarket-Index/0.1 (+https://openmarket.systems)`) and stays under
   ten requests a second (`politeFetcher`, ≥150 ms gap, backoff on 429/5xx).
   Never put Nick's personal email in code or config; the operator sets
   the variable.
