@@ -662,6 +662,10 @@ export interface CertificatesTable {
   superseded_by: ColumnType<string | null, string | null | undefined, string>;
   correction_id: Immutable<string | null>;
   created_at: GeneratedImmutable<Date>;
+  /** Migration 023: the series the filing creates. */
+  newest_series_label: Immutable<string>;
+  common_shares_authorized: Immutable<Numeric | null>;
+  unmodelled_terms: ColumnType<string[], string | undefined, never>;
 }
 
 export interface CertificateSeriesTable {

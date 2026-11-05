@@ -1,0 +1,44 @@
+{
+  "schema_version": "0.1.0",
+  "issuer": "example-co",
+  "legal_name": "Example Co, Inc.",
+  "filed_on": "2026-01-15",
+  "file_number": "0000000",
+  "kind": "restated",
+  "purchase": {
+    "registry": "Schema fixture: no registry",
+    "url": "https://example.com/schema-fixture",
+    "bought_on": "2026-01-20",
+    "document_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "entered_by": "schema fixture",
+  "reviewed_by": null,
+  "newest_series": "Series B Preferred",
+  "common_shares_authorized": "100000000",
+  "series": [
+    {
+      "label": "Series B Preferred",
+      "original_issue_price_usd": "4.00",
+      "liquidation_multiple": "1",
+      "participating": false,
+      "participation_cap_multiple": null,
+      "seniority": 1,
+      "shares_authorized": "5000000",
+      "conversion_price_usd": null,
+      "ratchet": null
+    },
+    {
+      "label": "Series A Preferred",
+      "original_issue_price_usd": "1.00",
+      "liquidation_multiple": "1",
+      "participating": true,
+      "participation_cap_multiple": "3",
+      "seniority": 2,
+      "shares_authorized": "10000000",
+      "conversion_price_usd": null,
+      "ratchet": null
+    }
+  ],
+  "unmodelled_terms": [],
+  "notes": "SCHEMA FIXTURE. An invented issuer with invented terms, shaped like the schema for tests; it transcribes no document and is never imported into a real database."
+}

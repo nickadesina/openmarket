@@ -34,7 +34,10 @@
     "index:search": "tsx --env-file-if-exists=.env.local scripts/index-search.ts",
     "index:ingest": "tsx --env-file-if-exists=.env.local scripts/index-ingest.ts",
     "index:families": "tsx --env-file-if-exists=.env.local scripts/index-families.ts",
-    "index:relabel": "tsx --env-file-if-exists=.env.local scripts/index-relabel.ts"
+    "index:relabel": "tsx --env-file-if-exists=.env.local scripts/index-relabel.ts",
+    "index:prints": "tsx --env-file-if-exists=.env.local scripts/index-prints.ts",
+    "index:certificates": "tsx --env-file-if-exists=.env.local scripts/index-certificates.ts",
+    "index:spv-quotes": "tsx --env-file-if-exists=.env.local scripts/index-spv-quotes.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.11",
