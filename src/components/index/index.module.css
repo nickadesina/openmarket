@@ -209,6 +209,8 @@
 
 .table {
   width: 100%;
+  /* At phone width a table keeps its columns and scrolls in its own box. */
+  min-width: 40rem;
   border: 1px solid var(--color-border);
   border-collapse: collapse;
   font-size: var(--font-size-sm);

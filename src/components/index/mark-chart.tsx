@@ -50,14 +50,21 @@ function yScale(values: readonly number[]): YScale {
     const hi = Math.log10(high) + 0.04;
     const at = (value: number) =>
       MARGIN.top + PLOT_H - ((Math.log10(value) - lo) / (hi - lo)) * PLOT_H;
-    const ticks: number[] = [];
-    for (let power = Math.floor(lo); power <= Math.ceil(hi); power += 1) {
-      for (const unit of [1, 2, 5]) {
-        const tick = unit * 10 ** power;
-        if (Math.log10(tick) >= lo && Math.log10(tick) <= hi) ticks.push(tick);
+    const ticksFor = (units: readonly number[]) => {
+      const found: number[] = [];
+      for (let power = Math.floor(lo); power <= Math.ceil(hi); power += 1) {
+        for (const unit of units) {
+          const tick = unit * 10 ** power;
+          if (Math.log10(tick) >= lo && Math.log10(tick) <= hi) found.push(tick);
+        }
       }
-    }
-    return { log, at, ticks: ticks.length > 6 ? ticks.filter((_, i) => i % 2 === 0) : ticks };
+      return found;
+    };
+    // 1-2-5 per decade; within less than a decade, every integer step.
+    let ticks = ticksFor([1, 2, 5]);
+    if (ticks.length < 3) ticks = ticksFor([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    while (ticks.length > 6) ticks = ticks.filter((_, i) => i % 2 === 0);
+    return { log, at, ticks };
   }
   const pad = high === low ? Math.max(high * 0.1, 1) : (high - low) * 0.12;
   const lo = Math.max(0, low - pad);

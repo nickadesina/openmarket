@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 
 import {
+  formatCount,
   formatInstant,
   formatPercent,
   formatPerShare,
@@ -150,8 +151,16 @@ function HeadlineFigures({ index }: { readonly index: NameIndex }) {
           {headline === null ? "—" : <a href={anchor}>{headline.n_families}</a>}
         </dd>
         <dd className={styles.figureNote}>
-          {plural(index.marks_summary.live, "live mark")},{" "}
-          {plural(index.marks_summary.in_series, "in a series", "in a series")}
+          {plural(index.marks_summary.live, "live mark")}:{" "}
+          {formatCount(index.marks_summary.in_series)} in a series
+          {index.marks_summary.live > index.marks_summary.in_series ? (
+            <>
+              ,{" "}
+              <a href="#out-of-series">
+                {formatCount(index.marks_summary.live - index.marks_summary.in_series)} outside it
+              </a>
+            </>
+          ) : null}
         </dd>
       </div>
       <div className={styles.figure}>

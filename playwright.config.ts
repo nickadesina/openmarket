@@ -43,6 +43,7 @@ const port = origin.port;
 
 export default defineConfig({
   testDir: "./tests/browser",
+  globalSetup: "./tests/browser/global-setup.ts",
   fullyParallel: false,
   workers: 1,
   retries: 0,

@@ -58,6 +58,11 @@
 
 /* Under 58rem each row stacks into caps labels over values (DESIGN.md, Board table). */
 @media (max-width: 58rem) {
+  /* Outranks the shared table's minimum width: the stacked board fits the screen. */
+  table.board {
+    min-width: 0;
+  }
+
   .board,
   .board tbody,
   .board tr,
