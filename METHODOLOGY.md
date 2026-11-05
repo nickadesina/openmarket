@@ -142,6 +142,35 @@ family contributes its latest mark on the label. Marks from different months
 of one quarter are therefore compared with each other; a revaluation inside
 the quarter shows as dispersion.
 
+## Listed names
+
+The index measures private marks. Once an issuer's final IPO prospectus
+(Form 424B4) is on EDGAR, a fund's mark on its stock is set from the
+market, not by a valuation committee. A mark as of the prospectus's filing
+date or later is therefore published with the filer's other marks, but
+enters no per-share series: no family mark, consensus, dispersion,
+revision or mark versus print. Marks as of an earlier date are unchanged.
+The date and the prospectus are recorded in `data/index/watchlist.json`
+(`listing`), from EDGAR, never from a report.
+
+Example. SpaceX's final prospectus was filed on 2026-06-12 (424B4,
+0001628280-26-042639). Its 2026Q2 consensus is computed from marks as of
+April and May 2026; funds' marks as of 2026-06-30 and after, filed at
+Level 1 or Level 2 of the fair-value hierarchy (quoted prices, or quoted
+prices less a lock-up discount), are listed-stock marks.
+
+The rule reads the listing date, not a filer's fair-value level: a filer
+that files a private holding at Level 1 is a filer's mark like any other
+and is not dropped.
+
+## Headline label
+
+A name's daily figure is the consensus on one label: the label with the
+most families in the latest calendar quarter that has any consensus. Ties
+go to the label with the higher consensus, then to the label that sorts
+first. The name page shows every label; the headline only orders the
+daily page.
+
 ## Consensus mark
 
 Per label per calendar quarter, the consensus mark is the median of the
@@ -219,7 +248,9 @@ not levels.
 ## SPV premium
 
 For a unit quote on a public page, with a per-share price, against the
-consensus mark on the label the vehicle holds:
+consensus mark on the name's headline label in the latest quarter that
+starts on or before the capture (a page rarely says which series a vehicle
+holds; the payload names the label used):
 `ln(quoted_pps × (1 + upfront_fee) / consensus)`, with the fee-free premium
 `ln(quoted_pps / consensus)` beside it. Fees are recorded as percentages. When
 the page states no upfront fee, only the fee-free premium is published. The

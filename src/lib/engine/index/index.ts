@@ -20,6 +20,7 @@ export {
   parseFilerFamilies,
   resolveFamily,
 } from "./families.js";
+export { headlinePoint, isPrivateMark } from "./listing.js";
 export {
   assertIsoDate,
   calendarQuarter,
