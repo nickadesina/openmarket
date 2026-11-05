@@ -65,7 +65,7 @@ export const REF_ROUTES: readonly RouteDoc[] = [
       ...ENVELOPE_FIELDS,
       families_version: FAMILIES_VERSION,
       names:
-        "One row per watchlist name, by slug: slug, name, listed_on, security_label and quarter of the headline, consensus_usd, n_families, dispersion_pct (null below two families) with the high and low family, latest_filed_on, latest_as_of, live_marks, labels, last_print, spv_vehicles, coverage (what full-text search found naming it) and no_marks (why a name with no live mark has none: code and reason). A name with no per-share series has null headline fields and its live_marks count.",
+        "One row per watchlist name, by slug: slug, name, listed_on and listing_url (the final prospectus), security_label and quarter of the headline, consensus_usd, n_families, dispersion_pct (null below two families) with the high and low family, latest_filed_on, latest_as_of, live_marks, labels, last_print (with its source_url), spv_vehicles, coverage (what full-text search found naming it) and no_marks (why a name with no live mark has none: code and reason). A name with no per-share series has null headline fields and its live_marks count.",
     } satisfies FieldDocs<RefNamesPayload>,
     example: "names",
   },
@@ -217,7 +217,10 @@ export const DATASETS: readonly DatasetDoc[] = [
     path: "/data/filer-marks.csv",
     summary:
       "Every filer mark, one row per holding as filed: the label, balance, value and per-share mark, the filer's family, and the document's accession and URL.",
-    query: [["include", "superseded: add replaced rows, with status and superseded_by."]],
+    query: [
+      ["include", "superseded: add replaced rows, with status and superseded_by."],
+      ["issuer", "One name's rows (a slug: anthropic); the file each name page links."],
+    ],
   },
   {
     path: "/data/certificate-terms.csv",
@@ -229,6 +232,6 @@ export const DATASETS: readonly DatasetDoc[] = [
     path: "/data/spv-matches.csv",
     summary:
       "One row per vehicle Form D: the vehicle, the name it is matched to (or unmatched) and how, the offering's terms, accession and URL.",
-    query: [],
+    query: [["issuer", "One name's vehicles (a slug)."]],
   },
 ];

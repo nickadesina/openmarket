@@ -1,50 +1,115 @@
-.page {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-6);
-  padding: var(--space-6) 0 var(--space-7);
-}
+/* The daily page's two boards: one row per name. */
 
-.pageHeader {
-  display: grid;
-  max-width: 48rem;
-  gap: var(--space-2);
-}
-
-.pageHeader h1 {
-  margin: 0;
-  font-size: var(--font-size-xl);
-  line-height: var(--line-height-tight);
-}
-
-.pageHeader p {
-  max-width: 72ch;
-  margin: 0;
-  color: var(--color-ink-muted);
+.board th[scope="row"] {
+  height: auto;
+  vertical-align: top;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: transparent;
+  font-family: var(--font-sans);
   font-size: var(--font-size-sm);
-  line-height: var(--line-height-normal);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: normal;
 }
 
-.sectionLabel {
-  composes: sectionHead from "../styles/shared.module.css";
-}
-
-.links {
-  display: flex;
-  flex-wrap: wrap;
-  margin: 0;
-  padding: 0;
-  gap: var(--space-4);
-  list-style: none;
-}
-
-.link {
+.name {
   color: var(--color-ink);
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.name:hover {
   text-decoration: underline;
-  text-decoration-color: var(--color-border-strong);
+  text-decoration-color: var(--color-primary);
   text-underline-offset: 0.25rem;
 }
 
-.link:hover {
-  text-decoration-color: var(--color-primary);
+.sub {
+  display: block;
+  color: var(--color-ink-muted);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+}
+
+.none {
+  color: var(--color-ink-muted);
+  font-family: var(--font-sans);
+  font-weight: 400;
+}
+
+.why {
+  min-width: 20rem;
+  max-width: 64ch;
+  line-height: var(--line-height-normal);
+}
+
+.tagline {
+  display: block;
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+/* Under 58rem each row stacks into caps labels over values (DESIGN.md, Board table). */
+@media (max-width: 58rem) {
+  .board,
+  .board tbody,
+  .board tr,
+  .board th[scope="row"],
+  .board td {
+    display: block;
+  }
+
+  .board thead {
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
+  }
+
+  .board tr {
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .board th[scope="row"],
+  .board td {
+    display: grid;
+    grid-template-columns: 7rem minmax(0, 1fr);
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-3);
+    border-bottom: 0;
+    text-align: left;
+  }
+
+  .board td::before,
+  .board th[scope="row"]::before {
+    content: attr(data-label);
+    color: var(--color-ink-muted);
+    font-family: var(--font-caps);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    letter-spacing: var(--caps-tracking);
+    text-transform: uppercase;
+  }
+
+  /* The name heads its card; it needs no label. */
+  .board th[scope="row"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .board th[scope="row"]::before {
+    content: none;
+  }
+
+  .why {
+    min-width: 0;
+  }
 }

@@ -1,0 +1,146 @@
+.figure {
+  display: grid;
+  max-width: 64rem;
+  margin: 0;
+  gap: var(--space-2);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-4);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+  list-style: none;
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1);
+}
+
+.scale {
+  margin-left: auto;
+  font-family: var(--font-caps);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.keyDot,
+.keyLine,
+.keyBand,
+.keyPrint {
+  display: inline-block;
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+.keyDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--color-ink-muted);
+}
+
+.keyLine {
+  width: 1rem;
+  height: 0;
+  border-top: 2px solid var(--color-primary);
+}
+
+.keyBand {
+  width: 0.5rem;
+  height: 0.75rem;
+  background: var(--color-primary-subtle);
+}
+
+.keyPrint {
+  width: 0;
+  height: 0.75rem;
+  border-left: 1px dashed var(--color-ink);
+}
+
+/* At phone width the chart keeps a legible size and scrolls in its own box. */
+.scroller {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+}
+
+.chart {
+  display: block;
+  width: 100%;
+  min-width: 36rem;
+  height: auto;
+  background: var(--color-surface);
+}
+
+.grid {
+  stroke: var(--color-border-subtle);
+  stroke-width: 1;
+}
+
+.axis {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.tick {
+  fill: var(--color-ink-muted);
+  font-family: var(--font-num);
+  font-size: var(--font-size-xs);
+}
+
+.band {
+  fill: var(--color-primary-subtle);
+}
+
+.consensus {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.consensusPoint {
+  fill: var(--color-primary);
+  stroke: var(--color-surface);
+  stroke-width: 2;
+}
+
+.dot {
+  fill: var(--color-ink-muted);
+  stroke: transparent;
+  stroke-width: 8;
+  paint-order: stroke;
+}
+
+a:hover .dot,
+a:focus-visible .dot {
+  fill: var(--color-primary);
+}
+
+.print {
+  stroke: var(--color-ink);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+}
+
+.printLabel {
+  fill: var(--color-ink);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+}
+
+.caption {
+  max-width: 80ch;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}

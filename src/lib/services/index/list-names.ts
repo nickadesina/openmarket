@@ -18,6 +18,8 @@ export interface NameRow {
   readonly slug: string;
   readonly name: string;
   readonly listed_on: string | null;
+  /** The final prospectus the listing date is read from. */
+  readonly listing_url: string | null;
   /** The headline label and quarter (METHODOLOGY.md, "Headline label"); null without a per-share series. */
   readonly security_label: string | null;
   readonly quarter: string | null;
@@ -37,6 +39,7 @@ export interface NameRow {
     readonly announced_on: string;
     readonly post_money_usd: string | null;
     readonly price_per_share_usd: string | null;
+    readonly source_url: string | null;
   } | null;
   readonly spv_vehicles: number;
   /** What full-text search found naming it; null when it was not searched. */
@@ -83,6 +86,7 @@ function nameRow(index: NameIndex): NameRow {
     slug: index.issuer.slug,
     name: index.issuer.name,
     listed_on: index.issuer.listed_on,
+    listing_url: index.issuer.listing_url,
     security_label: headline?.security_label ?? null,
     quarter: headline?.quarter ?? null,
     consensus_usd: headline?.consensus_usd ?? null,
@@ -102,6 +106,7 @@ function nameRow(index: NameIndex): NameRow {
             announced_on: index.last_print.announced_on,
             post_money_usd: index.last_print.post_money_usd,
             price_per_share_usd: index.last_print.price_per_share_usd,
+            source_url: index.last_print.source_url,
           },
     spv_vehicles: index.spv.vehicles.length,
     coverage: index.coverage,

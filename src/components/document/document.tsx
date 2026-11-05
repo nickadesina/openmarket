@@ -8,11 +8,13 @@ import styles from "./document.module.css";
  * changelog and reviewers, the feed-trial terms, the policy one-pager), as
  * React elements, never HTML. The subset those files use: `#` headings with
  * anchors, paragraphs, `-` and `1.` lists whose items may wrap, pipe tables,
- * `**bold**`, `*italic*`, `` `code` `` and `[text](https://…)` links. A code
+ * `**bold**`, `*italic*`, `` `code` `` and `[text](https://…)` or
+ * `[text](#heading)` links. A code
  * span holding a site path (`/rulebook`) becomes a link to it.
  */
 
-const INLINE = /(\*\*[^*]+\*\*|\*[^*\s][^*]*\*|`[^`]+`|\[[^\]]+\]\((https:\/\/[^)\s]+)\))/g;
+const INLINE =
+  /(\*\*[^*]+\*\*|\*[^*\s][^*]*\*|`[^`]+`|\[[^\]]+\]\((https:\/\/[^)\s]+|#[a-z0-9-]+)\))/g;
 const SITE_PATH = /^\/[a-z0-9][a-z0-9/._-]*$/;
 
 function inline(text: string, keyPrefix: string): ReactNode[] {
@@ -38,7 +40,11 @@ function inline(text: string, keyPrefix: string): ReactNode[] {
       );
     } else if (token.startsWith("[")) {
       nodes.push(
-        <a key={key} href={match[2]} rel="noopener noreferrer">
+        <a
+          key={key}
+          href={match[2]}
+          rel={match[2]!.startsWith("#") ? undefined : "noopener noreferrer"}
+        >
           {token.slice(1, token.indexOf("]("))}
         </a>,
       );

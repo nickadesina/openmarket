@@ -34,13 +34,15 @@ export function NavLinks() {
     return () => observer.disconnect();
   }, [pathname]);
   const links = [
-    { href: "/rulebook", label: "Rulebook", current: within(pathname, "/rulebook") },
     {
-      href: "/resolution-sources",
-      label: "Sources",
-      current: within(pathname, "/resolution-sources"),
+      href: "/",
+      label: "Index",
+      current: pathname === "/" || within(pathname, "/n"),
     },
+    { href: "/methodology", label: "Methodology", current: within(pathname, "/methodology") },
+    { href: "/rulebook", label: "Rulebook", current: within(pathname, "/rulebook") },
     { href: "/ref", label: "API", current: within(pathname, "/ref") },
+    { href: "/corrections", label: "Corrections", current: within(pathname, "/corrections") },
   ];
 
   return (

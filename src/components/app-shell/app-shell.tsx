@@ -24,6 +24,9 @@ export function AppShell({ children }: { readonly children: ReactNode }) {
       <footer className={styles.footer}>
         <span className={styles.footerCopyright}>© {new Date().getFullYear()} OpenMarket</span>
         <span className={styles.footerDisclosure}>Built only from public filings.</span>
+        <Link className={styles.footerLink} href="/resolution-sources">
+          Resolution sources
+        </Link>
       </footer>
     </div>
   );

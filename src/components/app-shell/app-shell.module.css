@@ -106,6 +106,21 @@
   text-transform: uppercase;
 }
 
+.footerLink {
+  color: var(--color-ink);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.footerLink:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--color-primary);
+  text-underline-offset: 0.25rem;
+}
+
 .skipLink {
   position: fixed;
   z-index: var(--z-popover);
