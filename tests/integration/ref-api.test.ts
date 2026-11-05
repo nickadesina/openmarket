@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 
 import { generateApiKey, hashApiKey } from "../../src/lib/auth/api-key.js";
 import { RULEBOOK_VERSION } from "../../src/lib/engine/rulebook.js";
+import { ENVELOPE_KEYS } from "../../src/lib/services/index/ref-envelope.js";
 import { insertApiKey } from "../../src/lib/services/ref-access.js";
 import {
   createPostgresTestDatabase,
@@ -25,8 +26,8 @@ import { GET as rulebookRoute } from "../../src/app/api/ref/rulebook/route.js";
 /**
  * The public reference API: every payload opens with the envelope, every
  * anonymous success is cached 60 s, and the `ref` quota is 60 a minute per
- * network or a key's own. The rulebook is the one route until the index's
- * routes land (docs/prompts/v2, P5).
+ * network or a key's own. The quota is exercised on the rulebook route; the
+ * index's routes are ref-index-api.test.ts.
  */
 const databaseUrl = testDatabaseUrl();
 const postgresDescribe = databaseUrl === undefined ? describe.skip : describe;
@@ -77,7 +78,7 @@ postgresDescribe(suiteName, () => {
   it("publishes the rulebook under the envelope", async () => {
     const body = await expectPublished(await rulebook());
     expect(body.rulebook.version).toBe(RULEBOOK_VERSION);
-    expect(Object.keys(body).slice(0, 2)).toEqual(["rulebook_version", "as_of"]);
+    expect(Object.keys(body).slice(0, ENVELOPE_KEYS.length)).toEqual([...ENVELOPE_KEYS]);
   });
 
   describe("quota", () => {
