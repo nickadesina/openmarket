@@ -11,25 +11,54 @@ import { jsonSuccess } from "./response.js";
 /**
  * Every /api/ref/* route (v1 README D14, kept in v2): public, read-only, shared-cached for
  * 60 seconds for anonymous requests (keyed responses are private), and drawn from the caller's `ref` quota (its network's bucket,
- * or its API key's) after the query is validated and before any read.
+ * or its API key's) after the query's names and values are validated and before any read.
  */
 export const REF_CACHE_SECONDS = 60;
 
-export interface RefRouteContext extends ReadRouteContext {
+export interface RefRouteContext<Query = undefined> extends ReadRouteContext {
   readonly searchParams: URLSearchParams;
   readonly now: Date;
+  /** The route's parsed query (and path values), validated before the quota is drawn. */
+  readonly query: Query;
 }
 
-export async function withRefRoute(
+/**
+ * The query a route accepts: the parameter names, and a parser that reads
+ * and validates their values (and any path value). It runs before the quota
+ * is drawn, so a malformed request costs the caller nothing.
+ */
+export interface RefQuery<Query> {
+  readonly parameters: readonly string[];
+  readonly parse: (searchParams: URLSearchParams) => Query;
+}
+
+/** Validates the query's names, then its values, before any quota or read. */
+export function parseRefQuery<Query>(
+  searchParams: URLSearchParams,
+  spec: readonly string[] | RefQuery<Query>,
+): Query {
+  if (isQuerySpec(spec)) {
+    assertOnlyQueryParameters(searchParams, spec.parameters);
+    return spec.parse(searchParams);
+  }
+  assertOnlyQueryParameters(searchParams, spec);
+  return undefined as Query;
+}
+
+function isQuerySpec<Query>(spec: readonly string[] | RefQuery<Query>): spec is RefQuery<Query> {
+  return !Array.isArray(spec);
+}
+
+export async function withRefRoute<Query = undefined>(
   request: Request,
-  allowedParameters: readonly string[],
-  handler: (context: RefRouteContext) => Promise<unknown> | unknown,
+  spec: readonly string[] | RefQuery<Query>,
+  handler: (context: RefRouteContext<Query>) => Promise<unknown> | unknown,
 ): Promise<Response> {
   const response = await withReadRoute(
     request,
     async (context) => {
       const searchParams = new URL(request.url).searchParams;
-      assertOnlyQueryParameters(searchParams, allowedParameters);
+      const query = parseRefQuery(searchParams, spec);
       await consumeRefQuota(() => context.db, request);
       const body = await handler({
         requestId: context.requestId,
@@ -39,6 +68,7 @@ export async function withRefRoute(
         },
         searchParams,
         now: new Date(),
+        query,
       });
       return jsonSuccess(body, { requestId: context.requestId });
     },

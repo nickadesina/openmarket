@@ -1,4 +1,4 @@
-import { parseOptionalString } from "../../../../../lib/api/pagination.js";
+import { parseOptionalString, parseSlug } from "../../../../../lib/api/pagination.js";
 import {
   parseRefCursor,
   parseRefInclude,
@@ -14,17 +14,21 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> },
 ): Promise<Response> {
   const { slug } = await params;
-  return withRefRoute(request, ["limit", "cursor", "include", "label"], (context) =>
-    getRefMarks(
-      context.db,
-      slug,
-      {
-        limit: parseRefLimit(context.searchParams),
-        cursor: parseRefCursor(context.searchParams),
-        include: parseRefInclude(context.searchParams, ["superseded"]) ?? "live",
-        securityLabel: parseOptionalString(context.searchParams, "label", { maximumLength: 100 }),
-      },
-      { now: context.now },
-    ),
+  return withRefRoute(
+    request,
+    {
+      parameters: ["limit", "cursor", "include", "label"],
+      parse: (searchParams) => ({
+        slug: parseSlug(slug),
+        limit: parseRefLimit(searchParams),
+        cursor: parseRefCursor(searchParams),
+        include: parseRefInclude(searchParams, ["superseded"]) ?? ("live" as const),
+        securityLabel: parseOptionalString(searchParams, "label", { maximumLength: 100 }),
+      }),
+    },
+    (context) => {
+      const { slug: valid, ...query } = context.query;
+      return getRefMarks(context.db, valid, query, { now: context.now });
+    },
   );
 }

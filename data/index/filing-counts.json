@@ -1,0 +1,447 @@
+{
+  "fetched_at": "2026-11-04T23:40:03.716Z",
+  "start_date": "2019-01-01",
+  "end_date": "2026-11-04",
+  "families_version": "0.1.0",
+  "issuers": [
+    {
+      "slug": "anduril",
+      "name": "Anduril",
+      "watchlisted": true,
+      "nport_filings": 486,
+      "ncsr_filings": 86,
+      "ncsrs_filings": 88,
+      "registrants": 67,
+      "families": 14,
+      "nport_families": 12,
+      "latest_filed": "2026-10-30",
+      "nport_listed": null
+    },
+    {
+      "slug": "anthropic",
+      "name": "Anthropic",
+      "watchlisted": true,
+      "nport_filings": 717,
+      "ncsr_filings": 121,
+      "ncsrs_filings": 118,
+      "registrants": 135,
+      "families": 43,
+      "nport_families": 21,
+      "latest_filed": "2026-10-30",
+      "nport_listed": null
+    },
+    {
+      "slug": "anysphere",
+      "name": "Anysphere (Cursor)",
+      "watchlisted": true,
+      "nport_filings": 0,
+      "ncsr_filings": 0,
+      "ncsrs_filings": 1,
+      "registrants": 1,
+      "families": 1,
+      "nport_families": 0,
+      "latest_filed": "2026-09-04",
+      "nport_listed": []
+    },
+    {
+      "slug": "bytedance",
+      "name": "ByteDance",
+      "watchlisted": false,
+      "nport_filings": 2338,
+      "ncsr_filings": 326,
+      "ncsrs_filings": 309,
+      "registrants": 75,
+      "families": 19,
+      "nport_families": 6,
+      "latest_filed": "2026-10-27",
+      "nport_listed": null
+    },
+    {
+      "slug": "canva",
+      "name": "Canva",
+      "watchlisted": false,
+      "nport_filings": 2832,
+      "ncsr_filings": 261,
+      "ncsrs_filings": 270,
+      "registrants": 74,
+      "families": 23,
+      "nport_families": 16,
+      "latest_filed": "2026-10-29",
+      "nport_listed": null
+    },
+    {
+      "slug": "cognition",
+      "name": "Cognition",
+      "watchlisted": true,
+      "nport_filings": 0,
+      "ncsr_filings": 0,
+      "ncsrs_filings": 0,
+      "registrants": 0,
+      "families": 0,
+      "nport_families": 0,
+      "latest_filed": null,
+      "nport_listed": []
+    },
+    {
+      "slug": "databricks",
+      "name": "Databricks",
+      "watchlisted": true,
+      "nport_filings": 6414,
+      "ncsr_filings": 487,
+      "ncsrs_filings": 479,
+      "registrants": 130,
+      "families": 41,
+      "nport_families": 40,
+      "latest_filed": "2026-11-03",
+      "nport_listed": null
+    },
+    {
+      "slug": "epic-games",
+      "name": "Epic Games",
+      "watchlisted": true,
+      "nport_filings": 3012,
+      "ncsr_filings": 235,
+      "ncsrs_filings": 225,
+      "registrants": 50,
+      "families": 25,
+      "nport_families": 18,
+      "latest_filed": "2026-10-30",
+      "nport_listed": null
+    },
+    {
+      "slug": "figure-ai",
+      "name": "Figure AI",
+      "watchlisted": true,
+      "nport_filings": 82,
+      "ncsr_filings": 5,
+      "ncsrs_filings": 8,
+      "registrants": 8,
+      "families": 4,
+      "nport_families": 4,
+      "latest_filed": "2026-10-30",
+      "nport_listed": null
+    },
+    {
+      "slug": "harvey",
+      "name": "Harvey",
+      "watchlisted": true,
+      "nport_filings": 6,
+      "ncsr_filings": 2,
+      "ncsrs_filings": 2,
+      "registrants": 2,
+      "families": 1,
+      "nport_families": 1,
+      "latest_filed": "2026-08-27",
+      "nport_listed": [
+        {
+          "accession": "0001099263-26-002508",
+          "filer_name": "T. Rowe Price New Horizons Fund, Inc.",
+          "cik": "80248",
+          "filed_on": "2026-02-26",
+          "url": "https://www.sec.gov/Archives/edgar/data/80248/000109926326002508/primary_doc.xml"
+        },
+        {
+          "accession": "0001099263-26-002527",
+          "filer_name": "T. Rowe Price Science & Technology Fund, Inc.",
+          "cik": "819930",
+          "filed_on": "2026-02-26",
+          "url": "https://www.sec.gov/Archives/edgar/data/819930/000109926326002527/primary_doc.xml"
+        },
+        {
+          "accession": "0001099263-26-006557",
+          "filer_name": "T. Rowe Price New Horizons Fund, Inc.",
+          "cik": "80248",
+          "filed_on": "2026-05-28",
+          "url": "https://www.sec.gov/Archives/edgar/data/80248/000109926326006557/primary_doc.xml"
+        },
+        {
+          "accession": "0001099263-26-006576",
+          "filer_name": "T. Rowe Price Science & Technology Fund, Inc.",
+          "cik": "819930",
+          "filed_on": "2026-05-28",
+          "url": "https://www.sec.gov/Archives/edgar/data/819930/000109926326006576/primary_doc.xml"
+        },
+        {
+          "accession": "0001099263-26-009555",
+          "filer_name": "T. Rowe Price New Horizons Fund, Inc.",
+          "cik": "80248",
+          "filed_on": "2026-08-27",
+          "url": "https://www.sec.gov/Archives/edgar/data/80248/000109926326009555/primary_doc.xml"
+        },
+        {
+          "accession": "0001099263-26-009574",
+          "filer_name": "T. Rowe Price Science & Technology Fund, Inc.",
+          "cik": "819930",
+          "filed_on": "2026-08-27",
+          "url": "https://www.sec.gov/Archives/edgar/data/819930/000109926326009574/primary_doc.xml"
+        }
+      ]
+    },
+    {
+      "slug": "instinct",
+      "name": "Instinct",
+      "watchlisted": false,
+      "nport_filings": 183,
+      "ncsr_filings": 114,
+      "ncsrs_filings": 116,
+      "registrants": 32,
+      "families": 13,
+      "nport_families": 2,
+      "latest_filed": "2026-11-03",
+      "nport_listed": null
+    },
+    {
+      "slug": "mercor",
+      "name": "Mercor",
+      "watchlisted": true,
+      "nport_filings": 3,
+      "ncsr_filings": 1,
+      "ncsrs_filings": 1,
+      "registrants": 2,
+      "families": 2,
+      "nport_families": 2,
+      "latest_filed": "2026-08-31",
+      "nport_listed": [
+        {
+          "accession": "0000894189-26-016653",
+          "filer_name": "Robinhood Ventures Fund I (RVI)",
+          "cik": "2085091",
+          "filed_on": "2026-05-29",
+          "url": "https://www.sec.gov/Archives/edgar/data/2085091/000089418926016653/primary_doc.xml"
+        },
+        {
+          "accession": "0000894189-26-022643",
+          "filer_name": "Robinhood Ventures Fund I (RVI)",
+          "cik": "2085091",
+          "filed_on": "2026-08-21",
+          "url": "https://www.sec.gov/Archives/edgar/data/2085091/000089418926022643/primary_doc.xml"
+        },
+        {
+          "accession": "0002052053-26-000004",
+          "filer_name": "Powerlaw Corp. (PWRL)",
+          "cik": "2052053",
+          "filed_on": "2026-08-31",
+          "url": "https://www.sec.gov/Archives/edgar/data/2052053/000205205326000004/fp0100572-1_nportex.htm"
+        }
+      ]
+    },
+    {
+      "slug": "modal",
+      "name": "Modal",
+      "watchlisted": true,
+      "nport_filings": 0,
+      "ncsr_filings": 0,
+      "ncsrs_filings": 0,
+      "registrants": 0,
+      "families": 0,
+      "nport_families": 0,
+      "latest_filed": null,
+      "nport_listed": []
+    },
+    {
+      "slug": "neuralink",
+      "name": "Neuralink",
+      "watchlisted": false,
+      "nport_filings": 28,
+      "ncsr_filings": 3,
+      "ncsrs_filings": 3,
+      "registrants": 2,
+      "families": 2,
+      "nport_families": 2,
+      "latest_filed": "2026-10-07",
+      "nport_listed": null
+    },
+    {
+      "slug": "openai",
+      "name": "OpenAI",
+      "watchlisted": true,
+      "nport_filings": 524,
+      "ncsr_filings": 204,
+      "ncsrs_filings": 143,
+      "registrants": 182,
+      "families": 81,
+      "nport_families": 16,
+      "latest_filed": "2026-10-30",
+      "nport_listed": null
+    },
+    {
+      "slug": "perplexity",
+      "name": "Perplexity",
+      "watchlisted": true,
+      "nport_filings": 37,
+      "ncsr_filings": 3,
+      "ncsrs_filings": 3,
+      "registrants": 7,
+      "families": 3,
+      "nport_families": 3,
+      "latest_filed": "2026-10-07",
+      "nport_listed": null
+    },
+    {
+      "slug": "plaid",
+      "name": "Plaid",
+      "watchlisted": false,
+      "nport_filings": 1093,
+      "ncsr_filings": 57,
+      "ncsrs_filings": 51,
+      "registrants": 43,
+      "families": 29,
+      "nport_families": 29,
+      "latest_filed": "2026-10-30",
+      "nport_listed": null
+    },
+    {
+      "slug": "ramp",
+      "name": "Ramp",
+      "watchlisted": true,
+      "nport_filings": 22,
+      "ncsr_filings": 9,
+      "ncsrs_filings": 7,
+      "registrants": 7,
+      "families": 7,
+      "nport_families": 5,
+      "latest_filed": "2026-10-05",
+      "nport_listed": null
+    },
+    {
+      "slug": "revolut",
+      "name": "Revolut",
+      "watchlisted": false,
+      "nport_filings": 180,
+      "ncsr_filings": 65,
+      "ncsrs_filings": 31,
+      "registrants": 33,
+      "families": 11,
+      "nport_families": 7,
+      "latest_filed": "2026-10-26",
+      "nport_listed": null
+    },
+    {
+      "slug": "rippling",
+      "name": "Rippling",
+      "watchlisted": true,
+      "nport_filings": 1,
+      "ncsr_filings": 55,
+      "ncsrs_filings": 9,
+      "registrants": 41,
+      "families": 26,
+      "nport_families": 1,
+      "latest_filed": "2026-08-31",
+      "nport_listed": [
+        {
+          "accession": "0002052053-26-000004",
+          "filer_name": "Powerlaw Corp. (PWRL)",
+          "cik": "2052053",
+          "filed_on": "2026-08-31",
+          "url": "https://www.sec.gov/Archives/edgar/data/2052053/000205205326000004/fp0100572-1_nportex.htm"
+        }
+      ]
+    },
+    {
+      "slug": "safe-superintelligence",
+      "name": "Safe Superintelligence",
+      "watchlisted": true,
+      "nport_filings": 0,
+      "ncsr_filings": 0,
+      "ncsrs_filings": 0,
+      "registrants": 0,
+      "families": 0,
+      "nport_families": 0,
+      "latest_filed": null,
+      "nport_listed": []
+    },
+    {
+      "slug": "scale-ai",
+      "name": "Scale AI",
+      "watchlisted": true,
+      "nport_filings": 0,
+      "ncsr_filings": 9,
+      "ncsrs_filings": 2,
+      "registrants": 11,
+      "families": 11,
+      "nport_families": 0,
+      "latest_filed": "2026-11-04",
+      "nport_listed": []
+    },
+    {
+      "slug": "shein",
+      "name": "Shein",
+      "watchlisted": false,
+      "nport_filings": 2,
+      "ncsr_filings": 0,
+      "ncsrs_filings": 1,
+      "registrants": 1,
+      "families": 1,
+      "nport_families": 1,
+      "latest_filed": "2026-10-26",
+      "nport_listed": [
+        {
+          "accession": "0000035402-26-006891",
+          "filer_name": "Fidelity Rutland Square Trust II",
+          "cik": "1364924",
+          "filed_on": "2026-10-26",
+          "url": "https://www.sec.gov/Archives/edgar/data/1364924/000003540226006891/primary_doc.xml"
+        },
+        {
+          "accession": "0000035402-26-006892",
+          "filer_name": "Fidelity Rutland Square Trust II",
+          "cik": "1364924",
+          "filed_on": "2026-10-26",
+          "url": "https://www.sec.gov/Archives/edgar/data/1364924/000003540226006892/primary_doc.xml"
+        }
+      ]
+    },
+    {
+      "slug": "spacex",
+      "name": "SpaceX",
+      "watchlisted": true,
+      "nport_filings": 4104,
+      "ncsr_filings": 322,
+      "ncsrs_filings": 430,
+      "registrants": 610,
+      "families": 223,
+      "nport_families": 202,
+      "latest_filed": "2026-11-04",
+      "nport_listed": null
+    },
+    {
+      "slug": "stripe",
+      "name": "Stripe",
+      "watchlisted": true,
+      "nport_filings": 4212,
+      "ncsr_filings": 207,
+      "ncsrs_filings": 196,
+      "registrants": 53,
+      "families": 24,
+      "nport_families": 20,
+      "latest_filed": "2026-10-28",
+      "nport_listed": null
+    },
+    {
+      "slug": "thinking-machines",
+      "name": "Thinking Machines Lab",
+      "watchlisted": true,
+      "nport_filings": 0,
+      "ncsr_filings": 0,
+      "ncsrs_filings": 0,
+      "registrants": 0,
+      "families": 0,
+      "nport_families": 0,
+      "latest_filed": null,
+      "nport_listed": []
+    },
+    {
+      "slug": "xai",
+      "name": "xAI",
+      "watchlisted": true,
+      "nport_filings": 630,
+      "ncsr_filings": 68,
+      "ncsrs_filings": 56,
+      "registrants": 88,
+      "families": 32,
+      "nport_families": 27,
+      "latest_filed": "2026-09-16",
+      "nport_listed": null
+    }
+  ]
+}

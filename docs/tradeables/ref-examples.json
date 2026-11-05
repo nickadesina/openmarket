@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-05T00:48:10.993Z",
+  "generated_at": "2026-11-05T01:08:57.803Z",
   "generated_by": "npm run export:ref-examples",
   "slug": "anthropic",
   "note": "Payloads from the route services against the development database with ingested EDGAR data. Arrays keep their first 2 entries and strings their first 400 characters; each example's cuts list what was cut and its length.",
@@ -10,7 +10,7 @@
         "methodology_version": "0.1.0",
         "ce_version": "0.1.0",
         "rulebook_version": "2.0.0",
-        "as_of": "2026-11-05T00:48:10.993Z",
+        "as_of": "2026-11-05T01:08:57.803Z",
         "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so the latest quarter can change as late reports arrive.",
         "families_version": "0.1.0",
         "names": [
@@ -35,7 +35,20 @@
               "post_money_usd": "61000000000",
               "price_per_share_usd": null
             },
-            "spv_vehicles": 87
+            "spv_vehicles": 87,
+            "coverage": {
+              "searched": {
+                "fetched_at": "2026-11-04T23:40:03.716Z",
+                "start_date": "2019-01-01",
+                "end_date": "2026-11-04"
+              },
+              "nport_filings": 486,
+              "ncsr_filings": 174,
+              "nport_families": 12,
+              "families": 14,
+              "latest_filed": "2026-10-30"
+            },
+            "no_marks": null
           },
           {
             "slug": "anthropic",
@@ -58,7 +71,20 @@
               "post_money_usd": "965000000000",
               "price_per_share_usd": null
             },
-            "spv_vehicles": 76
+            "spv_vehicles": 76,
+            "coverage": {
+              "searched": {
+                "fetched_at": "2026-11-04T23:40:03.716Z",
+                "start_date": "2019-01-01",
+                "end_date": "2026-11-04"
+              },
+              "nport_filings": 717,
+              "ncsr_filings": 239,
+              "nport_families": 21,
+              "families": 43,
+              "latest_filed": "2026-10-30"
+            },
+            "no_marks": null
           }
         ]
       },
@@ -75,7 +101,7 @@
         "methodology_version": "0.1.0",
         "ce_version": "0.1.0",
         "rulebook_version": "2.0.0",
-        "as_of": "2026-11-05T00:48:10.993Z",
+        "as_of": "2026-11-05T01:08:57.803Z",
         "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so the latest quarter can change as late reports arrive.",
         "families_version": "0.1.0",
         "issuer": {
@@ -97,6 +123,105 @@
           "latest_filed_on": "2026-10-30",
           "latest_as_of": "2026-08-31"
         },
+        "coverage": {
+          "searched": {
+            "fetched_at": "2026-11-04T23:40:03.716Z",
+            "start_date": "2019-01-01",
+            "end_date": "2026-11-04"
+          },
+          "nport_filings": 717,
+          "ncsr_filings": 239,
+          "nport_families": 21,
+          "families": 43,
+          "latest_filed": "2026-10-30"
+        },
+        "no_marks": null,
+        "out_of_series": [
+          {
+            "status": "not_comparable_label",
+            "security_label": "Unclassified",
+            "reason": "The classifier names no security for it: the title names no series or class (often the issuer's name alone), or one the holding's name contradicts, or it is a right, swap, loan, debt or derivative. Which security it is is not known, so it is compared with nothing (METHODOLOGY.md, Security labels).",
+            "n_marks": 105,
+            "n_filers": 29,
+            "latest_as_of": "2026-08-31",
+            "recent": [
+              {
+                "source_class": "nport",
+                "accession": "0001193125-26-439060",
+                "document_url": "https://www.sec.gov/Archives/edgar/data/44201/000119312526439060/primary_doc.xml",
+                "filer_name": "Growth Fund of America",
+                "filed_on": "2026-10-30",
+                "mark_id": "297d04c7-6711-4f7a-8124-95b287dc973d",
+                "filer_cik": "44201",
+                "fund_series_id": "S000009228",
+                "fund_series_name": "Growth Fund of America",
+                "holding_title": "ANTHROPIC PBC PP (PHYSICAL) (NOT LISTED OR TRADING)",
+                "balance": "519146.00",
+                "value_usd": "390044772.72",
+                "mark_per_share_usd": "751.3200000000000000",
+                "as_of": "2026-08-31"
+              },
+              {
+                "source_class": "nport",
+                "accession": "0001193125-26-439062",
+                "document_url": "https://www.sec.gov/Archives/edgar/data/719608/000119312526439062/primary_doc.xml",
+                "filer_name": "New Economy Fund",
+                "filed_on": "2026-10-30",
+                "mark_id": "5073681a-2eb0-4f4d-ae09-5d7264f07861",
+                "filer_cik": "719608",
+                "fund_series_id": "S000009598",
+                "fund_series_name": "New Economy Fund",
+                "holding_title": "ANTHROPIC PBC PP (PHYSICAL) (NOT LISTED OR TRADING)",
+                "balance": "96339.00",
+                "value_usd": "72381417.48",
+                "mark_per_share_usd": "751.3200000000000000",
+                "as_of": "2026-08-31"
+              }
+            ]
+          },
+          {
+            "status": "no_per_share",
+            "security_label": "Unclassified",
+            "reason": "No per-share mark: the balance is not counted in shares (N-PORT units other than NS) or is not above zero, so the row counts toward value only (METHODOLOGY.md, The unit).",
+            "n_marks": 6,
+            "n_filers": 1,
+            "latest_as_of": "2026-06-30",
+            "recent": [
+              {
+                "source_class": "nport",
+                "accession": "0001410368-26-085820",
+                "document_url": "https://www.sec.gov/Archives/edgar/data/2044519/000141036826085820/primary_doc.xml",
+                "filer_name": "Coatue Innovative Strategies Fund",
+                "filed_on": "2026-08-26",
+                "mark_id": "40e98d55-7ef2-479f-9036-79e31c712aa7",
+                "filer_cik": "2044519",
+                "fund_series_id": null,
+                "fund_series_name": "Coatue Innovative Strategies Fund",
+                "holding_title": "ANTHROPIC",
+                "balance": "964742.00000000",
+                "value_usd": "568242203.05000000",
+                "mark_per_share_usd": null,
+                "as_of": "2026-06-30"
+              },
+              {
+                "source_class": "nport",
+                "accession": "0001410368-26-085820",
+                "document_url": "https://www.sec.gov/Archives/edgar/data/2044519/000141036826085820/primary_doc.xml",
+                "filer_name": "Coatue Innovative Strategies Fund",
+                "filed_on": "2026-08-26",
+                "mark_id": "75f3f789-0c28-43fd-868f-af1983f60aa2",
+                "filer_cik": "2044519",
+                "fund_series_id": null,
+                "fund_series_name": "Coatue Innovative Strategies Fund",
+                "holding_title": "ANTHROPIC",
+                "balance": "886728.00000000",
+                "value_usd": "522291215.92000000",
+                "mark_per_share_usd": null,
+                "as_of": "2026-06-30"
+              }
+            ]
+          }
+        ],
         "headline": {
           "security_label": "Series H-1 Preferred",
           "quarter": "2026Q3",
@@ -481,6 +606,18 @@
       },
       "cuts": [
         {
+          "path": "out_of_series",
+          "length": 4
+        },
+        {
+          "path": "out_of_series[0].recent",
+          "length": 12
+        },
+        {
+          "path": "out_of_series[1].recent",
+          "length": 6
+        },
+        {
           "path": "labels",
           "length": 12
         },
@@ -512,7 +649,7 @@
         "methodology_version": "0.1.0",
         "ce_version": "0.1.0",
         "rulebook_version": "2.0.0",
-        "as_of": "2026-11-05T00:48:10.993Z",
+        "as_of": "2026-11-05T01:08:57.803Z",
         "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so the latest quarter can change as late reports arrive.",
         "families_version": "0.1.0",
         "issuer": {
@@ -614,7 +751,7 @@
         "methodology_version": "0.1.0",
         "ce_version": "0.1.0",
         "rulebook_version": "2.0.0",
-        "as_of": "2026-11-05T00:48:10.993Z",
+        "as_of": "2026-11-05T01:08:57.803Z",
         "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so the latest quarter can change as late reports arrive.",
         "families_version": "0.1.0",
         "issuer": {
@@ -671,7 +808,7 @@
         "methodology_version": "0.1.0",
         "ce_version": "0.1.0",
         "rulebook_version": "2.0.0",
-        "as_of": "2026-11-05T00:48:10.993Z",
+        "as_of": "2026-11-05T01:08:57.803Z",
         "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so the latest quarter can change as late reports arrive.",
         "families_version": "0.1.0",
         "issuer": {
@@ -762,7 +899,7 @@
         "methodology_version": "0.1.0",
         "ce_version": "0.1.0",
         "rulebook_version": "2.0.0",
-        "as_of": "2026-11-05T00:48:10.993Z",
+        "as_of": "2026-11-05T01:08:57.803Z",
         "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so the latest quarter can change as late reports arrive.",
         "families_version": "0.1.0",
         "methodology": {
@@ -819,7 +956,7 @@
         "methodology_version": "0.1.0",
         "ce_version": "0.1.0",
         "rulebook_version": "2.0.0",
-        "as_of": "2026-11-05T00:48:10.993Z",
+        "as_of": "2026-11-05T01:08:57.803Z",
         "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so the latest quarter can change as late reports arrive.",
         "corrections": [
           {

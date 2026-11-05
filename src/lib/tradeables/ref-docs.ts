@@ -65,7 +65,7 @@ export const REF_ROUTES: readonly RouteDoc[] = [
       ...ENVELOPE_FIELDS,
       families_version: FAMILIES_VERSION,
       names:
-        "One row per watchlist name, by slug: slug, name, listed_on, security_label and quarter of the headline, consensus_usd, n_families, dispersion_pct (null below two families) with the high and low family, latest_filed_on, latest_as_of, live_marks, labels, last_print and spv_vehicles. A name with no per-share series has null headline fields and its live_marks count.",
+        "One row per watchlist name, by slug: slug, name, listed_on, security_label and quarter of the headline, consensus_usd, n_families, dispersion_pct (null below two families) with the high and low family, latest_filed_on, latest_as_of, live_marks, labels, last_print, spv_vehicles, coverage (what full-text search found naming it) and no_marks (why a name with no live mark has none: code and reason). A name with no per-share series has null headline fields and its live_marks count.",
     } satisfies FieldDocs<RefNamesPayload>,
     example: "names",
   },
@@ -81,6 +81,12 @@ export const REF_ROUTES: readonly RouteDoc[] = [
         "slug, name, legal_name, watchlisted, incorporation_state with the filing it was read from, listed_on and listing_url (the final prospectus) once listed.",
       marks_summary:
         "Counts of the live marks: live, in_series, and those kept out of per-share series (no_per_share, not_comparable_label, after_listing); latest_filed_on and latest_as_of.",
+      coverage:
+        "What EDGAR full-text search found naming the name (data/index/filing-counts.json): the search's dates, nport_filings, ncsr_filings, nport_families, families and latest_filed. Null when it was not searched.",
+      no_marks:
+        "Null when the name has a live mark; otherwise code (named_in_no_fund_filing, named_in_ncsr_only, no_matching_holding, not_ingested, not_searched), reason in one sentence, and the N-PORT filings it names when there are ten or fewer, each with whether ingest read it.",
+      out_of_series:
+        "Live marks published as filed that enter no per-share series, grouped by status (no_per_share, not_comparable_label, after_listing) and security_label: reason, n_marks, n_filers, latest_as_of and recent[] (the newest twelve, each with its document). The marks route serves every row.",
       headline:
         "The label and quarter the daily page leads with: security_label, quarter, consensus_usd, n_families, dispersion_pct. Null without a per-share series.",
       labels:

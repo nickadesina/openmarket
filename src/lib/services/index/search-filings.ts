@@ -10,6 +10,7 @@ import { searchFullText } from "../../ingest/fetch/efts.js";
 import { filingDocumentUrl, type SecClient } from "../../ingest/fetch/sec.js";
 import { type EftsHit, filingsFromHits } from "../../ingest/parse/efts.js";
 import type { WatchlistIssuer } from "../../ingest/parse/watchlist.js";
+import { parseCsv } from "../../tradeables/csv.js";
 
 /** The form families the search covers; EDGAR returns each one's `/A` with it. */
 export const SEARCH_FORMS = ["NPORT-P", "N-CSR", "N-CSRS"] as const;
@@ -242,4 +243,134 @@ ${
     ? "\nNo query reached EDGAR's 10,000-hit ceiling after narrowing by date.\n"
     : `\nStill at EDGAR's 10,000-hit ceiling on a single day (filings past the ceiling are missing): ${truncated.map((count) => `${count.slug} (${count.truncatedDays.join(", ")})`).join("; ")}.\n`
 }`;
+}
+
+/**
+ * The search's rows read back from data/index/filings-by-name.csv, so the
+ * counts files can be rewritten without searching again (`index:search --
+ * --recount`). Issuers the watchlist no longer has are dropped; an issuer with
+ * no row has no filings.
+ */
+export function searchesFromCsv(text: string, issuers: readonly WatchlistIssuer[]): IssuerSearch[] {
+  const bySlug = new Map<string, IssuerFiling[]>(issuers.map((issuer) => [issuer.slug, []]));
+  const watchlisted = new Map(issuers.map((issuer) => [issuer.slug, issuer.watchlisted]));
+  for (const row of parseCsv(text)) {
+    const filings = bySlug.get(row.issuer!);
+    if (filings === undefined) continue;
+    const formFamily = row.form!.replace(/\/A$/, "") as SearchForm;
+    if (!SEARCH_FORMS.includes(formFamily)) throw new Error(`unknown form ${row.form}`);
+    filings.push({
+      issuerSlug: row.issuer!,
+      watchlisted: watchlisted.get(row.issuer!) ?? false,
+      formFamily,
+      form: row.form!,
+      filerName: row.filer!,
+      cik: row.cik!,
+      filedOn: row.filed === "" ? null : row.filed!,
+      periodEnding: row.period === "" ? null : row.period!,
+      accession: row.accession!,
+      url: row.url!,
+      fileNames: [],
+    });
+  }
+  return issuers.map((issuer) => ({
+    issuer,
+    filings: sortFilings(bySlug.get(issuer.slug) ?? []),
+    truncatedDays: [],
+  }));
+}
+
+/** A name's N-PORT filings are listed in filing-counts.json only up to this many. */
+export const FILING_COUNTS_LIST_MAX = 10;
+
+export interface FilingCountsIssuer {
+  readonly slug: string;
+  readonly name: string;
+  readonly watchlisted: boolean;
+  readonly nport_filings: number;
+  readonly ncsr_filings: number;
+  readonly ncsrs_filings: number;
+  readonly registrants: number;
+  readonly families: number;
+  readonly nport_families: number;
+  readonly latest_filed: string | null;
+  /** Each N-PORT filing naming it, when there are at most FILING_COUNTS_LIST_MAX; else null. */
+  readonly nport_listed:
+    | readonly {
+        readonly accession: string;
+        readonly filer_name: string;
+        readonly cik: string;
+        readonly filed_on: string | null;
+        readonly url: string;
+      }[]
+    | null;
+}
+
+export interface FilingCountsFile {
+  readonly fetched_at: string;
+  readonly start_date: string;
+  readonly end_date: string;
+  readonly families_version: string;
+  readonly issuers: readonly FilingCountsIssuer[];
+}
+
+/**
+ * data/index/filing-counts.json: filer-counts.md's table as data, which the
+ * daily page reads to say why a name has no filer marks (a phrase in no fund
+ * filing, in N-CSR text only, or in N-PORT filings with no matching holding).
+ */
+export function filingCountsJson(
+  searches: readonly IssuerSearch[],
+  counts: readonly IssuerCounts[],
+  context: { fetchedAt: string; startDate: string; endDate: string; familiesVersion: string },
+): string {
+  const filingsOf = new Map(searches.map((search) => [search.issuer.slug, search.filings]));
+  const file: FilingCountsFile = {
+    fetched_at: context.fetchedAt,
+    start_date: context.startDate,
+    end_date: context.endDate,
+    families_version: context.familiesVersion,
+    issuers: [...counts]
+      .sort((a, b) => a.slug.localeCompare(b.slug))
+      .map((count) => {
+        const nport = (filingsOf.get(count.slug) ?? []).filter(
+          (filing) => filing.formFamily === "NPORT-P",
+        );
+        return {
+          slug: count.slug,
+          name: count.name,
+          watchlisted: count.watchlisted,
+          nport_filings: count.byForm["NPORT-P"],
+          ncsr_filings: count.byForm["N-CSR"],
+          ncsrs_filings: count.byForm["N-CSRS"],
+          registrants: count.registrants,
+          families: count.families,
+          nport_families: count.nportFamilies,
+          latest_filed: count.latestFiled,
+          nport_listed:
+            nport.length > FILING_COUNTS_LIST_MAX
+              ? null
+              : nport.map((filing) => ({
+                  accession: filing.accession,
+                  filer_name: filing.filerName,
+                  cik: filing.cik,
+                  filed_on: filing.filedOn,
+                  url: filing.url,
+                })),
+        };
+      }),
+  };
+  return `${JSON.stringify(file, null, 2)}\n`;
+}
+
+/** The fetch time and date range filer-counts.md records in its first paragraph. */
+export function countsContextFromMarkdown(
+  markdown: string,
+): { fetchedAt: string; startDate: string; endDate: string } | null {
+  const match =
+    /Fetched (\S+) by `npm run index:search`.*?filings dated (\d{4}-\d{2}-\d{2}) to (\d{4}-\d{2}-\d{2})/s.exec(
+      markdown,
+    );
+  if (match === null) return null;
+  return { fetchedAt: match[1]!, startDate: match[2]!, endDate: match[3]! };
 }

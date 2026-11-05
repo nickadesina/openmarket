@@ -10,7 +10,8 @@ import type { Kysely } from "kysely";
 import type { Database } from "../../db/schema.js";
 import type { FilerFamilies } from "../../engine/index/families.js";
 import { loadFilerFamilies } from "./data-files.js";
-import { getNameIndex } from "./get-name-index.js";
+import { getNameIndex, type NameIndex } from "./get-name-index.js";
+import type { NameCoverage, NoMarks } from "./name-coverage.js";
 import { type RefEnvelope, refEnvelope } from "./ref-envelope.js";
 
 export interface NameRow {
@@ -38,6 +39,10 @@ export interface NameRow {
     readonly price_per_share_usd: string | null;
   } | null;
   readonly spv_vehicles: number;
+  /** What full-text search found naming it; null when it was not searched. */
+  readonly coverage: NameCoverage | null;
+  /** Why it has no live mark; null when it has one. */
+  readonly no_marks: NoMarks | null;
 }
 
 export interface NamesList extends RefEnvelope {
@@ -57,43 +62,49 @@ export async function listNames(
     .where("watchlisted", "=", true)
     .orderBy("slug")
     .execute();
-  const names: NameRow[] = [];
-  for (const { slug } of slugs) {
-    const index = await getNameIndex(db, slug, { families, now: () => now });
-    if (index === null) continue;
-    const headline = index.headline;
-    const point =
-      headline === null
-        ? undefined
-        : index.labels
-            .find((label) => label.security_label === headline.security_label)
-            ?.consensus.find((entry) => entry.quarter === headline.quarter);
-    names.push({
-      slug,
-      name: index.issuer.name,
-      listed_on: index.issuer.listed_on,
-      security_label: headline?.security_label ?? null,
-      quarter: headline?.quarter ?? null,
-      consensus_usd: headline?.consensus_usd ?? null,
-      n_families: headline?.n_families ?? null,
-      dispersion_pct: headline?.dispersion_pct ?? null,
-      dispersion_high_family: point?.dispersion?.high.family_slug ?? null,
-      dispersion_low_family: point?.dispersion?.low.family_slug ?? null,
-      latest_filed_on: index.marks_summary.latest_filed_on,
-      latest_as_of: index.marks_summary.latest_as_of,
-      live_marks: index.marks_summary.live,
-      labels: index.labels.length,
-      last_print:
-        index.last_print === null
-          ? null
-          : {
-              round_name: index.last_print.round_name,
-              announced_on: index.last_print.announced_on,
-              post_money_usd: index.last_print.post_money_usd,
-              price_per_share_usd: index.last_print.price_per_share_usd,
-            },
-      spv_vehicles: index.spv.vehicles.length,
-    });
-  }
+  // Every name at once: the pool queues the reads, and each name's arithmetic
+  // runs while another's rows are in flight.
+  const indexes = await Promise.all(
+    slugs.map(({ slug }) => getNameIndex(db, slug, { families, now: () => now })),
+  );
+  const names = indexes.filter((index) => index !== null).map(nameRow);
   return { ...refEnvelope(now), families_version: families.version, names };
+}
+
+function nameRow(index: NameIndex): NameRow {
+  const headline = index.headline;
+  const point =
+    headline === null
+      ? undefined
+      : index.labels
+          .find((label) => label.security_label === headline.security_label)
+          ?.consensus.find((entry) => entry.quarter === headline.quarter);
+  return {
+    slug: index.issuer.slug,
+    name: index.issuer.name,
+    listed_on: index.issuer.listed_on,
+    security_label: headline?.security_label ?? null,
+    quarter: headline?.quarter ?? null,
+    consensus_usd: headline?.consensus_usd ?? null,
+    n_families: headline?.n_families ?? null,
+    dispersion_pct: headline?.dispersion_pct ?? null,
+    dispersion_high_family: point?.dispersion?.high.family_slug ?? null,
+    dispersion_low_family: point?.dispersion?.low.family_slug ?? null,
+    latest_filed_on: index.marks_summary.latest_filed_on,
+    latest_as_of: index.marks_summary.latest_as_of,
+    live_marks: index.marks_summary.live,
+    labels: index.labels.length,
+    last_print:
+      index.last_print === null
+        ? null
+        : {
+            round_name: index.last_print.round_name,
+            announced_on: index.last_print.announced_on,
+            post_money_usd: index.last_print.post_money_usd,
+            price_per_share_usd: index.last_print.price_per_share_usd,
+          },
+    spv_vehicles: index.spv.vehicles.length,
+    coverage: index.coverage,
+    no_marks: index.no_marks,
+  };
 }

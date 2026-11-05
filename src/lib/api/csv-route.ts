@@ -10,14 +10,15 @@ import { consumeRefQuota } from "../services/ref-access.js";
 import { csvLine, csvRecord } from "../tradeables/csv.js";
 import { DATA_LICENSE_PATH } from "../tradeables/ref-docs.js";
 import { type ErrorCode, isServiceError } from "./errors.js";
-import { assertOnlyQueryParameters } from "./pagination.js";
-import { REF_CACHE_SECONDS } from "./ref-route.js";
+import { parseRefQuery, REF_CACHE_SECONDS, type RefQuery } from "./ref-route.js";
 import { errorCode, jsonError, jsonUnexpectedError, REQUEST_ID_HEADER } from "./response.js";
 
-export interface CsvRouteContext {
+export interface CsvRouteContext<Query = undefined> {
   readonly db: Kysely<Database>;
   readonly searchParams: URLSearchParams;
   readonly now: Date;
+  /** The parsed query, validated before the quota is drawn. */
+  readonly query: Query;
 }
 
 /**
@@ -29,10 +30,10 @@ export interface CsvRouteContext {
  * error envelope; one after it ends the stream with an error, and the client
  * sees a truncated download rather than a partial file presented as whole.
  */
-export async function withCsvRoute(
+export async function withCsvRoute<Query = undefined>(
   request: Request,
-  allowedParameters: readonly string[],
-  open: (context: CsvRouteContext) => CsvTable,
+  spec: readonly string[] | RefQuery<Query>,
+  open: (context: CsvRouteContext<Query>) => CsvTable,
 ): Promise<Response> {
   const requestId = randomUUID();
   const startedAt = performance.now();
@@ -40,7 +41,7 @@ export async function withCsvRoute(
   let failureCode: ErrorCode | "INTERNAL_ERROR" | undefined;
   try {
     const url = new URL(request.url);
-    assertOnlyQueryParameters(url.searchParams, allowedParameters);
+    const query = parseRefQuery(url.searchParams, spec);
     await consumeRefQuota(getRuntimeDatabase, request);
     const table = open({
       get db() {
@@ -48,6 +49,7 @@ export async function withCsvRoute(
       },
       searchParams: url.searchParams,
       now: new Date(),
+      query,
     });
     const iterator = table.batches[Symbol.asyncIterator]();
     const first = await iterator.next();

@@ -4,14 +4,15 @@ import { getRefCorrections } from "../../../../lib/services/index/ref-correction
 export const runtime = "nodejs";
 
 export function GET(request: Request): Promise<Response> {
-  return withRefRoute(request, ["limit", "cursor"], (context) =>
-    getRefCorrections(
-      context.db,
-      {
-        limit: parseRefLimit(context.searchParams),
-        cursor: parseRefCursor(context.searchParams),
-      },
-      { now: context.now },
-    ),
+  return withRefRoute(
+    request,
+    {
+      parameters: ["limit", "cursor"],
+      parse: (searchParams) => ({
+        limit: parseRefLimit(searchParams),
+        cursor: parseRefCursor(searchParams),
+      }),
+    },
+    (context) => getRefCorrections(context.db, context.query, { now: context.now }),
   );
 }

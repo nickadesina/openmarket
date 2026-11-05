@@ -4,11 +4,14 @@ import { getRefMethodology } from "../../../../lib/services/index/ref-methodolog
 export const runtime = "nodejs";
 
 export function GET(request: Request): Promise<Response> {
-  return withRefRoute(request, ["include"], (context) =>
-    getRefMethodology(
-      context.db,
-      { includeFamilies: parseRefInclude(context.searchParams, ["families"]) === "families" },
-      { now: context.now },
-    ),
+  return withRefRoute(
+    request,
+    {
+      parameters: ["include"],
+      parse: (searchParams) => ({
+        includeFamilies: parseRefInclude(searchParams, ["families"]) === "families",
+      }),
+    },
+    (context) => getRefMethodology(context.db, context.query, { now: context.now }),
   );
 }

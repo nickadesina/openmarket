@@ -5,10 +5,13 @@ import { certificateTermsCsv } from "../../../lib/services/index/data-csv.js";
 export const runtime = "nodejs";
 
 export function GET(request: Request): Promise<Response> {
-  return withCsvRoute(request, ["include"], (context) =>
-    certificateTermsCsv(context.db, {
-      now: context.now,
-      includeSuperseded: parseRefInclude(context.searchParams, ["superseded"]) === "superseded",
-    }),
+  return withCsvRoute(
+    request,
+    {
+      parameters: ["include"],
+      parse: (searchParams) => parseRefInclude(searchParams, ["superseded"]) === "superseded",
+    },
+    (context) =>
+      certificateTermsCsv(context.db, { now: context.now, includeSuperseded: context.query }),
   );
 }

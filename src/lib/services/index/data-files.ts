@@ -13,6 +13,7 @@ export const WATCHLIST_PATH = "data/index/watchlist.json";
 export const FILER_FAMILIES_PATH = "data/index/filer-families.json";
 export const FILINGS_CSV_PATH = "data/index/filings-by-name.csv";
 export const FILER_COUNTS_PATH = "data/index/filer-counts.md";
+export const FILING_COUNTS_PATH = "data/index/filing-counts.json";
 
 export function loadWatchlist(root = process.cwd()): Watchlist {
   return parseWatchlist(readFileSync(join(root, WATCHLIST_PATH), "utf8"));

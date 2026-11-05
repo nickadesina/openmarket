@@ -41,6 +41,7 @@ import {
 } from "../../engine/index/waterfall.js";
 import { loadFilerFamilies } from "./data-files.js";
 import { PRINT_EVENT_TYPES } from "./import-certificates.js";
+import { type NameCoverage, type NoMarks, nameCoverage, noMarksReason } from "./name-coverage.js";
 import { type RefEnvelope, refEnvelope } from "./ref-envelope.js";
 
 export interface DocumentRef {
@@ -236,6 +237,24 @@ export interface MarksSummary {
   readonly latest_as_of: string | null;
 }
 
+/** A live mark that entered no per-share series, as filed, with the date it is as of. */
+export interface OutOfSeriesMark extends MarkDocument {
+  readonly as_of: string;
+}
+
+/** How many marks of one label stayed out of the per-share series, why, and the latest as filed. */
+export interface OutOfSeriesGroup {
+  readonly status: Exclude<SeriesStatus, "in_series">;
+  readonly security_label: string;
+  /** Why these marks enter no series, in one sentence (METHODOLOGY.md). */
+  readonly reason: string;
+  readonly n_marks: number;
+  readonly n_filers: number;
+  readonly latest_as_of: string;
+  /** The newest marks by as-of date (then filing date), at most OUT_OF_SERIES_RECENT. */
+  readonly recent: readonly OutOfSeriesMark[];
+}
+
 export interface NameIndex extends RefEnvelope {
   readonly families_version: string;
   readonly issuer: {
@@ -249,6 +268,12 @@ export interface NameIndex extends RefEnvelope {
     readonly listing_url: string | null;
   };
   readonly marks_summary: MarksSummary;
+  /** What full-text search found naming it (data/index/filing-counts.json); null when it was not searched. */
+  readonly coverage: NameCoverage | null;
+  /** Why it has no live mark; null when it has one. */
+  readonly no_marks: NoMarks | null;
+  /** Live marks published as filed that enter no per-share series, by reason and label. */
+  readonly out_of_series: readonly OutOfSeriesGroup[];
   /** The label and quarter the daily page leads with (METHODOLOGY.md, "Headline label"). */
   readonly headline: {
     readonly security_label: string;
@@ -410,6 +435,70 @@ export function seriesInputs(
       latest_as_of: latestAsOf,
     },
   };
+}
+
+/** The newest marks each out-of-series group lists in full; the marks route serves the rest. */
+export const OUT_OF_SERIES_RECENT = 12;
+
+const UNCLASSIFIED = "Unclassified";
+
+/** Why a mark stays out of the series, as METHODOLOGY.md states the rule. */
+export function outOfSeriesReason(
+  status: Exclude<SeriesStatus, "in_series">,
+  securityLabel: string,
+  listedOn: string | null,
+): string {
+  if (status === "no_per_share")
+    return "No per-share mark: the balance is not counted in shares (N-PORT units other than NS) or is not above zero, so the row counts toward value only (METHODOLOGY.md, The unit).";
+  if (status === "after_listing")
+    return `As of on or after ${listedOn}, the date of the final IPO prospectus: a listed-stock mark, set from the market rather than by a valuation committee (METHODOLOGY.md, Listed names).`;
+  if (securityLabel === UNCLASSIFIED)
+    return "The classifier names no security for it: the title names no series or class (often the issuer's name alone), or one the holding's name contradicts, or it is a right, swap, loan, debt or derivative. Which security it is is not known, so it is compared with nothing (METHODOLOGY.md, Security labels).";
+  return `One ${securityLabel} label covers instruments with different terms (vehicle, strike, cap, principal), so a per-share figure on one is not compared with another's (METHODOLOGY.md, Security labels).`;
+}
+
+/** Live marks outside the series, grouped by reason and label, largest group first. */
+export function outOfSeriesGroups(
+  rows: readonly MarkRow[],
+  listedOn: string | null,
+): OutOfSeriesGroup[] {
+  const groups = new Map<string, { status: Exclude<SeriesStatus, "in_series">; rows: MarkRow[] }>();
+  for (const row of rows) {
+    const status = seriesStatus(row, listedOn);
+    if (status === "in_series") continue;
+    const key = `${status}\u0000${row.security_label}`;
+    const group = groups.get(key);
+    if (group === undefined) groups.set(key, { status, rows: [row] });
+    else group.rows.push(row);
+  }
+  return [...groups.values()]
+    .map(({ status, rows: members }) => {
+      const sorted = [...members].sort(
+        (a, b) =>
+          b.as_of.localeCompare(a.as_of) ||
+          (b.filed_on ?? "").localeCompare(a.filed_on ?? "") ||
+          a.filer_name.localeCompare(b.filer_name) ||
+          a.id.localeCompare(b.id),
+      );
+      const securityLabel = sorted[0]!.security_label;
+      return {
+        status,
+        security_label: securityLabel,
+        reason: outOfSeriesReason(status, securityLabel, listedOn),
+        n_marks: members.length,
+        n_filers: new Set(members.map((row) => row.filer_cik ?? row.filer_name)).size,
+        latest_as_of: sorted[0]!.as_of,
+        recent: sorted
+          .slice(0, OUT_OF_SERIES_RECENT)
+          .map((row) => ({ ...markDocument(row), as_of: row.as_of })),
+      };
+    })
+    .sort(
+      (a, b) =>
+        b.n_marks - a.n_marks ||
+        a.status.localeCompare(b.status) ||
+        a.security_label.localeCompare(b.security_label),
+    );
 }
 
 function dispersionFamily(point: {
@@ -838,9 +927,14 @@ export async function getNameIndex(
     .executeTakeFirst();
   if (issuer === undefined) return null;
 
-  const rows = await liveMarks(db, issuer.id);
+  // Independent reads; the pool queues them past its size.
+  const [rows, prints, structure, vehicles] = await Promise.all([
+    liveMarks(db, issuer.id),
+    loadPrints(db, issuer.id),
+    loadStructure(db, issuer.id),
+    loadVehicles(db, issuer.id),
+  ]);
   const { inputs, summary } = seriesInputs(rows, issuer.listed_on);
-  const prints = await loadPrints(db, issuer.id);
   const inputsForPrint = printInputs(prints);
   const { labels, points } = labelSeries(inputs, rows, families, inputsForPrint);
   const today = now.toISOString().slice(0, 10);
@@ -877,6 +971,9 @@ export async function getNameIndex(
       listing_url: issuer.listing_url,
     },
     marks_summary: summary,
+    coverage: nameCoverage(issuer.slug),
+    no_marks: rows.length === 0 ? await noMarksReason(db, issuer.slug) : null,
+    out_of_series: outOfSeriesGroups(rows, issuer.listed_on),
     headline:
       headline === null
         ? null
@@ -890,9 +987,9 @@ export async function getNameIndex(
     labels,
     last_print: lastPrint,
     prints,
-    structure: await loadStructure(db, issuer.id),
+    structure,
     spv: {
-      vehicles: await loadVehicles(db, issuer.id),
+      vehicles,
       quotes: await loadQuotes(db, issuer.id, points),
     },
   };

@@ -497,6 +497,78 @@ postgresDescribe(suiteName, () => {
     );
   });
 
+  it("downloads one name's filer marks and SPV matches, and refuses an unknown issuer", async () => {
+    const response = await filerMarksCsvRoute(get("/data/filer-marks.csv?issuer=anthropic"));
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-disposition")).toBe(
+      'attachment; filename="filer-marks-anthropic.csv"',
+    );
+    const rows = parseCsv(await response.text());
+    expect(rows).toHaveLength(3);
+    expect(new Set(rows.map((row) => row.issuer_slug))).toEqual(new Set(["anthropic"]));
+    const vehicles = parseCsv(
+      await (await spvMatchesCsv(get("/data/spv-matches.csv?issuer=anthropic"))).text(),
+    );
+    expect(vehicles.length).toBeGreaterThan(0);
+    expect(new Set(vehicles.map((row) => row.issuer_slug))).toEqual(new Set(["anthropic"]));
+
+    const unknown = await filerMarksCsvRoute(get("/data/filer-marks.csv?issuer=no-such-name"));
+    expect(unknown.status).toBe(404);
+    expect((await unknown.json()).error.code).toBe("NAME_NOT_FOUND");
+    expect((await filerMarksCsvRoute(get("/data/filer-marks.csv?issuer=Bad_Slug"))).status).toBe(
+      400,
+    );
+  });
+
+  it("refuses a malformed query before drawing on the quota", async () => {
+    const key = generateApiKey();
+    await insertApiKey(postgres.db, { name: "Desk", keyHash: hashApiKey(key), quotaPerMinute: 1 });
+    const headers = { authorization: `Bearer ${key}` };
+    for (const path of ["/api/ref/anthropic/marks?limit=0", "/api/ref/anthropic/marks?include=x"]) {
+      const refused = await marksRoute(get(path, headers), slug("anthropic"));
+      expect(refused.status).toBe(400);
+    }
+    expect((await nameRoute(get("/api/ref/Bad_Slug", headers), slug("Bad_Slug"))).status).toBe(400);
+    expect(
+      (await filerMarksCsvRoute(get("/data/filer-marks.csv?include=all", headers))).status,
+    ).toBe(400);
+    // The key's one request a minute is still unspent.
+    const served = await marksRoute(get("/api/ref/anthropic/marks", headers), slug("anthropic"));
+    expect(served.status).toBe(200);
+    const spent = await marksRoute(get("/api/ref/anthropic/marks", headers), slug("anthropic"));
+    expect(spent.status).toBe(429);
+  });
+
+  it("says why a name has no filer marks, from the search's counts", async () => {
+    const body = await published(await namesRoute(get("/api/ref/names")));
+    const row = (value: string) => body.names.find((name: { slug: string }) => name.slug === value);
+    expect(row("anthropic").no_marks).toBeNull();
+    expect(row("anthropic").coverage).toMatchObject({ nport_filings: expect.any(Number) });
+    expect(row("modal")).toMatchObject({
+      live_marks: 0,
+      no_marks: { code: "named_in_no_fund_filing" },
+    });
+    expect(row("scale-ai").no_marks.code).toBe("named_in_ncsr_only");
+    // Powerlaw's N-PORT names Rippling; this database has not read it.
+    expect(row("rippling").no_marks).toMatchObject({
+      code: "not_ingested",
+      filings: [{ accession: "0002052053-26-000004", read: false }],
+    });
+  });
+
+  it("publishes the marks that enter no series as filed, with the reason", async () => {
+    const body = await published(await nameRoute(get("/api/ref/epic-games"), slug("epic-games")));
+    expect(body.marks_summary.in_series).toBe(0);
+    expect(body.out_of_series).toHaveLength(1);
+    const [group] = body.out_of_series;
+    expect(group).toMatchObject({ n_marks: 1, n_filers: 1, latest_as_of: "2022-02-28" });
+    expect(group.reason).toContain("METHODOLOGY.md");
+    expect(group.recent[0]).toMatchObject({
+      accession: "0001145549-22-028055",
+      as_of: "2022-02-28",
+    });
+  });
+
   it("keeps a keyed download private", async () => {
     const key = generateApiKey();
     await insertApiKey(postgres.db, { name: "Desk", keyHash: hashApiKey(key), quotaPerMinute: 5 });

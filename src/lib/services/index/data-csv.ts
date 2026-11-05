@@ -7,6 +7,8 @@
  *
  * Live rows by default; `include=superseded` adds the rows a later filing or
  * a correction replaced, with `status` and `superseded_by` saying so.
+ * `issuer=<slug>` limits filer-marks.csv and spv-matches.csv to one name (the
+ * file each name page links); an unknown slug is `404 NAME_NOT_FOUND`.
  */
 import type { Kysely } from "kysely";
 
@@ -16,6 +18,7 @@ import type { CsvValue } from "../../tradeables/csv.js";
 import { afterPosition, cursorTime, type KeysetPosition } from "../ref-common.js";
 import { PUBLISHED_FILER_FAMILIES } from "./published-families.js";
 import { refEnvelope } from "./ref-envelope.js";
+import { nameNotFound } from "./ref-name.js";
 
 export type CsvRow = readonly CsvValue[];
 
@@ -31,8 +34,25 @@ export interface CsvOptions {
   readonly now: Date;
   readonly includeSuperseded: boolean;
   readonly families?: FilerFamilies;
+  /** Only this issuer's rows (validated by the route). */
+  readonly issuerSlug?: string | undefined;
   /** Rows per database read. */
   readonly batchSize?: number;
+}
+
+/** Fails with NAME_NOT_FOUND before the first row when the issuer filter names no issuer. */
+async function requireIssuerSlug(db: Kysely<Database>, slug: string | undefined): Promise<void> {
+  if (slug === undefined) return;
+  const found = await db
+    .selectFrom("issuers")
+    .select("id")
+    .where("slug", "=", slug)
+    .executeTakeFirst();
+  if (found === undefined) throw nameNotFound(slug);
+}
+
+function csvFilename(base: string, slug: string | undefined): string {
+  return slug === undefined ? `${base}.csv` : `${base}-${slug}.csv`;
 }
 
 const DEFAULT_BATCH = 5000;
@@ -92,6 +112,7 @@ async function* filerMarkBatches(
   const batchSize = options.batchSize ?? DEFAULT_BATCH;
   const familyOf = new Map<string, ReturnType<typeof resolveFamily>>();
   let position: KeysetPosition | null = null;
+  await requireIssuerSlug(db, options.issuerSlug);
   for (;;) {
     let select = db
       .selectFrom("filer_marks")
@@ -130,6 +151,8 @@ async function* filerMarkBatches(
         "source_documents.parser_version",
       ]);
     if (!options.includeSuperseded) select = select.where("filer_marks.superseded_by", "is", null);
+    if (options.issuerSlug !== undefined)
+      select = select.where("issuers.slug", "=", options.issuerSlug);
     if (position !== null) {
       select = select.where(
         afterPosition("filer_marks.created_at", "filer_marks.id", position, "uuid"),
@@ -193,7 +216,7 @@ async function* filerMarkBatches(
 export function filerMarksCsv(db: Kysely<Database>, options: CsvOptions): CsvTable {
   const families = options.families ?? PUBLISHED_FILER_FAMILIES;
   return {
-    filename: "filer-marks.csv",
+    filename: csvFilename("filer-marks", options.issuerSlug),
     columns: FILER_MARKS_COLUMNS,
     batches: filerMarkBatches(db, { ...options, families }),
     versions: versionHeaders(options.now, families.version),
@@ -337,8 +360,12 @@ export const SPV_MATCHES_COLUMNS = [
 ] as const;
 
 /** One row per Form D: each vehicle's filings, matched to a name or `unmatched`. */
-async function* spvBatches(db: Kysely<Database>): AsyncGenerator<readonly CsvRow[]> {
-  const rows = await db
+async function* spvBatches(
+  db: Kysely<Database>,
+  issuerSlug: string | undefined,
+): AsyncGenerator<readonly CsvRow[]> {
+  await requireIssuerSlug(db, issuerSlug);
+  let select = db
     .selectFrom("spv_vehicles")
     .innerJoin("source_documents", "source_documents.id", "spv_vehicles.document_id")
     .leftJoin("issuers", "issuers.id", "spv_vehicles.issuer_id")
@@ -361,7 +388,9 @@ async function* spvBatches(db: Kysely<Database>): AsyncGenerator<readonly CsvRow
       "source_documents.document_url",
       "source_documents.filer_name",
       "source_documents.filed_on",
-    ])
+    ]);
+  if (issuerSlug !== undefined) select = select.where("issuers.slug", "=", issuerSlug);
+  const rows = await select
     .orderBy("issuers.slug", (order) => order.asc().nullsLast())
     .orderBy("spv_vehicles.vehicle_cik")
     .orderBy("source_documents.filed_on")
@@ -392,9 +421,9 @@ async function* spvBatches(db: Kysely<Database>): AsyncGenerator<readonly CsvRow
 
 export function spvMatchesCsv(db: Kysely<Database>, options: CsvOptions): CsvTable {
   return {
-    filename: "spv-matches.csv",
+    filename: csvFilename("spv-matches", options.issuerSlug),
     columns: SPV_MATCHES_COLUMNS,
-    batches: spvBatches(db),
+    batches: spvBatches(db, options.issuerSlug),
     versions: versionHeaders(options.now),
   };
 }

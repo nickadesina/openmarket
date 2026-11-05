@@ -11,11 +11,23 @@ import {
   registrantAdviser,
 } from "../../src/lib/services/index/build-families.js";
 import {
+  FILER_COUNTS_PATH,
+  FILING_COUNTS_PATH,
+  FILINGS_CSV_PATH,
+  loadFilerFamilies,
+  loadWatchlist,
+} from "../../src/lib/services/index/data-files.js";
+import {
   byDensity,
+  countsContextFromMarkdown,
+  FILING_COUNTS_LIST_MAX,
   FILINGS_CSV_COLUMNS,
+  type FilingCountsFile,
   filerCountsMarkdown,
+  filingCountsJson,
   filingsCsv,
   issuerCounts,
+  searchesFromCsv,
   searchIssuers,
 } from "../../src/lib/services/index/search-filings.js";
 
@@ -187,5 +199,55 @@ describe("data/index/filer-families.json", () => {
       .slice(1)
       .map((row) => /,(\d+),[a-z0-9-]+,\d{4}-/.exec(row)?.[1]);
     expect(searched.every((cik) => cik !== undefined && placed.has(cik))).toBe(true);
+  });
+});
+
+describe("the counts files, recounted from the CSV", () => {
+  it("reproduce the committed filer-counts.md and filing-counts.json from filings-by-name.csv", () => {
+    const markdown = readFileSync(FILER_COUNTS_PATH, "utf8");
+    const context = countsContextFromMarkdown(markdown);
+    expect(context).not.toBeNull();
+    const families = loadFilerFamilies();
+    const familyOf = familyLookup(families);
+    const searches = searchesFromCsv(
+      readFileSync(FILINGS_CSV_PATH, "utf8"),
+      loadWatchlist().issuers,
+    );
+    const counts = issuerCounts(searches, familyOf);
+    const full = { ...context!, familiesVersion: families.version };
+    expect(filerCountsMarkdown(counts, full)).toBe(markdown);
+    expect(filingCountsJson(searches, counts, full)).toBe(readFileSync(FILING_COUNTS_PATH, "utf8"));
+  });
+
+  it("lists a name's N-PORT filings only when there are few", () => {
+    const file = JSON.parse(readFileSync(FILING_COUNTS_PATH, "utf8")) as FilingCountsFile;
+    for (const issuer of file.issuers) {
+      if (issuer.nport_filings <= FILING_COUNTS_LIST_MAX) {
+        expect(issuer.nport_listed).toHaveLength(issuer.nport_filings);
+      } else expect(issuer.nport_listed).toBeNull();
+    }
+  });
+
+  it("reads a CSV written by filingsCsv back into the same filings", () => {
+    const filing = {
+      issuerSlug: "anthropic",
+      watchlisted: true,
+      formFamily: "NPORT-P" as const,
+      form: "NPORT-P/A",
+      filerName: "Fund, Inc.",
+      cik: "707823",
+      filedOn: "2026-10-26",
+      periodEnding: null,
+      accession: "0000035402-26-006778",
+      url: "https://www.sec.gov/Archives/edgar/data/707823/000003540226006778/primary_doc.xml",
+      fileNames: [],
+    };
+    const text = filingsCsv(
+      [{ issuer: ANTHROPIC, filings: [filing], truncatedDays: [] }],
+      () => "f",
+    );
+    expect(searchesFromCsv(text, [ANTHROPIC])).toEqual([
+      { issuer: ANTHROPIC, filings: [filing], truncatedDays: [] },
+    ]);
   });
 });

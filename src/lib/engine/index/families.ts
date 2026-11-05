@@ -126,6 +126,26 @@ export function parseFilerFamilies(input: unknown): FilerFamilies {
  * The family a registrant belongs to. A registrant the file does not list is
  * its own family, `cik-<cik>`, named after the registrant.
  */
+/** Each families object's CIK → family, built once: a name page resolves thousands of marks. */
+const FAMILY_BY_CIK = new WeakMap<FilerFamilies, ReadonlyMap<string, FilerFamily>>();
+
+function familyByCik(families: FilerFamilies): ReadonlyMap<string, FilerFamily> {
+  let index = FAMILY_BY_CIK.get(families);
+  if (index === undefined) {
+    const built = new Map<string, FilerFamily>();
+    // The first family listing a CIK wins, as the scan this replaces did.
+    for (const family of families.families) {
+      for (const member of family.ciks) {
+        const normalized = normalizeCik(member);
+        if (!built.has(normalized)) built.set(normalized, family);
+      }
+    }
+    index = built;
+    FAMILY_BY_CIK.set(families, index);
+  }
+  return index;
+}
+
 export function resolveFamily(
   families: FilerFamilies,
   cik: string,
@@ -133,11 +153,8 @@ export function resolveFamily(
 ): FamilyRef {
   const normalized = normalizeCik(cik);
   assertNonEmptyString(registrantName, "registrantName");
-  for (const family of families.families) {
-    if (family.ciks.some((member) => normalizeCik(member) === normalized)) {
-      return { slug: family.slug, name: family.name, mapped: true };
-    }
-  }
+  const family = familyByCik(families).get(normalized);
+  if (family !== undefined) return { slug: family.slug, name: family.name, mapped: true };
   return { slug: `cik-${normalized}`, name: registrantName, mapped: false };
 }
 
