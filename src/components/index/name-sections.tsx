@@ -158,17 +158,17 @@ function ConsensusRow({
           formatPercent(point.dispersion.pct)
         )}
       </td>
-      <td>
+      <td className={styles.nowrap}>
         {point.dispersion === null ? null : (
           <FamilyFigure label={label} family={point.dispersion.high} />
         )}
       </td>
-      <td>
+      <td className={styles.nowrap}>
         {point.dispersion === null ? null : (
           <FamilyFigure label={label} family={point.dispersion.low} />
         )}
       </td>
-      <td>
+      <td className={styles.nowrap}>
         <VersusPrint result={point.mark_vs_print} />
       </td>
     </tr>

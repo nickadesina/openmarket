@@ -95,7 +95,7 @@ export async function noMarksReason(db: Kysely<Database>, slug: string): Promise
   if (counts.nport_filings === 0 && ncsr === 0) {
     return {
       code: "named_in_no_fund_filing",
-      reason: `No N-PORT, N-CSR or N-CSRS filing names it (${range}): no registered fund reports holding it.`,
+      reason: `No N-PORT, N-CSR or N-CSRS filing names it (${range}), so no registered fund's filing gives a mark on it.`,
       filings: [],
     };
   }

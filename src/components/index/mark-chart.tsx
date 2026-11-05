@@ -14,7 +14,8 @@ import styles from "./mark-chart.module.css";
 
 const WIDTH = 720;
 const HEIGHT = 280;
-const MARGIN = { top: 28, right: 16, bottom: 28, left: 72 };
+// The value axis is on the right: on a phone the chart opens at its right end.
+const MARGIN = { top: 28, right: 72, bottom: 28, left: 16 };
 const PLOT_W = WIDTH - MARGIN.left - MARGIN.right;
 const PLOT_H = HEIGHT - MARGIN.top - MARGIN.bottom;
 const DAY = 86_400_000;
@@ -192,7 +193,12 @@ export function MarkChart({ label, lastPrint }: MarkChartProps) {
                 y1={y.at(tick)}
                 y2={y.at(tick)}
               />
-              <text className={styles.tick} x={MARGIN.left - 8} y={y.at(tick) + 4} textAnchor="end">
+              <text
+                className={styles.tick}
+                x={WIDTH - MARGIN.right + 8}
+                y={y.at(tick) + 4}
+                textAnchor="start"
+              >
                 {formatPerShare(tick).replace(/\.00$/, "")}
               </text>
             </g>

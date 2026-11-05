@@ -276,6 +276,10 @@
   white-space: nowrap;
 }
 
+.nowrap {
+  white-space: nowrap;
+}
+
 .wrap {
   min-width: 14rem;
   overflow-wrap: anywhere;
