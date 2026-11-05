@@ -1,5 +1,5 @@
 import { NOT_BUILT, RULEBOOK } from "../engine/rulebook.js";
-import { type RefEnvelope, refEnvelope } from "./ref-common.js";
+import { type RefEnvelope, refEnvelope } from "./index/ref-envelope.js";
 
 export interface RulebookPayload extends RefEnvelope {
   readonly rulebook: typeof RULEBOOK;

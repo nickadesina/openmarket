@@ -10,7 +10,8 @@ import type { Kysely } from "kysely";
 import type { Database } from "../../db/schema.js";
 import type { FilerFamilies } from "../../engine/index/families.js";
 import { loadFilerFamilies } from "./data-files.js";
-import { getNameIndex, type Versions, versions } from "./get-name-index.js";
+import { getNameIndex } from "./get-name-index.js";
+import { type RefEnvelope, refEnvelope } from "./ref-envelope.js";
 
 export interface NameRow {
   readonly slug: string;
@@ -39,7 +40,7 @@ export interface NameRow {
   readonly spv_vehicles: number;
 }
 
-export interface NamesList extends Versions {
+export interface NamesList extends RefEnvelope {
   readonly families_version: string;
   readonly names: readonly NameRow[];
 }
@@ -94,5 +95,5 @@ export async function listNames(
       spv_vehicles: index.spv.vehicles.length,
     });
   }
-  return { ...versions(now), families_version: families.version, names };
+  return { ...refEnvelope(now), families_version: families.version, names };
 }

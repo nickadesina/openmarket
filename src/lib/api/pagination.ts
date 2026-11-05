@@ -87,7 +87,7 @@ export function parseRequiredEnum<const Value extends string>(
 
 export function parseSlug(value: string): string {
   if (value.length > 100 || !SLUG_PATTERN.test(value)) {
-    throw new ServiceError("INVALID_INPUT", "Invalid market slug.", {
+    throw new ServiceError("INVALID_INPUT", "Invalid slug.", {
       parameter: "slug",
     });
   }

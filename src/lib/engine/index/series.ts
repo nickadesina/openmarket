@@ -41,17 +41,27 @@ export interface SecurityClass {
   readonly kind: SecurityKind;
 }
 
-const SERIES_LABEL = /^Series (?:Seed|[A-Z]{1,2}(?:-\d{1,2})?) Preferred$/;
+/** A preferred series's canonical label (`Series F-1 Preferred`), which enters per-share series. */
+export const SERIES_LABEL_PATTERN = /^Series (?:Seed|[A-Z]{1,2}(?:-\d{1,2})?) Preferred$/;
 
 /**
- * Whether marks on this label enter per-share series. A preferred series and
- * common do. `Unclassified`, `SPV interest`, `Warrant`, `SAFE` and
+ * The labels whose marks are published but enter no per-share series. A
+ * preferred series and common do enter. `Unclassified`, `SPV interest`, `Warrant`, `SAFE` and
  * `Convertible Note` do not: one of those labels covers instruments with
  * different terms (vehicle, strike, cap, principal), so a per-share figure on
  * one is not comparable with another's.
  */
+export const NOT_COMPARABLE_LABELS: readonly string[] = Object.freeze([
+  UNCLASSIFIED,
+  SPV_INTEREST,
+  WARRANT,
+  SAFE,
+  CONVERTIBLE_NOTE,
+]);
+
+/** Whether marks on this label enter per-share series: `Common` or a preferred series. */
 export function isComparableLabel(label: string): boolean {
-  return label === COMMON || SERIES_LABEL.test(label);
+  return label === COMMON || SERIES_LABEL_PATTERN.test(label);
 }
 
 /** A two-letter word after SER/CL that is English, not a series code. */

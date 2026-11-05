@@ -77,3 +77,19 @@ export function parseRefInstant(searchParams: URLSearchParams, name: string): Da
   }
   return parsed;
 }
+
+/** An optional `include` naming one extra the route can add; anything else is INVALID_INPUT. */
+export function parseRefInclude<const Value extends string>(
+  searchParams: URLSearchParams,
+  values: readonly Value[],
+): Value | undefined {
+  const value = parseOptionalString(searchParams, "include", { maximumLength: 40 });
+  if (value === undefined) return undefined;
+  if (!(values as readonly string[]).includes(value)) {
+    throw new ServiceError("INVALID_INPUT", "Invalid include query parameter.", {
+      parameter: "include",
+      allowed: values,
+    });
+  }
+  return value as Value;
+}

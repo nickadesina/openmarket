@@ -12,6 +12,23 @@ function csvField(field: string): string {
   return /[",\r\n]/.test(field) ? `"${field.replaceAll('"', '""')}"` : field;
 }
 
+/** A value a generated CSV cell holds: text as is, null as empty, anything structured as JSON. */
+export type CsvValue = string | number | boolean | null | Date | readonly unknown[] | object;
+
+/** One cell's text: null is empty, a Date is ISO 8601 UTC, an array or object is its JSON. */
+export function csvCell(value: CsvValue): string {
+  if (value === null) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (value instanceof Date) return value.toISOString();
+  return JSON.stringify(value);
+}
+
+/** One record of typed values, escaped as csvLine escapes text. */
+export function csvRecord(values: readonly CsvValue[]): string {
+  return csvLine(values.map(csvCell));
+}
+
 /** JSON indented by one space with non-ASCII escaped, no trailing newline. */
 export function pythonJson(value: unknown): string {
   return JSON.stringify(value, null, 1).replace(

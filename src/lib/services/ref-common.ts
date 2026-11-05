@@ -1,24 +1,10 @@
 import { type RawBuilder, sql } from "kysely";
 import { ServiceError } from "../api/errors.js";
-import { RULEBOOK_VERSION } from "../engine/rulebook.js";
 
 /**
- * What every /api/ref/* operation shares: the version envelope every payload
- * opens with and the keyset cursor the paginated logs use.
- *
- * The envelope here is the interim one (rulebook_version and as_of only);
- * the v2 envelope (methodology_version, ce_version, rulebook_version, as_of,
- * lag_note) replaces it with the index payloads (docs/prompts/v2/README.md).
+ * The keyset cursor the paginated /api/ref/* logs share. The envelope every
+ * payload opens with is services/index/ref-envelope.ts.
  */
-
-export interface RefEnvelope {
-  readonly rulebook_version: string;
-  readonly as_of: string;
-}
-
-export function refEnvelope(now: Date): RefEnvelope {
-  return { rulebook_version: RULEBOOK_VERSION, as_of: now.toISOString() };
-}
 
 /** The last row a page returned, as (time, tiebreak): the next page starts after it. */
 export interface KeysetPosition {
@@ -42,19 +28,39 @@ export function cursorTime(column: string): RawBuilder<string> {
   return sql<string>`to_char(${sql.ref(column)} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`;
 }
 
-/** `(time, key) > (cursor)` for a keyset page; `keyType` casts the tiebreak. */
-export function afterPosition(
+function comparePosition(
   timeColumn: string,
   keyColumn: string,
   position: KeysetPosition,
   keyType: "uuid" | "bigint",
+  operator: ">" | "<",
 ): RawBuilder<boolean> {
   const validKey =
     keyType === "uuid"
       ? UUID_PATTERN.test(position.key)
       : /^\d{1,19}$/.test(position.key) && BigInt(position.key) <= 9_223_372_036_854_775_807n;
   if (!validKey || !validCursorTime(position.at)) throw invalidCursor();
-  return sql<boolean>`(${sql.ref(timeColumn)}, ${sql.ref(keyColumn)}) > (${position.at}::timestamptz, ${position.key}::${sql.raw(keyType)})`;
+  return sql<boolean>`(${sql.ref(timeColumn)}, ${sql.ref(keyColumn)}) ${sql.raw(operator)} (${position.at}::timestamptz, ${position.key}::${sql.raw(keyType)})`;
+}
+
+/** `(time, key) > (cursor)` for an ascending keyset page; `keyType` casts the tiebreak. */
+export function afterPosition(
+  timeColumn: string,
+  keyColumn: string,
+  position: KeysetPosition,
+  keyType: "uuid" | "bigint",
+): RawBuilder<boolean> {
+  return comparePosition(timeColumn, keyColumn, position, keyType, ">");
+}
+
+/** `(time, key) < (cursor)` for a descending (newest first) keyset page. */
+export function beforePosition(
+  timeColumn: string,
+  keyColumn: string,
+  position: KeysetPosition,
+  keyType: "uuid" | "bigint",
+): RawBuilder<boolean> {
+  return comparePosition(timeColumn, keyColumn, position, keyType, "<");
 }
 
 export function encodeCursor(

@@ -33,6 +33,7 @@ export const ERROR_CODES = [
   "EVIDENCE_NOT_FOUND",
   "EVIDENCE_REVIEWED",
   "INGEST_UNAVAILABLE",
+  "NAME_NOT_FOUND",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

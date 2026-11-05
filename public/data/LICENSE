@@ -1,0 +1,25 @@
+OpenMarket datasets: Creative Commons Attribution 4.0 International (CC BY 4.0)
+
+The datasets served under /data/ (filer-marks.csv, certificate-terms.csv,
+spv-matches.csv, round-history.csv, round-history.json) and the payloads of
+the reference API under /api/ref/ are licensed under the Creative Commons
+Attribution 4.0 International License. The full licence text is at
+https://creativecommons.org/licenses/by/4.0/legalcode and a summary at
+https://creativecommons.org/licenses/by/4.0/.
+
+You may share and adapt them for any purpose, including commercially,
+provided you give attribution. Attribute them as:
+
+    OpenMarket marks index, openmarket.systems, CC BY 4.0
+
+and, where you cite a figure, name the dataset or route, the as-of time and
+the versions it carries (methodology_version, ce_version, rulebook_version).
+
+Every row names the public document it came from (an EDGAR accession number
+and URL where there is one). Those documents are public filings; this
+licence covers OpenMarket's compilation, labels and derived figures, not the
+filings themselves.
+
+The datasets are provided as is, without warranties of any kind, as section
+5 of the licence states. Nothing in them is investment advice, a quote, or a
+view on where any security should trade.

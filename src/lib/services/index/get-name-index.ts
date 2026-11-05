@@ -23,7 +23,6 @@ import {
   familyMarks,
 } from "../../engine/index/families.js";
 import { headlinePoint, isPrivateMark } from "../../engine/index/listing.js";
-import { METHODOLOGY_VERSION } from "../../engine/index/methodology.js";
 import {
   type MarkVersusPrint,
   markVersusPrint,
@@ -33,7 +32,6 @@ import { type Revision, revisions } from "../../engine/index/revisions.js";
 import { isComparableLabel } from "../../engine/index/series.js";
 import { type SpvPremium, spvPremium } from "../../engine/index/spv.js";
 import {
-  CE_VERSION,
   type CertificateInput,
   type CommonEquivalent,
   commonEquivalent,
@@ -41,26 +39,9 @@ import {
   structureGap,
   type Unsupported,
 } from "../../engine/index/waterfall.js";
-import { RULEBOOK_VERSION } from "../../engine/rulebook.js";
 import { loadFilerFamilies } from "./data-files.js";
 import { PRINT_EVENT_TYPES } from "./import-certificates.js";
-
-export interface Versions {
-  readonly methodology_version: string;
-  readonly ce_version: string;
-  readonly rulebook_version: string;
-  /** When this payload was computed. */
-  readonly as_of: string;
-}
-
-export function versions(now: Date): Versions {
-  return {
-    methodology_version: METHODOLOGY_VERSION,
-    ce_version: CE_VERSION,
-    rulebook_version: RULEBOOK_VERSION,
-    as_of: now.toISOString(),
-  };
-}
+import { type RefEnvelope, refEnvelope } from "./ref-envelope.js";
 
 export interface DocumentRef {
   readonly source_class: string;
@@ -255,7 +236,7 @@ export interface MarksSummary {
   readonly latest_as_of: string | null;
 }
 
-export interface NameIndex extends Versions {
+export interface NameIndex extends RefEnvelope {
   readonly families_version: string;
   readonly issuer: {
     readonly slug: string;
@@ -367,6 +348,24 @@ async function liveMarks(db: Kysely<Database>, issuerId: string): Promise<MarkRo
     .execute();
 }
 
+/** Whether a live mark enters the per-share series, or which rule keeps it out (in this order). */
+export type SeriesStatus = "in_series" | "no_per_share" | "not_comparable_label" | "after_listing";
+
+export function seriesStatus(
+  row: {
+    readonly mark_per_share_usd: string | null;
+    readonly filer_cik: string | null;
+    readonly security_label: string;
+    readonly as_of: string;
+  },
+  listedOn: string | null,
+): SeriesStatus {
+  if (row.mark_per_share_usd === null || row.filer_cik === null) return "no_per_share";
+  if (!isComparableLabel(row.security_label)) return "not_comparable_label";
+  if (!isPrivateMark(row.as_of, listedOn)) return "after_listing";
+  return "in_series";
+}
+
 /** Splits live marks into the series' inputs and the counts of what stayed out. */
 export function seriesInputs(
   rows: readonly MarkRow[],
@@ -383,13 +382,14 @@ export function seriesInputs(
       latestFiled = row.filed_on;
     }
     if (latestAsOf === null || row.as_of > latestAsOf) latestAsOf = row.as_of;
-    if (row.mark_per_share_usd === null || row.filer_cik === null) noPerShare += 1;
-    else if (!isComparableLabel(row.security_label)) notComparable += 1;
-    else if (!isPrivateMark(row.as_of, listedOn)) afterListing += 1;
+    const status = seriesStatus(row, listedOn);
+    if (status === "no_per_share") noPerShare += 1;
+    else if (status === "not_comparable_label") notComparable += 1;
+    else if (status === "after_listing") afterListing += 1;
     else {
       inputs.push({
         id: row.id,
-        filerCik: row.filer_cik,
+        filerCik: row.filer_cik!,
         filerName: row.filer_name,
         fundSeriesId: row.fund_series_id,
         securityLabel: row.security_label,
@@ -855,7 +855,7 @@ export async function getNameIndex(
   const headline = headlinePoint(points);
 
   return {
-    ...versions(now),
+    ...refEnvelope(now),
     families_version: families.version,
     issuer: {
       slug: issuer.slug,
