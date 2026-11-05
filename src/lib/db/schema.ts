@@ -585,6 +585,9 @@ export interface IssuersTable {
   incorporation_source_id: string | null;
   watchlisted: ColumnType<boolean, boolean | undefined, boolean>;
   created_at: GeneratedImmutable<Date>;
+  /** The date of the issuer's final IPO prospectus on EDGAR (migration 022); null while private. */
+  listed_on: ColumnType<string | null, string | null | undefined, string | null>;
+  listing_url: ColumnType<string | null, string | null | undefined, string | null>;
 }
 
 export interface SourceDocumentsTable {
@@ -653,6 +656,12 @@ export interface CertificatesTable {
   kind: Immutable<"restated" | "amendment">;
   entered_by: Immutable<string>;
   notes: string | null;
+  /** SHA-256 of the transcription as imported (migration 022). */
+  transcription_sha256: Immutable<string>;
+  /** Set once, when a changed transcription corrects this one. */
+  superseded_by: ColumnType<string | null, string | null | undefined, string>;
+  correction_id: Immutable<string | null>;
+  created_at: GeneratedImmutable<Date>;
 }
 
 export interface CertificateSeriesTable {

@@ -4,7 +4,7 @@
   "names": [
     { "slug": "openai", "name": "OpenAI", "legal_name": null, "search_phrases": ["OpenAI"], "match_pattern": "\\bOpen ?AI\\b" },
     { "slug": "anthropic", "name": "Anthropic", "legal_name": "Anthropic, PBC", "search_phrases": ["Anthropic"], "match_pattern": "\\bAnthropic\\b" },
-    { "slug": "spacex", "name": "SpaceX", "legal_name": "Space Exploration Technologies Corp.", "search_phrases": ["Space Exploration Technologies", "SpaceX"], "match_pattern": "^(?!.*\\bETF\\b).*(?:\\bSpace Exploration Tech|\\bSpaceX\\b)" },
+    { "slug": "spacex", "name": "SpaceX", "legal_name": "Space Exploration Technologies Corp.", "search_phrases": ["Space Exploration Technologies", "SpaceX"], "match_pattern": "^(?!.*\\bETF\\b).*(?:\\bSpace Exploration Tech|\\bSpaceX\\b)", "listing": { "listed_on": "2026-06-12", "form": "424B4", "accession": "0001628280-26-042639", "url": "https://www.sec.gov/Archives/edgar/data/1181412/000162828026042639/spaceexplorationtechnologi.htm" } },
     { "slug": "xai", "name": "xAI", "legal_name": null, "search_phrases": ["X.AI Holdings", "X.AI Corp", "xAI Holdings"], "match_pattern": "\\bX\\.? ?AI,? (Holdings|Corp|LLC|Inc|Co Issuer|Term)\\b" },
     { "slug": "databricks", "name": "Databricks", "legal_name": "Databricks, Inc.", "search_phrases": ["Databricks"], "match_pattern": "\\bDatabricks\\b" },
     { "slug": "stripe", "name": "Stripe", "legal_name": "Stripe, Inc.", "search_phrases": ["Stripe, Inc."], "match_pattern": "\\bStripe,? Inc\\b|\\bStripe (Series|Class|Common|Pfd|Preferred)" },

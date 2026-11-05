@@ -32,6 +32,8 @@ export async function syncWatchlist(
         search_phrases: JSON.stringify(issuer.searchPhrases),
         match_pattern: issuer.matchPattern,
         watchlisted: issuer.watchlisted,
+        listed_on: issuer.listing?.listedOn ?? null,
+        listing_url: issuer.listing?.url ?? null,
       };
       const row = existing.get(issuer.slug);
       if (row === undefined) {
@@ -45,7 +47,9 @@ export async function syncWatchlist(
         row.legal_name !== values.legal_name ||
         JSON.stringify(row.search_phrases) !== values.search_phrases ||
         row.match_pattern !== values.match_pattern ||
-        row.watchlisted !== values.watchlisted
+        row.watchlisted !== values.watchlisted ||
+        row.listed_on !== values.listed_on ||
+        row.listing_url !== values.listing_url
       ) {
         await trx.updateTable("issuers").set(values).where("id", "=", row.id).execute();
         updated.push(issuer.slug);
