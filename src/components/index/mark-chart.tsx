@@ -5,11 +5,12 @@ import styles from "./mark-chart.module.css";
 /**
  * One label's marks over time, drawn as plain SVG on the server: every
  * family's mark as an ink dot that links its filing, the quarterly
- * consensus (median of families, at the quarter's end) as the red line,
+ * consensus (median of families, at the quarter's end) as red points,
  * the range of the quarter's family marks as a pale band, and the last
  * print as a dashed line: vertical at its announcement, and horizontal at
  * its per-share price when a certificate gives one. Nothing is
- * interpolated: the line joins published consensus points only.
+ * interpolated: consensus points are not joined, because a line between
+ * quarters would draw values no filer published.
  */
 
 const WIDTH = 720;
@@ -147,12 +148,6 @@ export function MarkChart({ label, lastPrint }: MarkChartProps) {
     ...(printPps === null ? [] : [printPps]),
   ];
   const y = yScale(values);
-  const consensusPath = label.consensus
-    .map(
-      (point, index) =>
-        `${index === 0 ? "M" : "L"}${x(day(point.quarter_end)).toFixed(1)},${y.at(point.consensus_usd).toFixed(1)}`,
-    )
-    .join(" ");
 
   return (
     <figure className={styles.figure}>
@@ -162,7 +157,7 @@ export function MarkChart({ label, lastPrint }: MarkChartProps) {
           Family mark (links its filing)
         </li>
         <li>
-          <span className={styles.keyLine} aria-hidden="true" />
+          <span className={styles.keyConsensus} aria-hidden="true" />
           Consensus: median of families, at quarter end
         </li>
         <li>
@@ -268,7 +263,6 @@ export function MarkChart({ label, lastPrint }: MarkChartProps) {
               )}
             </g>
           ) : null}
-          <path className={styles.consensus} d={consensusPath} />
           {label.consensus.map((point) => (
             <circle
               key={`c${point.quarter}`}

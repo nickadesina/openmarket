@@ -80,7 +80,10 @@ time is UTC.
   rights; the staff of a contributing filer's valuation process
   (committee, adviser's pricing team, fund administrator), who know a
   mark before it is filed; and, for contracts 3 to 5, the next round's
-  investors and counsel, who know its terms before they are public.
+  investors and counsel, who know its terms before they are public; and,
+  for every contract, OpenMarket's operator and anyone who works on the
+  index, who see ingested rows and corrections before they publish. The
+  index's defence is that it has no financial interest in its own number.
 
 ## Contracts that settle on marks (1, 2)
 
@@ -286,8 +289,3 @@ no print; void and refund are the venue's. Every published number
 carries its versions, and a contract settles under the versions it
 names. A filer's mark is never adjusted; a missing filing is a missing
 row. Every input obeys the source rule (decision `0003` §4).
-
-## Open for Nick
-
-- Whether OpenMarket's operator is a restricted person for every
-  contract on the index. This spec does not say.

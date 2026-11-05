@@ -46,7 +46,7 @@
     {
       "slug": "bytedance",
       "name": "ByteDance",
-      "watchlisted": false,
+      "watchlisted": true,
       "nport_filings": 2338,
       "ncsr_filings": 326,
       "ncsrs_filings": 309,
@@ -59,7 +59,7 @@
     {
       "slug": "canva",
       "name": "Canva",
-      "watchlisted": false,
+      "watchlisted": true,
       "nport_filings": 2832,
       "ncsr_filings": 261,
       "ncsrs_filings": 270,
@@ -72,7 +72,7 @@
     {
       "slug": "cognition",
       "name": "Cognition",
-      "watchlisted": true,
+      "watchlisted": false,
       "nport_filings": 0,
       "ncsr_filings": 0,
       "ncsrs_filings": 0,
@@ -228,7 +228,7 @@
     {
       "slug": "modal",
       "name": "Modal",
-      "watchlisted": true,
+      "watchlisted": false,
       "nport_filings": 0,
       "ncsr_filings": 0,
       "ncsrs_filings": 0,
@@ -280,7 +280,7 @@
     {
       "slug": "plaid",
       "name": "Plaid",
-      "watchlisted": false,
+      "watchlisted": true,
       "nport_filings": 1093,
       "ncsr_filings": 57,
       "ncsrs_filings": 51,
@@ -306,7 +306,7 @@
     {
       "slug": "revolut",
       "name": "Revolut",
-      "watchlisted": false,
+      "watchlisted": true,
       "nport_filings": 180,
       "ncsr_filings": 65,
       "ncsrs_filings": 31,
@@ -340,7 +340,7 @@
     {
       "slug": "safe-superintelligence",
       "name": "Safe Superintelligence",
-      "watchlisted": true,
+      "watchlisted": false,
       "nport_filings": 0,
       "ncsr_filings": 0,
       "ncsrs_filings": 0,
@@ -420,7 +420,7 @@
     {
       "slug": "thinking-machines",
       "name": "Thinking Machines Lab",
-      "watchlisted": true,
+      "watchlisted": false,
       "nport_filings": 0,
       "ncsr_filings": 0,
       "ncsrs_filings": 0,

@@ -25,6 +25,7 @@ import {
   loadIndexIssuers,
   type NportCandidate,
 } from "../../src/lib/services/index/ingest-nport.js";
+import { noMarksReason } from "../../src/lib/services/index/name-coverage.js";
 import { PUBLISHED_FILER_FAMILIES } from "../../src/lib/services/index/published-families.js";
 import { ENVELOPE_KEYS } from "../../src/lib/services/index/ref-envelope.js";
 import { syncWatchlist } from "../../src/lib/services/index/sync-watchlist.js";
@@ -544,11 +545,15 @@ postgresDescribe(suiteName, () => {
     const row = (value: string) => body.names.find((name: { slug: string }) => name.slug === value);
     expect(row("anthropic").no_marks).toBeNull();
     expect(row("anthropic").coverage).toMatchObject({ nport_filings: expect.any(Number) });
-    expect(row("modal")).toMatchObject({
-      live_marks: 0,
-      no_marks: { code: "named_in_no_fund_filing" },
-    });
     expect(row("scale-ai").no_marks.code).toBe("named_in_ncsr_only");
+    expect(row("anysphere")).toMatchObject({
+      live_marks: 0,
+      no_marks: { code: "named_in_ncsr_only" },
+    });
+    // No watchlisted name is named in no fund filing since watchlist 0.2.0;
+    // Modal, now a candidate, still is.
+    expect(row("modal")).toBeUndefined();
+    expect((await noMarksReason(postgres.db, "modal")).code).toBe("named_in_no_fund_filing");
     // Powerlaw's N-PORT names Rippling; this database has not read it.
     expect(row("rippling").no_marks).toMatchObject({
       code: "not_ingested",

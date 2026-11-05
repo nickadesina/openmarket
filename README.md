@@ -205,20 +205,40 @@ between the docs and the code. Closed rows are removed;
 | `events.csv` has 56 priced rounds | Partly | 59 `priced_round` rows; 56 fall in Jan 2024–Oct 2026, three are earlier (Anduril Dec 2022, Anthropic May 2023, Modal Oct 2023). |
 | A contract can settle on the index as published on its observation date | Not built | Rulebook `NOT_BUILT`: no past-date route; values are recomputed from the rows. |
 
-## 7. Open for Nick
+## 7. Decisions taken at deploy (2026-11-05)
 
-- Methodology sign-off: `METHODOLOGY.md` is 0.1.0, a draft; 1.0.0 is the
-  version in force at the first post.
-- Hiive-named vehicles found through Form D (`Hiive Anthropic Series …`):
-  the index reads only their SEC filings, never the platform. Whether
-  listing them is within the source rule (decision 0003 §4) is a call.
-- SpaceX is treated as listed from 2026-06-12, its final prospectus
+Nick delegated these calls on 2026-11-05 ("use your judgement"); each can
+be reopened.
+
+- **Methodology stays 0.1.0, a draft.** 1.0.0 is the version in force at
+  the first post, which waits on the lawyer's read of `METHODOLOGY.md`,
+  the corrections policy and the source rule (decision 0003, "Not
+  engineering"). The site says draft until then.
+- **Hiive-named vehicles stay listed.** A vehicle's Form D is a public SEC
+  filing; the source rule excludes the platforms' own indicators and pages,
+  not the filings of vehicles that carry a platform's name. The index
+  reads only the filing.
+- **SpaceX is treated as listed from 2026-06-12**, its final prospectus
   (424B4, 0001628280-26-042639): marks as of that date or later enter no
-  series, and its headline is 2026Q2's.
-- `CONTRACTS.md` leaves open whether OpenMarket's operator is a restricted
-  person for every contract on the index.
-- Unclassified issuer-only titles: whether a title naming only the issuer
-  (`ANTHROPIC PBC`, `EPIC GAMES INC PP`) may ever be read as a series, and
-  on what evidence; today they enter no series.
-- The corrections reporting address (`/corrections` says it is not yet
-  published), and the filer-families file's review (version 0.1.0).
+  series, and its headline is 2026Q2's. It stays on the watchlist: its
+  private marks before the IPO are the record a print reconciliation needs.
+- **OpenMarket's operator is a restricted person** for every contract on
+  the index (`CONTRACTS.md`, restricted persons): the index's defence is
+  that it has no financial interest in its own number.
+- **Issuer-only titles stay out of every series.** A title naming only the
+  issuer (`ANTHROPIC PBC`, `EPIC GAMES INC PP`) does not say which
+  security it is, and the methodology never pools different securities;
+  the marks are shown as filed on the name page. A certificate or the
+  filer's own schedule of investments naming the series is the evidence
+  that could change this, per filer, as a correction.
+- **Watchlist 0.2.0.** Cognition, Modal, Safe Superintelligence and
+  Thinking Machines Lab, named in no fund filing, move to candidates;
+  Plaid, Canva, Revolut and ByteDance, the candidates with the most
+  families filing N-PORT on them, are watchlisted.
+- **The consensus is drawn as points, never a line**: a line between
+  quarters would draw values no filer published.
+- **Filer families 0.1.0 is accepted** as built from each registrant's
+  N-CEN adviser.
+- **Still Nick's:** the corrections reporting address (`/corrections` says
+  it is not yet published; it must reach a real inbox), and setting
+  `SEC_USER_AGENT` in Vercel so the daily ingest runs.

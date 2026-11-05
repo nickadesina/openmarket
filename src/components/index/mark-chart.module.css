@@ -32,7 +32,7 @@
 }
 
 .keyDot,
-.keyLine,
+.keyConsensus,
 .keyBand,
 .keyPrint {
   display: inline-block;
@@ -47,10 +47,12 @@
   background: var(--color-ink-muted);
 }
 
-.keyLine {
-  width: 1rem;
-  height: 0;
-  border-top: 2px solid var(--color-primary);
+/* The consensus key matches its points: red dots, never a line. */
+.keyConsensus {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--color-primary);
 }
 
 .keyBand {
@@ -100,13 +102,6 @@
 
 .band {
   fill: var(--color-primary-subtle);
-}
-
-.consensus {
-  fill: none;
-  stroke: var(--color-primary);
-  stroke-width: 2;
-  stroke-linejoin: round;
 }
 
 .consensusPoint {

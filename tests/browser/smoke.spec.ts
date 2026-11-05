@@ -34,9 +34,9 @@ test("the daily page lists the names with a consensus and says why the others ha
   // Epic Games' one holding is Unclassified: live marks, no per-share series.
   const epic = page.getByRole("row").filter({ hasText: "Epic Games" });
   await expect(epic.getByText("No per-share series")).toBeVisible();
-  // Modal is named in no fund filing (data/index/filing-counts.json).
-  const modal = page.getByRole("row").filter({ hasText: "Modal" });
-  await expect(modal.getByText(/No N-PORT, N-CSR or N-CSRS filing names it/)).toBeVisible();
+  // Anysphere is named only in N-CSR text (data/index/filing-counts.json).
+  const anysphere = page.getByRole("row").filter({ hasText: "Anysphere" });
+  await expect(anysphere.getByText(/N-CSR schedules are not parsed/)).toBeVisible();
 });
 
 test("a name page links every family mark to its filing", async ({ page, request }) => {
