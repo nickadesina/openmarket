@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import type { SecClient } from "../../src/lib/ingest/fetch/sec.js";
-import { familyLookup, parseFilerFamilies } from "../../src/lib/ingest/parse/families.js";
+import { familyLookup, parseFilerFamiliesText } from "../../src/lib/ingest/parse/families.js";
 import type { WatchlistIssuer } from "../../src/lib/ingest/parse/watchlist.js";
 import {
   buildFamilies,
@@ -176,7 +176,7 @@ describe("index:families", () => {
 
 describe("data/index/filer-families.json", () => {
   it("is valid, places every registrant of the search, and defaults others to themselves", () => {
-    const families = parseFilerFamilies(readFileSync("data/index/filer-families.json", "utf8"));
+    const families = parseFilerFamiliesText(readFileSync("data/index/filer-families.json", "utf8"));
     const familyOf = familyLookup(families);
     expect(familyOf("0000707823")).toBe("fidelity-fmr");
     expect(familyOf("999999999")).toBe("cik-999999999");

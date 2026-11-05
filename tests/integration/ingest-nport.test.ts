@@ -207,7 +207,8 @@ postgresDescribe(suiteName, () => {
       const amendment = epic.find((row) => row.accession === AMENDMENT.accession)!;
       expect(original.superseded_by).toBe(amendment.id);
       expect(amendment.superseded_by).toBeNull();
-      expect(original.security_label).toBe("Common");
+      // The title names only the issuer: the methodology leaves it unclassified.
+      expect(original.security_label).toBe("Unclassified");
     }
   });
 

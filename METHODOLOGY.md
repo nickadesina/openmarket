@@ -71,15 +71,18 @@ wrote them, are read into one canonical label: `Series F Preferred`,
 The rules, applied to the title and then to the name:
 
 - A vehicle that holds the security (`… LLC (invested in …)`, `(economic
-  exposure to …)`, `SPV`, `a series of … LLC`, or an LLC or LP followed by
-  the name of what it holds) is `SPV interest`, whatever it holds.
+  exposure to …)`, `SPV`, `a series of … LLC`, an LLC or LP followed by
+  the name of what it holds, or an LLC or LP named as a fund, investors,
+  partners, opportunity or co-invest vehicle, such as `Anduril Investors
+  LLC, Series G`) is `SPV interest`, whatever it holds.
 - A SAFE, a convertible note and a warrant are labelled by their form, even
   when the title also names a series.
 - Rights, swaps, loans, and holdings the filer categorizes as debt or a
   derivative are `Unclassified`.
-- A series code after `Series`, `Ser` or `Sr`, after `Class`/`Cl` on a title
-  that says preferred, or before `PC`, is that series of preferred. A number
-  after the letter is written with a dash (`SERIES H 1` is `Series H-1
+- A series code after `Series`, `Ser`, `Srs` or `Sr` (with a space or a
+  dot: `SER.G`), after `Class`/`Cl` on a title that says preferred, or
+  before `PC`, is that series of preferred. A number after the letter is
+  written with a dash (`SERIES H 1` and `Series H1` are `Series H-1
   Preferred`).
 - A title that says common, or names a class with no preferred marker, is
   `Common`, unless the filer categorizes it as preferred equity (EP), when

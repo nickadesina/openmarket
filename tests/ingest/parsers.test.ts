@@ -12,10 +12,9 @@ import {
   parseEftsPage,
   splitDateRange,
 } from "../../src/lib/ingest/parse/efts.js";
-import { parseFilerFamilies } from "../../src/lib/ingest/parse/families.js";
+import { familyLookup, parseFilerFamiliesText } from "../../src/lib/ingest/parse/families.js";
 import { parseNcen, registrantAdvisers } from "../../src/lib/ingest/parse/ncen.js";
 import { matchingHoldings, parseNport } from "../../src/lib/ingest/parse/nport.js";
-import { DEFAULT_SOURCE_RANK, SOURCE_CLASSES } from "../../src/lib/ingest/parse/source-class.js";
 import { latestFiling, parseSubmissions } from "../../src/lib/ingest/parse/submissions.js";
 import { issuerPattern, parseWatchlist } from "../../src/lib/ingest/parse/watchlist.js";
 import { decodeEntities } from "../../src/lib/ingest/parse/xml.js";
@@ -223,7 +222,7 @@ describe("checked-in data files", () => {
 
   it("refuses a families file that puts a CIK in two families", () => {
     expect(() =>
-      parseFilerFamilies(
+      parseFilerFamiliesText(
         JSON.stringify({
           version: "0.1.0",
           families: [
@@ -232,13 +231,21 @@ describe("checked-in data files", () => {
           ],
         }),
       ),
-    ).toThrow(/two families/);
+    ).toThrow(/in both a and b/);
   });
 
-  it("ranks the source classes in the brief's order until the rulebook does", () => {
-    expect(SOURCE_CLASSES.map((sourceClass) => DEFAULT_SOURCE_RANK[sourceClass])).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9,
-    ]);
-    expect(DEFAULT_SOURCE_RANK.nport).toBe(2);
+  it("looks a registrant up by its CIK, padded or not, and defaults it to itself", () => {
+    const familyOf = familyLookup(
+      parseFilerFamiliesText(
+        JSON.stringify({
+          version: "0.1.0",
+          note: "kept",
+          families: [{ slug: "a", name: "A", ciks: ["0000044201"], evidence: "x" }],
+        }),
+      ),
+    );
+    expect(familyOf("44201")).toBe("a");
+    expect(familyOf("0000044201")).toBe("a");
+    expect(familyOf("0000719608")).toBe("cik-719608");
   });
 });

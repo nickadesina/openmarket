@@ -96,6 +96,10 @@ describe("classifySecurity on real N-PORT titles", () => {
     expect(classifyRow(row("SPACE EXPLORATION TECH CORP SER I 0% PC PP")).label).toBe(
       "Series I Preferred",
     );
+    // A number run into the letter, a dot for a space, and SRS for series.
+    expect(classifyRow(row("Anthropic PBC, Series F1")).label).toBe("Series F-1 Preferred");
+    expect(classifyRow(row("CONV PREFERRED STOCK SER.G")).label).toBe("Series G Preferred");
+    expect(classifyRow(row("STRIPE INC PFD SRS H")).label).toBe("Series H Preferred");
   });
 
   it("names a series even when the fund files it as common (EC)", () => {
@@ -132,6 +136,18 @@ describe("classifySecurity on real N-PORT titles", () => {
     ).toEqual({ label: "SPV interest", kind: "spv_interest" });
     expect(classifyRow(row("MVP Opportunity Fund VI LLC (Epic Games)")).label).toBe("SPV interest");
     expect(classifyRow(row("Anthropic SPV Exposure")).label).toBe("SPV interest");
+    // A pooled vehicle named as such, even with a series after it.
+    expect(classifyRow(row("Anduril Investors LLC, Series G"))).toEqual({
+      label: "SPV interest",
+      kind: "spv_interest",
+    });
+    expect(
+      classifyRow(
+        row(
+          "NV Figure AI Series B QP Partners LLC Economic Exposure to Figure AI, Inc. Series B Preferred Stock",
+        ),
+      ).label,
+    ).toBe("SPV interest");
   });
 
   it("does not take a custody note for a vehicle", () => {

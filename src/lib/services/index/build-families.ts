@@ -134,13 +134,34 @@ function registrantText(registrant: RegistrantAdviser): string {
   return `${registrant.registrantName} (CIK ${registrant.cik}${registrant.ncen === null ? "" : `, N-CEN ${registrant.ncen.accession} filed ${registrant.ncen.filedOn}`})`;
 }
 
+function ownFamilyEvidence(registrant: RegistrantAdviser): string {
+  if (registrant.ncen === null) {
+    return `Its own family: no N-CEN in its EDGAR submissions index. ${registrantText(registrant)}.`;
+  }
+  if (registrant.advisers.length === 0) {
+    return `Its own family: its latest N-CEN names no investment adviser. ${registrantText(registrant)}.`;
+  }
+  return `Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (${registrant.advisers.map(adviserText).join("; ")}). ${registrantText(registrant)}.`;
+}
+
+/** Evidence for a family that gained registrants: a sentence grows, a list of URLs gets an item. */
+function appendEvidence(
+  evidence: FilerFamily["evidence"],
+  addition: string,
+): FilerFamily["evidence"] {
+  return typeof evidence === "string"
+    ? `${evidence} Added: ${addition}`
+    : [...evidence, `Added: ${addition}`];
+}
+
 /** The families file with every registrant placed: existing families untouched, new CIKs added. */
 export function buildFamilies(
   existing: FilerFamilies,
   registrants: readonly RegistrantAdviser[],
   version: string,
 ): FilerFamilies {
-  const families = new Map<string, FilerFamily & { ciks: string[] }>(
+  type Draft = { -readonly [K in keyof FilerFamily]: FilerFamily[K] } & { ciks: string[] };
+  const families = new Map<string, Draft>(
     existing.families.map((family) => [family.slug, { ...family, ciks: [...family.ciks] }]),
   );
   const placed = new Set(existing.families.flatMap((family) => family.ciks));
@@ -160,12 +181,7 @@ export function buildFamilies(
         slug,
         name: registrant.registrantName,
         ciks: [registrant.cik],
-        evidence:
-          registrant.ncen === null
-            ? `Its own family: no N-CEN in its EDGAR submissions index. ${registrantText(registrant)}.`
-            : registrant.advisers.length === 0
-              ? `Its own family: its latest N-CEN names no investment adviser. ${registrantText(registrant)}.`
-              : `Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (${registrant.advisers.map(adviserText).join("; ")}). ${registrantText(registrant)}.`,
+        evidence: ownFamilyEvidence(registrant),
       });
       continue;
     }
@@ -188,7 +204,7 @@ export function buildFamilies(
       });
     } else {
       family.ciks.push(...group.members.map((member) => member.cik));
-      family.evidence = `${family.evidence} Added: ${evidence}`;
+      family.evidence = appendEvidence(family.evidence, evidence);
     }
   }
 

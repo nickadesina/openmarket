@@ -21,6 +21,8 @@ export interface FilerFamily {
 /** The shape of `data/index/filer-families.json`. */
 export interface FilerFamilies {
   readonly version: string;
+  /** How the file was drafted and edited; not read by the arithmetic. */
+  readonly note?: string;
   readonly families: readonly FilerFamily[];
 }
 
@@ -110,7 +112,14 @@ export function parseFilerFamilies(input: unknown): FilerFamilies {
     seenSlugs.add(family.slug);
     return family;
   });
-  return Object.freeze({ version: record.version, families: Object.freeze(families) });
+  if (record.note !== undefined && typeof record.note !== "string") {
+    throw new TypeError("families.note must be a string");
+  }
+  return Object.freeze({
+    version: record.version,
+    ...(record.note === undefined ? {} : { note: record.note }),
+    families: Object.freeze(families),
+  });
 }
 
 /**

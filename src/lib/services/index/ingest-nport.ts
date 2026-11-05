@@ -22,6 +22,8 @@ import { createHash } from "node:crypto";
 import { type Kysely, sql, type Transaction } from "kysely";
 
 import type { Database, IndexSourceClass } from "../../db/schema.js";
+import { classifySecurity } from "../../engine/index/series.js";
+import { sourceRank } from "../../engine/rulebook.js";
 import { nportPrimaryDocumentUrl, type SecClient } from "../../ingest/fetch/sec.js";
 import {
   matchingHoldings,
@@ -30,8 +32,6 @@ import {
   type NportHolding,
   parseNport,
 } from "../../ingest/parse/nport.js";
-import { classifySecurity } from "../../ingest/parse/security-label.js";
-import { defaultSourceRank } from "../../ingest/parse/source-class.js";
 import { issuerPattern, type WatchlistIssuer } from "../../ingest/parse/watchlist.js";
 import { finishIngestRun, startIngestRun } from "./ingest-runs.js";
 import { searchIssuerForm } from "./search-filings.js";
@@ -182,7 +182,7 @@ async function storeDocument(
     .insertInto("source_documents")
     .values({
       source_class: SOURCE_CLASS,
-      source_rank: defaultSourceRank(SOURCE_CLASS),
+      source_rank: sourceRank(SOURCE_CLASS),
       accession: candidate.accession,
       document_url: candidate.url,
       filer_cik: document.registrantCik ?? candidate.cik,
@@ -251,8 +251,12 @@ async function storeMarks(
         is_restricted: holding.isRestricted,
         as_of: asOf,
       })
+      // A holding is stored once as filed; corrections add rows beside it (migration 021).
       .onConflict((conflict) =>
-        conflict.columns(["document_id", "issuer_id", "holding_index"]).doNothing(),
+        conflict
+          .columns(["document_id", "issuer_id", "holding_index"])
+          .where("correction_id", "is", null)
+          .doNothing(),
       )
       .returning("id")
       .executeTakeFirst();
@@ -295,6 +299,7 @@ export async function resolveSupersession(
     .select(["id", "holding_name", "holding_title", "security_label"])
     .where("document_id", "=", newest!.id)
     .where("issuer_id", "=", issuerId)
+    .where("superseded_by", "is", null)
     .orderBy("holding_index")
     .execute();
   if (replacements.length === 0) return 0;

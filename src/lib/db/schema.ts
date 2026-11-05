@@ -1,5 +1,8 @@
 import type { ColumnType, Generated, Insertable, Selectable, Updateable } from "kysely";
 
+import type { SecurityKind } from "../engine/index/series.js";
+import type { SourceClass } from "../engine/rulebook.js";
+
 /*
  * Most tables below are v1's (the dealer and the tournament, archived at the
  * tags `archive/dealer-v1` and `archive/tournament-v1`). They stay in the
@@ -562,27 +565,11 @@ export interface DealerPnlView {
  * after insert; triggers hold source_documents and corrections append-only.
  */
 
-/** `source_documents.source_class`; ranks in src/lib/ingest/parse/source-class.ts until P6's rulebook. */
-export type IndexSourceClass =
-  | "ncsr"
-  | "nport"
-  | "fund_holdings_page"
-  | "closed_end_nav"
-  | "delaware_coi"
-  | "form_d"
-  | "spv_quote_page"
-  | "company_statement"
-  | "press";
+/** `source_documents.source_class`: the rulebook's classes; `source_rank` is `sourceRank(class)`. */
+export type IndexSourceClass = SourceClass;
 
-export type SecurityKind =
-  | "preferred"
-  | "common"
-  | "convertible_note"
-  | "safe"
-  | "spv_interest"
-  | "warrant"
-  | "other"
-  | "unknown";
+/** `filer_marks.security_kind`: the engine's kinds (src/lib/engine/index/series.ts). */
+export type { SecurityKind };
 
 /** A decimal string: pg's representation of `numeric`. */
 type Numeric = string;

@@ -6,7 +6,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { type FilerFamilies, parseFilerFamilies } from "../../ingest/parse/families.js";
+import { type FilerFamilies, parseFilerFamiliesText } from "../../ingest/parse/families.js";
 import { parseWatchlist, type Watchlist } from "../../ingest/parse/watchlist.js";
 
 export const WATCHLIST_PATH = "data/index/watchlist.json";
@@ -22,5 +22,5 @@ export function loadWatchlist(root = process.cwd()): Watchlist {
 export function loadFilerFamilies(root = process.cwd()): FilerFamilies {
   const path = join(root, FILER_FAMILIES_PATH);
   if (!existsSync(path)) return { version: "0.0.0", families: [] };
-  return parseFilerFamilies(readFileSync(path, "utf8"));
+  return parseFilerFamiliesText(readFileSync(path, "utf8"));
 }

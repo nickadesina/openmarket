@@ -57,8 +57,8 @@ export function isComparableLabel(label: string): boolean {
 /** A two-letter word after SER/CL that is English, not a series code. */
 const NOT_A_SERIES_CODE = new Set(["OF", "IN", "TO", "ON", "OR", "AN", "AT", "BY"]);
 
-/** Series code: one or two letters, an optional number joined by a dash or space, never a percent. */
-const CODE = String.raw`([A-Z]{1,2})(?:[- ](\d{1,2})(?![\d%.]))?`;
+/** Series code: one or two letters, an optional number (`F-1`, `F 1`, `F1`), never a percent. */
+const CODE = String.raw`([A-Z]{1,2})(?:[- ]?(\d{1,2})(?![\d%.]))?`;
 
 const SPV_PATTERNS: readonly RegExp[] = [
   /\b(?:INVESTED IN|ECONOMIC EXPOSURE TO)\b/,
@@ -66,6 +66,8 @@ const SPV_PATTERNS: readonly RegExp[] = [
   /\bA SERIES OF\b/,
   // `MVP Opportunity Fund VI LLC (Epic Games)`: a vehicle named with its holding, not a custody note.
   /\b(?:LLC|LP|L\.P\.)\s*\((?!PHYSICAL|DRS|NOT LISTED|PIPE)[^)]+\)\s*$/,
+  // `Anduril Investors LLC, Series G`, `… Series B QP Partners LLC`: a pooled vehicle's own name.
+  /\b(?:FUND|PARTNERS|INVESTORS|OPPORTUNITY|CO-?INVEST\w*)\b[^()]*\b(?:LLC|LP|L\.P\.)(?=[\s,]|$)/,
 ];
 const SAFE_PATTERNS: readonly RegExp[] = [
   /\bSAFE\b(?!\s+SUPERINTELLIGENCE)/,
@@ -76,7 +78,9 @@ const NOTE_PATTERN =
 const WARRANT_PATTERN = /\b(?:WARRANTS?|WTS?)\b/;
 const RIGHTS_PATTERN = /\b(?:RTS?|RIGHTS?)\b/;
 const DEBT_OR_SWAP_PATTERN = /\b(?:SWAP|LOAN|1LN|TERM B)\b/;
-const SERIES_PATTERN = new RegExp(String.raw`\b(?:SERIES|SER|SR)\.?\s+(?:(SEED)\b|${CODE}\b)`);
+const SERIES_PATTERN = new RegExp(
+  String.raw`\b(?:SERIES|SER|SRS|SR)(?:\.\s*|\s+)(?:(SEED)\b|${CODE}\b)`,
+);
 const CLASS_PATTERN = new RegExp(String.raw`\b(?:CLASS|CL)\.?\s+${CODE}\b`);
 const BARE_CODE_PC_PATTERN = new RegExp(String.raw`\b${CODE}\s+PC\b`);
 const PREFERRED_PATTERN = /\b(?:PFD|PREF|PREFERRED)\b/;
