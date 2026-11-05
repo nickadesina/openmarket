@@ -12,8 +12,10 @@
  *      `match_pattern`) its name matches (`match_method = 'alias'`, the
  *      matching text in `match_note`). A vehicle whose name matches none, or
  *      more than one, is stored `unmatched`; nothing is guessed.
- *    - the issuer's own Form D: not a pooled fund, a name matching the
- *      issuer's `match_pattern` and no vehicle words. It sets the issuer's
+ *    - the issuer's own Form D: a corporation (not named an LLC or LP), not a pooled fund, whose name
+ *      begins with the issuer's name, legal name or a search phrase and has no
+ *      vehicle words (`Databricks, Inc.`, not `General Counsel AI, Inc.`
+ *      or `MI SpaceX Investment, LLC`). It sets the issuer's
  *      `incorporation_state` (the newest one's jurisdiction, with the filing
  *      as source), and stands as `prints` evidence of a round's size and
  *      date (`origin = 'form_d'`, `event_type = 'form_d_offering'`) where no
@@ -64,6 +66,21 @@ export interface FormDCandidate {
   readonly foundBy: readonly string[];
 }
 
+function words(text: string): string {
+  return ` ${text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()} `;
+}
+
+/** The filer's name begins with the issuer's name, legal name or a search phrase. */
+function namesIssuerFirst(filerName: string, issuer: IndexIssuer): boolean {
+  const filer = words(filerName);
+  return [issuer.name, issuer.legalName ?? "", ...issuer.searchPhrases]
+    .filter((name) => name.trim().length > 0)
+    .some((name) => filer.startsWith(words(name)));
+}
+
 export type FormDReading =
   | { readonly kind: "vehicle"; readonly issuerSlug: string | null; readonly note: string }
   | { readonly kind: "own"; readonly issuerSlug: string }
@@ -75,13 +92,16 @@ function vehiclePattern(issuer: IndexIssuer): RegExp {
 
 /** What one Form D is to the watchlist: a vehicle (matched or not), an issuer's own, or neither. */
 export function readFormD(
-  form: Pick<FormD, "issuerName" | "industryGroup" | "coIssuers">,
+  form: Pick<FormD, "issuerName" | "industryGroup" | "coIssuers" | "entityType">,
   issuers: readonly IndexIssuer[],
   foundBy: readonly string[] = [],
 ): FormDReading {
   const pooled = form.industryGroup === "Pooled Investment Fund";
-  if (!pooled && !VEHICLE_WORDS.test(form.issuerName)) {
-    const own = issuers.find((issuer) => issuerPattern(issuer.matchPattern).test(form.issuerName));
+  const corporation =
+    form.entityType === "Corporation" &&
+    !/\b(?:LLC|L\.L\.C\.|LP|L\.P\.)(?=[\s,.]|$)/i.test(form.issuerName);
+  if (!pooled && corporation && !VEHICLE_WORDS.test(form.issuerName)) {
+    const own = issuers.find((issuer) => namesIssuerFirst(form.issuerName, issuer));
     if (own !== undefined) return { kind: "own", issuerSlug: own.slug };
   }
   if (!isVehicle(form)) return { kind: "other" };
@@ -371,7 +391,12 @@ export async function rematchVehicles(
   for (const vehicle of vehicles) {
     const found = /Found by full-text search for ([^.]+)\./.exec(vehicle.match_note ?? "")?.[1];
     const reading = readFormD(
-      { issuerName: vehicle.vehicle_name, industryGroup: "Pooled Investment Fund", coIssuers: [] },
+      {
+        issuerName: vehicle.vehicle_name,
+        industryGroup: "Pooled Investment Fund",
+        coIssuers: [],
+        entityType: null,
+      },
       issuers,
       found === undefined ? [] : found.split(", "),
     );
