@@ -82,7 +82,10 @@ export default defineConfig({
     ? {
         webServer: {
           command: `npm run dev -- -H ${origin.hostname} -p ${port}`,
-          url: appOrigin,
+          // Readiness polls a page that reads no database: Playwright starts this
+          // server before global setup migrates and seeds DATABASE_URL_TEST, and
+          // the index pages answer 500 on an empty database.
+          url: `${appOrigin}/rulebook`,
           reuseExistingServer: false,
           // A first compile in a git worktree can wait on the file watcher scanning its
           // siblings; four minutes keeps that from failing the run before a test does.
