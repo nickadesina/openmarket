@@ -1,74 +1,65 @@
 # Artifacts index
 
-Every design, spec and evidence artifact for OpenMarket, where it
-lives, and what it is for. Repo files win over Claude Docs when they
-disagree; a Claude Doc that has an in-repo copy is listed with it.
+Every design, spec and evidence artifact for OpenMarket v2 (the marks
+index), where it lives and what it is for. Repo files win over Claude Docs
+when they disagree. v1's artifacts (the dealer, the tournament, the
+backtest) are at the tags `archive/dealer-v1` and `archive/tournament-v1`
+and under `docs/archive/`.
 
 ## Canonical, in this repository
 
 | File | What it is | Read it when |
 | --- | --- | --- |
-| `README.md` | The MVP contract: product, decision record D1–D14 with status against code, non-goals, how to run, drift register | before any product or scope change |
-| `CONTRACTS.md` | Normative semantics of the two instruments per name (binary, forward), the dealer's bound, lifecycle, tournament mapping | before touching anything that quotes, settles or scores |
-| `TECHNICAL_DESIGN.md` | How the dealer design is built inside this codebase: schema, jobs, state machine, API, bridge, backtest CI, milestones (all done but 4, ingest), open decisions; marks what is not built | before touching the dealer, or starting ingest |
+| `docs/decisions/0003-v2-marks-index.md` | The decision: a published marks index, not a venue; the source rule; the test | before anything |
+| `README.md` | Product, decision record (D15, D13 kept), non-goals, running instructions (env, the `index:*` scripts in order, cron), drift register, open questions for Nick | before any product or scope change, and to run anything |
+| `TECHNICAL_DESIGN.md` | How the index is built from the code as it stands: layers, data model, ingest, arithmetic, read services, API and downloads (with the response-size note), pages, tests; what is not built | before changing ingest, services, routes or pages |
+| `METHODOLOGY.md` | The public spec of the index (0.1.0, draft): the unit, labels, families, consensus, dispersion, listed names, mark versus print, revisions, SPV premium, common-equivalent, constants, corrections | before changing `src/lib/engine/index/`; rendered at `/methodology` |
+| `CONTRACTS.md` | Normative spec of the contracts that settle on the index (OpenMarket lists none) | before touching the rulebook's contract rules |
+| `PRODUCT.md`, `DESIGN.md` | The product's limits and voice; the visual system and its named rules | before changing a screen |
 | `AGENTS.md` / `CLAUDE.md` | Operating rules for agents: gates, layout, conventions, what is not open | every session |
-| `PRODUCT.md`, `DESIGN.md` | Product voice and the visual system | before changing a screen |
-| `PART1.md`–`PART5.md` | Layer references: engine (1), persistence and transactions (2), read APIs (3), the markets UI (4), deployment (5); superseded on product decisions by `README.md` §2 | when working in `src/lib/engine`, `src/lib/services`, `src/app/api`, the markets screens, or the build |
-| `.env.example` | The environment contract: every variable the app, scripts and build read | adding or reading an env var |
-| `docs/prompts/cleanup/` | The robustness and cleanup pass: a dispatch README and one brief per workstream | running that pass |
-| `docs/prompts/onboarding-and-demo/` | Historical briefs O1–O3 (O1, O2 stage 1 and O3 merged; status in its README) | reviewing onboarding and demo history |
-| `docs/archive/prompts/` | Finished briefs kept for history: `implement-dealer.md` (milestones 1–3, 5–8), `tournament-contracts/` (decision 0004) | never as instructions |
-| `docs/decisions/NNNN-*.md` | Agreed changes that supplement the design: 0001 `event_flags` and the ingest hand-off, 0002 the binary's event window and expiry, 0004 tournament questions follow the contracts, 0005 labelled demo accounts (there is no 0003 in the repository) | before any milestone a decision names |
-| `tests/browser/*.spec.ts`, `tests/browser/global-setup.ts`, `tests/browser/seed-dealer.ts` | Browser specs (dealer, tournament, onboarding, account, restrictions) and the Playwright setup that migrates, lists the five names and runs one dealer job against `DATABASE_URL_TEST` (no production route) | changing the market page, board, ticket or portfolio |
-| `docs/prompts/tradeables/README.md` | Brief for the ten tradeables: the resolution-source map, the public datasets, the reviewable rulebook, the feed trial, the maker slot, questions on request, the objection catalog, distribution, the policy case study | building anything under `docs/tradeables/`, `public/data/` or the `/resolution-sources`, `/rulebook`, `/ref`, `/for-policy` pages |
-| `docs/tradeables/*` | The tradeables' content: `resolution-sources.json` (source of truth) and `.md` (rendered), `objections.md` (seeded catalog), `case-study.md`, `maker-slot.md`, `maker-register.md`, `feed-trial.md`, `distribution.md` | sending any of them, or adding a row after a call |
-| `public/data/round-history.{csv,json}`, `public/data/backtest/*` | Public exports: the joined round history with sources and tiers, and the redacted backtest outputs (calibration errors, resolutions, void rates). Generated from `backtest/` in the tradeables pass; `npm run export:tradeables` must reproduce them | before sending data to anyone |
-| `docs/RULEBOOK_CHANGELOG.md`, `docs/RULEBOOK_REVIEWERS.md`, `.github/ISSUE_TEMPLATE/rulebook-review.md` | The rulebook's version history, who reviewed it, and how a review is filed | changing `RULEBOOK_VERSION` or crediting a reviewer |
-| `tests/fixtures/event-flags.json` | 161 fixture flags (scoop / release / print) derived from `backtest/events.csv`; what settlement and mid-model tests read until ingest exists | writing any test that needs a flag |
+| `docs/prompts/v2/` | The build contract (`README.md`, with each part's status) and one brief per part (P1–P6) | building or reviewing a part |
+| `docs/RULEBOOK_CHANGELOG.md`, `docs/RULEBOOK_REVIEWERS.md`, `.github/ISSUE_TEMPLATE/rulebook-review.md` | The rulebook's version history (2.0.0 is the index's), who reviewed it, how a review is filed | changing `RULEBOOK_VERSION` |
+| `docs/decisions/0001`, `0002`, `0004`, `0005` | v1's decisions; 0002's 21-day listing floor is kept in the rulebook | history |
+| `.env.example` | The environment contract | adding or reading an env var |
+| `docs/archive/v1/`, `docs/archive/prompts/`, `docs/prompts/cleanup/`, `docs/prompts/onboarding-and-demo/`, `docs/prompts/tradeables/` | v1's design documents, decision record and briefs; they name v1 files that are only at the archive tags | history, never as instructions |
 
-## Backtest (evidence for D11–D12)
-
-`backtest/` — see `backtest/README.md` for how to run it and
-`backtest/RESULTS.md` for what the numbers mean.
+## Data
 
 | Path | What it is |
 | --- | --- |
-| `backtest/sim.py` | Prior (leave-one-out tier step-up, Weibull hazard, leak overrides), dealer (LMSR binary, clipped forward with cap, event-flag widening), four trader scenarios |
-| `backtest/analyze.py` | Runs the scenarios on an events file; writes `out/summary.csv`, `out/calibration.csv`, `out/losses_T12.csv`, `out/meta.json`, four PNG charts |
-| `backtest/golden.py` | Reruns the calibration run (T = 12, no trader, leave-one-out, from 2024) and records sim.py's prior for the listed names with its inputs; writes `out/prior_golden.json` |
-| `backtest/events.csv` | Merged events: 64 rows, 59 priced rounds (56 in Jan 2024–Oct 2026; three earlier ones seed the prior), 14 companies, to Oct 19 2026; tenders/secondaries recorded but excluded as prints; no URL column (its digest is pinned) |
-| `backtest/data/sources.csv` | A located source URL and rank for the listed names' prints (Instinct's Seed has none); `seed:listings` joins it to `events.csv` and refuses an anchor without a URL. `tests/fixtures/listing-sources.csv` is the tests' placeholder copy |
-| `backtest/data/labs.csv` | OpenAI and Anthropic rounds with leak dates and notes on conflicts |
-| `backtest/data/anduril_modal_instinct.csv` | The three red-hot names |
-| `backtest/data/analogs.csv` | Cursor, SSI, xAI, Mercor, Harvey, Cognition, Perplexity, Valar Atomics, Greptile |
-| `backtest/out/*` | Committed results of the last run — four charts and four CSV/JSON tables, each read in `backtest/RESULTS.md`, plus `params.json` (every parameter the app reads, with the SHA-256 of the inputs that produced it; imported by `src/lib/config/dealer.ts`) and `prior_golden.json` (sim.py's binary p, forward opening mid and weekly mid for the five names, with inputs; `tests/engine/dealer/prior.test.ts` holds `src/lib/engine/dealer/prior.ts` to it at 1e-9) |
-| `backtest/requirements.txt` | Pinned pandas, numpy, matplotlib for `backtest.yml` |
-| `tests/fixtures/rulebook-events.json` | How rulebook v1 resolves every row of `events.csv` and each listed name's forward lives and binary quarters; a rule change re-baselines it |
+| `data/index/watchlist.json` | The 20 names and 7 candidates: search phrases, match pattern, listing, Form D phrases (Nick's selection) |
+| `data/index/filer-families.json` | Registrant CIKs grouped into families with evidence (0.1.0; drafted by `index:families` from N-CEN) |
+| `data/index/filings-by-name.csv`, `filer-counts.md`, `filing-counts.json` | `index:search`'s outputs: every NPORT-P, N-CSR and N-CSRS naming a name; the counts per name; the counts as data, which the pages read to say why a name has no marks |
+| `data/index/sources-status.md` | Each source checked against the source rule: built, or not built and why (N-CSR, Fidelity, ARK, DXYZ, SPV unit quotes) |
+| `data/index/certificates/README.md`, `data/index/spv-quotes/README.md` | The import formats; no certificate is transcribed and no quote captured |
+| `data/round-history/events.csv`, `sources.csv` | The print side: priced rounds with sources; `npm run export:round-history` writes `public/data/round-history.*` |
+| `public/data/LICENSE` | CC BY 4.0 notice and attribution line for every download |
+| `docs/tradeables/ref-examples.json` | `/ref`'s example payloads, generated from the development database (`npm run export:ref-examples`) |
+| `docs/tradeables/resolution-sources.{json,md}`, `objections*.md` | The resolution-source map (rendered at `/resolution-sources`) and the objection catalog, kept from v1 as inputs to the methodology |
+| `docs/tradeables/case-study.md`, `distribution.md`, `feed-trial.md`, `maker-*.md`, `questions/` | v1-era tradeables content, kept for reference; not linked from the site |
+| `docs/research/` | Private research pulls (see its README) |
 
-Fact-check status: 13 of 14 key dates and valuations confirmed against
-primary or Tier-1 sources on 2026-10-19; the FT Anthropic $150B+ leak
-is dated by pickups (Jul 25–26, 2025), not the FT page itself.
+## Tests and fixtures
 
-## Claude Docs (working copies and history)
+| Path | What it is |
+| --- | --- |
+| `tests/fixtures/index/` | Real EDGAR documents, trimmed as its README says: N-PORTs, full-text search, N-CEN, submissions, two Form Ds, holding titles |
+| `tests/fixtures/certificates/` | The schema fixture's invented issuer `example-co`, for the certificate import and waterfall tests only |
+| `tests/fixtures/rulebook-events.json` | How rulebook 2.0.0 resolves every row of `events.csv` |
+| `tests/browser/seed.ts`, `global-setup.ts`, `smoke.spec.ts` | The browser suite: a test database filled through the import services from the fixtures, and smoke specs for every page |
+
+## Claude Docs (history)
 
 | Doc | Link | Status |
 | --- | --- | --- |
-| OpenMarket Technical Design | https://claude.ai/artifact/SneDWGMo7tB7QisN521brb | in-repo copy: `TECHNICAL_DESIGN.md` (2026-10-21) |
-| OpenMarket Contract Specification — Agent & Dependency-Graph Guide | https://claude.ai/artifact/4iJtm24xcQ6w3WRcWLLLZA | in-repo copy: `CONTRACTS.md`; the doc also carries the backtest results section and Nick's inline edits (Oct 19) |
-| OpenMarket Tournament: Design Doc | https://claude.ai/artifact/L6oXCYtHUXoopLCkyGActG | implemented, merged to `master` in #2; README D9 |
-| OpenMarket Dependency Graph (v2) | https://claude.ai/artifact/AeMtaUQev3Xq42uD3NKUfm | superseded by `TECHNICAL_DESIGN.md` §12 for build order; still the pre-seed critical path |
-| OpenMarket — Timing/Survival Strip Design Doc | https://claude.ai/artifact/DnvuLuE3unH7pjWyQ857Wv | the "by date" markets that became D11's quarterly binary |
-| OpenMarket Product Design Doc | https://claude.ai/artifact/19dP1XaJVaZsYc9kMWyaKM | product-side companion to `PRODUCT.md` |
-| OpenMarket Redesign Sketches | https://claude.ai/artifact/MNyS3dyYy5AWaiGxoDKufF | visual direction behind `DESIGN.md` |
-| OpenMarket MVP Contract | https://claude.ai/artifact/95S4iWriGyzd7Da3on5m9S | the original LMSR-ladder contract; superseded by `README.md` §2 |
-| OpenMarket legal landscape | https://claude.ai/artifact/NeDrmCUNs2F4dMwvaoRTAe | research, not advice; informs the SBS caveat in D11/`TECHNICAL_DESIGN.md` §13 |
-| OpenMarket: The Case for Regulated Valuation Outcome Contracts (draft) | https://claude.ai/artifact/NXoJu2coJMRHBPqy55Up2t | white paper draft; the structural model section predates the forward design |
-| OpenMarket: technical one-pager | https://claude.ai/artifact/Hf6dKh8GmoQ2ePFrVq4h4g | Q&A for crypto-native conversations (Oct 5); rails section still current, instrument section superseded |
-| Investor One-Pager / investor dossier | https://claude.ai/artifact/DXCX5t86Rwhdh9gBXzqfku / https://claude.ai/artifact/VvT3qJMNGVPHJWjUAroZnm | fundraising; not engineering inputs |
-| Hanson (2002) LMSR — condensed | https://claude.ai/artifact/XZLj9pjhE6EBadpLjw8eAS | reference for the binary market maker |
+| OpenMarket Technical Design (v1) | https://claude.ai/artifact/SneDWGMo7tB7QisN521brb | v1's dealer design; in-repo copy `docs/archive/v1/TECHNICAL_DESIGN.md`; superseded by `TECHNICAL_DESIGN.md` |
+| OpenMarket Contract Specification (v1) | https://claude.ai/artifact/4iJtm24xcQ6w3WRcWLLLZA | v1's instruments; in-repo copy `docs/archive/v1/CONTRACTS-v1.md`; superseded by `CONTRACTS.md` |
+| OpenMarket Product Design Doc | https://claude.ai/artifact/19dP1XaJVaZsYc9kMWyaKM | v1 product companion; superseded by `PRODUCT.md` |
+| OpenMarket Redesign Sketches | https://claude.ai/artifact/MNyS3dyYy5AWaiGxoDKufF | the visual direction behind `DESIGN.md` |
+| OpenMarket legal landscape | https://claude.ai/artifact/NeDrmCUNs2F4dMwvaoRTAe | research, not advice |
+| Investor materials | https://claude.ai/artifact/DXCX5t86Rwhdh9gBXzqfku, https://claude.ai/artifact/VvT3qJMNGVPHJWjUAroZnm | fundraising; not engineering inputs |
 
 ## Not in the repository, by design
 
-Investor materials, the X playbook, and the legal-landscape research
-stay as Claude Docs. Nothing an agent needs to build from is only
-there.
+Investor materials, the posting playbook and the legal research stay as
+Claude Docs. Nothing an agent needs to build from is only there.

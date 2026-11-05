@@ -1,6 +1,7 @@
 # v2 build: the marks index
 
-Date: 2026-11-04. Status: brief for agents. Owner: Nick.
+Date: 2026-11-04. Status: built (every part landed by 2026-11-05; the
+Parts table says what each did not build). Owner: Nick.
 Decision: `docs/decisions/0003-v2-marks-index.md` (read it first).
 
 OpenMarket stops being a venue and becomes a published index of
@@ -236,23 +237,24 @@ to the document it came from. v1 paths (`/m`, `/t`, `/portfolio`,
 
 ## Parts
 
-| Part | Brief | Depends on | Touches |
-| --- | --- | --- | --- |
-| P1 | `p1-archive.md` — remove v1 from the tree, keep the gates green | — | everything v1 |
-| P2 | `p2-edgar-ingest.md` — schema, SEC client, search, N-PORT, fund pages, cron | P1 | migrations, `ingest/`, `services/index/ingest-*`, scripts |
-| P3 | `p3-derived-series.md` — `engine/index`, `METHODOLOGY.md` | P1 | `engine/index`, tests |
-| P6 | `p6-rulebook-and-contracts.md` — rulebook v2 source classes, `CONTRACTS.md` v2 | P1 | `engine/rulebook.ts`, `CONTRACTS.md` |
-| P4 | `p4-certificates-prints-spv.md` | P2, P3 | `data/index`, `services/index` |
-| P5 | `p5-site-and-api.md` — routes, pages, CSV, docs | P2–P4, P6 | `app`, `components`, docs |
+| Part | Brief | Depends on | Touches | Status |
+| --- | --- | --- | --- | --- |
+| P1 | `p1-archive.md` — remove v1 from the tree, keep the gates green | — | everything v1 | Built: v1 at `archive/dealer-v1` and `archive/tournament-v1`; v1's paths redirect to `/`. |
+| P2 | `p2-edgar-ingest.md` — schema, SEC client, search, N-PORT, fund pages, cron | P1 | migrations, `ingest/`, `services/index/ingest-*`, scripts | Built: migrations `020`–`021`, the SEC client, full-text search, N-PORT ingest, families from N-CEN, the daily cron. Not built: N-CSR parsing, Fidelity and ARK holdings pages, DXYZ (`data/index/sources-status.md` says why). |
+| P3 | `p3-derived-series.md` — `engine/index`, `METHODOLOGY.md` | P1 | `engine/index`, tests | Built: `engine/index` and `METHODOLOGY.md` 0.1.0 (draft until Nick signs it). |
+| P6 | `p6-rulebook-and-contracts.md` — rulebook v2 source classes, `CONTRACTS.md` v2 | P1 | `engine/rulebook.ts`, `CONTRACTS.md` | Built: rulebook 2.0.0 and `CONTRACTS.md` v2. Not built: a past-date observation route and series under earlier methodology versions (rulebook `NOT_BUILT`). |
+| P4 | `p4-certificates-prints-spv.md` | P2, P3 | `data/index`, `services/index` | Built: migrations `022`–`023`, the certificate, print, Form D and SPV-quote importers, the listing rule, `index:relabel`, the read services. No data: no certificate transcribed, no unit quote captured (no public page quotes units). Form D is not in the cron. |
+| P5 | `p5-site-and-api.md` — routes, pages, CSV, docs | P2–P4, P6 | `app`, `components`, docs | Built: the envelope and every route, the CSVs (streamed; `issuer=` per name), `/ref`, `/`, `/n/[slug]`, `/methodology`, `/corrections`, Open Graph text, `TECHNICAL_DESIGN.md`, browser specs on a seeded database. Not built: page caching (each view recomputes), the corrections reporting address. |
 
 ## Open questions this build answers or leaves (decision 0003)
 
 1. Which five names have the most N-PORT filers: P2's
-   `filer-counts.md`.
+   `filer-counts.md` (SpaceX, Databricks, xAI, Anthropic, Stripe).
 2. Whether a model can parse certificates: P4 builds the import format;
    who fills it is Nick's call.
-3. Whether any SPV platform publishes unit quotes without a login: P4
-   reports what it found; the SPV series runs on Form D alone otherwise.
+3. Whether any SPV platform publishes unit quotes without a login: none
+   found (P4, `data/index/sources-status.md`); the SPV panel runs on Form D
+   alone.
 4. Ratchets with an IPO-price condition: `CE_VERSION` 0.1.0 returns
    unsupported; per-series only.
 5. Whether anyone pays: not an engineering question.

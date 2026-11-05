@@ -36,11 +36,16 @@ are under `docs/archive/v1/`.
 - Users: analytical people who need a reference for private-company
   value (funds, administrators, lenders, venues, journalists). See
   `PRODUCT.md` for voice and `DESIGN.md` for the visual system.
-- Surfaces now: `/` is a holding page until the daily index page lands;
-  `/rulebook` (and `/rulebook/changelog`), `/resolution-sources` and
-  `/ref` (the API docs) are published, with `GET /api/ref/rulebook`.
-  v1's paths (`/m`, `/t`, `/portfolio`, `/admin`, `/for-policy`)
-  redirect to `/`.
+- Surfaces: `/` the daily page (every watchlist name's headline
+  consensus, dispersion, families, latest filing and last print, and the
+  names without a consensus with the reason); `/n/[slug]` one name (each
+  security's consensus and dispersion over time, every family mark linked
+  to its filing, the marks outside the series as filed, prints, structure,
+  the SPV vehicles from Form D); `/methodology`; `/corrections`;
+  `/rulebook` (and `/rulebook/changelog`); `/ref` (the API docs);
+  `/resolution-sources`. The API is `/api/ref/*` and the CSVs are under
+  `/data/` (CC BY 4.0). v1's paths (`/m`, `/t`, `/portfolio`, `/admin`,
+  `/for-policy`) redirect to `/`. How it is built: `TECHNICAL_DESIGN.md`.
 
 ## 2. Decisions
 
@@ -78,19 +83,19 @@ Both instruments allow a day after their deadline for an announcement
 dated on or before it to be observed: the binary resolves NO, and the
 forward voids, one day after T.
 
-Current code: `src/lib/engine/rulebook.ts` (v1.0.0, its rules unchanged
-from v1) states the rules as data and resolves a binary or a forward
-from the events it is given, including the binary's expiry with the
-21-day floor (decision 0002), an acquisition (settles at a disclosed
-equity value, voids at once on an undisclosed one) and a higher-ranked
-revision dated past expiry. `GET /api/ref/rulebook` publishes it with
-`rulebook_version` and `as_of` through `withRefRoute`
-(`src/lib/api/ref-route.ts`: 60 s anonymous cache, keyed responses
-private, one unit of the `ref` quota). `tests/fixtures/rulebook-events.json`
-records how it resolves every row of `data/round-history/events.csv`
-(each row entering as rank 1, since the file carries no source rank)
-under the contract terms v1 listed with. Nothing settles in v2: the
-settle job that read the rulebook is archived with the dealer.
+Current code: `src/lib/engine/rulebook.ts` (2.0.0,
+`docs/RULEBOOK_CHANGELOG.md`) keeps v1's print rules (what a print is, the
+announcement rule, ranks 1–4, the seven-day revision window, the one-day
+grace) and adds the mark side: nine source classes ranked within five
+purposes (`SOURCE_CLASSES`, `sourceRank(class, purpose?)`, the rank ingest
+stores on `source_documents.source_rank`), and the rules the contracts in
+`CONTRACTS.md` share (observation date, listing floor, repricing void, void
+on no filing). Its `NOT_BUILT` names what no route serves yet: the index as
+published on a past date, and series under an earlier methodology version.
+`GET /api/ref/rulebook` publishes it under the v2 envelope through
+`withRefRoute`; `/rulebook` renders it. `tests/fixtures/rulebook-events.json`
+records how it resolves every row of `data/round-history/events.csv`.
+Nothing settles at OpenMarket.
 
 ## 3. Non-goals
 
@@ -106,54 +111,76 @@ but are not the deployment target), PostgreSQL 17.
 ```
 npm ci
 npm run check            # typecheck, biome, style audit, layer audit
-npm run test:unit        # engine, services, routes, pages
+npm run test:unit        # engine, parsers, services, routes, pages' helpers
 DATABASE_URL_TEST=postgresql://... npm run test:integration
-DATABASE_URL_TEST=postgresql://... npx playwright test
+DATABASE_URL_TEST=postgresql://... npx playwright test   # seeds the test database first
+npm run build
 npm run dev              # http://localhost:3000, never 127.0.0.1
 ```
 
-- `.env.local` needs `DATABASE_URL` and `DATABASE_URL_UNPOOLED`. The npm
-  scripts load `.env.local` when it exists; exported variables take
-  precedence. `npm run db:migrate` runs the migrations in order to
-  latest; `001`–`019` are v1's and stay (production has run them, and
-  `008` and `013` delete v1 data). v1's tables stay in the database; v2
-  code reads only `api_keys`, `api_key_usage` and `rate_limits`.
-- Integration tests create isolated schemas and explicitly scope their
-  migration tables, so concurrent suites do not share migration state.
+Environment (`.env.example` is the contract; the npm scripts load
+`.env.local` when it exists, and exported variables take precedence):
+
+- `DATABASE_URL` (pooled, the routes and pages) and
+  `DATABASE_URL_UNPOOLED` (migrations, the `index:*` scripts, key minting).
+  `npm run db:migrate` runs the migrations in order; `001`–`019` are v1's
+  and stay, `020`–`023` are the index's.
+- `SEC_USER_AGENT`: a name and a contact (an email or an https URL) sent
+  with every EDGAR request; the SEC client (`src/lib/ingest/fetch/sec.ts`)
+  refuses to run without it and keeps one request start per 150 ms,
+  backing off on 429 and 5xx. Agents use
+  `OpenMarket-Index/0.1 (+https://openmarket.systems)`; never a personal
+  email in code or config.
+- `CRON_SECRET` (at least 16 characters) for `/api/cron/*`; `APP_ORIGIN`.
+- `DATABASE_URL_TEST`: a disposable database for the integration and
+  browser suites.
+
+Filling the index, in order (each EDGAR script takes `--cache=<dir>` for
+development reruns):
+
+```
+npm run index:watchlist                     # data/index/watchlist.json → issuers
+npm run index:search                        # filings-by-name.csv, filer-counts.md, filing-counts.json
+npm run index:families                      # drafts filer-families.json from N-CEN (review it)
+npm run index:ingest -- --source=nport      # N-PORT holdings → filer_marks [--since= --issuer= --refetch]
+npm run index:ingest -- --source=form_d     # Form D → spv_vehicles, the issuer's own offerings
+npm run index:prints                        # data/round-history/events.csv → prints
+npm run index:certificates                  # data/index/certificates/ (none transcribed yet)
+npm run index:spv-quotes                    # data/index/spv-quotes/ (none captured)
+npm run index:relabel [-- --dry-run]        # re-read labels; differences as one parser correction
+npm run export:ref-examples                 # /ref's example payloads from the database
+```
+
+`npm run index:search -- --recount` rewrites the counts files from the CSV
+without searching (after the watchlist or the families file changes).
+
+- Vercel Cron: `vercel.json` runs `GET /api/cron/ingest` daily at 07:23
+  UTC: N-PORT incrementally from a week before its last ok `ingest_runs`
+  row, stopping before the 300 s limit. Form D, prints, certificates and
+  quotes run by hand.
 - Reference API: the public quota is 60 requests a minute per network,
-  or a key's own with `Authorization: Bearer <key>` (migration
-  `010_api_keys`); an unknown or revoked key is refused (401
-  `API_KEY_INVALID`). `npm run api-key:create -- --name=<desk>
-  [--quota=600] [--tier=design_partner]` prints a key once and stores
-  its SHA-256; a `design_partner` key (migration `018_api_key_tiers`)
-  expires 365 days after creation and is then refused with 401
-  `API_KEY_EXPIRED`. `api_key_usage` counts each key's served requests
-  per UTC day. In production, network buckets read Vercel's trusted
-  `x-vercel-forwarded-for` header with `VERCEL=1`; local development
-  shares one unlimited loopback caller. Limits return HTTP 429 with
-  `Retry-After`.
-- EDGAR: `SEC_USER_AGENT` (a name and a contact: an email or an https
-  URL) is required by every EDGAR request; the SEC client
-  (`src/lib/ingest/fetch/sec.ts`) refuses to run without it and keeps
-  one request start per 150 ms, backing off on 429 and 5xx.
+  or a key's own with `Authorization: Bearer <key>`; malformed queries are
+  refused before the quota is drawn. `npm run api-key:create --
+  --name=<desk> [--quota=600] [--tier=design_partner]` prints a key once
+  and stores its SHA-256; a `design_partner` key expires after 365 days.
+  In production, network buckets read Vercel's `x-vercel-forwarded-for`
+  with `VERCEL=1`; local development shares one unlimited loopback caller.
+- Downloads: `/data/filer-marks.csv` (and `?issuer=<slug>`),
+  `/data/certificate-terms.csv`, `/data/spv-matches.csv` (and
+  `?issuer=`), streamed (Vercel's 4.5 MB cap applies to buffered bodies;
+  `TECHNICAL_DESIGN.md` §7).
 - Data exports: `npm run export:round-history` writes
-  `public/data/round-history.*` from `data/round-history/events.csv`
-  and `sources.csv`; `npm run export:resolution-sources` regenerates
-  `docs/tradeables/resolution-sources.md`; `npm run export:objections`
-  writes the anonymised objection catalog. The first two take
-  `-- --check` (exit 1 when the committed file is stale).
-- Vercel Cron: `vercel.json` runs `GET /api/cron/ingest` daily at
-  07:23 UTC: each EDGAR source (N-PORT today) incrementally from a week
-  before its last ok `ingest_runs` row, stopping before the 300 s limit.
-  Cron routes require `Authorization: Bearer $CRON_SECRET` (at
-  least 16 characters; production build validation requires it).
+  `public/data/round-history.*`; `npm run export:resolution-sources`
+  regenerates `docs/tradeables/resolution-sources.md`; both take
+  `-- --check`.
 
 ## 5. CI and deployment
 
 CI (`.github/workflows/ci.yml`, PostgreSQL 17 service) runs typecheck,
 lint and audits, unit tests, integration tests, `next build`, and the
 Playwright smoke spec on desktop and mobile Chromium (against `next
-dev`). The Playwright run has an 18-minute global timeout, and the
+dev`, after `tests/browser/seed.ts` fills the test database from real
+filings through the import services). The Playwright run has an 18-minute global timeout, and the
 report and traces are uploaded on every run. CI caches Chromium by the
 installed `@playwright/test` version.
 
@@ -170,6 +197,28 @@ between the docs and the code. Closed rows are removed;
 
 | Claim | Status | Evidence |
 | --- | --- | --- |
+| The index covers N-CSR, fund holdings pages and closed-end NAVs (decision 0003 §2) | Not built | N-CSR is listed by `index:search`, not parsed; Fidelity, ARK Venture and DXYZ fail the source rule or give no per-holding value (`data/index/sources-status.md`). |
+| Mark versus print, structure and the common-equivalent are published | Code built, no data | No certificate is transcribed (`data/index/certificates/`), so every value is empty with its reason. |
+| The SPV premium is published (decision 0003 §2) | Not built | No public page quotes SPV units without a login (`sources-status.md`, checked 2026-11-05); the panel shows Form D vehicles only. |
+| Every security's mark enters a series | By design, large | 6,297 of 15,293 live marks are `Unclassified` (development data, 2026-11-05) (titles naming the issuer only, e.g. `EPIC GAMES INC PP`); name pages publish them as filed, outside the series. |
+| The daily cron runs every source | Partly | N-PORT only; Form D, prints, certificates and quotes run by hand. |
 | `events.csv` has 56 priced rounds | Partly | 59 `priced_round` rows; 56 fall in Jan 2024–Oct 2026, three are earlier (Anduril Dec 2022, Anthropic May 2023, Modal Oct 2023). |
-| The rulebook's not-built rules | Moot in v2 | `NOT_BUILT` (charter re-centring, the rank 3–4 review queue, the correcting settlement) names v1 dealer code that is archived; P6 rewrites the rulebook for the mark side. |
-| `/ref` documents the index | Not built | `/ref` documents `/api/ref/rulebook` only; the index's routes and the v2 envelope are P5's. |
+| A contract can settle on the index as published on its observation date | Not built | Rulebook `NOT_BUILT`: no past-date route; values are recomputed from the rows. |
+
+## 7. Open for Nick
+
+- Methodology sign-off: `METHODOLOGY.md` is 0.1.0, a draft; 1.0.0 is the
+  version in force at the first post.
+- Hiive-named vehicles found through Form D (`Hiive Anthropic Series …`):
+  the index reads only their SEC filings, never the platform. Whether
+  listing them is within the source rule (decision 0003 §4) is a call.
+- SpaceX is treated as listed from 2026-06-12, its final prospectus
+  (424B4, 0001628280-26-042639): marks as of that date or later enter no
+  series, and its headline is 2026Q2's.
+- `CONTRACTS.md` leaves open whether OpenMarket's operator is a restricted
+  person for every contract on the index.
+- Unclassified issuer-only titles: whether a title naming only the issuer
+  (`ANTHROPIC PBC`, `EPIC GAMES INC PP`) may ever be read as a series, and
+  on what evidence; today they enter no series.
+- The corrections reporting address (`/corrections` says it is not yet
+  published), and the filer-families file's review (version 0.1.0).
