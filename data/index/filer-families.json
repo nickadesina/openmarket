@@ -1,0 +1,2855 @@
+{
+  "version": "0.1.0",
+  "note": "Registrant CIKs grouped by the adviser firm their latest N-CEN names for their funds (drafted by npm run index:families from EDGAR; edited by hand where a registrant files no N-CEN). A CIK in no family is its own family. P3's engine reads this file.",
+  "families": [
+    {
+      "slug": "1ws-capital-advisors",
+      "name": "1WS Capital Advisors, LLC",
+      "ciks": [
+        "1748680"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: 1WS Capital Advisors, LLC (SEC file 801-114286). Registrants: 1WS Credit Income Fund (OWSCX) (CIK 1748680, N-CEN 0001049169-26-000032 filed 2026-01-14)."
+    },
+    {
+      "slug": "2023-etf-series-trust",
+      "name": "2023 ETF Series Trust",
+      "ciks": [
+        "1969674"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (Atlas Capital Team, Inc. (SEC file 801-130378); Brandes Investment Partners, L.P. (SEC file 801-24896); Eagle Capital Management LLC (SEC file 801-48883)). 2023 ETF Series Trust (CIK 1969674, N-CEN 0000940400-26-036392 filed 2026-09-11)."
+    },
+    {
+      "slug": "abrdn",
+      "name": "abrdn Inc.",
+      "ciks": [
+        "1413594",
+        "1597934",
+        "1793855"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: abrdn Inc. (SEC file 801-49966). Registrants: abrdn Global Infrastructure Income Fund (ASGI) (CIK 1793855, N-CEN 0001410368-25-033738 filed 2025-12-08); abrdn Funds (CIK 1413594, N-CEN 0001410368-26-001029 filed 2026-01-14); abrdn ETFs (CIK 1597934, N-CEN 0001410368-26-026127 filed 2026-03-16)."
+    },
+    {
+      "slug": "abrdn-asia-limited",
+      "name": "ABRDN Asia Limited",
+      "ciks": [
+        "779336",
+        "790500",
+        "866095",
+        "876717",
+        "917100"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: ABRDN Asia Limited (SEC file 801-62020). Registrants: ABERDEEN JAPAN EQUITY FUND, INC. (JEQ) (CIK 866095, N-CEN 0001752724-25-001680 filed 2025-01-13); ABERDEEN AUSTRALIA EQUITY FUND INC (IAF) (CIK 779336, N-CEN 0001410368-26-001027 filed 2026-01-14); ABERDEEN ASIA-PACIFIC INCOME FUND INC (FAX) (CIK 790500, N-CEN 0001410368-26-001026 filed 2026-01-14); ABERDEEN GLOBAL INCOME FUND INC (FCO) (CIK 876717, N-CEN 0001410368-26-001021 filed 2026-01-14); INDIA FUND INC (IFN) (CIK 917100, N-CEN 0001410368-26-025438 filed 2026-03-13)."
+    },
+    {
+      "slug": "abrdn-investments-limited",
+      "name": "abrdn Investments Limited",
+      "ciks": [
+        "1362481",
+        "1379400",
+        "1390195",
+        "1503290"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: abrdn Investments Limited (SEC file 801-75074). Registrants: abrdn Global Dynamic Dividend Fund (AGD) (CIK 1362481, N-CEN 0001410368-26-001024 filed 2026-01-14); abrdn Total Dynamic Dividend Fund (AOD) (CIK 1379400, N-CEN 0001410368-26-001022 filed 2026-01-14); abrdn Global Premier Properties Fund (AWP) (CIK 1390195, N-CEN 0001410368-26-001028 filed 2026-01-14); abrdn Income Credit Strategies Fund (ACP, ACP-PA) (CIK 1503290, N-CEN 0001410368-26-001023 filed 2026-01-14)."
+    },
+    {
+      "slug": "abs-investment-management",
+      "name": "ABS Investment Management LLC",
+      "ciks": [
+        "2071525"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: ABS Investment Management LLC (SEC file 801-62188). Registrants: Pre-IPO & Growth Fund (CIK 2071525, N-CEN 0002071525-26-000015 filed 2026-06-15)."
+    },
+    {
+      "slug": "advantage-advisers-multi-manager",
+      "name": "Advantage Advisers Multi-Manager, LLC",
+      "ciks": [
+        "1076673"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Advantage Advisers Multi-Manager, LLC (SEC file 801-57013). Registrants: Advantage Advisers Xanthus Fund, L.L.C. (CIK 1076673, N-CEN 0000940400-26-009635 filed 2026-03-03)."
+    },
+    {
+      "slug": "advisers-investment-trust",
+      "name": "Advisers Investment Trust",
+      "ciks": [
+        "1516523"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (INDEPENDENT FRANCHISE PARTNERS LLP (SEC file 801-70126); Northern Trust Investments, Inc. (SEC file 801-33358); River Canyon Fund Management LLC (SEC file 801-78722); State Farm Investment Management Corp. (SEC file 801-8184)). Advisers Investment Trust (CIK 1516523, N-CEN 0002066578-25-001756 filed 2025-12-11)."
+    },
+    {
+      "slug": "advisor-managed-portfolios",
+      "name": "Advisor Managed Portfolios",
+      "ciks": [
+        "1970751"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (LionShares LLC (SEC file 801-133836); Reckoner Capital Management LLC (SEC file 801-131563); Zevenbergen Capital Investments LLC (SEC file 801-62477)). Advisor Managed Portfolios (CIK 1970751, N-CEN 0001193125-26-390294 filed 2026-09-14)."
+    },
+    {
+      "slug": "advisors-asset-management",
+      "name": "ADVISORS ASSET MANAGEMENT, INC.",
+      "ciks": [
+        "1318342"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: ADVISORS ASSET MANAGEMENT, INC. (SEC file 801-62731). Registrants: Investment Managers Series Trust (CIK 1318342, N-CEN 0001193125-26-387502 filed 2026-09-10)."
+    },
+    {
+      "slug": "advisors-inner-circle-fund",
+      "name": "ADVISORS' INNER CIRCLE FUND",
+      "ciks": [
+        "878719"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (Fayez Sarofim & Co. (SEC file 801-1725); HAMLIN CAPITAL MANAGEMENT,LLC (SEC file 801-60945)). ADVISORS' INNER CIRCLE FUND (CIK 878719, N-CEN 0002048251-26-001920 filed 2026-03-13)."
+    },
+    {
+      "slug": "advisors-inner-circle-fund-iii",
+      "name": "Advisors' Inner Circle Fund III",
+      "ciks": [
+        "1593547"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (Chevy Chase Trust Company (SEC file 801-55134); KBI Global Investors (North America) Ltd. (SEC file 801-60358)). Advisors' Inner Circle Fund III (CIK 1593547, N-CEN 0002048251-26-008686 filed 2026-10-13)."
+    },
+    {
+      "slug": "akre-capital-management",
+      "name": "Akre Capital Management LLC",
+      "ciks": [
+        "811030"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Akre Capital Management LLC (SEC file 801-57156). Registrants: PROFESSIONALLY MANAGED PORTFOLIOS (CIK 811030, N-CEN 0001193125-26-417800 filed 2026-10-08)."
+    },
+    {
+      "slug": "alger",
+      "name": "Alger",
+      "ciks": [
+        "3521",
+        "92751",
+        "832566",
+        "911415",
+        "1219064",
+        "1807486"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Fred Alger Management, LLC (SEC file 801-6709). Registrants: Alger ETF Trust (CIK 1807486, N-CEN 0000940400-26-010049 filed 2026-03-13); ALGER FUNDS II (CIK 92751, N-CEN 0000940400-26-000198 filed 2026-01-14); ALGER FUNDS (CIK 3521, N-CEN 0000940400-26-000200 filed 2026-01-14); ALGER INSTITUTIONAL FUNDS (CIK 911415, N-CEN 0000940400-26-000199 filed 2026-01-14); ALGER PORTFOLIOS (CIK 832566, N-CEN 0000940400-26-010050 filed 2026-03-13); ALGER GLOBAL EQUITY FUND (CIK 1219064, N-CEN 0000940400-26-000197 filed 2026-01-14)."
+    },
+    {
+      "slug": "alliancebernstein",
+      "name": "AllianceBernstein L.P.",
+      "ciks": [
+        "3794",
+        "81443",
+        "825316",
+        "832808",
+        "883676",
+        "1274676",
+        "1496608"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: AllianceBernstein L.P. (SEC file 801-56720). Registrants: AB CAP FUND, INC. (CIK 81443, N-CEN 0001410368-26-091177 filed 2026-09-09); AB VARIABLE PRODUCTS SERIES FUND, INC. (CIK 825316, N-CEN 0001410368-26-023068 filed 2026-03-12); AB GLOBAL BOND FUND, INC. (CIK 883676, N-CEN 0001410368-25-035942 filed 2025-12-12); BERNSTEIN SANFORD C FUND INC (CIK 832808, N-CEN 0001410368-25-035951 filed 2025-12-12); AB BOND FUND, INC. (CIK 3794, N-CEN 0001410368-26-001006 filed 2026-01-14); AB CORPORATE SHARES (CIK 1274676, N-CEN 0001410368-26-069204 filed 2026-07-08); AB Active ETFs, Inc. (CIK 1496608, N-CEN 0001410368-26-010918 filed 2026-02-12)."
+    },
+    {
+      "slug": "allianz-investment-management",
+      "name": "Allianz Investment Management LLC",
+      "ciks": [
+        "1091439"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Allianz Investment Management LLC (SEC file 801-60167). Registrants: ALLIANZ VARIABLE INSURANCE PRODUCTS TRUST (CIK 1091439, N-CEN 0001004726-26-001522 filed 2026-03-13)."
+    },
+    {
+      "slug": "allied-asset-advisors",
+      "name": "ALLIED ASSET ADVISORS, INC.",
+      "ciks": [
+        "1105877"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: ALLIED ASSET ADVISORS, INC. (SEC file 801-57323). Registrants: ALLIED ASSET ADVISORS FUNDS (CIK 1105877, N-CEN 0001193125-26-342062 filed 2026-08-10)."
+    },
+    {
+      "slug": "allspring-funds-management",
+      "name": "Allspring Funds Management, LLC",
+      "ciks": [
+        "1081400",
+        "1081402",
+        "1611331"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Allspring Funds Management, LLC (SEC file 801-58237). Registrants: ALLSPRING VARIABLE TRUST (CIK 1081402, N-CEN 0001410368-26-021895 filed 2026-03-04); ALLSPRING FUNDS TRUST (CIK 1081400, N-CEN 0001410368-26-102519 filed 2026-10-02); ALLSPRING EXCHANGE-TRADED FUNDS TRUST (CIK 1611331, N-CEN 0001410368-26-102514 filed 2026-10-02)."
+    },
+    {
+      "slug": "alpha-fiduciary",
+      "name": "ALPHA FIDUCIARY, INC.",
+      "ciks": [
+        "1103243"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: ALPHA FIDUCIARY, INC. (SEC file 801-68218). Registrants: PFS FUNDS (CIK 1103243, N-CEN 0001413042-26-000814 filed 2026-10-06)."
+    },
+    {
+      "slug": "alps-advisors",
+      "name": "ALPS Advisors, Inc.",
+      "ciks": [
+        "1414040"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: ALPS Advisors, Inc. (SEC file 801-67135). Registrants: ALPS ETF Trust (CIK 1414040, N-CEN 0001049169-26-000159 filed 2026-02-13)."
+    },
+    {
+      "slug": "american-beacon-advisors",
+      "name": "American Beacon Advisors, Inc.",
+      "ciks": [
+        "809593"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: American Beacon Advisors, Inc. (SEC file 801-29198). Registrants: AMERICAN BEACON FUNDS (CIK 809593, N-CEN 0001410368-26-091138 filed 2026-09-09)."
+    },
+    {
+      "slug": "american-century-investment-management",
+      "name": "American Century Investment Management, Inc.",
+      "ciks": [
+        "100334",
+        "814680",
+        "880268",
+        "908406",
+        "924211",
+        "1353176",
+        "1710607"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: American Century Investment Management, Inc. (SEC file 801-08174). Registrants: AMERICAN CENTURY MUTUAL FUNDS, INC. (CIK 100334, N-CEN 0001193125-26-012892 filed 2026-01-14); AMERICAN CENTURY VARIABLE PORTFOLIOS INC (CIK 814680, N-CEN 0001145549-25-017179 filed 2025-03-11); AMERICAN CENTURY ETF TRUST (CIK 1710607, N-CEN 0001193125-25-279484 filed 2025-11-13); AMERICAN CENTURY INVESTMENT TRUST (CIK 908406, N-CEN 0001193125-26-267883 filed 2026-06-11); AMERICAN CENTURY INTERNATIONAL BOND FUNDS (CIK 880268, N-CEN 0001193125-26-012894 filed 2026-01-14); AMERICAN CENTURY STRATEGIC ASSET ALLOCATIONS INC (CIK 924211, N-CEN 0001193125-26-421250 filed 2026-10-14); AMERICAN CENTURY GROWTH FUNDS, INC. (CIK 1353176, N-CEN 0001193125-26-421249 filed 2026-10-14)."
+    },
+    {
+      "slug": "amg-funds",
+      "name": "AMG Funds LLC",
+      "ciks": [
+        "882443",
+        "912036",
+        "1089951"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: AMG Funds LLC (SEC file 801-56365). Registrants: AMG Funds I (CIK 882443, N-CEN 0000940400-26-000210 filed 2026-01-14); AMG Funds IV (CIK 912036, N-CEN 0000940400-26-000211 filed 2026-01-14); AMG FUNDS (CIK 1089951, N-CEN 0000940400-26-010071 filed 2026-03-16)."
+    },
+    {
+      "slug": "amplfy-investments",
+      "name": "Amplfy Investments LLC",
+      "ciks": [
+        "1633061"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Amplfy Investments LLC (SEC file 801-80692). Registrants: Amplify ETF Trust (CIK 1633061, N-CEN 0000894189-25-016878 filed 2025-12-15)."
+    },
+    {
+      "slug": "angel-oak-capital-advisors",
+      "name": "Angel Oak Capital Advisors, LLC",
+      "ciks": [
+        "1612930"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Angel Oak Capital Advisors, LLC (SEC file 801-70670). Registrants: Angel Oak Funds Trust (CIK 1612930, N-CEN 0001193125-26-156310 filed 2026-04-15)."
+    },
+    {
+      "slug": "angellist-asset-management",
+      "name": "AngelList Asset Management, LLC",
+      "ciks": [
+        "1858660"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: AngelList Asset Management, LLC (SEC file 801-129822). Registrants: USVC Venture Capital Access Fund (CIK 1858660, N-CEN 0001049169-26-001696 filed 2026-06-12)."
+    },
+    {
+      "slug": "apollo-capital-credit-adviser",
+      "name": "Apollo Capital Credit Adviser, LLC",
+      "ciks": [
+        "1676197"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Apollo Capital Credit Adviser, LLC (SEC file 801-108959). Registrants: Apollo Diversified Credit Fund (CIK 1676197, N-CEN 0001049169-26-000780 filed 2026-03-11)."
+    },
+    {
+      "slug": "applied-finance-advisors",
+      "name": "Applied Finance Advisors, LLC",
+      "ciks": [
+        "1396092"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Applied Finance Advisors, LLC (SEC file 801-66461). Registrants: World Funds Trust (CIK 1396092, N-CEN 0001396092-26-000406 filed 2026-07-14)."
+    },
+    {
+      "slug": "ares-capital-management-ii",
+      "name": "Ares Capital Management II LLC",
+      "ciks": [
+        "1515324"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Ares Capital Management II LLC (SEC file 801-72399). Registrants: Ares Dynamic Credit Allocation Fund, Inc. (ARDC) (CIK 1515324, N-CEN 0001410368-26-024921 filed 2026-03-13)."
+    },
+    {
+      "slug": "ariel-investments",
+      "name": "Ariel Investments, LLC",
+      "ciks": [
+        "798365"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Ariel Investments, LLC (SEC file 801-18767). Registrants: ARIEL INVESTMENT TRUST (CIK 798365, N-CEN 0002066578-25-001755 filed 2025-12-11)."
+    },
+    {
+      "slug": "aristotle-investment-services",
+      "name": "Aristotle Investment Services, LLC",
+      "ciks": [
+        "1959372"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Aristotle Investment Services, LLC (SEC file 801-127110). Registrants: Aristotle Funds Series Trust (CIK 1959372, N-CEN 0000894189-26-017839 filed 2026-06-12)."
+    },
+    {
+      "slug": "ark",
+      "name": "ARK Invest",
+      "ciks": [
+        "1579982",
+        "1905088"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: ARK Investment Management LLC (SEC file 801-79081). Registrants: ARK Venture Fund (CIK 1905088, N-CEN 0000940400-26-039199 filed 2026-10-06); ARK ETF Trust (CIK 1579982, N-CEN 0000940400-26-039198 filed 2026-10-06)."
+    },
+    {
+      "slug": "arrowmark-colorado-holdings",
+      "name": "ArrowMark Colorado Holdings, LLC",
+      "ciks": [
+        "745467"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: ArrowMark Colorado Holdings, LLC (SEC file 801-69868). Registrants: MERIDIAN FUND INC (CIK 745467, N-CEN 0000940400-26-036341 filed 2026-09-03)."
+    },
+    {
+      "slug": "artisan-partners-limited-partnership",
+      "name": "Artisan Partners Limited Partnership",
+      "ciks": [
+        "935015"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Artisan Partners Limited Partnership (SEC file 801-70101). Registrants: ARTISAN PARTNERS FUNDS INC (CIK 935015, N-CEN 0002071691-25-007976 filed 2025-12-11)."
+    },
+    {
+      "slug": "assetmark",
+      "name": "AssetMark Inc.",
+      "ciks": [
+        "1131042"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: AssetMark Inc. (SEC file 801-56323). Registrants: GPS Funds I (CIK 1131042, N-CEN 0001193125-26-270949 filed 2026-06-15)."
+    },
+    {
+      "slug": "axs-investments",
+      "name": "AXS Investments LLC",
+      "ciks": [
+        "1587982"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: AXS Investments LLC (SEC file 801-117457). Registrants: Investment Managers Series Trust II (CIK 1587982, N-CEN 0001193125-26-418681 filed 2026-10-09)."
+    },
+    {
+      "slug": "baillie-gifford-overseas-limited",
+      "name": "Baillie Gifford",
+      "ciks": [
+        "1120543",
+        "2060280",
+        "2087828"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Baillie Gifford Overseas Limited (SEC file 801-21051). Registrants: BAILLIE GIFFORD FUNDS (CIK 1120543, N-CEN 0000940400-26-009925 filed 2026-03-12). By hand: Baillie Gifford ETF Trust (CIK 2060280) by its trust name; it has filed no N-CEN yet. By hand: Baillie Gifford Institutional Trust (CIK 2087828) by its trust name; it has filed no N-CEN yet."
+    },
+    {
+      "slug": "bamco",
+      "name": "BAMCO, Inc.",
+      "ciks": [
+        "810902",
+        "1217673",
+        "2081199"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: BAMCO, Inc. (SEC file 801-29080). Registrants: BARON SELECT FUNDS (CIK 1217673, N-CEN 0001410368-26-025046 filed 2026-03-13); BARON INVESTMENT FUNDS TRUST (f/k/a BARON ASSET FUND) (CIK 810902, N-CEN 0001410368-25-034333 filed 2025-12-11); Baron ETF Trust (CIK 2081199, N-CEN 0001410368-26-025045 filed 2026-03-13)."
+    },
+    {
+      "slug": "benefit-street-partners",
+      "name": "Benefit Street Partners LLC",
+      "ciks": [
+        "1794041"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Benefit Street Partners LLC (SEC file 801-72843). Registrants: Franklin BSP Private Credit Fund (CIK 1794041, N-CEN 0000894189-26-007933 filed 2026-03-16)."
+    },
+    {
+      "slug": "berkshire-capital-holdings",
+      "name": "BERKSHIRE CAPITAL HOLDINGS, INC.",
+      "ciks": [
+        "1030979"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: BERKSHIRE CAPITAL HOLDINGS, INC. (SEC file 801-53149). Registrants: BERKSHIRE FUNDS (CIK 1030979, N-CEN 0001413042-26-000210 filed 2026-03-16)."
+    },
+    {
+      "slug": "bertolet-capital",
+      "name": "Bertolet Capital, LLC",
+      "ciks": [
+        "1216907"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Bertolet Capital, LLC (SEC file 801-61782). Registrants: BERTOLET CAPITAL TRUST (CIK 1216907, N-CEN 0001162044-26-000245 filed 2026-03-05)."
+    },
+    {
+      "slug": "bessemer-investment-management",
+      "name": "Bessemer Investment Management LLC",
+      "ciks": [
+        "909994"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Bessemer Investment Management LLC (SEC file 801-60185). Registrants: OLD WESTBURY FUNDS INC (CIK 909994, N-CEN 0000940400-26-000196 filed 2026-01-14)."
+    },
+    {
+      "slug": "beyond-investing",
+      "name": "Beyond Investing LLC",
+      "ciks": [
+        "1540305"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Beyond Investing LLC (SEC file 801-116758). Registrants: ETF Series Solutions (CIK 1540305, N-CEN 0001193125-26-421574 filed 2026-10-14)."
+    },
+    {
+      "slug": "blackrock",
+      "name": "BlackRock",
+      "ciks": [
+        "110055",
+        "276463",
+        "319108",
+        "355916",
+        "790525",
+        "834237",
+        "835620",
+        "844779",
+        "887509",
+        "893818",
+        "915092",
+        "922457",
+        "930667",
+        "1051003",
+        "1097077",
+        "1097293",
+        "1100663",
+        "1160864",
+        "1221845",
+        "1222401",
+        "1233681",
+        "1259708",
+        "1264926",
+        "1278895",
+        "1287480",
+        "1306550",
+        "1314966",
+        "1320375",
+        "1332283",
+        "1379384",
+        "1393299",
+        "1398078",
+        "1506289",
+        "1524513",
+        "1528988",
+        "1616678",
+        "1738072",
+        "1738073",
+        "1738074",
+        "1738077",
+        "1738078",
+        "1738080",
+        "1752019",
+        "1761055",
+        "1768666",
+        "1785971",
+        "1804196",
+        "1809541",
+        "1816389",
+        "1836057",
+        "1864843"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: BlackRock Advisors, LLC (SEC file 801-47710); BlackRock Fund Advisors (SEC file 801-22609). Registrants: BlackRock Funds V (CIK 1738078, N-CEN 0002071691-26-023728 filed 2026-10-13); BlackRock Variable Series Funds, Inc. (CIK 355916, N-CEN 0002071691-26-005530 filed 2026-03-16); BlackRock Science & Technology Trust (BST) (CIK 1616678, N-CEN 0001410368-26-025347 filed 2026-03-13); BLACKROCK GLOBAL ALLOCATION FUND, INC. (CIK 834237, N-CEN 0002071691-26-015833 filed 2026-07-14); BlackRock Strategic Global Bond Fund, Inc. (CIK 835620, N-CEN 0001410368-26-025368 filed 2026-03-13); BlackRock Series Fund, Inc. (CIK 319108, N-CEN 0002071691-26-005529 filed 2026-03-16); BlackRock ETF Trust II (CIK 1804196, N-CEN 0001410368-26-103677 filed 2026-10-14); BLACKROCK FUNDS (CIK 844779, N-CEN 0001410368-26-103686 filed 2026-10-14); BlackRock Technology & Private Equity Term Trust (BTX) (CIK 1836057, N-CEN 0001410368-26-025372 filed 2026-03-13); BlackRock Variable Series Funds II, Inc. (CIK 1738072, N-CEN 0002071691-26-005531 filed 2026-03-16); BLACKROCK BOND FUND, INC. (CIK 276463, N-CEN 0000940400-25-012293 filed 2025-12-12); BlackRock Enhanced Equity Dividend Trust (BDJ) (CIK 1332283, N-CEN 0001410368-26-025359 filed 2026-03-13); BlackRock Enhanced Global Dividend Trust (BOE) (CIK 1320375, N-CEN 0001410368-26-025351 filed 2026-03-13); BlackRock Enhanced International Dividend Trust (BGY) (CIK 1393299, N-CEN 0001410368-26-025361 filed 2026-03-13); BlackRock Enhanced Large Cap Core Fund, Inc. (CII) (CIK 1278895, N-CEN 0001410368-26-025363 filed 2026-03-13); BlackRock Energy & Resources Trust (BGR) (CIK 1306550, N-CEN 0001410368-26-025360 filed 2026-03-13); BlackRock Health Sciences Trust (BME) (CIK 1314966, N-CEN 0001410368-26-025350 filed 2026-03-13); BlackRock Science & Technology Term Trust (BSTZ) (CIK 1768666, N-CEN 0001410368-26-025355 filed 2026-03-13); BlackRock Health Sciences Term Trust (BMEZ) (CIK 1785971, N-CEN 0001410368-26-025356 filed 2026-03-13); BlackRock Utilities, Infrastructure & Power Opportunities Trust (BUI) (CIK 1528988, N-CEN 0001410368-26-025369 filed 2026-03-13); BlackRock Resources & Commodities Strategy Trust (BCX) (CIK 1506289, N-CEN 0001410368-26-025345 filed 2026-03-13); BlackRock Series Fund II, Inc. (CIK 1738073, N-CEN 0002071691-26-005527 filed 2026-03-16); BlackRock Funds IV (CIK 1738074, N-CEN 0002071691-26-023726 filed 2026-10-13); BlackRock Capital Appreciation Fund, Inc. (CIK 887509, N-CEN 0000940400-26-029032 filed 2026-08-13); BlackRock ESG Capital Allocation Term Trust (ECAT) (CIK 1864843, N-CEN 0001410368-26-025364 filed 2026-03-13); BlackRock Private Investments Fund (CIK 1816389, N-CEN 0001410368-26-061108 filed 2026-06-15); BlackRock ETF Trust (CIK 1761055, N-CEN 0001410368-26-103692 filed 2026-10-14); BLACKROCK LARGE CAP FOCUS GROWTH FUND, INC. (CIK 1097293, N-CEN 0000940400-26-029036 filed 2026-08-13); BLACKROCK LARGE CAP SERIES FUNDS, INC. (CIK 1097077, N-CEN 0000940400-26-029033 filed 2026-08-13); BLACKROCK ADVANTAGE GLOBAL FUND, INC. (CIK 922457, N-CEN 0002071691-26-021374 filed 2026-09-11); BlackRock Capital Allocation Term Trust (BCAT) (CIK 1809541, N-CEN 0001410368-26-025352 filed 2026-03-13); BLACKROCK INTERNATIONAL SELECT EQUITY FUND (CIK 790525, N-CEN 0002071691-26-021373 filed 2026-09-11); BLACKROCK CORPORATE HIGH YIELD FUND, INC. (HYT) (CIK 1222401, N-CEN 0001410368-26-025362 filed 2026-03-13); BLACKROCK CREDIT ALLOCATION INCOME TRUST (BTZ) (CIK 1379384, N-CEN 0001410368-26-025346 filed 2026-03-13); BlackRock HPS Credit Strategies Fund (CIK 1752019, N-CEN 0001410368-26-026229 filed 2026-03-16); BLACKROCK CORE BOND TRUST (BHK) (CIK 1160864, N-CEN 0001410368-26-025353 filed 2026-03-13); BLACKROCK FLOATING RATE INCOME TRUST (BGT) (CIK 1287480, N-CEN 0001410368-26-025357 filed 2026-03-13); BLACKROCK Ltd DURATION INCOME TRUST (BLW) (CIK 1233681, N-CEN 0001410368-26-025349 filed 2026-03-13); iShares, Inc. (CIK 930667, N-CEN 0001004726-26-005736 filed 2026-07-14); iSHARES TRUST (CIK 1100663, N-CEN 0001004726-26-009550 filed 2026-10-13); MASTER BOND LLC (CIK 1264926, N-CEN 0001752724-23-276350 filed 2023-12-11); Master Investment Portfolio II (CIK 1738077, N-CEN 0001410368-26-026205 filed 2026-03-16); MASTER INVESTMENT PORTFOLIO (CIK 915092, N-CEN 0001410368-26-026203 filed 2026-03-16); BlackRock Funds II (CIK 1398078, N-CEN 0002071691-26-023727 filed 2026-10-13); BLACKROCK ALLOCATION TARGET SHARES (CIK 1221845, N-CEN 0000940400-26-023459 filed 2026-06-15); BlackRock Funds III (CIK 893818, N-CEN 0001410368-26-026204 filed 2026-03-16); iShares U.S. ETF Trust (CIK 1524513, N-CEN 0002071691-26-023729 filed 2026-10-13); BLACKROCK BALANCED FUND, INC. (CIK 110055, N-CEN 0000940400-26-029031 filed 2026-08-13); BlackRock Funds VI (CIK 1738080, N-CEN 0001410368-26-026201 filed 2026-03-16); BLACKROCK DEBT STRATEGIES FUND, INC. (DSU) (CIK 1051003, N-CEN 0001410368-26-025371 filed 2026-03-13); BLACKROCK FLOATING RATE INCOME STRATEGIES FUND, INC. (FRA) (CIK 1259708, N-CEN 0001410368-26-025370 filed 2026-03-13)."
+    },
+    {
+      "slug": "blackstone-alternative-investment-advisors",
+      "name": "Blackstone Alternative Investment Advisors LLC",
+      "ciks": [
+        "1557794"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Blackstone Alternative Investment Advisors LLC (SEC file 801-77791). Registrants: Blackstone Alternative Investment Funds (CIK 1557794, N-CEN 0001410368-26-059336 filed 2026-06-12)."
+    },
+    {
+      "slug": "bmc-fund-inc",
+      "name": "BMC FUND INC",
+      "ciks": [
+        "351786"
+      ],
+      "evidence": "Its own family: its latest N-CEN names no investment adviser. BMC FUND INC (CIK 351786, N-CEN 0000351786-26-000002 filed 2026-01-12)."
+    },
+    {
+      "slug": "bny-mellon-etf-investment-adviser",
+      "name": "BNY Mellon ETF Investment Adviser, LLC",
+      "ciks": [
+        "1493580",
+        "2025968"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: BNY Mellon ETF Investment Adviser, LLC (SEC file 801-117653). Registrants: BNY Mellon ETF Trust (CIK 1493580, N-CEN 0000940400-26-036394 filed 2026-09-11); BNY Mellon ETF Trust II (CIK 2025968, N-CEN 0000940400-26-000203 filed 2026-01-14)."
+    },
+    {
+      "slug": "bny-mellon-investment-adviser",
+      "name": "BNY Mellon Investment Adviser, Inc.",
+      "ciks": [
+        "53808",
+        "799295",
+        "819940",
+        "857114",
+        "875732",
+        "889169",
+        "914775",
+        "1056707",
+        "1057861",
+        "1111565",
+        "1591556",
+        "1635295"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: BNY Mellon Investment Adviser, Inc. (SEC file 801-8147). Registrants: BNY Mellon Advantage Funds, Inc. (CIK 914775, N-CEN 0000940400-26-000101 filed 2026-01-12); BNY MELLON INVESTMENT PORTFOLIOS (CIK 1056707, N-CEN 0000940400-26-009934 filed 2026-03-12); BNY MELLON FUNDS TRUST (CIK 1111565, N-CEN 0000940400-25-005881 filed 2025-11-13); BNY Mellon Investment Funds VII, Inc. (CIK 889169, N-CEN 0000940400-26-039214 filed 2026-10-08); BNY MELLON INDEX FUNDS, INC. (CIK 857114, N-CEN 0000940400-26-000099 filed 2026-01-12); BNY MELLON MIDCAP INDEX FUND, INC. (CIK 875732, N-CEN 0000940400-26-000102 filed 2026-01-12); BNY Mellon Investment Funds IV, Inc. (CIK 819940, N-CEN 0000940400-26-000124 filed 2026-01-13); BNY Mellon Investment Funds I (CIK 799295, N-CEN 0000940400-26-009931 filed 2026-03-12); BNY Mellon Investment Funds III (CIK 53808, N-CEN 0000940400-26-028995 filed 2026-08-11); BNY Mellon Investment Funds II, Inc. (CIK 1591556, N-CEN 0000940400-26-000103 filed 2026-01-12); BNY Mellon Absolute Insight Funds, Inc. (CIK 1635295, N-CEN 0000940400-26-026206 filed 2026-07-10); BNY MELLON HIGH YIELD STRATEGIES FUND (DHF) (CIK 1057861, N-CEN 0000940400-26-023425 filed 2026-06-12)."
+    },
+    {
+      "slug": "bondbloxx-investment-management-corporation",
+      "name": "BondBloxx Investment Management Corporation",
+      "ciks": [
+        "1879238"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: BondBloxx Investment Management Corporation (SEC file 801-122836). Registrants: BondBloxx ETF Trust (CIK 1879238, N-CEN 0001003715-26-000048 filed 2026-01-13)."
+    },
+    {
+      "slug": "brighthouse-investment-advisers",
+      "name": "Brighthouse Investment Advisers, LLC",
+      "ciks": [
+        "710826",
+        "1126087"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Brighthouse Investment Advisers, LLC (SEC file 801-47459). Registrants: Brighthouse Funds Trust II (CIK 710826, N-CEN 0001410368-26-022706 filed 2026-03-11); Brighthouse Funds Trust I (CIK 1126087, N-CEN 0001410368-26-022705 filed 2026-03-11)."
+    },
+    {
+      "slug": "brinker-capital-investments",
+      "name": "Brinker Capital Investments, LLC",
+      "ciks": [
+        "1688680"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Brinker Capital Investments, LLC (SEC file 801-57265). Registrants: Brinker Capital Destinations Trust (CIK 1688680, N-CEN 0001003715-26-001621 filed 2026-05-04)."
+    },
+    {
+      "slug": "brookfield-investment-funds",
+      "name": "Brookfield Investment Funds",
+      "ciks": [
+        "1520738"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (Brookfield Public Securities Group LLC (SEC file 801-34605); Oaktree Fund Advisors, LLC (SEC file 801-112570)). Brookfield Investment Funds (CIK 1520738, N-CEN 0000894189-26-007877 filed 2026-03-13)."
+    },
+    {
+      "slug": "brookfield-public-securities-group",
+      "name": "Brookfield Public Securities Group LLC",
+      "ciks": [
+        "1576340"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Brookfield Public Securities Group LLC (SEC file 801-34605). Registrants: CENTER COAST BROOKFIELD MLP & ENERGY INFRASTRUCTURE FUND (CIK 1576340, N-CEN 0001145549-23-076040 filed 2023-12-14)."
+    },
+    {
+      "slug": "brown-advisory",
+      "name": "Brown Advisory LLC",
+      "ciks": [
+        "1548609"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Brown Advisory LLC (SEC file 801-38826). Registrants: Brown Advisory Funds (CIK 1548609, N-CEN 0000894189-26-025149 filed 2026-09-11)."
+    },
+    {
+      "slug": "brown-capital-management",
+      "name": "Brown Capital Management, LLC",
+      "ciks": [
+        "869351"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Brown Capital Management, LLC (SEC file 801-19287). Registrants: Brown Capital Management Mutual Funds (CIK 869351, N-CEN 0001752724-25-137789 filed 2025-06-13)."
+    },
+    {
+      "slug": "c1-fund-inc-cfnd",
+      "name": "C1 Fund Inc. (CFND)",
+      "ciks": [
+        "2044327"
+      ],
+      "evidence": "Its own family: no N-CEN in its EDGAR submissions index. C1 Fund Inc. (CFND) (CIK 2044327)."
+    },
+    {
+      "slug": "callan",
+      "name": "Callan LLC",
+      "ciks": [
+        "1573386"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Callan LLC (SEC file 801-9219). Registrants: KP Funds (CIK 1573386, N-CEN 0001752724-20-049389 filed 2020-03-16)."
+    },
+    {
+      "slug": "calvert-research-and-management",
+      "name": "Calvert Research and Management",
+      "ciks": [
+        "319676"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Calvert Research and Management (SEC file 801-108378). Registrants: Calvert Management Series (CIK 319676, N-CEN 0001410368-26-026132 filed 2026-03-16)."
+    },
+    {
+      "slug": "canterbury-investment-management",
+      "name": "Canterbury Investment Management, LLC",
+      "ciks": [
+        "1587551"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Canterbury Investment Management, LLC (SEC file 801-61876). Registrants: Capitol Series Trust (CIK 1587551, N-CEN 0000910472-26-010375 filed 2026-07-08)."
+    },
+    {
+      "slug": "capital-group",
+      "name": "Capital Group",
+      "ciks": [
+        "4405",
+        "4568",
+        "13075",
+        "39473",
+        "44201",
+        "50013",
+        "71516",
+        "719603",
+        "719608",
+        "729528",
+        "811968",
+        "812303",
+        "823620",
+        "826813",
+        "858744",
+        "894005",
+        "1073330",
+        "1439297",
+        "1553195",
+        "1553197",
+        "1655146",
+        "1761673",
+        "1841440",
+        "1869991",
+        "1870102",
+        "1870116",
+        "1870117",
+        "1870130",
+        "1970533",
+        "2020645",
+        "2034928",
+        "2040315",
+        "2064871",
+        "2078301"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Capital Research and Management Company (SEC file 801-8055). Registrants: AMCAP FUND (CIK 4405, N-CEN 0001193125-26-223144 filed 2026-05-14); GROWTH FUND OF AMERICA (CIK 44201, N-CEN 0001193125-25-282335 filed 2025-11-14); NEW ECONOMY FUND (CIK 719608, N-CEN 0001193125-26-050392 filed 2026-02-13); AMERICAN FUNDS INSURANCE SERIES (CIK 729528, N-CEN 0001193125-26-108005 filed 2026-03-16); CAPITAL WORLD GROWTH & INCOME FUND (CIK 894005, N-CEN 0001193125-26-050393 filed 2026-02-13); AMERICAN FUNDS FUNDAMENTAL INVESTORS (CIK 39473, N-CEN 0001193125-26-108001 filed 2026-03-16); AMERICAN BALANCED FUND (CIK 4568, N-CEN 0001193125-26-108003 filed 2026-03-16); EUPAC FUND (CIK 719603, N-CEN 0001193125-26-270571 filed 2026-06-15); NEW WORLD FUND INC (CIK 1073330, N-CEN 0001193125-26-012603 filed 2026-01-14); INCOME FUND OF AMERICA (CIK 50013, N-CEN 0001193125-26-421272 filed 2026-10-14); SMALLCAP WORLD FUND INC (CIK 858744, N-CEN 0001193125-25-318770 filed 2025-12-15); INTERNATIONAL GROWTH & INCOME FUND (CIK 1439297, N-CEN 0001193125-26-390269 filed 2026-09-14); Capital Group Fixed Income ETF Trust (CIK 1870117, N-CEN 0001410368-26-026232 filed 2026-03-16); Capital Group Core Balanced ETF (CIK 1970533, N-CEN 0001410368-26-026231 filed 2026-03-16); Capital Group Completion Fund Series (CIK 2020645, N-CEN 0001193125-26-108004 filed 2026-03-16); American Funds Multi-Sector Income Fund (CIK 1761673, N-CEN 0001193125-26-108002 filed 2026-03-16); AMERICAN FUNDS STRATEGIC BOND FUND (CIK 1655146, N-CEN 0001193125-26-108007 filed 2026-03-16); AMERICAN HIGH INCOME TRUST (CIK 823620, N-CEN 0001193125-25-318767 filed 2025-12-15); BOND FUND OF AMERICA (CIK 13075, N-CEN 0001193125-26-108009 filed 2026-03-16); CAPITAL WORLD BOND FUND (CIK 812303, N-CEN 0001193125-26-108006 filed 2026-03-16); NEW PERSPECTIVE FUND (CIK 71516, N-CEN 0001193125-25-318768 filed 2025-12-15); Capital Group KKR U.S. Equity (plus) (CIK 2078301, N-CEN 0000940400-26-023450 filed 2026-06-15); Capital Group KKR Core Plus (plus) (CIK 2040315, N-CEN 0000940400-26-010067 filed 2026-03-16); CAPITAL INCOME BUILDER (CIK 811968, N-CEN 0001193125-26-012601 filed 2026-01-14); Capital Group Global Growth Equity ETF (CIK 1870116, N-CEN 0001410368-26-081103 filed 2026-08-14); Capital Group International Focus Equity ETF (CIK 1870130, N-CEN 0001410368-26-081099 filed 2026-08-14); Capital Group Growth ETF (CIK 1869991, N-CEN 0001410368-26-081100 filed 2026-08-14); Capital Group Core Equity ETF (CIK 1870102, N-CEN 0001410368-26-081101 filed 2026-08-14); Capital Group Equity ETF Trust I (CIK 2034928, N-CEN 0001410368-26-081096 filed 2026-08-14); AMERICAN FUNDS CORPORATE BOND FUND (CIK 1553195, N-CEN 0001193125-26-351253 filed 2026-08-14); AMERICAN FUNDS INFLATION LINKED BOND FUND (CIK 1553197, N-CEN 0001193125-26-050395 filed 2026-02-13); Capital Group Central Fund Series II (CIK 1841440, N-CEN 0001193125-26-351252 filed 2026-08-14); INTERMEDIATE BOND FUND OF AMERICA (CIK 826813, N-CEN 0001193125-25-282336 filed 2025-11-14). By hand: American Funds Core Plus Bond Fund (CIK 2064871) by its trust name (the American Funds are Capital Group's); it has filed no N-CEN yet."
+    },
+    {
+      "slug": "capital-management-associates",
+      "name": "CAPITAL MANAGEMENT ASSOCIATES INC",
+      "ciks": [
+        "931491"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: CAPITAL MANAGEMENT ASSOCIATES INC (SEC file 801-17691). Registrants: CAPITAL MANAGEMENT INVESTMENT TRUST (CIK 931491, N-CEN 0001413042-26-000102 filed 2026-02-12)."
+    },
+    {
+      "slug": "carillon-tower-advisers",
+      "name": "Carillon Tower Advisers, Inc.",
+      "ciks": [
+        "897111"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Carillon Tower Advisers, Inc. (SEC file 801-100356). Registrants: CARILLON SERIES TRUST (CIK 897111, N-CEN 0001193125-26-107612 filed 2026-03-16)."
+    },
+    {
+      "slug": "ccm-partners-lp-dba-shelton-capital-management",
+      "name": "CCM Partners, LP. dba Shelton Capital Management",
+      "ciks": [
+        "778206"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: CCM Partners, LP. dba Shelton Capital Management (SEC file 801-25205). Registrants: SHELTON FUNDS (CIK 778206, N-CEN 0001999371-25-017814 filed 2025-11-14)."
+    },
+    {
+      "slug": "centre-asset-management",
+      "name": "Centre Asset Management, LLC",
+      "ciks": [
+        "1517238"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Centre Asset Management, LLC (SEC file 801-66295). Registrants: Centre Funds (CIK 1517238, N-CEN 0001752724-24-280595 filed 2024-12-12)."
+    },
+    {
+      "slug": "charles-schwab-investment-management",
+      "name": "Charles Schwab Investment Management, Inc.",
+      "ciks": [
+        "832545",
+        "869365",
+        "904333",
+        "1454889"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Charles Schwab Investment Management, Inc. (SEC file 801-35905). Registrants: LAUDUS TRUST (CIK 832545, N-CEN 0001410368-26-057846 filed 2026-06-11); SCHWAB CAPITAL TRUST (CIK 904333, N-CEN 0001410368-26-057848 filed 2026-06-11); SCHWAB INVESTMENTS (CIK 869365, N-CEN 0001410368-26-043208 filed 2026-05-12); SCHWAB STRATEGIC TRUST (CIK 1454889, N-CEN 0001410368-26-057847 filed 2026-06-11)."
+    },
+    {
+      "slug": "christian-brothers-investment-services",
+      "name": "Christian Brothers Investment Services, Inc.",
+      "ciks": [
+        "1872555"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Christian Brothers Investment Services, Inc. (SEC file 801-16639). Registrants: Catholic Responsible Investments Funds (CIK 1872555, N-CEN 0002048251-26-000053 filed 2026-01-13)."
+    },
+    {
+      "slug": "cion-ares-management",
+      "name": "CION Ares Management, LLC",
+      "ciks": [
+        "1678124"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: CION Ares Management, LLC (SEC file 801-108788). Registrants: CION Ares Diversified Credit Fund (CIK 1678124, N-CEN 0001049169-26-000801 filed 2026-03-13)."
+    },
+    {
+      "slug": "clearwater-management-co",
+      "name": "Clearwater Management Co Inc.",
+      "ciks": [
+        "811161"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Clearwater Management Co Inc. (SEC file 801-29336). Registrants: CLEARWATER INVESTMENT TRUST (CIK 811161, N-CEN 0002066578-26-000894 filed 2026-03-10)."
+    },
+    {
+      "slug": "cliffwater",
+      "name": "Cliffwater LLC",
+      "ciks": [
+        "1735964"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Cliffwater LLC (SEC file 801-63344). Registrants: Cliffwater Corporate Lending Fund (CIK 1735964, N-CEN 0001735964-26-000018 filed 2026-06-12)."
+    },
+    {
+      "slug": "clough-capital-partners",
+      "name": "Clough Capital Partners L.P.",
+      "ciks": [
+        "1288795",
+        "1316463",
+        "1350869"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Clough Capital Partners L.P. (SEC file 801-63142). Registrants: Clough Global Dividend & Income Fund (GLV) (CIK 1288795, N-CEN 0001288795-26-000002 filed 2026-01-14); Clough Global Equity Fund (GLQ) (CIK 1316463, N-CEN 0001316463-26-000002 filed 2026-01-14); Clough Global Opportunities Fund (GLO) (CIK 1350869, N-CEN 0001350869-26-000002 filed 2026-01-14)."
+    },
+    {
+      "slug": "coatue-management-l-l-c",
+      "name": "Coatue Management, L.L.C.",
+      "ciks": [
+        "2044519"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Coatue Management, L.L.C. (SEC file 801-73669). Registrants: Coatue Innovative Strategies Fund (CIK 2044519, N-CEN 0001410368-26-026363 filed 2026-03-16)."
+    },
+    {
+      "slug": "cohen-and-steers-capital-management",
+      "name": "Cohen & Steers Capital Management, Inc.",
+      "ciks": [
+        "1375340"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Cohen & Steers Capital Management, Inc. (SEC file 801-27721). Registrants: Cohen & Steers Closed-End Opportunity Fund, Inc. (FOF) (CIK 1375340, N-CEN 0001410368-26-024503 filed 2026-03-13)."
+    },
+    {
+      "slug": "collaborative-fund-advisors",
+      "name": "Collaborative Fund Advisors",
+      "ciks": [
+        "1719812"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Collaborative Fund Advisors (SEC file 801-128588). Registrants: Collaborative Investment Series Trust (CIK 1719812, N-CEN 0001004726-26-004051 filed 2026-05-27)."
+    },
+    {
+      "slug": "coller-private-market-secondaries-advisors",
+      "name": "Coller Private Market Secondaries Advisors, LLC",
+      "ciks": [
+        "1969180"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Coller Private Market Secondaries Advisors, LLC (SEC file 801-128738). Registrants: Coller Secondaries Private Equity Opportunities Fund (CIK 1969180, N-CEN 0001410368-26-057368 filed 2026-06-09)."
+    },
+    {
+      "slug": "columbia-management-investment-advisers",
+      "name": "Columbia Management Investment Advisers, LLC",
+      "ciks": [
+        "773757",
+        "815425",
+        "1097519",
+        "1352280",
+        "1413032",
+        "1450501",
+        "1551950"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Columbia Management Investment Advisers, LLC (SEC file 801-25943). Registrants: COLUMBIA FUNDS SERIES TRUST I (CIK 773757, N-CEN 0001410368-26-102591 filed 2026-10-05); Columbia Funds Variable Series Trust II (CIK 1413032, N-CEN 0001410368-26-022555 filed 2026-03-10); Columbia ETF Trust II (CIK 1450501, N-CEN 0001410368-26-060043 filed 2026-06-12); Columbia Funds Series Trust II (CIK 1352280, N-CEN 0001410368-26-102592 filed 2026-10-05); COLUMBIA FUNDS VARIABLE INSURANCE TRUST (CIK 815425, N-CEN 0001410368-26-022552 filed 2026-03-10); Columbia ETF Trust I (CIK 1551950, N-CEN 0001410368-26-060046 filed 2026-06-12); COLUMBIA FUNDS SERIES TRUST (CIK 1097519, N-CEN 0001410368-26-069117 filed 2026-07-07)."
+    },
+    {
+      "slug": "commerce-investment-advisors",
+      "name": "Commerce Investment Advisors, Inc.",
+      "ciks": [
+        "926243"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Commerce Investment Advisors, Inc. (SEC file 801-60083). Registrants: COMMERCE FUNDS (CIK 926243, N-CEN 0001410368-26-000580 filed 2026-01-13)."
+    },
+    {
+      "slug": "constellation-investments",
+      "name": "CONSTELLATION INVESTMENTS INC",
+      "ciks": [
+        "315754"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: CONSTELLATION INVESTMENTS INC (SEC file 801-51396). Registrants: AUGUSTAR VARIABLE INSURANCE PRODUCTS FUND INC (CIK 315754, N-CEN 0001193125-26-103544 filed 2026-03-12)."
+    },
+    {
+      "slug": "consulting-group-advisory-services",
+      "name": "CONSULTING GROUP ADVISORY SERVICES LLC",
+      "ciks": [
+        "875186"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: CONSULTING GROUP ADVISORY SERVICES LLC (SEC file 801-64791). Registrants: MORGAN STANLEY PATHWAY FUNDS (CIK 875186, N-CEN 0001003715-25-001099 filed 2025-11-13)."
+    },
+    {
+      "slug": "corgi-strategies",
+      "name": "Corgi Strategies, LLC",
+      "ciks": [
+        "2078265"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Corgi Strategies, LLC (SEC file 801-134212). Registrants: Corgi ETF Trust I (CIK 2078265, N-CEN 0000894189-26-007886 filed 2026-03-13)."
+    },
+    {
+      "slug": "cramer-rosenthal-mcglynn",
+      "name": "Cramer Rosenthal McGlynn, LLC",
+      "ciks": [
+        "1322252"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Cramer Rosenthal McGlynn, LLC (SEC file 801-55244). Registrants: CRM Mutual Fund Trust (CIK 1322252, N-CEN 0000910472-26-000224 filed 2026-01-14)."
+    },
+    {
+      "slug": "cromwell-investment-advisors",
+      "name": "Cromwell Investment Advisors, LLC",
+      "ciks": [
+        "1872253"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Cromwell Investment Advisors, LLC (SEC file 801-122554). Registrants: Total Fund Solution (CIK 1872253, N-CEN 0000940400-26-009928 filed 2026-03-12)."
+    },
+    {
+      "slug": "cushing-asset-management",
+      "name": "Cushing Asset Management LP",
+      "ciks": [
+        "1400897",
+        "1506488"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Cushing Asset Management LP (SEC file 801-63255). Registrants: NXG NextGen Infrastructure Income Fund (NXG, NXG-RI) (CIK 1506488, N-CEN 0000894189-26-003638 filed 2026-02-12); NXG Cushing Midstream Energy Fund (SRV) (CIK 1400897, N-CEN 0000894189-26-003637 filed 2026-02-12)."
+    },
+    {
+      "slug": "dbx-advisors",
+      "name": "DBX Advisors LLC",
+      "ciks": [
+        "1503123"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: DBX Advisors LLC (SEC file 801-71808). Registrants: DBX ETF TRUST (CIK 1503123, N-CEN 0000940400-26-029029 filed 2026-08-13)."
+    },
+    {
+      "slug": "delaware-management-company",
+      "name": "Delaware Management Company",
+      "ciks": [
+        "1969995"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Delaware Management Company (SEC file 801-32108). Registrants: Nomura ETF Trust (CIK 1969995, N-CEN 0002071691-26-013296 filed 2026-06-12)."
+    },
+    {
+      "slug": "destiny-advisors",
+      "name": "Destiny Advisors LLC",
+      "ciks": [
+        "1843974"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Destiny Advisors LLC (SEC file 801-123048). Registrants: Destiny Tech100 Inc. (DXYZ) (CIK 1843974, N-CEN 0000894189-26-007823 filed 2026-03-13)."
+    },
+    {
+      "slug": "destra-capital-advisors",
+      "name": "DESTRA CAPITAL ADVISORS LLC",
+      "ciks": [
+        "1523289"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: DESTRA CAPITAL ADVISORS LLC (SEC file 801-71604). Registrants: Destra Multi-Alternative Fund (DMA) (CIK 1523289, N-CEN 0000910472-26-009032 filed 2026-06-15)."
+    },
+    {
+      "slug": "diameter-dynamic-credit-fund",
+      "name": "Diameter Dynamic Credit Fund",
+      "ciks": [
+        "2067955"
+      ],
+      "evidence": "Its own family: no N-CEN in its EDGAR submissions index. Diameter Dynamic Credit Fund (CIK 2067955)."
+    },
+    {
+      "slug": "dimensional-fund-advisors",
+      "name": "Dimensional Fund Advisors LP",
+      "ciks": [
+        "355437",
+        "861929",
+        "896162",
+        "896163",
+        "1816125"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Dimensional Fund Advisors LP (SEC file 801-16283). Registrants: DFA INVESTMENT TRUST CO (CIK 896162, N-CEN 0001410368-26-000557 filed 2026-01-12); Dimensional ETF Trust (CIK 1816125, N-CEN 0001004726-26-000038 filed 2026-01-12); DFA INVESTMENT DIMENSIONS GROUP INC (CIK 355437, N-CEN 0001410368-26-000556 filed 2026-01-12); DIMENSIONAL INVESTMENT GROUP INC (CIK 861929, N-CEN 0001410368-26-000559 filed 2026-01-12); DIMENSIONAL EMERGING MARKETS VALUE FUND (CIK 896163, N-CEN 0001410368-26-000558 filed 2026-01-12)."
+    },
+    {
+      "slug": "dodge-and-cox",
+      "name": "Dodge & Cox",
+      "ciks": [
+        "29440"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Dodge & Cox (SEC file 801-1895). Registrants: DODGE & COX FUNDS (CIK 29440, N-CEN 0001193125-26-106279 filed 2026-03-13)."
+    },
+    {
+      "slug": "doubleline",
+      "name": "DoubleLine",
+      "ciks": [
+        "1480207",
+        "1886172"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: DoubleLine Alternatives LP (SEC file 801-88173); DoubleLine Capital LP (SEC file 801-70942); DoubleLine ETF Adviser LP (SEC file 801-122996). Registrants: DoubleLine ETF Trust (CIK 1886172, N-CEN 0002071691-26-013279 filed 2026-06-10); DoubleLine Funds Trust (CIK 1480207, N-CEN 0001193125-26-267128 filed 2026-06-11)."
+    },
+    {
+      "slug": "driehaus-capital-management",
+      "name": "Driehaus Capital Management LLC",
+      "ciks": [
+        "1016073"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Driehaus Capital Management LLC (SEC file 801-18439). Registrants: DRIEHAUS MUTUAL FUNDS (CIK 1016073, N-CEN 0002066578-26-000892 filed 2026-03-10)."
+    },
+    {
+      "slug": "dunham-and-associates-investment-counsel",
+      "name": "Dunham & Associates Investment Counsel, Inc.",
+      "ciks": [
+        "1420040"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Dunham & Associates Investment Counsel, Inc. (SEC file 801-25803). Registrants: Dunham Funds (CIK 1420040, N-CEN 0000910472-26-000264 filed 2026-01-14)."
+    },
+    {
+      "slug": "dws-investment-management-americas",
+      "name": "DWS Investment Management Americas, Inc.",
+      "ciks": [
+        "88048",
+        "88063",
+        "88064",
+        "95603",
+        "747677",
+        "764797",
+        "810573"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: DWS Investment Management Americas, Inc. (SEC file 801-252). Registrants: DEUTSCHE DWS INVESTMENT TRUST (CIK 88064, N-CEN 0001410368-26-098455 filed 2026-09-24); DEUTSCHE DWS VARIABLE SERIES II (CIK 810573, N-CEN 0001410368-26-022622 filed 2026-03-11); DEUTSCHE DWS SECURITIES TRUST (CIK 88048, N-CEN 0001410368-26-090536 filed 2026-09-03); DEUTSCHE DWS VARIABLE SERIES I (CIK 764797, N-CEN 0001410368-26-022627 filed 2026-03-11); DEUTSCHE DWS INCOME TRUST (CIK 747677, N-CEN 0001410368-26-000075 filed 2026-01-06); DEUTSCHE DWS PORTFOLIO TRUST (CIK 88063, N-CEN 0001410368-26-034509 filed 2026-04-06); DEUTSCHE DWS MARKET TRUST (CIK 95603, N-CEN 0001410368-26-057340 filed 2026-06-08)."
+    },
+    {
+      "slug": "eaton-vance",
+      "name": "Eaton Vance",
+      "ciks": [
+        "31266",
+        "102818",
+        "745463",
+        "933188",
+        "1116071",
+        "1116914",
+        "1300391",
+        "1308335",
+        "1395325",
+        "1473646"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Boston Management and Research (SEC file 801-43127); Eaton Vance Management (SEC file 801-15930). Registrants: Eaton Vance Mutual Funds Trust (CIK 745463, N-CEN 0001410368-26-035529 filed 2026-04-10); EATON VANCE SERIES TRUST (CIK 102818, N-CEN 0001410368-26-024751 filed 2026-03-13); Tax-Managed Multi-Cap Growth Portfolio (CIK 1116071, N-CEN 0001410368-26-000615 filed 2026-01-13); Eaton Vance Special Investment Trust (CIK 31266, N-CEN 0001410368-26-026134 filed 2026-03-16); Eaton Vance Enhanced Equity Income Fund II (EOS) (CIK 1308335, N-CEN 0001410368-26-024756 filed 2026-03-13); Stock Portfolio (CIK 1473646, N-CEN 0001410368-26-026131 filed 2026-03-16); Eaton Vance Risk-Managed Diversified Equity Income Fund (ETJ) (CIK 1395325, N-CEN 0001410368-26-026136 filed 2026-03-16); Eaton Vance Enhanced Equity Income Fund (EOI) (CIK 1300391, N-CEN 0001410368-25-036155 filed 2025-12-12); Eaton Vance Floating Rate Portfolio/MA (CIK 1116914, N-CEN 0001410368-26-000612 filed 2026-01-13); Senior Debt Portfolio (CIK 933188, N-CEN 0001410368-26-000609 filed 2026-01-13)."
+    },
+    {
+      "slug": "elevation-series-trust",
+      "name": "Elevation Series Trust",
+      "ciks": [
+        "1936157"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (NPF INVESTMENT ADVISORS (SEC file 801-3475); Sovereign's Capital Management, LLC (SEC file 801-126307); TrueMark Investments, LLC (SEC file 801-117961)). Elevation Series Trust (CIK 1936157, N-CEN 0001936157-26-000496 filed 2026-10-14)."
+    },
+    {
+      "slug": "empower-capital-management",
+      "name": "Empower Capital Management, LLC",
+      "ciks": [
+        "356476"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Empower Capital Management, LLC (SEC file 801-52309). Registrants: EMPOWER FUNDS, INC. (CIK 356476, N-CEN 0001193125-26-105977 filed 2026-03-13)."
+    },
+    {
+      "slug": "empowered-funds-llc-d-b-a-ea-advisers",
+      "name": "Empowered Funds, LLC d/b/a EA Advisers",
+      "ciks": [
+        "1592900"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Empowered Funds, LLC d/b/a EA Advisers (SEC file 801-79835). Registrants: EA Series Trust (CIK 1592900, N-CEN 0001193125-26-420000 filed 2026-10-13)."
+    },
+    {
+      "slug": "entrepreneurshares-series-trust",
+      "name": "EntrepreneurShares Series Trust",
+      "ciks": [
+        "1495922"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (Capital Impact Advisors, LLC (SEC file 801-78345); Seaport Global Advisors, LLC (SEC file 801-71628)). EntrepreneurShares Series Trust (CIK 1495922, N-CEN 0001495922-26-000049 filed 2026-09-10)."
+    },
+    {
+      "slug": "equitable-investment-management-group",
+      "name": "Equitable Investment Management Group, LLC",
+      "ciks": [
+        "1027263"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Equitable Investment Management Group, LLC (SEC file 801-72220). Registrants: EQ ADVISORS TRUST (CIK 1027263, N-CEN 0002071691-26-005447 filed 2026-03-11)."
+    },
+    {
+      "slug": "etf-opportunities-trust",
+      "name": "ETF Opportunities Trust",
+      "ciks": [
+        "1771146"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (Cultivar Capital, Inc. (SEC file 801-73055); REX Advisers, LLC (SEC file 801-128357); Ridgeline Research LLC (SEC file 801-117858); WealthTrust Asset Management, LLC (SEC file 801-80938)). ETF Opportunities Trust (CIK 1771146, N-CEN 0001004726-26-009552 filed 2026-10-13)."
+    },
+    {
+      "slug": "evermore-global-advisors",
+      "name": "Evermore Global Advisors LLC",
+      "ciks": [
+        "1472754"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Evermore Global Advisors LLC (SEC file 801-70645). Registrants: Evermore Funds Trust (CIK 1472754, N-CEN 0001145549-22-016015 filed 2022-03-15)."
+    },
+    {
+      "slug": "exchange-traded-concepts",
+      "name": "Exchange Traded Concepts, LLC",
+      "ciks": [
+        "1547950"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Exchange Traded Concepts, LLC (SEC file 801-70485). Registrants: Exchange Listed Funds Trust (CIK 1547950, N-CEN 0000910472-26-010465 filed 2026-07-14)."
+    },
+    {
+      "slug": "federated-hermes",
+      "name": "Federated Hermes",
+      "ciks": [
+        "13386",
+        "745968",
+        "789281",
+        "879569",
+        "889388",
+        "912577",
+        "912763",
+        "1340579",
+        "1849998"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Federated Advisory Services Company (SEC file 801-62500); Federated Equity Management Company of Pennsylvania (SEC file 801-62501); Federated Global Investment Management Corp. (SEC file 801-49470); Federated Investment Management Company (SEC file 801-34612). Registrants: Federated Hermes Equity Funds (CIK 745968, N-CEN 0001193125-26-046108 filed 2026-02-11); FEDERATED HERMES INSURANCE SERIES (CIK 912577, N-CEN 0000912577-26-000005 filed 2026-03-04); Federated Hermes Total Return Series, Inc. (CIK 912763, N-CEN 0001193125-26-046111 filed 2026-02-11); Federated Hermes Managed Pool Series (CIK 1340579, N-CEN 0001340579-26-000004 filed 2026-03-04); Federated Hermes ETF Trust (CIK 1849998, N-CEN 0001849998-26-000196 filed 2026-09-10); Federated Hermes Income Securities Trust (CIK 789281, N-CEN 0000789281-26-000088 filed 2026-07-09); Federated Hermes Fixed Income Securities, Inc. (CIK 879569, N-CEN 0001193125-26-046113 filed 2026-02-11); Federated Hermes Investment Series Funds, Inc. (CIK 889388, N-CEN 0001193125-26-046121 filed 2026-02-11); Federated Hermes Global Allocation Fund (CIK 13386, N-CEN 0001193125-26-046115 filed 2026-02-11)."
+    },
+    {
+      "slug": "fidelity-fmr",
+      "name": "Fidelity (FMR)",
+      "ciks": [
+        "24238",
+        "35315",
+        "35331",
+        "35341",
+        "35348",
+        "35402",
+        "81205",
+        "205323",
+        "215829",
+        "225322",
+        "275309",
+        "315700",
+        "320351",
+        "356494",
+        "707823",
+        "720318",
+        "722574",
+        "729218",
+        "744822",
+        "751199",
+        "754510",
+        "795422",
+        "803013",
+        "819118",
+        "823535",
+        "831016",
+        "927384",
+        "945908",
+        "1303459",
+        "1401097",
+        "1562565",
+        "1898391",
+        "1999801"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Fidelity Diversifying Solutions LLC (SEC file 801-122572); Fidelity Management & Research Company LLC (SEC file 801-7884). Registrants: FIDELITY ADVISOR SERIES I (CIK 722574, N-CEN 0000035402-26-001459 filed 2026-03-12); FIDELITY MT VERNON STREET TRUST (CIK 707823, N-CEN 0000035402-26-000575 filed 2026-02-11); FIDELITY HASTINGS STREET TRUST (CIK 35348, N-CEN 0000035402-26-005678 filed 2026-09-11); VARIABLE INSURANCE PRODUCTS FUND III (CIK 927384, N-CEN 0000035402-26-001455 filed 2026-03-12); VARIABLE INSURANCE PRODUCTS FUND (CIK 356494, N-CEN 0000035402-26-001450 filed 2026-03-12); FIDELITY CAPITAL TRUST (CIK 275309, N-CEN 0000035402-26-000066 filed 2026-01-13); FIDELITY SECURITIES FUND (CIK 754510, N-CEN 0000035402-26-006403 filed 2026-10-13); FIDELITY PURITAN TRUST (CIK 81205, N-CEN 0000035402-26-006404 filed 2026-10-13); FIDELITY DESTINY PORTFOLIOS (CIK 35331, N-CEN 0000035402-25-002404 filed 2025-12-11); FIDELITY CONTRAFUND (CIK 24238, N-CEN 0000035402-26-001453 filed 2026-03-12); VARIABLE INSURANCE PRODUCTS FUND II (CIK 831016, N-CEN 0000035402-26-001458 filed 2026-03-12); FIDELITY TREND FUND (CIK 35402, N-CEN 0000035402-26-001454 filed 2026-03-12); Fidelity Central Investment Portfolios LLC (CIK 1303459, N-CEN 0000035402-26-005674 filed 2026-09-11); FIDELITY DEVONSHIRE TRUST (CIK 35341, N-CEN 0000035402-26-002202 filed 2026-04-13); FIDELITY INVESTMENT TRUST (CIK 744822, N-CEN 0000035402-26-000068 filed 2026-01-13); VARIABLE INSURANCE PRODUCTS FUND IV (CIK 720318, N-CEN 0000035402-26-001446 filed 2026-03-12); FIDELITY ADVISOR SERIES VII (CIK 315700, N-CEN 0000035402-26-006401 filed 2026-10-13); FIDELITY SELECT PORTFOLIOS (CIK 320351, N-CEN 0000035402-26-006402 filed 2026-10-13); FIDELITY CONCORD STREET TRUST (CIK 819118, N-CEN 0000035402-26-004293 filed 2026-07-10); FIDELITY ADVISOR SERIES VIII (CIK 729218, N-CEN 0000035402-26-000062 filed 2026-01-13); FIDELITY SCHOOL STREET TRUST (CIK 215829, N-CEN 0000035402-26-001451 filed 2026-03-12); FIDELITY COVINGTON TRUST (CIK 945908, N-CEN 0001410368-26-103133 filed 2026-10-13); Fidelity Central Investment Portfolios II LLC (CIK 1401097, N-CEN 0000035402-26-001447 filed 2026-03-12); Variable Insurance Products Fund V (CIK 823535, N-CEN 0000035402-26-001456 filed 2026-03-12); FIDELITY GARRISON STREET TRUST (CIK 803013, N-CEN 0000035402-26-001444 filed 2026-03-12); Fidelity Greenwood Street Trust (CIK 1898391, N-CEN 0000035402-26-006398 filed 2026-10-13); FIDELITY SUMMER STREET TRUST (CIK 225322, N-CEN 0000035402-26-006396 filed 2026-10-13); FIDELITY SALEM STREET TRUST (CIK 35315, N-CEN 0000035402-26-006400 filed 2026-10-13); Fidelity Merrimack Street Trust (CIK 1562565, N-CEN 0000035402-26-005673 filed 2026-09-11); FIDELITY ADVISOR SERIES II (CIK 795422, N-CEN 0000035402-26-001448 filed 2026-03-12); FIDELITY COMMONWEALTH TRUST (CIK 205323, N-CEN 0000035402-26-000574 filed 2026-02-11); FIDELITY INCOME FUND /MA/ (CIK 751199, N-CEN 0000035402-26-006399 filed 2026-10-13); Variable Insurance Products Fund VI (CIK 1999801, N-CEN 0000035402-26-001452 filed 2026-03-12)."
+    },
+    {
+      "slug": "fiera-capital",
+      "name": "Fiera Capital Inc.",
+      "ciks": [
+        "1691994"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Fiera Capital Inc. (SEC file 801-8948). Registrants: Fiera Capital Series Trust (CIK 1691994, N-CEN 0001145549-23-036943 filed 2023-06-14)."
+    },
+    {
+      "slug": "financial-investors-trust",
+      "name": "FINANCIAL INVESTORS TRUST",
+      "ciks": [
+        "915802"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (Emerald Mutual Fund Advisers Trust (SEC file 801-64204); Seafarer Capital Partners, LLC (SEC file 801-72898)). FINANCIAL INVESTORS TRUST (CIK 915802, N-CEN 0001049169-26-001803 filed 2026-07-13)."
+    },
+    {
+      "slug": "first-pacific-advisors",
+      "name": "FIRST PACIFIC ADVISORS, LP",
+      "ciks": [
+        "91847",
+        "924727"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: FIRST PACIFIC ADVISORS, LP (SEC file 801-67160); First Pacific Advisors, LP (SEC file 801-67160). Registrants: SOURCE CAPITAL /DE/ (SOR) (CIK 91847, N-CEN 0001193125-26-105918 filed 2026-03-13); Investment Managers Series Trust III (CIK 924727, N-CEN 0001193125-26-337318 filed 2026-08-06)."
+    },
+    {
+      "slug": "first-trust-advisors",
+      "name": "First Trust Advisors L.P.",
+      "ciks": [
+        "1282850",
+        "1319183",
+        "1329377",
+        "1364608",
+        "1497778",
+        "1517936",
+        "1537395",
+        "1667919",
+        "1810523"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: First Trust Advisors L.P. (SEC file 801-39950). Registrants: FIRST TRUST EXCHANGE-TRADED FUND IV (CIK 1517936, N-CEN 0000940400-26-039262 filed 2026-10-13); FIRST TRUST MORTGAGE INCOME FUND (FMY) (CIK 1319183, N-CEN 0000940400-26-000168 filed 2026-01-13); FIRST TRUST EXCHANGE-TRADED FUND II (CIK 1364608, N-CEN 0000940400-25-012316 filed 2025-12-15); FIRST TRUST EXCHANGE-TRADED FUND (CIK 1329377, N-CEN 0000940400-26-009992 filed 2026-03-13); FIRST TRUST VARIABLE INSURANCE TRUST (CIK 1537395, N-CEN 0000940400-26-009921 filed 2026-03-12); FIRST TRUST EXCHANGE-TRADED FUND VIII (CIK 1667919, N-CEN 0000940400-26-028992 filed 2026-08-11); FIRST TRUST SERIES FUND (CIK 1497778, N-CEN 0000940400-26-009924 filed 2026-03-12); FIRST TRUST SENIOR FLOATING RATE INCOME FUND II (FCT) (CIK 1282850, N-CEN 0000940400-26-028994 filed 2026-08-11); FIRST TRUST HIGH YIELD OPPORTUNITIES 2027 TERM FUND (FTHY) (CIK 1810523, N-CEN 0000940400-26-028993 filed 2026-08-11)."
+    },
+    {
+      "slug": "first-trust-capital-management",
+      "name": "FIRST TRUST CAPITAL MANAGEMENT L.P",
+      "ciks": [
+        "1681717",
+        "1912938",
+        "2093738"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: FIRST TRUST CAPITAL MANAGEMENT L.P (SEC file 801-122924); FIRST TRUST CAPITAL MANAGEMENT L.P. (SEC file 801-122924). Registrants: Destiny Alternative Fund (CIK 2093738, N-CEN 0001193125-26-269700 filed 2026-06-12); First Trust Private Assets Fund (CIK 1912938, N-CEN 0001193125-26-269702 filed 2026-06-12); FIRST TRUST ALTERNATIVE OPPORTUNITIES FUND (CIK 1681717, N-CEN 0001193125-26-269699 filed 2026-06-12)."
+    },
+    {
+      "slug": "fm-investments",
+      "name": "Fm Investments LLC",
+      "ciks": [
+        "831114"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Fm Investments LLC (SEC file 801-116853). Registrants: RBB FUND, INC. (CIK 831114, N-CEN 0001193125-26-302746 filed 2026-07-14)."
+    },
+    {
+      "slug": "forum-capital-advisors",
+      "name": "Forum Capital Advisors, LLC",
+      "ciks": [
+        "1857314"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Forum Capital Advisors, LLC (SEC file 801-120917). Registrants: Forum Real Estate Income Fund (CIK 1857314, N-CEN 0001193125-26-103807 filed 2026-03-12)."
+    },
+    {
+      "slug": "forum-funds",
+      "name": "FORUM FUNDS",
+      "ciks": [
+        "315774"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (AUXIER ASSET MANAGEMENT LLC (SEC file 801-55757); D.F. DENT AND COMPANY, INC. (SEC file 801-11364)). FORUM FUNDS (CIK 315774, N-CEN 0000315774-26-000256 filed 2026-08-26)."
+    },
+    {
+      "slug": "founder-etfs",
+      "name": "Founder ETFs LLC",
+      "ciks": [
+        "2077057"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Founder ETFs LLC (SEC file 801-134202). Registrants: Founder Funds Trust (CIK 2077057, N-CEN 0000894189-26-007721 filed 2026-03-11)."
+    },
+    {
+      "slug": "franklin-templeton",
+      "name": "Franklin Templeton",
+      "ciks": [
+        "38721",
+        "81259",
+        "81264",
+        "764624",
+        "794614",
+        "805650",
+        "809707",
+        "822671",
+        "827773",
+        "830622",
+        "836622",
+        "837274",
+        "863520",
+        "872625",
+        "874835",
+        "880366",
+        "889512",
+        "909226",
+        "910068",
+        "914209",
+        "932101",
+        "1005942",
+        "1058239",
+        "1227862",
+        "1228509",
+        "1270131",
+        "1295293",
+        "1462586",
+        "1472341",
+        "1497186",
+        "1535538",
+        "1645194",
+        "1655589",
+        "1819559"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: FRANKLIN TEMPLETON FUND ADVISER, LLC (SEC file 801-66785); Franklin Advisers, Inc. (SEC file 801-26292); Franklin Advisory Services, LLC (SEC file 801-51967); Franklin Mutual Advisers, LLC (SEC file 801-53068); Franklin Templeton Institutional, LLC (SEC file 801-60684); Franklin Templeton Investment Management Limited (SEC file 801-55170); Putnam Investment Management, LLC (SEC file 801-7974); Templeton Asset Management Ltd. (SEC file 801-46997); Templeton Global Advisors Limited (SEC file 801-42343); Templeton Investment Counsel, LLC (SEC file 801-15125). Registrants: FRANKLIN STRATEGIC SERIES (CIK 872625, N-CEN 0002071691-26-015714 filed 2026-07-10); FRANKLIN TEMPLETON VARIABLE INSURANCE PRODUCTS TRUST (CIK 837274, N-CEN 0002071691-26-005496 filed 2026-03-13); Franklin Custodian Funds (CIK 38721, N-CEN 0002071691-25-008005 filed 2025-12-12); LEGG MASON PARTNERS INVESTMENT TRUST (CIK 880366, N-CEN 0000940400-26-012946 filed 2026-04-08); TEMPLETON CHINA WORLD FUND (CIK 909226, N-CEN 0001752724-24-247807 filed 2024-11-12); Franklin Alternative Strategies Funds (CIK 1535538, N-CEN 0000940400-26-029019 filed 2026-08-13); Legg Mason ETF Investment Trust (CIK 1645194, N-CEN 0000940400-26-023423 filed 2026-06-12); FRANKLIN MANAGED TRUST (CIK 805650, N-CEN 0002071691-25-008004 filed 2025-12-12); Putnam Target Date Funds (CIK 1295293, N-CEN 0002071691-26-023722 filed 2026-10-13); LEGG MASON PARTNERS INSTITUTIONAL TRUST (CIK 889512, N-CEN 0000940400-26-015909 filed 2026-05-06); WESTERN ASSET FUNDS INC (CIK 863520, N-CEN 0000940400-26-029012 filed 2026-08-12); LEGG MASON PARTNERS INCOME TRUST (CIK 764624, N-CEN 0000940400-26-039220 filed 2026-10-09); LEGG MASON PARTNERS VARIABLE INCOME TRUST (CIK 874835, N-CEN 0000940400-26-009800 filed 2026-03-11); Franklin Templeton ETF Trust (CIK 1655589, N-CEN 0000940400-26-023418 filed 2026-06-12); PUTNAM VARIABLE TRUST (CIK 822671, N-CEN 0002071691-26-005497 filed 2026-03-13); FRANKLIN MASTER INTERMEDIATE INCOME TRUST (PIM) (CIK 830622, N-CEN 0002071691-25-008000 filed 2025-12-12); PUTNAM ASSET ALLOCATION FUNDS (CIK 914209, N-CEN 0002071691-25-007998 filed 2025-12-12); PUTNAM DIVERSIFIED INCOME TRUST (CIK 836622, N-CEN 0002071691-25-008003 filed 2025-12-12); Franklin Investors Securities Trust (CIK 809707, N-CEN 0002071691-26-000124 filed 2026-01-12); PUTNAM FUNDS TRUST (CIK 1005942, N-CEN 0002071691-26-023721 filed 2026-10-13); FRANKLIN PREMIER INCOME TRUST (PPT) (CIK 827773, N-CEN 0002071691-26-023717 filed 2026-10-13); PUTNAM GLOBAL INCOME TRUST (CIK 794614, N-CEN 0002071691-26-000123 filed 2026-01-12); GEORGE PUTNAM BALANCED FUND (CIK 81259, N-CEN 0002071691-26-023723 filed 2026-10-13); PUTNAM INCOME FUND (CIK 81264, N-CEN 0002071691-26-000122 filed 2026-01-12); PUTNAM INVESTMENT FUNDS (CIK 932101, N-CEN 0002071691-26-023725 filed 2026-10-13); LMP CAPITAL & INCOME FUND INC. (SCD) (CIK 1270131, N-CEN 0000940400-26-003028 filed 2026-02-11); Western Asset Investment Grade Opportunity Trust Inc. (IGI) (CIK 1462586, N-CEN 0000940400-26-003033 filed 2026-02-11); Western Asset Diversified Income Fund (WDI) (WDI) (CIK 1819559, N-CEN 0000940400-26-009803 filed 2026-03-11); WESTERN ASSET HIGH INCOME OPPORTUNITY FUND INC. (HIO) (CIK 910068, N-CEN 0000940400-25-012196 filed 2025-12-08); WESTERN ASSET GLOBAL CORPORATE OPPORTUNITY FUND INC. (GDO) (CIK 1472341, N-CEN 0000940400-26-000075 filed 2026-01-09); WESTERN ASSET HIGH INCOME FUND II INC. (HIX) (CIK 1058239, N-CEN 0000940400-26-026191 filed 2026-07-08); Western Asset High Yield Opportunity Fund Inc. (HYI) (CIK 1497186, N-CEN 0000940400-26-029014 filed 2026-08-12); WESTERN ASSET GLOBAL HIGH INCOME FUND INC. (EHI) (CIK 1228509, N-CEN 0000940400-26-029013 filed 2026-08-12); WESTERN ASSET EMERGING MARKETS DEBT FUND INC. (EMD) (CIK 1227862, N-CEN 0000940400-26-009804 filed 2026-03-11)."
+    },
+    {
+      "slug": "frost-investment-advisors",
+      "name": "FROST INVESTMENT ADVISORS, LLC",
+      "ciks": [
+        "1762332"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: FROST INVESTMENT ADVISORS, LLC (SEC file 801-68724). Registrants: Frost Family of Funds (CIK 1762332, N-CEN 0002048251-26-008681 filed 2026-10-13)."
+    },
+    {
+      "slug": "fundrise-advisors",
+      "name": "Fundrise Advisors LLC",
+      "ciks": [
+        "1867090"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Fundrise Advisors LLC (SEC file 801-80060). Registrants: Fundrise Innovation Fund, LLC (VCX) (CIK 1867090, N-CEN 0001867090-26-000077 filed 2026-06-12)."
+    },
+    {
+      "slug": "fundvantage-trust",
+      "name": "FundVantage Trust",
+      "ciks": [
+        "1388485"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (Asset Management Group of Bank of Hawaii (SEC file 801-60203); Equity Investment Corporation (SEC file 801-107945); Polen Capital Credit, LLC (SEC file 801-55001); Polen Capital Management, LLC (SEC file 801-15180); Private Capital Management, LLC (SEC file 801-78615)). FundVantage Trust (CIK 1388485, N-CEN 0000940400-26-026230 filed 2026-07-14)."
+    },
+    {
+      "slug": "gabelli-funds",
+      "name": "Gabelli Funds, LLC",
+      "ciks": [
+        "794685",
+        "909504",
+        "921671",
+        "1260729",
+        "1378701",
+        "1391839",
+        "1585855"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Gabelli Funds, LLC (SEC file 801-37706). Registrants: GDL FUND (GDL) (CIK 1378701, N-CEN 0000940400-26-009902 filed 2026-03-12); GABELLI DIVIDEND & INCOME TRUST (GDV, GDV-PH, GDV-PK) (CIK 1260729, N-CEN 0000940400-26-009873 filed 2026-03-12); GABELLI EQUITY TRUST INC (GAB, GAB-PG, GAB-PH, GAB-PK) (CIK 794685, N-CEN 0000940400-26-009875 filed 2026-03-12); Gabelli Global Small & Mid Cap Value Trust (GGZ) (CIK 1585855, N-CEN 0000940400-26-009877 filed 2026-03-12); GAMCO GLOBAL SERIES FUNDS, INC (CIK 909504, N-CEN 0000940400-26-009900 filed 2026-03-12); Gabelli ESG Fund, Inc. (CIK 1391839, N-CEN 0000940400-26-009886 filed 2026-03-12); GABELLI MULTIMEDIA TRUST INC. (GGT, GGT-PE, GGT-PG) (CIK 921671, N-CEN 0000940400-26-009885 filed 2026-03-12)."
+    },
+    {
+      "slug": "global-atlantic-investment-advisors",
+      "name": "Global Atlantic Investment Advisors, LLC",
+      "ciks": [
+        "1580353"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Global Atlantic Investment Advisors, LLC (SEC file 801-78132). Registrants: Forethought Variable Insurance Trust (CIK 1580353, N-CEN 0000940400-26-010019 filed 2026-03-13)."
+    },
+    {
+      "slug": "global-x-management-company",
+      "name": "Global X Management Company LLC",
+      "ciks": [
+        "1432353"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Global X Management Company LLC (SEC file 801-69093). Registrants: Global X Funds (CIK 1432353, N-CEN 0002048251-26-000879 filed 2026-02-12)."
+    },
+    {
+      "slug": "goldentree-asset-management-credit-advisor",
+      "name": "GoldenTree Asset Management Credit Advisor LLC",
+      "ciks": [
+        "2052250"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: GoldenTree Asset Management Credit Advisor LLC (SEC file 801-111061). Registrants: GoldenTree Opportunistic Credit Fund (CIK 2052250, N-CEN 0001410368-26-025594 filed 2026-03-13)."
+    },
+    {
+      "slug": "goldman-sachs",
+      "name": "Goldman Sachs",
+      "ciks": [
+        "822977",
+        "1046292",
+        "1479026",
+        "1557156",
+        "1882879"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Goldman Sachs Asset Management International (SEC file 801-38157); Goldman Sachs Asset Management, L.P. (SEC file 801-37591). Registrants: GOLDMAN SACHS TRUST (CIK 822977, N-CEN 0001410368-26-059827 filed 2026-06-12); Goldman Sachs Trust II (CIK 1557156, N-CEN 0001410368-26-001042 filed 2026-01-14); GOLDMAN SACHS VARIABLE INSURANCE TRUST (CIK 1046292, N-CEN 0000940400-26-010038 filed 2026-03-13); Goldman Sachs ETF Trust (CIK 1479026, N-CEN 0000940400-26-010036 filed 2026-03-13); Goldman Sachs ETF Trust II (CIK 1882879, N-CEN 0000940400-25-005878 filed 2025-11-13)."
+    },
+    {
+      "slug": "goodhaven-capital-management",
+      "name": "GoodHaven Capital Management LLC",
+      "ciks": [
+        "1661813"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: GoodHaven Capital Management LLC (SEC file 801-72093). Registrants: GoodHaven Funds Trust (CIK 1661813, N-CEN 0000894189-26-003601 filed 2026-02-12)."
+    },
+    {
+      "slug": "graniteshares-advisors",
+      "name": "GraniteShares Advisors LLC",
+      "ciks": [
+        "1689873"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: GraniteShares Advisors LLC (SEC file 801-110093). Registrants: GraniteShares ETF Trust (CIK 1689873, N-CEN 0001049169-26-002596 filed 2026-09-11)."
+    },
+    {
+      "slug": "guggenheim-funds-investment-advisors",
+      "name": "Guggenheim Funds Investment Advisors, LLC",
+      "ciks": [
+        "1380936",
+        "1495825",
+        "1864208"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Guggenheim Funds Investment Advisors, LLC (SEC file 801-62515). Registrants: Guggenheim Taxable Municipal Bond & Investment Grade Debt Trust (GBAB) (CIK 1495825, N-CEN 0000940400-26-029048 filed 2026-08-14); Guggenheim Active Allocation Fund (GUG) (CIK 1864208, N-CEN 0000940400-26-029047 filed 2026-08-14); GUGGENHEIM STRATEGIC OPPORTUNITIES FUND (GOF) (CIK 1380936, N-CEN 0000940400-26-029049 filed 2026-08-14)."
+    },
+    {
+      "slug": "guggenheim-partners-investment-management",
+      "name": "Guggenheim Partners Investment Management, LLC",
+      "ciks": [
+        "88525",
+        "217087",
+        "1601445"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Guggenheim Partners Investment Management, LLC (SEC file 801-66786). Registrants: Guggenheim Variable Funds Trust (CIK 217087, N-CEN 0000940400-26-010021 filed 2026-03-13); Guggenheim Strategy Funds Trust (CIK 1601445, N-CEN 0000913181-25-000415 filed 2025-12-12); GUGGENHEIM FUNDS TRUST (CIK 88525, N-CEN 0000913181-25-000414 filed 2025-12-12)."
+    },
+    {
+      "slug": "guidestone-capital-management",
+      "name": "GuideStone Capital Management, LLC",
+      "ciks": [
+        "1131013"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: GuideStone Capital Management, LLC (SEC file 801-60303). Registrants: GuideStone Funds (CIK 1131013, N-CEN 0002066578-26-000896 filed 2026-03-11)."
+    },
+    {
+      "slug": "guinness-atkinson-asset-management",
+      "name": "Guinness Atkinson Asset Management, Inc.",
+      "ciks": [
+        "919160"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Guinness Atkinson Asset Management, Inc. (SEC file 801-61667). Registrants: GUINNESS ATKINSON FUNDS (CIK 919160, N-CEN 0001398344-26-005280 filed 2026-03-16)."
+    },
+    {
+      "slug": "harbor-capital-advisors",
+      "name": "Harbor Capital Advisors, Inc.",
+      "ciks": [
+        "793769",
+        "1860434",
+        "1994489"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Harbor Capital Advisors, Inc. (SEC file 801-60367). Registrants: Harbor ETF Trust (CIK 1860434, N-CEN 0001410368-26-000527 filed 2026-01-12); Harbor Funds II (CIK 1994489, N-CEN 0001410368-26-000528 filed 2026-01-12); HARBOR FUNDS (CIK 793769, N-CEN 0001410368-26-000530 filed 2026-01-12)."
+    },
+    {
+      "slug": "harding-loevner",
+      "name": "Harding Loevner LP",
+      "ciks": [
+        "1018170"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Harding Loevner LP (SEC file 801-36845). Registrants: HARDING LOEVNER FUNDS INC (CIK 1018170, N-CEN 0002066578-26-000030 filed 2026-01-13)."
+    },
+    {
+      "slug": "harris-associates",
+      "name": "Harris Associates L.P.",
+      "ciks": [
+        "872323"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Harris Associates L.P. (SEC file 801-50333). Registrants: HARRIS ASSOCIATES INVESTMENT TRUST (CIK 872323, N-CEN 0001410368-25-037297 filed 2025-12-15)."
+    },
+    {
+      "slug": "hartford-funds-management-company",
+      "name": "Hartford Funds Management Company, LLC",
+      "ciks": [
+        "49905",
+        "1006415",
+        "1053425",
+        "1501825"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Hartford Funds Management Company, LLC (SEC file 801-77209). Registrants: HARTFORD MUTUAL FUNDS II, INC (CIK 49905, N-CEN 0001410368-26-000837 filed 2026-01-13); HARTFORD MUTUAL FUNDS, INC (CIK 1006415, N-CEN 0001410368-26-000838 filed 2026-01-13); HARTFORD SERIES FUND INC (CIK 1053425, N-CEN 0001410368-26-022446 filed 2026-03-09); Hartford Funds Exchange-Traded Trust (CIK 1501825, N-CEN 0001410368-26-102984 filed 2026-10-13)."
+    },
+    {
+      "slug": "hc-capital-solutions-an-operating-division-of-hirtle-callagh",
+      "name": "HC Capital Solutions an operating division of Hirtle Callaghan & Co., LLC",
+      "ciks": [
+        "934563"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: HC Capital Solutions an operating division of Hirtle Callaghan & Co., LLC (SEC file 801-32688). Registrants: HC CAPITAL TRUST (CIK 934563, N-CEN 0001004726-26-008108 filed 2026-09-10)."
+    },
+    {
+      "slug": "homestead-advisers-corp",
+      "name": "Homestead Advisers Corp.",
+      "ciks": [
+        "1768447"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Homestead Advisers Corp. (SEC file 801-37391). Registrants: Homestead Funds Trust (CIK 1768447, N-CEN 0001410368-26-023825 filed 2026-03-12)."
+    },
+    {
+      "slug": "homestead-funds-inc",
+      "name": "HOMESTEAD FUNDS INC",
+      "ciks": [
+        "865733"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (BlackRock Fund Advisors (SEC file 801-22609); Homestead Advisers Corp. (SEC file 801-37391)). HOMESTEAD FUNDS INC (CIK 865733, N-CEN 0001410368-26-023824 filed 2026-03-12)."
+    },
+    {
+      "slug": "horizon-investments-llc",
+      "name": "HORIZON INVESTMENTS LLC.",
+      "ciks": [
+        "1643174"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: HORIZON INVESTMENTS LLC. (SEC file 801-57316). Registrants: Horizon Funds (CIK 1643174, N-CEN 0001193125-26-421606 filed 2026-10-14)."
+    },
+    {
+      "slug": "icapital-registered-fund-adviser",
+      "name": "iCapital Registered Fund Adviser LLC",
+      "ciks": [
+        "1606789"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: iCapital Registered Fund Adviser LLC (SEC file 801-119679). Registrants: iDirect Private Markets Fund (CIK 1606789, N-CEN 0000910472-26-009010 filed 2026-06-12)."
+    },
+    {
+      "slug": "im-global-partner-fund-management",
+      "name": "IM Global Partner Fund Management, LLC",
+      "ciks": [
+        "1020425"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: IM Global Partner Fund Management, LLC (SEC file 801-52710). Registrants: LITMAN GREGORY FUNDS TRUST (CIK 1020425, N-CEN 0001410368-26-023637 filed 2026-03-12)."
+    },
+    {
+      "slug": "impax-asset-management",
+      "name": "Impax Asset Management LLC",
+      "ciks": [
+        "76721",
+        "1598735"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Impax Asset Management LLC (SEC file 801-8517). Registrants: IMPAX FUNDS SERIES TRUST I (CIK 76721, N-CEN 0002071691-26-005444 filed 2026-03-11); IMPAX FUNDS SERIES TRUST III (CIK 1598735, N-CEN 0002071691-26-005445 filed 2026-03-11)."
+    },
+    {
+      "slug": "innovation-access-fund",
+      "name": "Innovation Access Fund",
+      "ciks": [
+        "1905379"
+      ],
+      "evidence": "Its own family: no N-CEN in its EDGAR submissions index. Innovation Access Fund (CIK 1905379)."
+    },
+    {
+      "slug": "intelligence-driven-advisers",
+      "name": "Intelligence Driven Advisers, LLC",
+      "ciks": [
+        "2076294"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Intelligence Driven Advisers, LLC (SEC file 801-114418). Registrants: IDA Private Access Fund (CIK 2076294, N-CEN 0000910472-26-008930 filed 2026-06-11)."
+    },
+    {
+      "slug": "invesco",
+      "name": "Invesco",
+      "ciks": [
+        "5094",
+        "105377",
+        "826644",
+        "842790",
+        "853180",
+        "880859",
+        "896435",
+        "1059386",
+        "1112996",
+        "1378872",
+        "1418144"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Invesco Advisers, Inc. (SEC file 801-33949); Invesco Capital Management LLC (SEC file 801-61851). Registrants: AIM EQUITY FUNDS (INVESCO EQUITY FUNDS) (CIK 105377, N-CEN 0000105377-26-000002 filed 2026-01-14); AIM INTERNATIONAL MUTUAL FUNDS (INVESCO INTERNATIONAL MUTUAL FUNDS) (CIK 880859, N-CEN 0000880859-26-000005 filed 2026-01-14); AIM VARIABLE INSURANCE FUNDS (INVESCO VARIABLE INSURANCE FUNDS) (CIK 896435, N-CEN 0000896435-26-000190 filed 2026-03-16); AIM INVESTMENT FUNDS (INVESCO INVESTMENT FUNDS) (CIK 826644, N-CEN 0000826644-26-000053 filed 2026-02-12); AIM COUNSELOR SERIES TRUST (INVESCO COUNSELOR SERIES TRUST) (CIK 1112996, N-CEN 0001112996-25-000110 filed 2025-11-14); Invesco Senior Loan Fund (CIK 853180, N-CEN 0000853180-26-000021 filed 2026-05-14); Invesco Senior Income Trust (VVR) (CIK 1059386, N-CEN 0001059386-26-000021 filed 2026-05-14); INVESCO ACTIVELY MANAGED EXCHANGE-TRADED FUND TRUST (CIK 1418144, N-CEN 0001418144-26-000002 filed 2026-01-14); Invesco Bond Fund (VBF) (CIK 5094, N-CEN 0000005094-26-000018 filed 2026-05-14); AIM INVESTMENT SECURITIES FUNDS (INVESCO INVESTMENT SECURITIES FUNDS) (CIK 842790, N-CEN 0000842790-26-000098 filed 2026-05-13); Invesco Exchange-Traded Fund Trust II (CIK 1378872, N-CEN 0001378872-26-000052 filed 2026-01-14)."
+    },
+    {
+      "slug": "invesco-dynamic-credit-opportunities-fund",
+      "name": "Invesco Dynamic Credit Opportunities Fund",
+      "ciks": [
+        "1393662"
+      ],
+      "evidence": "Its own family: its latest N-CEN names no investment adviser. Invesco Dynamic Credit Opportunities Fund (CIK 1393662, N-CEN 0001752724-24-098248 filed 2024-05-14)."
+    },
+    {
+      "slug": "jackson-national-asset-management",
+      "name": "Jackson National Asset Management, LLC",
+      "ciks": [
+        "933691"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Jackson National Asset Management, LLC (SEC file 801-58171). Registrants: JNL SERIES TRUST (CIK 933691, N-CEN 0000933691-26-000118 filed 2026-03-12)."
+    },
+    {
+      "slug": "janus-henderson-investors-us",
+      "name": "JANUS HENDERSON INVESTORS US LLC",
+      "ciks": [
+        "277751",
+        "906185",
+        "1500604"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: JANUS HENDERSON INVESTORS US LLC (SEC file 801-13991); Janus Henderson Investors US LLC (SEC file 801-13991). Registrants: JANUS INVESTMENT FUND (CIK 277751, N-CEN 0002071691-26-021392 filed 2026-09-14); JANUS ASPEN SERIES (CIK 906185, N-CEN 0000906185-26-000005 filed 2026-03-16); Janus Detroit Street Trust (CIK 1500604, N-CEN 0002071691-26-000114 filed 2026-01-09)."
+    },
+    {
+      "slug": "jensen-investment-management",
+      "name": "JENSEN INVESTMENT MANAGEMENT, INC.",
+      "ciks": [
+        "887215",
+        "1141819"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: JENSEN INVESTMENT MANAGEMENT, INC. (SEC file 801-32726); Jensen Investment Management, Inc. (SEC file 801-32726). Registrants: Jensen Quality Growth Fund Inc (CIK 887215, N-CEN 0001193125-26-325900 filed 2026-07-30); TRUST FOR PROFESSIONAL MANAGERS (CIK 1141819, N-CEN 0001193125-26-341972 filed 2026-08-10)."
+    },
+    {
+      "slug": "john-hancock-investment-management",
+      "name": "John Hancock Investment Management LLC",
+      "ciks": [
+        "22370",
+        "45288",
+        "315554",
+        "759828",
+        "759866",
+        "792858",
+        "1331971",
+        "1478482",
+        "1496749"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: John Hancock Investment Management LLC (SEC file 801-8124). Registrants: John Hancock Funds II (CIK 1331971, N-CEN 0001193125-25-276640 filed 2025-11-12); JOHN HANCOCK INVESTMENT TRUST (CIK 22370, N-CEN 0001193125-26-253080 filed 2026-06-02); John Hancock Exchange-Traded Fund Trust (CIK 1478482, N-CEN 0001193125-26-253078 filed 2026-06-02); John Hancock Diversified Income Fund (HEQ) (CIK 1496749, N-CEN 0001193125-26-101661 filed 2026-03-11); JOHN HANCOCK INVESTORS TRUST (JHI) (CIK 759828, N-CEN 0001193125-26-008413 filed 2026-01-09); JOHN HANCOCK INCOME SECURITIES TRUST (JHS) (CIK 759866, N-CEN 0001193125-26-008411 filed 2026-01-09); JOHN HANCOCK SOVEREIGN BOND FUND (CIK 45288, N-CEN 0001193125-26-323395 filed 2026-07-29); JOHN HANCOCK BOND TRUST (CIK 315554, N-CEN 0001193125-26-323393 filed 2026-07-29); JOHN HANCOCK STRATEGIC SERIES (CIK 792858, N-CEN 0001193125-26-323396 filed 2026-07-29)."
+    },
+    {
+      "slug": "john-hancock-variable-trust-advisers",
+      "name": "John Hancock Variable Trust Advisers LLC",
+      "ciks": [
+        "756913"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: John Hancock Variable Trust Advisers LLC (SEC file 801-28947). Registrants: JOHN HANCOCK VARIABLE INSURANCE TRUST (CIK 756913, N-CEN 0001193125-26-101666 filed 2026-03-11)."
+    },
+    {
+      "slug": "jpmorgan",
+      "name": "J.P. Morgan",
+      "ciks": [
+        "763852",
+        "803747",
+        "1037897",
+        "1217286",
+        "1303608",
+        "1485894",
+        "1659326",
+        "1724826"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: J.P. Morgan Investment Management Inc. (SEC file 801-21011); J.P. Morgan Private Investments Inc. (SEC file 801-41088). Registrants: JPMORGAN TRUST II (CIK 763852, N-CEN 0002071691-26-021390 filed 2026-09-11); JP MORGAN MUTUAL FUND INVESTMENT TRUST (CIK 803747, N-CEN 0002071691-26-021389 filed 2026-09-11); JP MORGAN FLEMING MUTUAL FUND GROUP INC (CIK 1037897, N-CEN 0002071691-26-021385 filed 2026-09-11); JPMorgan Trust I (CIK 1217286, N-CEN 0002071691-26-021387 filed 2026-09-11); JPMORGAN TRUST IV (CIK 1659326, N-CEN 0002071691-26-021386 filed 2026-09-11); J.P. Morgan Exchange-Traded Fund Trust (CIK 1485894, N-CEN 0002071691-26-021384 filed 2026-09-11); JPMorgan Institutional Trust (CIK 1303608, N-CEN 0002071691-26-009453 filed 2026-05-13); Six Circles Trust (CIK 1724826, N-CEN 0001003715-26-000615 filed 2026-03-10)."
+    },
+    {
+      "slug": "kirr-marbach-and-company",
+      "name": "Kirr, Marbach & Company, LLC",
+      "ciks": [
+        "1071196"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Kirr, Marbach & Company, LLC (SEC file 801-10809). Registrants: KIRR MARBACH PARTNERS FUNDS INC (CIK 1071196, N-CEN 0000894189-25-016766 filed 2025-12-11)."
+    },
+    {
+      "slug": "kornitzer-capital-management",
+      "name": "Kornitzer Capital Management, Inc.",
+      "ciks": [
+        "1135300"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Kornitzer Capital Management, Inc. (SEC file 801-34933). Registrants: BUFFALO FUNDS (CIK 1135300, N-CEN 0000894189-26-017646 filed 2026-06-08)."
+    },
+    {
+      "slug": "krane-funds-advisors",
+      "name": "Krane Funds Advisors, LLC",
+      "ciks": [
+        "1547576"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Krane Funds Advisors, LLC (SEC file 801-77589). Registrants: Krane Shares Trust (CIK 1547576, N-CEN 0002048251-26-004798 filed 2026-06-15)."
+    },
+    {
+      "slug": "kurv-investment-management",
+      "name": "Kurv Investment Management LLC",
+      "ciks": [
+        "1782952"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Kurv Investment Management LLC (SEC file 801-126717). Registrants: Kurv ETF Trust (CIK 1782952, N-CEN 0001193125-26-352357 filed 2026-08-14)."
+    },
+    {
+      "slug": "lazard-asset-management",
+      "name": "Lazard Asset Management LLC",
+      "ciks": [
+        "1278211"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Lazard Asset Management LLC (SEC file 801-61701). Registrants: LAZARD GLOBAL TOTAL RETURN & INCOME FUND INC (LGI) (CIK 1278211, N-CEN 0001410368-26-024959 filed 2026-03-13)."
+    },
+    {
+      "slug": "liberty-street-advisors",
+      "name": "Liberty Street Advisors, Inc.",
+      "ciks": [
+        "1557265"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Liberty Street Advisors, Inc. (SEC file 801-67698). Registrants: Private Shares Fund (CIK 1557265, N-CEN 0001193125-26-107726 filed 2026-03-16)."
+    },
+    {
+      "slug": "lincoln-financial-investments-corporation",
+      "name": "Lincoln Financial Investments Corporation",
+      "ciks": [
+        "914036",
+        "2054995"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Lincoln Financial Investments Corporation (SEC file 801-23411). Registrants: LINCOLN VARIABLE INSURANCE PRODUCTS TRUST (CIK 914036, N-CEN 0001410368-26-022315 filed 2026-03-06); Lincoln Partners Group Royalty Fund (CIK 2054995, N-CEN 0001410368-26-057252 filed 2026-06-05)."
+    },
+    {
+      "slug": "lord-abbett-and-co",
+      "name": "Lord, Abbett & Co. LLC",
+      "ciks": [
+        "60365",
+        "855396",
+        "898031",
+        "911507",
+        "1139819"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Lord, Abbett & Co. LLC (SEC file 801-6997). Registrants: LORD ABBETT SECURITIES TRUST (CIK 898031, N-CEN 0001410368-26-000529 filed 2026-01-12); LORD ABBETT SERIES FUND INC (CIK 855396, N-CEN 0001410368-26-025524 filed 2026-03-13); LORD ABBETT BOND DEBENTURE FUND INC (CIK 60365, N-CEN 0001410368-26-025526 filed 2026-03-13); LORD ABBETT TRUST I (CIK 1139819, N-CEN 0001410368-26-102953 filed 2026-10-09); LORD ABBETT INVESTMENT TRUST (CIK 911507, N-CEN 0001410368-26-010607 filed 2026-02-11)."
+    },
+    {
+      "slug": "luther-king-capital-management-corporation",
+      "name": "LUTHER KING CAPITAL MANAGEMENT CORPORATION",
+      "ciks": [
+        "918942"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: LUTHER KING CAPITAL MANAGEMENT CORPORATION (SEC file 801-14458). Registrants: LKCM Funds (CIK 918942, N-CEN 0000894189-26-007838 filed 2026-03-13)."
+    },
+    {
+      "slug": "macquarie-investment-management-business-trust",
+      "name": "Macquarie Investment Management Business Trust",
+      "ciks": [
+        "910682"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Macquarie Investment Management Business Trust (SEC file 801-32108). Registrants: DELAWARE GROUP ADVISER FUNDS (CIK 910682, N-CEN 0000940400-26-000202 filed 2026-01-14)."
+    },
+    {
+      "slug": "madison-asset-management",
+      "name": "Madison Asset Management, LLC",
+      "ciks": [
+        "1040612",
+        "1976877"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Madison Asset Management, LLC (SEC file 801-62992). Registrants: Madison ETFs Trust (CIK 1976877, N-CEN 0001193125-26-386079 filed 2026-09-09); MADISON FUNDS (CIK 1040612, N-CEN 0001410368-26-000491 filed 2026-01-09)."
+    },
+    {
+      "slug": "magellan-investment-partners-north-america",
+      "name": "Magellan Investment Partners North America, Inc.",
+      "ciks": [
+        "1014913"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Magellan Investment Partners North America, Inc. (SEC file 801-52123). Registrants: MFG FUNDS, INC. (CIK 1014913, N-CEN 0001193125-26-386233 filed 2026-09-09)."
+    },
+    {
+      "slug": "mason-street-advisors",
+      "name": "Mason Street Advisors, LLC",
+      "ciks": [
+        "742212"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Mason Street Advisors, LLC (SEC file 801-60721). Registrants: NORTHWESTERN MUTUAL SERIES FUND INC (CIK 742212, N-CEN 0001410368-26-023528 filed 2026-03-12)."
+    },
+    {
+      "slug": "matthews-international-capital-management",
+      "name": "Matthews International Capital Management, LLC",
+      "ciks": [
+        "923184"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Matthews International Capital Management, LLC (SEC file 801-52871). Registrants: MATTHEWS INTERNATIONAL FUNDS (CIK 923184, N-CEN 0000940400-26-009746 filed 2026-03-10)."
+    },
+    {
+      "slug": "meeder-asset-management",
+      "name": "Meeder Asset Management, Inc.",
+      "ciks": [
+        "702435"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Meeder Asset Management, Inc. (SEC file 801-09839). Registrants: Meeder Funds (CIK 702435, N-CEN 0000702435-26-000091 filed 2026-03-12)."
+    },
+    {
+      "slug": "mercer-investments",
+      "name": "Mercer Investments LLC",
+      "ciks": [
+        "1320615"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Mercer Investments LLC (SEC file 801-63730). Registrants: Mercer Funds (CIK 1320615, N-CEN 0001410368-26-057337 filed 2026-06-08)."
+    },
+    {
+      "slug": "mfs",
+      "name": "MFS",
+      "ciks": [
+        "63091",
+        "200489",
+        "719269",
+        "764719",
+        "783740",
+        "798244",
+        "798250",
+        "809173",
+        "826735",
+        "911637",
+        "918571",
+        "1065698",
+        "2018846"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: MASSACHUSETTS FINANCIAL SERVICES COMPANY (SEC file 801-17352); Massachusetts Financial Services Company (SEC file 801-17352). Registrants: MFS VARIABLE INSURANCE TRUST II (CIK 719269, N-CEN 0001410368-26-025047 filed 2026-03-13); MFS VARIABLE INSURANCE TRUST (CIK 918571, N-CEN 0001410368-26-025049 filed 2026-03-13); MFS VARIABLE INSURANCE TRUST III (CIK 1065698, N-CEN 0001410368-26-025050 filed 2026-03-13); MFS SERIES TRUST XI (CIK 911637, N-CEN 0001410368-25-035688 filed 2025-12-12); MASSACHUSETTS INVESTORS TRUST (CIK 63091, N-CEN 0001410368-26-025048 filed 2026-03-13); MFS SERIES TRUST V (CIK 200489, N-CEN 0002071691-25-007977 filed 2025-12-12); MFS SERIES TRUST XV (CIK 764719, N-CEN 0001410368-26-001000 filed 2026-01-14); ABERDEEN MULTI-MARKET INCOME FUND (MMT) (CIK 809173, N-CEN 0001410368-26-001002 filed 2026-01-14); ABERDEEN INTERMEDIATE INCOME FUND (MIN) (CIK 826735, N-CEN 0001410368-26-000998 filed 2026-01-14); MFS SERIES TRUST I (CIK 798244, N-CEN 0001410368-25-023252 filed 2025-11-14); MFS SERIES TRUST X (CIK 783740, N-CEN 0001410368-26-103078 filed 2026-10-13); MFS Active Exchange Traded Funds Trust (CIK 2018846, N-CEN 0001410368-26-044797 filed 2026-05-14); MFS SERIES TRUST II (CIK 798250, N-CEN 0002071691-26-001987 filed 2026-02-12)."
+    },
+    {
+      "slug": "mission-investment-advisors",
+      "name": "Mission Investment Advisors LLC",
+      "ciks": [
+        "1594854"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Mission Investment Advisors LLC (SEC file 801-131136). Registrants: GreenFi Funds Trust (CIK 1594854, N-CEN 0001594854-25-000033 filed 2025-12-15)."
+    },
+    {
+      "slug": "mml-investment-advisers",
+      "name": "MML Investment Advisers, LLC",
+      "ciks": [
+        "67160",
+        "916053",
+        "927972",
+        "1317146"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: MML Investment Advisers, LLC (SEC file 801-78778). Registrants: MML SERIES INVESTMENT FUND (CIK 67160, N-CEN 0001410368-26-023628 filed 2026-03-12); MASSMUTUAL SELECT FUNDS (CIK 916053, N-CEN 0001410368-25-035955 filed 2025-12-12); MASSMUTUAL PREMIER FUNDS (CIK 927972, N-CEN 0001410368-25-035956 filed 2025-12-12); MML Series Investment Fund II (CIK 1317146, N-CEN 0001410368-26-023629 filed 2026-03-12)."
+    },
+    {
+      "slug": "monetta-financial-services",
+      "name": "Monetta Financial Services Inc",
+      "ciks": [
+        "894240"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Monetta Financial Services Inc (SEC file 801-21477). Registrants: MONETTA TRUST (CIK 894240, N-CEN 0000894189-26-007653 filed 2026-03-10)."
+    },
+    {
+      "slug": "morgan-stanley",
+      "name": "Morgan Stanley",
+      "ciks": [
+        "741375",
+        "836487",
+        "1002427",
+        "1011378",
+        "1676326",
+        "1709447"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Morgan Stanley AIP GP LP (SEC file 801-60699); Morgan Stanley Investment Management Inc. (SEC file 801-15757). Registrants: MORGAN STANLEY INSTITUTIONAL FUND INC (CIK 836487, N-CEN 0001410368-26-023630 filed 2026-03-12); MORGAN STANLEY VARIABLE INSURANCE FUND INC. (CIK 1011378, N-CEN 0001410368-26-023636 filed 2026-03-12); Morgan Stanley Insight Fund (CIK 1002427, N-CEN 0001410368-26-023632 filed 2026-03-12); MORGAN STANLEY INSTITUTIONAL FUND TRUST (CIK 741375, N-CEN 0001410368-25-033785 filed 2025-12-09); Morgan Stanley ETF Trust (CIK 1676326, N-CEN 0002071691-25-007961 filed 2025-12-09); AIP Alternative Lending Fund A (CIK 1709447, N-CEN 0001193125-25-318765 filed 2025-12-15)."
+    },
+    {
+      "slug": "morningstar-investment-management",
+      "name": "Morningstar Investment Management LLC",
+      "ciks": [
+        "1699360"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Morningstar Investment Management LLC (SEC file 801-56896). Registrants: Morningstar Funds Trust (CIK 1699360, N-CEN 0002066578-26-002287 filed 2026-07-10)."
+    },
+    {
+      "slug": "mount-logan-management",
+      "name": "Mount Logan Management, LLC",
+      "ciks": [
+        "1907437"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Mount Logan Management, LLC (SEC file 801-119731). Registrants: Opportunistic Credit Interval Fund (CIK 1907437, N-CEN 0001049169-25-001073 filed 2025-12-15)."
+    },
+    {
+      "slug": "mutual-fund-series-trust",
+      "name": "MUTUAL FUND SERIES TRUST",
+      "ciks": [
+        "1355064"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (Catalyst Capital Advisors, LLC (SEC file 801-66886); Eventide Asset Management, LLC (SEC file 801-69154)). MUTUAL FUND SERIES TRUST (CIK 1355064, N-CEN 0000910472-26-014396 filed 2026-09-11)."
+    },
+    {
+      "slug": "mutual-of-america-capital-management",
+      "name": "MUTUAL OF AMERICA CAPITAL MANAGEMENT LLC",
+      "ciks": [
+        "795259"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: MUTUAL OF AMERICA CAPITAL MANAGEMENT LLC (SEC file 801-43897). Registrants: MoA Funds Corp (CIK 795259, N-CEN 0000940400-26-009929 filed 2026-03-12)."
+    },
+    {
+      "slug": "nationwide-fund-advisors",
+      "name": "Nationwide Fund Advisors",
+      "ciks": [
+        "353905",
+        "1048702"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: NATIONWIDE FUND ADVISORS (SEC file 801-56370); Nationwide Fund Advisors (SEC file 801-56370). Registrants: NATIONWIDE VARIABLE INSURANCE TRUST (CIK 353905, N-CEN 0002071691-26-005433 filed 2026-03-09); NATIONWIDE MUTUAL FUNDS (CIK 1048702, N-CEN 0002071691-26-000137 filed 2026-01-12)."
+    },
+    {
+      "slug": "natixis-advisors",
+      "name": "Natixis Advisors, LLC",
+      "ciks": [
+        "52136",
+        "770540",
+        "872649",
+        "917469",
+        "1406305",
+        "1526787",
+        "1728860"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Natixis Advisors, LLC (SEC file 801-48408). Registrants: Natixis Funds Trust II (CIK 52136, N-CEN 0001410368-26-026207 filed 2026-03-16); Natixis Funds Trust I (CIK 770540, N-CEN 0001410368-26-026196 filed 2026-03-16); LOOMIS SAYLES FUNDS II (CIK 872649, N-CEN 0001410368-26-026208 filed 2026-03-16); Natixis ETF Trust (CIK 1526787, N-CEN 0001410368-26-026206 filed 2026-03-16); Natixis ETF Trust II (CIK 1728860, N-CEN 0001410368-26-026197 filed 2026-03-16); Gateway Trust (CIK 1406305, N-CEN 0001410368-26-026209 filed 2026-03-16); LOOMIS SAYLES FUNDS I (CIK 917469, N-CEN 0001410368-26-026202 filed 2026-03-16)."
+    },
+    {
+      "slug": "needham-investment-management",
+      "name": "Needham Investment Management, LLC",
+      "ciks": [
+        "1002537"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Needham Investment Management, LLC (SEC file 801-50449). Registrants: NEEDHAM FUNDS INC (CIK 1002537, N-CEN 0000894189-26-007762 filed 2026-03-12)."
+    },
+    {
+      "slug": "neuberger-berman-investment-advisers",
+      "name": "Neuberger Berman Investment Advisers LLC",
+      "ciks": [
+        "44402",
+        "723620",
+        "736913",
+        "1317474",
+        "1487610",
+        "1506001",
+        "1669380",
+        "1669382",
+        "1669384",
+        "1702537",
+        "1702885",
+        "1714708",
+        "1715736",
+        "1716942",
+        "1742837",
+        "1742838",
+        "1743402",
+        "1818105",
+        "1843181",
+        "1851265",
+        "1851515",
+        "1887499"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Neuberger Berman Investment Advisers LLC (SEC file 801-61757). Registrants: Neuberger Next Generation Connectivity Fund Inc. (NBXG) (CIK 1843181, N-CEN 0001410368-26-000844 filed 2026-01-13); NEUBERGER BERMAN EQUITY FUNDS (CIK 44402, N-CEN 0001410368-25-021164 filed 2025-11-05); NB Private Markets Access Fund LLC (CIK 1818105, N-CEN 0001193125-26-268695 filed 2026-06-12); NB Crossroads Private Markets Fund VI Holdings LP (CIK 1743402, N-CEN 0001193125-26-268704 filed 2026-06-12); NB Crossroads Private Markets Fund VI LP (CIK 1742837, N-CEN 0001193125-26-268706 filed 2026-06-12); NB Crossroads Private Markets Fund VI Advisory LP (CIK 1742838, N-CEN 0001193125-26-268705 filed 2026-06-12); NB Crossroads Private Markets Fund V Holdings LP (CIK 1702885, N-CEN 0001193125-26-268702 filed 2026-06-12); NB Crossroads Private Markets Fund V (TE) Advisory LP (CIK 1715736, N-CEN 0001193125-26-268696 filed 2026-06-12); NB Crossroads Private Markets Fund V (TE) LP (CIK 1702537, N-CEN 0001193125-26-268701 filed 2026-06-12); NB Crossroads Private Markets Fund V (TI) LP (CIK 1714708, N-CEN 0001193125-26-268703 filed 2026-06-12); NB Crossroads Private Markets Fund V (TI) Advisory LP (CIK 1716942, N-CEN 0001193125-26-268700 filed 2026-06-12); NB Crossroads Private Markets Fund IV (TE) - Client LLC (CIK 1669380, N-CEN 0001193125-26-268698 filed 2026-06-12); NB Crossroads Private Markets Fund IV (TI) - Client LLC (CIK 1669384, N-CEN 0001193125-26-268697 filed 2026-06-12); NB Crossroads Private Markets Fund IV Holdings LLC (CIK 1669382, N-CEN 0001193125-26-268699 filed 2026-06-12); NB Crossroads Private Markets Fund VII Holdings LP (CIK 1851515, N-CEN 0001193125-26-268709 filed 2026-06-12); NB Crossroads Private Markets Fund VII Advisory LP (CIK 1887499, N-CEN 0001193125-26-268707 filed 2026-06-12); NB Crossroads Private Markets Fund VII LP (CIK 1851265, N-CEN 0001193125-26-268708 filed 2026-06-12); NEUBERGER BERMAN ALTERNATIVE FUNDS (CIK 1317474, N-CEN 0001410368-26-000842 filed 2026-01-13); NEUBERGER BERMAN ADVISERS MANAGEMENT TRUST (CIK 736913, N-CEN 0001410368-26-022390 filed 2026-03-09); Neuberger High Yield Strategies Fund Inc. (NHS) (CIK 1487610, N-CEN 0001410368-26-000841 filed 2026-01-13); Neuberger Berman ETF Trust (CIK 1506001, N-CEN 0001410368-26-000846 filed 2026-01-13); NEUBERGER BERMAN INCOME FUNDS (CIK 723620, N-CEN 0001410368-26-000847 filed 2026-01-13)."
+    },
+    {
+      "slug": "new-york-life",
+      "name": "New York Life Investments",
+      "ciks": [
+        "787441",
+        "887340",
+        "1426439",
+        "1469192"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: New York Life Investment Management LLC (SEC file 801-57396). Registrants: NYLIM VP FUNDS TRUST (CIK 887340, N-CEN 0002071691-26-005502 filed 2026-03-13); NYLIM FUNDS (CIK 787441, N-CEN 0002071691-26-000159 filed 2026-01-13); NYLIM FUNDS TRUST (CIK 1469192, N-CEN 0002071691-26-015766 filed 2026-07-10); NYLIM Active ETF Trust (CIK 1426439, N-CEN 0000940400-26-026210 filed 2026-07-10)."
+    },
+    {
+      "slug": "nomura-asset-management-u-s-a",
+      "name": "Nomura Asset Management U.S.A. Inc.",
+      "ciks": [
+        "859796"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Nomura Asset Management U.S.A. Inc. (SEC file 801-12129). Registrants: JAPAN SMALLER CAPITALIZATION FUND INC (JOF) (CIK 859796, N-CEN 0001003715-26-001794 filed 2026-05-13)."
+    },
+    {
+      "slug": "nomura-investment-management-business-trust",
+      "name": "Nomura Investment Management Business Trust",
+      "ciks": [
+        "27825",
+        "357059",
+        "778108",
+        "809821",
+        "810016",
+        "814230",
+        "883622",
+        "1227523"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Nomura Investment Management Business Trust (SEC file 801-32108). Registrants: DELAWARE GROUP EQUITY FUNDS IV (CIK 778108, N-CEN 0000940400-26-023446 filed 2026-06-12); IVY FUNDS (CIK 883622, N-CEN 0000940400-26-023447 filed 2026-06-12); Ivy Variable Insurance Portfolios (CIK 810016, N-CEN 0000940400-26-010060 filed 2026-03-16); DELAWARE VIP TRUST (CIK 814230, N-CEN 0000940400-26-010062 filed 2026-03-16); DELAWARE GROUP LIMITED-TERM GOVERNMENT FUNDS (CIK 357059, N-CEN 0000940400-26-010061 filed 2026-03-16); OPTIMUM FUND TRUST (CIK 1227523, N-CEN 0000940400-26-023448 filed 2026-06-12); DELAWARE GROUP INCOME FUNDS (CIK 27825, N-CEN 0000940400-26-039275 filed 2026-10-14); DELAWARE GROUP EQUITY FUNDS V (CIK 809821, N-CEN 0000940400-26-003084 filed 2026-02-13)."
+    },
+    {
+      "slug": "north-square-investments",
+      "name": "North Square Investments, LLC",
+      "ciks": [
+        "1750821"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: North Square Investments, LLC (SEC file 801-115238). Registrants: Exchange Place Advisors Trust (CIK 1750821, N-CEN 0000910472-26-011455 filed 2026-08-10)."
+    },
+    {
+      "slug": "northern-lights-fund-trust-ii",
+      "name": "NORTHERN LIGHTS FUND TRUST II",
+      "ciks": [
+        "1518042"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (KKM Financial, LLC (SEC file 801-77094); Longboard Asset Management, LP (SEC file 801-72623); The Future Fund LLC (SEC file 801-121505); Weitz Investment Management, Inc. (SEC file 801-53829)). NORTHERN LIGHTS FUND TRUST II (CIK 1518042, N-CEN 0000910472-26-011574 filed 2026-08-13)."
+    },
+    {
+      "slug": "northern-lights-fund-trust-iii",
+      "name": "NORTHERN LIGHTS FUND TRUST III",
+      "ciks": [
+        "1537140"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (Boyd Watterson Asset Management, LLC (SEC file 801-57468); Howard Capital Management, Inc. (SEC file 801-69763); Swan Capital Management, LLC (SEC file 801-76701)). NORTHERN LIGHTS FUND TRUST III (CIK 1537140, N-CEN 0000910472-26-014392 filed 2026-09-11)."
+    },
+    {
+      "slug": "northern-trust-investments",
+      "name": "Northern Trust Investments, Inc.",
+      "ciks": [
+        "916620",
+        "1491978"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Northern Trust Investments, Inc. (SEC file 801-33358). Registrants: NORTHERN FUNDS (CIK 916620, N-CEN 0002066578-26-002026 filed 2026-06-10); FLEXSHARES TRUST (CIK 1491978, N-CEN 0002071691-26-000168 filed 2026-01-14)."
+    },
+    {
+      "slug": "nuveen",
+      "name": "Nuveen (TIAA)",
+      "ciks": [
+        "923524",
+        "1041673",
+        "1068204",
+        "1084380",
+        "1338561",
+        "1385763",
+        "1608741",
+        "1635073"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Nuveen Fund Advisors, LLC (SEC file 801-14147); Teachers Advisors, LLC (SEC file 801-46887). Registrants: NUVEEN INVESTMENT TRUST II (CIK 1041673, N-CEN 0001193125-26-421287 filed 2026-10-14); TIAA SEPARATE ACCOUNT VA 1 (CIK 923524, N-CEN 0001193125-26-108241 filed 2026-03-16); TIAA-CREF LIFE FUNDS (CIK 1068204, N-CEN 0001193125-26-108244 filed 2026-03-16); TIAA-CREF FUNDS (CIK 1084380, N-CEN 0001193125-26-349366 filed 2026-08-13); Nuveen S&P 500 Dynamic Overwrite Fund (SPXX) (CIK 1338561, N-CEN 0001193125-26-108236 filed 2026-03-16); Nushares ETF Trust (CIK 1635073, N-CEN 0001004726-26-009548 filed 2026-10-13); Nuveen Core Equity Alpha Fund (JCE) (CIK 1385763, N-CEN 0001193125-26-108229 filed 2026-03-16); Nuveen NASDAQ 100 Dynamic Overwrite Fund (QQQX) (CIK 1608741, N-CEN 0001193125-26-108231 filed 2026-03-16)."
+    },
+    {
+      "slug": "oak-associates",
+      "name": "Oak Associates, ltd.",
+      "ciks": [
+        "1050918"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Oak Associates, ltd. (SEC file 801-23632). Registrants: OAK ASSOCIATES FUNDS (CIK 1050918, N-CEN 0000910472-26-000028 filed 2026-01-08)."
+    },
+    {
+      "slug": "oberweis-asset-management",
+      "name": "Oberweis Asset Management, Inc.",
+      "ciks": [
+        "803020"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Oberweis Asset Management, Inc. (SEC file 801-35657). Registrants: OBERWEIS FUNDS (CIK 803020, N-CEN 0001213900-26-026699 filed 2026-03-12)."
+    },
+    {
+      "slug": "ofi-global-asset-management",
+      "name": "OFI Global Asset Management, Inc.",
+      "ciks": [
+        "1087774",
+        "1413714",
+        "1577111"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: OFI Global Asset Management, Inc. (SEC file 801-76771). Registrants: OPPENHEIMER SENIOR FLOATING RATE PLUS FUND (CIK 1577111, N-CEN 0001752724-18-000863 filed 2018-10-11); OPPENHEIMER SENIOR FLOATING RATE FUND (CIK 1087774, N-CEN 0001752724-18-000857 filed 2018-10-11); Oppenheimer Master Loan Fund, LLC (CIK 1413714, N-CEN 0001752724-18-002942 filed 2018-12-14)."
+    },
+    {
+      "slug": "ofs-capital-management",
+      "name": "OFS Capital Management, LLC",
+      "ciks": [
+        "1716951"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: OFS Capital Management, LLC (SEC file 801-71366). Registrants: OFS Credit Company, Inc. (OCCI, OCCIM, OCCIN) (CIK 1716951, N-CEN 0001398344-26-000534 filed 2026-01-12)."
+    },
+    {
+      "slug": "olive-street-investment-advisers",
+      "name": "OLIVE STREET INVESTMENT ADVISERS LLC",
+      "ciks": [
+        "1567101"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: OLIVE STREET INVESTMENT ADVISERS LLC (SEC file 801-77754). Registrants: Bridge Builder Trust (CIK 1567101, N-CEN 0001003715-26-003177 filed 2026-09-11)."
+    },
+    {
+      "slug": "oshaughnessy-asset-management",
+      "name": "OShaughnessy Asset Management LLC",
+      "ciks": [
+        "1027596"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: OShaughnessy Asset Management LLC (SEC file 801-68177). Registrants: ADVISORS SERIES TRUST (CIK 1027596, N-CEN 0001193125-26-420139 filed 2026-10-13)."
+    },
+    {
+      "slug": "pacer-advisors",
+      "name": "Pacer Advisors, Inc.",
+      "ciks": [
+        "1616668"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Pacer Advisors, Inc. (SEC file 801-79654); Pacer Advisors, Inc. (SEC file 801-79655). Registrants: Pacer Funds Trust (CIK 1616668, N-CEN 0000894189-26-021136 filed 2026-07-14)."
+    },
+    {
+      "slug": "pacific-investment-management-company",
+      "name": "Pacific Investment Management Company LLC",
+      "ciks": [
+        "810893",
+        "908187",
+        "916183",
+        "1047304",
+        "1160990",
+        "1190935",
+        "1219360",
+        "1244183",
+        "1296250",
+        "1318025",
+        "1450011",
+        "1510599",
+        "1688554",
+        "1756908",
+        "1798618",
+        "1851077",
+        "1886878"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Pacific Investment Management Company LLC (SEC file 801-48187). Registrants: PIMCO FUNDS (CIK 810893, N-CEN 0001410368-26-057980 filed 2026-06-11); PCM FUND, INC. (PCM) (CIK 908187, N-CEN 0001410368-26-091399 filed 2026-09-14); PIMCO VARIABLE INSURANCE TRUST (CIK 1047304, N-CEN 0001099263-26-003231 filed 2026-03-13); PIMCO CORPORATE & INCOME STRATEGY FUND (PCN) (CIK 1160990, N-CEN 0001410368-26-091407 filed 2026-09-14); PIMCO CORPORATE & INCOME OPPORTUNITY FUND (PTY) (CIK 1190935, N-CEN 0001410368-26-091406 filed 2026-09-14); PIMCO INCOME STRATEGY FUND (PFL) (CIK 1244183, N-CEN 0001410368-26-091404 filed 2026-09-14); PIMCO Income Strategy Fund II (PFN) (CIK 1296250, N-CEN 0001410368-26-091405 filed 2026-09-14); PIMCO Global StocksPLUS & Income Fund (PGP) (CIK 1318025, N-CEN 0001410368-26-091408 filed 2026-09-14); PIMCO ETF Trust (CIK 1450011, N-CEN 0001410368-26-091413 filed 2026-09-14); PIMCO Dynamic Income Fund (PDI) (CIK 1510599, N-CEN 0001410368-26-091401 filed 2026-09-14); PIMCO Flexible Credit Income Fund (CIK 1688554, N-CEN 0001410368-26-091409 filed 2026-09-14); PIMCO Dynamic Income Strategy Fund (PDX) (CIK 1756908, N-CEN 0001410368-26-091411 filed 2026-09-14); PIMCO Dynamic Income Opportunities Fund (PDO) (CIK 1798618, N-CEN 0001410368-26-091403 filed 2026-09-14); PIMCO Access Income Fund (PAXS) (CIK 1886878, N-CEN 0001410368-26-091414 filed 2026-09-14); PIMCO Flexible Emerging Markets Income Fund (CIK 1851077, N-CEN 0001410368-26-091410 filed 2026-09-14); PIMCO HIGH INCOME FUND (PHK) (CIK 1219360, N-CEN 0001410368-26-091412 filed 2026-09-14); PIMCO STRATEGIC INCOME FUND, INC. (RCS) (CIK 916183, N-CEN 0001410368-26-091402 filed 2026-09-14)."
+    },
+    {
+      "slug": "pacific-life-fund-advisors",
+      "name": "Pacific Life Fund Advisors LLC",
+      "ciks": [
+        "813900"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Pacific Life Fund Advisors LLC (SEC file 801-15057). Registrants: PACIFIC SELECT FUND (CIK 813900, N-CEN 0001410368-26-023479 filed 2026-03-12)."
+    },
+    {
+      "slug": "palm-valley-capital-management",
+      "name": "Palm Valley Capital Management LLC",
+      "ciks": [
+        "1650149"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Palm Valley Capital Management LLC (SEC file 801-114514). Registrants: Series Portfolios Trust (CIK 1650149, N-CEN 0000894189-26-007768 filed 2026-03-12)."
+    },
+    {
+      "slug": "paradigm-funds-advisor",
+      "name": "PARADIGM FUNDS ADVISOR LLC",
+      "ciks": [
+        "1196878"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: PARADIGM FUNDS ADVISOR LLC (SEC file 801-64574). Registrants: PARADIGM FUNDS (CIK 1196878, N-CEN 0001413042-26-000180 filed 2026-03-11)."
+    },
+    {
+      "slug": "park-avenue-institutional-advisers",
+      "name": "Park Avenue Institutional Advisers LLC",
+      "ciks": [
+        "1668512"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Park Avenue Institutional Advisers LLC (SEC file 801-81084). Registrants: Guardian Variable Products Trust (CIK 1668512, N-CEN 0001410368-26-022264 filed 2026-03-06)."
+    },
+    {
+      "slug": "park-place-capital-corporation",
+      "name": "Park Place Capital Corporation",
+      "ciks": [
+        "1045701"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Park Place Capital Corporation (SEC file 801-32593). Registrants: Monteagle Funds (CIK 1045701, N-CEN 0001162044-25-001146 filed 2025-11-06)."
+    },
+    {
+      "slug": "parnassus-investments",
+      "name": "Parnassus Investments, LLC",
+      "ciks": [
+        "747546",
+        "866256"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Parnassus Investments, LLC (SEC file 801-122618). Registrants: PARNASSUS INCOME FUNDS (CIK 866256, N-CEN 0001003715-26-000609 filed 2026-03-06); PARNASSUS FUNDS (CIK 747546, N-CEN 0001003715-26-000610 filed 2026-03-06)."
+    },
+    {
+      "slug": "payden-and-rygel",
+      "name": "Payden & Rygel",
+      "ciks": [
+        "885709"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Payden & Rygel (SEC file 801-19762). Registrants: PAYDEN & RYGEL INVESTMENT GROUP (CIK 885709, N-CEN 0000940400-26-000112 filed 2026-01-13)."
+    },
+    {
+      "slug": "penn-mutual-asset-management",
+      "name": "Penn Mutual Asset Management, LLC",
+      "ciks": [
+        "702340"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Penn Mutual Asset Management, LLC (SEC file 801-35477). Registrants: PENN SERIES FUNDS INC (CIK 702340, N-CEN 0000940400-26-009743 filed 2026-03-10)."
+    },
+    {
+      "slug": "pershing-square-usa-ltd-psus",
+      "name": "Pershing Square USA, Ltd. (PSUS)",
+      "ciks": [
+        "2002660"
+      ],
+      "evidence": "Its own family: no N-CEN in its EDGAR submissions index. Pershing Square USA, Ltd. (PSUS) (CIK 2002660)."
+    },
+    {
+      "slug": "pgim",
+      "name": "PGIM (Prudential)",
+      "ciks": [
+        "80946",
+        "356683",
+        "711175",
+        "741350",
+        "793159",
+        "814679",
+        "834126",
+        "890339",
+        "929523",
+        "949512",
+        "1051562",
+        "1070287",
+        "1099692",
+        "1104631",
+        "1727074"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: AST Investment Services, Inc. (SEC file 801-40532); PGIM INVESTMENTS LLC (SEC file 801-31104). Registrants: ADVANCED SERIES TRUST (CIK 814679, N-CEN 0000940400-26-010054 filed 2026-03-13); PRUDENTIAL SERIES FUND (CIK 711175, N-CEN 0000940400-26-010056 filed 2026-03-13); PRUDENTIALS GIBRALTAR FUND (CIK 80946, N-CEN 0000940400-26-010053 filed 2026-03-13); PRUDENTIAL SHORT-TERM CORPORATE BOND FUND, INC. (CIK 834126, N-CEN 0000940400-26-010051 filed 2026-03-13); PRUDENTIAL INVESTMENT PORTFOLIOS, INC. (CIK 949512, N-CEN 0000940400-25-012226 filed 2025-12-11); PRUDENTIAL GLOBAL TOTAL RETURN FUND, INC. (CIK 793159, N-CEN 0000940400-26-000153 filed 2026-01-13); PRUDENTIAL INVESTMENT PORTFOLIOS 12 (CIK 1051562, N-CEN 0000940400-26-023400 filed 2026-06-11); PRUDENTIAL INVESTMENT PORTFOLIOS 9 (CIK 1070287, N-CEN 0000940400-26-000151 filed 2026-01-13); PRUDENTIAL INVESTMENT PORTFOLIOS, INC. 17 (CIK 929523, N-CEN 0000940400-26-000155 filed 2026-01-13); PRUDENTIAL WORLD FUND, INC. (CIK 741350, N-CEN 0000940400-26-000156 filed 2026-01-13); PRUDENTIAL INVESTMENT PORTFOLIOS 2 (CIK 1099692, N-CEN 0000940400-26-039269 filed 2026-10-13); TARGET PORTFOLIO TRUST (CIK 890339, N-CEN 0000940400-26-039264 filed 2026-10-13); PGIM ETF TRUST (CIK 1727074, N-CEN 0000940400-25-005892 filed 2025-11-13); PRUDENTIAL INVESTMENT PORTFOLIOS 3 (CIK 1104631, N-CEN 0000940400-26-016195 filed 2026-05-12); PRUDENTIAL JENNISON BLEND FUND, INC. (CIK 356683, N-CEN 0000940400-25-005886 filed 2025-11-13)."
+    },
+    {
+      "slug": "pichardo-asset-management-sa-de-cv",
+      "name": "Pichardo Asset Management SA de CV",
+      "ciks": [
+        "863900"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Pichardo Asset Management SA de CV (SEC file 801-62108). Registrants: MEXICO EQUITY & INCOME FUND INC (MXE) (CIK 863900, N-CEN 0000910472-26-015763 filed 2026-10-09)."
+    },
+    {
+      "slug": "polen-capital-credit",
+      "name": "Polen Capital Credit, LLC",
+      "ciks": [
+        "1965985"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Polen Capital Credit, LLC (SEC file 801-55001). Registrants: Polen Credit Opportunities Fund (CIK 1965985, N-CEN 0000940400-26-026231 filed 2026-07-14)."
+    },
+    {
+      "slug": "powerlaw-corp-pwrl",
+      "name": "Powerlaw Corp. (PWRL)",
+      "ciks": [
+        "2052053"
+      ],
+      "evidence": "Its own family: no N-CEN in its EDGAR submissions index. Powerlaw Corp. (PWRL) (CIK 2052053)."
+    },
+    {
+      "slug": "primecap-management-company",
+      "name": "PRIMECAP Management Company",
+      "ciks": [
+        "1293967"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: PRIMECAP Management Company (SEC file 801-19765). Registrants: PRIMECAP Odyssey Funds (CIK 1293967, N-CEN 0001193125-26-011751 filed 2026-01-13)."
+    },
+    {
+      "slug": "principal-global-investors",
+      "name": "Principal Global Investors, LLC",
+      "ciks": [
+        "12601",
+        "898745",
+        "1572661"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Principal Global Investors, LLC (SEC file 801-55959). Registrants: Principal Exchange-Traded Funds (CIK 1572661, N-CEN 0001410368-26-091198 filed 2026-09-10); PRINCIPAL VARIABLE CONTRACTS FUNDS INC (CIK 12601, N-CEN 0000012601-26-000138 filed 2026-03-12); PRINCIPAL FUNDS, INC. (CIK 898745, N-CEN 0000898745-26-000013 filed 2026-01-14)."
+    },
+    {
+      "slug": "procure-etf-trust-ii",
+      "name": "Procure ETF Trust II",
+      "ciks": [
+        "1727398"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Procure ETF Trust II (SEC file 801-114640). Registrants: Procure ETF Trust II (CIK 1727398, N-CEN 0000894189-26-000415 filed 2026-01-14)."
+    },
+    {
+      "slug": "profund-advisors",
+      "name": "ProFund Advisors LLC",
+      "ciks": [
+        "1039803"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: ProFund Advisors LLC (SEC file 801-54760). Registrants: ProFunds (CIK 1039803, N-CEN 0000910472-26-015771 filed 2026-10-13)."
+    },
+    {
+      "slug": "proshare-advisors",
+      "name": "PROSHARE ADVISORS LLC",
+      "ciks": [
+        "1174610"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: PROSHARE ADVISORS LLC (SEC file 801-64181). Registrants: PROSHARES TRUST (CIK 1174610, N-CEN 0002071691-26-017775 filed 2026-08-14)."
+    },
+    {
+      "slug": "prospector-partners-asset-management",
+      "name": "Prospector Partners Asset Management, LLC",
+      "ciks": [
+        "1402472"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Prospector Partners Asset Management, LLC (SEC file 801-68052). Registrants: PROSPECTOR FUNDS, INC. (CIK 1402472, N-CEN 0001145549-24-066989 filed 2024-10-30)."
+    },
+    {
+      "slug": "rafferty-asset-management",
+      "name": "RAFFERTY ASSET MANAGEMENT, LLC",
+      "ciks": [
+        "1424958"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: RAFFERTY ASSET MANAGEMENT, LLC (SEC file 801-54679). Registrants: Direxion Shares ETF Trust (CIK 1424958, N-CEN 0001193125-26-012900 filed 2026-01-14)."
+    },
+    {
+      "slug": "rbc-global-asset-management-us",
+      "name": "RBC Global Asset Management (US) Inc.",
+      "ciks": [
+        "1272950"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: RBC Global Asset Management (US) Inc. (SEC file 801-20303). Registrants: RBC FUNDS TRUST (CIK 1272950, N-CEN 0000940400-26-023369 filed 2026-06-09)."
+    },
+    {
+      "slug": "reaves-asset-management",
+      "name": "Reaves Asset Management",
+      "ciks": [
+        "890540"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Reaves Asset Management (SEC file 801-13457). Registrants: Advisors' Inner Circle Fund II (CIK 890540, N-CEN 0002048251-26-008684 filed 2026-10-13)."
+    },
+    {
+      "slug": "rex-advisers",
+      "name": "REX Advisers, LLC",
+      "ciks": [
+        "2043954"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: REX Advisers, LLC (SEC file 801-128357). Registrants: REX ETF Trust (CIK 2043954, N-CEN 0000894189-26-007950 filed 2026-03-16)."
+    },
+    {
+      "slug": "reynolds-capital-management",
+      "name": "Reynolds Capital Management, LLC",
+      "ciks": [
+        "832574"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Reynolds Capital Management, LLC (SEC file 801-23561). Registrants: REYNOLDS FUNDS INC (CIK 832574, N-CEN 0000894189-25-016840 filed 2025-12-12)."
+    },
+    {
+      "slug": "rivernorth-capital-management",
+      "name": "RiverNorth Capital Management, LLC",
+      "ciks": [
+        "1370177"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: RiverNorth Capital Management, LLC (SEC file 801-61533). Registrants: RiverNorth Funds (CIK 1370177, N-CEN 0001049169-25-001040 filed 2025-12-10)."
+    },
+    {
+      "slug": "riverpark-advisors",
+      "name": "RiverPark Advisors, LLC",
+      "ciks": [
+        "1494928"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: RiverPark Advisors, LLC (SEC file 801-70321). Registrants: RIVERPARK FUNDS TRUST (CIK 1494928, N-CEN 0002048251-25-003431 filed 2025-12-12)."
+    },
+    {
+      "slug": "robinhood-ventures-de",
+      "name": "Robinhood Ventures DE, LLC",
+      "ciks": [
+        "2085091"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Robinhood Ventures DE, LLC (SEC file 801-135024). Registrants: Robinhood Ventures Fund I (RVI) (CIK 2085091, N-CEN 0000894189-26-017835 filed 2026-06-12)."
+    },
+    {
+      "slug": "robostrategy-inc-bot",
+      "name": "RoboStrategy, Inc. (BOT)",
+      "ciks": [
+        "2081119"
+      ],
+      "evidence": "Its own family: no N-CEN in its EDGAR submissions index. RoboStrategy, Inc. (BOT) (CIK 2081119)."
+    },
+    {
+      "slug": "roundhill-investments",
+      "name": "ROUNDHILL INVESTMENTS INC.",
+      "ciks": [
+        "1976517"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: ROUNDHILL INVESTMENTS INC. (SEC file 801-114971). Registrants: Roundhill ETF Trust (CIK 1976517, N-CEN 0000894189-26-007830 filed 2026-03-13)."
+    },
+    {
+      "slug": "russell-investment-management",
+      "name": "Russell Investment Management, LLC",
+      "ciks": [
+        "351601",
+        "824036"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Russell Investment Management, LLC (SEC file 801-17141). Registrants: RUSSELL INVESTMENT FUNDS (CIK 824036, N-CEN 0001410368-26-023527 filed 2026-03-12); RUSSELL INVESTMENT CO (CIK 351601, N-CEN 0001410368-26-000486 filed 2026-01-09)."
+    },
+    {
+      "slug": "saba-capital-management",
+      "name": "Saba Capital Management, L.P.",
+      "ciks": [
+        "826020",
+        "828803"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Saba Capital Management, L.P. (SEC file 801-71740). Registrants: Saba Capital Income & Opportunities Fund II (SABA) (CIK 828803, N-CEN 0001049169-26-000035 filed 2026-01-14); Saba Capital Income & Opportunities Fund (BRW) (CIK 826020, N-CEN 0001049169-26-000034 filed 2026-01-14)."
+    },
+    {
+      "slug": "saturna-capital-corporation",
+      "name": "SATURNA CAPITAL CORPORATION",
+      "ciks": [
+        "766285",
+        "811860"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: SATURNA CAPITAL CORPORATION (SEC file 801-35428). Registrants: AMANA MUTUAL FUNDS TRUST (CIK 766285, N-CEN 0001193125-26-342194 filed 2026-08-10); SATURNA INVESTMENT TRUST (CIK 811860, N-CEN 0001193125-26-050705 filed 2026-02-13)."
+    },
+    {
+      "slug": "securian-asset-management",
+      "name": "Securian Asset Management, Inc.",
+      "ciks": [
+        "766351"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Securian Asset Management, Inc. (SEC file 801-47262). Registrants: Securian Funds Trust (CIK 766351, N-CEN 0001410368-26-022708 filed 2026-03-11)."
+    },
+    {
+      "slug": "sei-investment-management-corporation",
+      "name": "SEI INVESTMENT MANAGEMENT Corporation",
+      "ciks": [
+        "804239"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: SEI INVESTMENT MANAGEMENT Corporation (SEC file 801-24593). Registrants: SEI INSTITUTIONAL MANAGED TRUST (CIK 804239, N-CEN 0002048251-25-003448 filed 2025-12-15)."
+    },
+    {
+      "slug": "sei-investments-management-corporation",
+      "name": "SEI Investments Management Corporation",
+      "ciks": [
+        "835597",
+        "939934",
+        "1070222",
+        "1502608"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: SEI INVESTMENTS MANAGEMENT CORPORATION (SEC file 801-24593); SEI INVESTMENTS MANAGEMENT Corporation (SEC file 801-24593); SEI Investments Management Corporation (SEC file 801-24593). Registrants: SEI INSTITUTIONAL INVESTMENTS TRUST (CIK 939934, N-CEN 0002048251-26-006545 filed 2026-08-14); SEI INSTITUTIONAL INTERNATIONAL TRUST (CIK 835597, N-CEN 0002048251-25-003450 filed 2025-12-15); NEW COVENANT FUNDS (CIK 1070222, N-CEN 0002048251-26-007636 filed 2026-09-14); Adviser Managed Trust (CIK 1502608, N-CEN 0002048251-26-009116 filed 2026-10-14)."
+    },
+    {
+      "slug": "select-equity-group",
+      "name": "Select Equity Group, L.P.",
+      "ciks": [
+        "2044490"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Select Equity Group, L.P. (SEC file 801-78977). Registrants: SEG Partners Long/Short Equity Fund (CIK 2044490, N-CEN 0000894189-26-000411 filed 2026-01-14)."
+    },
+    {
+      "slug": "sierra-crest-investment-management",
+      "name": "Sierra Crest Investment Management, LLC",
+      "ciks": [
+        "1628040"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Sierra Crest Investment Management, LLC (SEC file 801-114566). Registrants: Alternative Credit Income Fund (CIK 1628040, N-CEN 0001049169-25-001074 filed 2025-12-15)."
+    },
+    {
+      "slug": "skybridge-capital-ii",
+      "name": "SkyBridge Capital II, LLC",
+      "ciks": [
+        "1181848",
+        "1520568"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: SkyBridge Capital II, LLC (SEC file 801-71056). Registrants: SKYBRIDGE OPPORTUNITY FUND (CIK 1181848, N-CEN 0001193125-26-267959 filed 2026-06-12); Skybridge G II Fund (CIK 1520568, N-CEN 0001193125-26-267958 filed 2026-06-12)."
+    },
+    {
+      "slug": "southeastern-asset-management",
+      "name": "Southeastern Asset Management, Inc.",
+      "ciks": [
+        "806636"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Southeastern Asset Management, Inc. (SEC file 801-11123). Registrants: LONGLEAF PARTNERS FUNDS TRUST (CIK 806636, N-CEN 0000910472-26-004030 filed 2026-03-13)."
+    },
+    {
+      "slug": "sparrow-capital-management",
+      "name": "Sparrow Capital Management, Inc.",
+      "ciks": [
+        "1066241"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Sparrow Capital Management, Inc. (SEC file 801-42906). Registrants: SPARROW FUNDS (CIK 1066241, N-CEN 0001162044-26-000925 filed 2026-11-02)."
+    },
+    {
+      "slug": "spear-advisors",
+      "name": "Spear Advisors, LLC",
+      "ciks": [
+        "1683471"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Spear Advisors, LLC (SEC file 801-121294). Registrants: Listed Funds Trust (CIK 1683471, N-CEN 0001193125-26-386395 filed 2026-09-09)."
+    },
+    {
+      "slug": "spend-life-wisely-funds-investment-trust",
+      "name": "SPEND LIFE WISELY FUNDS INVESTMENT TRUST",
+      "ciks": [
+        "1524348"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (Ranger Investment Management, LP (SEC file 801-62397); SLW Fixed Income Management LLC (SEC file 801-130867)). SPEND LIFE WISELY FUNDS INVESTMENT TRUST (CIK 1524348, N-CEN 0001524348-26-000051 filed 2026-10-13)."
+    },
+    {
+      "slug": "ssga-funds-management",
+      "name": "SSGA Funds Management, Inc.",
+      "ciks": [
+        "746687",
+        "1064642",
+        "1107414",
+        "1168164",
+        "1516212"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: SSGA Funds Management, Inc. (SEC file 801-60103). Registrants: STATE STREET INSTITUTIONAL INVESTMENT TRUST (CIK 1107414, N-CEN 0001410368-26-023649 filed 2026-03-12); SPDR INDEX SHARES FUNDS (CIK 1168164, N-CEN 0001410368-25-034454 filed 2025-12-11); SPDR SERIES TRUST (CIK 1064642, N-CEN 0001410368-26-091247 filed 2026-09-11); SSGA Active Trust (CIK 1516212, N-CEN 0001410368-26-091248 filed 2026-09-11); STATE STREET VARIABLE INSURANCE SERIES FUNDS INC (CIK 746687, N-CEN 0001410368-26-023644 filed 2026-03-12)."
+    },
+    {
+      "slug": "stepstone-group-private-wealth",
+      "name": "StepStone Group Private Wealth LLC",
+      "ciks": [
+        "1918642"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: StepStone Group Private Wealth LLC (SEC file 801-117639). Registrants: StepStone Private Venture & Growth Fund (CIK 1918642, N-CEN 0001193125-26-270554 filed 2026-06-15)."
+    },
+    {
+      "slug": "sterling-capital-management",
+      "name": "Sterling Capital Management LLC",
+      "ciks": [
+        "889284"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Sterling Capital Management LLC (SEC file 801-64257). Registrants: STERLING CAPITAL FUNDS (CIK 889284, N-CEN 0000910472-25-005597 filed 2025-12-11)."
+    },
+    {
+      "slug": "strategic-advisers",
+      "name": "Strategic Advisers LLC",
+      "ciks": [
+        "1364924"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Strategic Advisers LLC (SEC file 801-13243). Registrants: Fidelity Rutland Square Trust II (CIK 1364924, N-CEN 0000035402-26-004842 filed 2026-08-12)."
+    },
+    {
+      "slug": "strategy-shares",
+      "name": "Strategy Shares",
+      "ciks": [
+        "1506213"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (Day Hagan Asset Management (SEC file 801-66337); Eventide Asset Management, LLC (SEC file 801-69154); Rational Advisors, Inc. (SEC file 801-60176)). Strategy Shares (CIK 1506213, N-CEN 0001004726-26-005738 filed 2026-07-14)."
+    },
+    {
+      "slug": "sunamerica-asset-management",
+      "name": "SunAmerica Asset Management, LLC",
+      "ciks": [
+        "795307",
+        "892538",
+        "1003239"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: SunAmerica Asset Management, LLC (SEC file 801-19813). Registrants: SUNAMERICA SERIES TRUST (CIK 892538, N-CEN 0001410368-26-037212 filed 2026-04-16); SEASONS SERIES TRUST (CIK 1003239, N-CEN 0001410368-26-058075 filed 2026-06-11); SUNAMERICA INCOME FUNDS (CIK 795307, N-CEN 0001752724-21-123104 filed 2021-06-14)."
+    },
+    {
+      "slug": "sweater-industries-llc",
+      "name": "SWEATER INDUSTRIES LLC.",
+      "ciks": [
+        "2041672"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: SWEATER INDUSTRIES LLC. (SEC file 801-122933). Registrants: JETSTREAM VENTURE FUND (CIK 2041672, N-CEN 0001193125-26-271118 filed 2026-06-15)."
+    },
+    {
+      "slug": "t-rowe-price",
+      "name": "T. Rowe Price",
+      "ciks": [
+        "80248",
+        "80249",
+        "80257",
+        "202927",
+        "313212",
+        "315748",
+        "730200",
+        "731890",
+        "754915",
+        "758003",
+        "773485",
+        "793347",
+        "795384",
+        "819930",
+        "852254",
+        "858581",
+        "871839",
+        "887147",
+        "902259",
+        "910671",
+        "918292",
+        "918294",
+        "920467",
+        "923084",
+        "949820",
+        "1012968",
+        "1038490",
+        "1116626",
+        "1120924",
+        "1169187",
+        "1267862",
+        "1447346",
+        "1520245",
+        "1533490",
+        "1571768",
+        "1600600",
+        "1608530",
+        "1681576",
+        "1707770",
+        "1795351"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: T. Rowe Price Associates, Inc. (SEC file 801-00856). Registrants: T. Rowe Price International Funds, Inc. (CIK 313212, N-CEN 0001099263-26-003185 filed 2026-03-13); T. Rowe Price Multi-Strategy Total Return Fund, Inc. (CIK 1707770, N-CEN 0001099263-26-000015 filed 2026-01-13); T. Rowe Price Growth Stock Fund, Inc. (CIK 80257, N-CEN 0001099263-26-003181 filed 2026-03-13); T. Rowe Price Global Allocation Fund, Inc. (CIK 1571768, N-CEN 0001099263-26-000011 filed 2026-01-13); T. Rowe Price Spectrum Funds II, Inc. (CIK 923084, N-CEN 0001099263-26-008991 filed 2026-08-12); T. Rowe Price Science & Technology Fund, Inc. (CIK 819930, N-CEN 0001099263-26-003195 filed 2026-03-13); T. Rowe Price Balanced Fund, Inc. (CIK 871839, N-CEN 0001099263-26-003167 filed 2026-03-13); T. Rowe Price Blue Chip Growth Fund, Inc. (CIK 902259, N-CEN 0001099263-26-003168 filed 2026-03-13); T. Rowe Price Equity Series, Inc. (CIK 918294, N-CEN 0001099263-26-003175 filed 2026-03-13); T. Rowe Price Equity Funds, Inc. (CIK 1012968, N-CEN 0001099263-26-003173 filed 2026-03-13); T. Rowe Price Capital Appreciation Fund, Inc. (CIK 793347, N-CEN 0001099263-26-003169 filed 2026-03-13); T. Rowe Price Global Technology Fund, Inc. (CIK 1116626, N-CEN 0001099263-26-003180 filed 2026-03-13); T. Rowe Price Exchange-Traded Funds, Inc. (CIK 1795351, N-CEN 0001099263-26-008977 filed 2026-08-12); T. Rowe Price All-Cap Opportunities Fund, Inc. (CIK 773485, N-CEN 0001099263-26-003166 filed 2026-03-13); T. Rowe Price Communications & Technology Fund, Inc. (CIK 910671, N-CEN 0001099263-26-003170 filed 2026-03-13); T. Rowe Price International Series, Inc. (CIK 918292, N-CEN 0001099263-26-003186 filed 2026-03-13); T. Rowe Price Global Funds, Inc. (CIK 852254, N-CEN 0001099263-26-000012 filed 2026-01-13); T. Rowe Price Tax-Efficient Funds, Inc. (CIK 1038490, N-CEN 0001099263-26-004481 filed 2026-05-12); T. Rowe Price Diversified Mid-Cap Growth Fund, Inc. (CIK 1267862, N-CEN 0001099263-26-003171 filed 2026-03-13); T. Rowe Price New Horizons Fund, Inc. (CIK 80248, N-CEN 0001099263-26-003190 filed 2026-03-13); T. Rowe Price Mid-Cap Growth Fund, Inc. (CIK 887147, N-CEN 0001099263-26-003187 filed 2026-03-13); T. Rowe Price State Tax-Free Funds, Inc. (CIK 795384, N-CEN 0001099263-26-004480 filed 2026-05-12); T. Rowe Price Multi-Sector Account Portfolios, Inc. (CIK 1533490, N-CEN 0001099263-26-004479 filed 2026-05-12); T. Rowe Price Tax-Exempt Money Fund, Inc. (CIK 315748, N-CEN 0001099263-26-004482 filed 2026-05-12); T. Rowe Price Intermediate Tax-Free High Yield Fund, Inc. (CIK 1608530, N-CEN 0001099263-26-004478 filed 2026-05-12); T. Rowe Price Tax-Free Income Fund, Inc. (CIK 202927, N-CEN 0001099263-26-004484 filed 2026-05-12); T. Rowe Price Tax-Free Short-Intermediate Fund, Inc. (CIK 730200, N-CEN 0001099263-26-004485 filed 2026-05-12); T. Rowe Price Tax-Free High Yield Fund, Inc. (CIK 758003, N-CEN 0001099263-26-004483 filed 2026-05-12); T. Rowe Price Institutional Income Funds, Inc. (CIK 1169187, N-CEN 0001099263-26-008985 filed 2026-08-12); T. Rowe Price Floating Rate Fund, Inc. (CIK 1520245, N-CEN 0001099263-26-008978 filed 2026-08-12); T. Rowe Price Credit Opportunities Fund, Inc. (CIK 1600600, N-CEN 0001099263-26-008976 filed 2026-08-12); T. Rowe Price Index Trust, Inc. (CIK 858581, N-CEN 0001099263-26-008983 filed 2026-08-12); T. Rowe Price Fixed Income Series, Inc. (CIK 920467, N-CEN 0001099263-26-003178 filed 2026-03-13); T. Rowe Price QM U.S. Bond Index Fund, Inc. (CIK 1120924, N-CEN 0001099263-26-000016 filed 2026-01-13); T. Rowe Price New Income Fund, Inc. (CIK 80249, N-CEN 0001099263-26-008987 filed 2026-08-12); T. Rowe Price Short-Term Bond Fund, Inc. (CIK 731890, N-CEN 0001099263-26-008990 filed 2026-08-12); T. Rowe Price High Yield Fund, Inc. (CIK 754915, N-CEN 0001099263-26-008982 filed 2026-08-12); T. Rowe Price Corporate Income Fund, Inc. (CIK 949820, N-CEN 0001099263-26-008975 filed 2026-08-12); T. Rowe Price Total Return Fund, Inc. (CIK 1681576, N-CEN 0001099263-26-008992 filed 2026-08-12); T. Rowe Price Global Multi-Sector Bond Fund, Inc. (CIK 1447346, N-CEN 0001099263-26-008979 filed 2026-08-12)."
+    },
+    {
+      "slug": "t-rowe-price-goldman-sachs-private-markets-fund",
+      "name": "T. Rowe Price Goldman Sachs Private Markets Fund",
+      "ciks": [
+        "2097666"
+      ],
+      "evidence": "Its own family: no N-CEN in its EDGAR submissions index. T. Rowe Price Goldman Sachs Private Markets Fund (CIK 2097666)."
+    },
+    {
+      "slug": "tcw-investment-management-company",
+      "name": "TCW Investment Management Company LLC",
+      "ciks": [
+        "892071"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: TCW Investment Management Company LLC (SEC file 801-29075). Registrants: TCW FUNDS INC (CIK 892071, N-CEN 0001410368-26-000568 filed 2026-01-12)."
+    },
+    {
+      "slug": "tema-etfs",
+      "name": "Tema ETFs LLC",
+      "ciks": [
+        "1944285"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Tema ETFs LLC (SEC file 801-131126). Registrants: Tema ETF Trust (CIK 1944285, N-CEN 0001193125-26-223851 filed 2026-05-14)."
+    },
+    {
+      "slug": "the-variable-annuity-life-insurance-company",
+      "name": "The Variable Annuity Life Insurance Company",
+      "ciks": [
+        "719423"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: The Variable Annuity Life Insurance Company (SEC file 801-8138). Registrants: VALIC Co I (CIK 719423, N-CEN 0001410368-26-080427 filed 2026-08-14)."
+    },
+    {
+      "slug": "themes-management-company",
+      "name": "Themes Management Company, LLC",
+      "ciks": [
+        "1976322"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Themes Management Company, LLC (SEC file 801-128358). Registrants: Themes ETF Trust (CIK 1976322, N-CEN 0000894189-26-000299 filed 2026-01-13)."
+    },
+    {
+      "slug": "thomas-white-international",
+      "name": "THOMAS WHITE INTERNATIONAL, LTD.",
+      "ciks": [
+        "918949"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: THOMAS WHITE INTERNATIONAL, LTD. (SEC file 801-41896). Registrants: LORD ASSET MANAGEMENT TRUST (CIK 918949, N-CEN 0001145549-23-001323 filed 2023-01-13)."
+    },
+    {
+      "slug": "thornburg-investment-management",
+      "name": "Thornburg Investment Management, Inc.",
+      "ciks": [
+        "816153",
+        "1820378",
+        "2038383"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Thornburg Investment Management, Inc. (SEC file 801-17853). Registrants: THORNBURG INVESTMENT TRUST (CIK 816153, N-CEN 0001410368-25-033172 filed 2025-12-02); Thornburg Income Builder Opportunities Trust (TBLD) (CIK 1820378, N-CEN 0001410368-25-033173 filed 2025-12-02); Thornburg ETF Trust (CIK 2038383, N-CEN 0001410368-26-110385 filed 2026-11-03)."
+    },
+    {
+      "slug": "thrivent-asset-management",
+      "name": "Thrivent Asset Management LLC",
+      "ciks": [
+        "811869",
+        "1669626",
+        "1896670"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Thrivent Asset Management LLC (SEC file 801-64988); Thrivent Asset Management, LLC (SEC file 801-64988). Registrants: THRIVENT MUTUAL FUNDS (CIK 811869, N-CEN 0000811869-26-000073 filed 2026-03-11); Thrivent ETF Trust (CIK 1896670, N-CEN 0001410368-25-033725 filed 2025-12-08); Thrivent Core Funds (CIK 1669626, N-CEN 0001669626-26-000003 filed 2026-01-09)."
+    },
+    {
+      "slug": "thrivent-financial-for-lutherans",
+      "name": "Thrivent Financial for Lutherans",
+      "ciks": [
+        "790166"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Thrivent Financial for Lutherans (SEC file 801-60701). Registrants: THRIVENT SERIES FUND INC (CIK 790166, N-CEN 0000790166-26-000180 filed 2026-03-11)."
+    },
+    {
+      "slug": "tiaa-cref-investment-management",
+      "name": "TIAA-CREF Investment Management LLC",
+      "ciks": [
+        "777535"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: TIAA-CREF Investment Management LLC (SEC file 801-38029). Registrants: COLLEGE RETIREMENT EQUITIES FUND (CIK 777535, N-CEN 0001193125-26-108240 filed 2026-03-16)."
+    },
+    {
+      "slug": "tidal-investments",
+      "name": "Tidal Investments LLC",
+      "ciks": [
+        "1722388",
+        "1742912",
+        "1924868",
+        "2043390"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Tidal Investments LLC (SEC file 801-76857). Registrants: Tidal Trust II (CIK 1924868, N-CEN 0002000324-26-005565 filed 2026-10-09); Tidal Trust III (CIK 1722388, N-CEN 0002000324-26-005574 filed 2026-10-13); Tidal Trust IV (CIK 2043390, N-CEN 0002000324-26-002274 filed 2026-06-11); Tidal Trust I (CIK 1742912, N-CEN 0002000324-26-005570 filed 2026-10-13)."
+    },
+    {
+      "slug": "tiff-advisory-services",
+      "name": "TIFF Advisory Services, LLC",
+      "ciks": [
+        "916622"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: TIFF Advisory Services, LLC (SEC file 801-45618). Registrants: TIFF INVESTMENT PROGRAM (CIK 916622, N-CEN 0001410368-26-023480 filed 2026-03-12)."
+    },
+    {
+      "slug": "timothy-partners",
+      "name": "Timothy Partners, Ltd.",
+      "ciks": [
+        "916490"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Timothy Partners, Ltd. (SEC file 801-45766). Registrants: TIMOTHY PLAN (CIK 916490, N-CEN 0001004726-26-001457 filed 2026-03-10)."
+    },
+    {
+      "slug": "tocqueville-asset-management",
+      "name": "Tocqueville Asset Management, LP",
+      "ciks": [
+        "801444"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Tocqueville Asset Management, LP (SEC file 801-36209). Registrants: TOCQUEVILLE TRUST (CIK 801444, N-CEN 0000894189-26-000371 filed 2026-01-13)."
+    },
+    {
+      "slug": "touchstone-advisors",
+      "name": "Touchstone Advisors, Inc.",
+      "ciks": [
+        "711080",
+        "914243",
+        "1919700"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Touchstone Advisors, Inc. (SEC file 801-45963). Registrants: TOUCHSTONE STRATEGIC TRUST (CIK 711080, N-CEN 0001193125-26-383603 filed 2026-09-04); Touchstone ETF Trust (CIK 1919700, N-CEN 0001193125-26-383602 filed 2026-09-04); TOUCHSTONE FUNDS GROUP TRUST (CIK 914243, N-CEN 0001193125-25-315593 filed 2025-12-11)."
+    },
+    {
+      "slug": "transamerica-asset-management",
+      "name": "Transamerica Asset Management, Inc.",
+      "ciks": [
+        "778207",
+        "787623"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Transamerica Asset Management, Inc. (SEC file 801-53319). Registrants: TRANSAMERICA SERIES TRUST (CIK 778207, N-CEN 0001410368-26-024976 filed 2026-03-13); TRANSAMERICA FUNDS (CIK 787623, N-CEN 0001410368-26-024975 filed 2026-03-13)."
+    },
+    {
+      "slug": "trust-for-advised-portfolios",
+      "name": "Trust for Advised Portfolios",
+      "ciks": [
+        "1261788"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (1919 Investment Counsel, LLC (SEC file 801-63656); Patient Capital Management, LLC (SEC file 801-118170)). Trust for Advised Portfolios (CIK 1261788, N-CEN 0001145549-24-016584 filed 2024-03-15)."
+    },
+    {
+      "slug": "u-s-bancorp-asset-management",
+      "name": "U.S. Bancorp Asset Management, Inc.",
+      "ciks": [
+        "1696729"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: U.S. Bancorp Asset Management, Inc. (SEC file 801-60125). Registrants: PFM Multi-Manager Series Trust (CIK 1696729, N-CEN 0000894189-25-016809 filed 2025-12-11)."
+    },
+    {
+      "slug": "ubs-asset-management-americas",
+      "name": "UBS Asset Management (Americas) LLC",
+      "ciks": [
+        "873803",
+        "930007"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: UBS Asset Management (Americas) LLC (SEC file 801-34910). Registrants: PACE SELECT ADVISORS TRUST (CIK 930007, N-CEN 0001410368-26-103065 filed 2026-10-13); UBS INVESTMENT TRUST (CIK 873803, N-CEN 0001410368-25-022034 filed 2025-11-13)."
+    },
+    {
+      "slug": "ubs-asset-managers-of-puerto-rico",
+      "name": "UBS Asset Managers of Puerto Rico",
+      "ciks": [
+        "1852344"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: UBS Asset Managers of Puerto Rico (SEC file 801-120846). Registrants: Multi-Select Securities Fund for Puerto Rico Residents (CIK 1852344, N-CEN 0001410368-26-058080 filed 2026-06-11)."
+    },
+    {
+      "slug": "ultimus-managers-trust",
+      "name": "Ultimus Managers Trust",
+      "ciks": [
+        "1545440"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (Adler Asset Management, Inc. (SEC file 801-113287); Wavelength Capital Management, LLC (SEC file 801-78192)). Ultimus Managers Trust (CIK 1545440, N-CEN 0000910472-26-011401 filed 2026-08-04)."
+    },
+    {
+      "slug": "valkyrie-funds",
+      "name": "Valkyrie Funds LLC",
+      "ciks": [
+        "1877493"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Valkyrie Funds LLC (SEC file 801-122506). Registrants: Valkyrie ETF Trust II (CIK 1877493, N-CEN 0000894189-25-016904 filed 2025-12-15)."
+    },
+    {
+      "slug": "van-eck-associates-corporation",
+      "name": "Van Eck Associates Corporation",
+      "ciks": [
+        "1137360"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Van Eck Associates Corporation (SEC file 801-21340). Registrants: VanEck ETF Trust (CIK 1137360, N-CEN 0001410368-26-069245 filed 2026-07-08)."
+    },
+    {
+      "slug": "vanguard",
+      "name": "Vanguard",
+      "ciks": [
+        "36405",
+        "52848",
+        "736054",
+        "794105",
+        "836906",
+        "857489",
+        "862084",
+        "923202",
+        "1532203"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: The Vanguard Group, Inc. (SEC file 801-11953). Registrants: VANGUARD INDEX FUNDS (CIK 36405, N-CEN 0000036405-26-000103 filed 2026-03-12); VANGUARD WORLD FUND (CIK 52848, N-CEN 0000052848-25-000314 filed 2025-12-10); VANGUARD BOND INDEX FUNDS (CIK 794105, N-CEN 0000794105-26-000062 filed 2026-03-12); VANGUARD MALVERN FUNDS (CIK 836906, N-CEN 0000836906-25-000268 filed 2025-12-10); VANGUARD INSTITUTIONAL INDEX FUNDS (CIK 862084, N-CEN 0000862084-26-000038 filed 2026-03-12); VANGUARD TAX-MANAGED FUNDS (CIK 923202, N-CEN 0000923202-26-000038 filed 2026-03-12); VANGUARD STAR FUNDS (CIK 736054, N-CEN 0000736054-26-000003 filed 2026-01-12); VANGUARD INTERNATIONAL EQUITY INDEX FUNDS (CIK 857489, N-CEN 0000857489-26-000003 filed 2026-01-12); Vanguard Charlotte Funds (CIK 1532203, N-CEN 0001532203-26-000003 filed 2026-01-12)."
+    },
+    {
+      "slug": "vanguard-chester-funds",
+      "name": "VANGUARD CHESTER FUNDS",
+      "ciks": [
+        "752177"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (PRIMECAP Management Company (SEC file 801-19765); The Vanguard Group, Inc. (SEC file 801-11953)). VANGUARD CHESTER FUNDS (CIK 752177, N-CEN 0000752177-25-000267 filed 2025-12-10)."
+    },
+    {
+      "slug": "vanguard-fenway-funds",
+      "name": "VANGUARD FENWAY FUNDS",
+      "ciks": [
+        "826473"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (PRIMECAP Management Company (SEC file 801-19765); The Vanguard Group, Inc. (SEC file 801-11953); Wellington Management Company LLP (SEC file 801-15908)). VANGUARD FENWAY FUNDS (CIK 826473, N-CEN 0000826473-25-000046 filed 2025-12-10)."
+    },
+    {
+      "slug": "vanguard-fixed-income-securities-funds",
+      "name": "VANGUARD FIXED INCOME SECURITIES FUNDS",
+      "ciks": [
+        "106444"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (Vanguard Group, Inc (SEC file 801-11953); Wellington Management Company LLP (SEC file 801-15908)). VANGUARD FIXED INCOME SECURITIES FUNDS (CIK 106444, N-CEN 0000106444-26-000152 filed 2026-04-14)."
+    },
+    {
+      "slug": "vanguard-horizon-funds",
+      "name": "VANGUARD HORIZON FUNDS",
+      "ciks": [
+        "932471"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (Baillie Gifford Overseas Ltd (SEC file 801-21051); PRIMECAP Management Company (SEC file 801-19765); Pzena Investment Management, LLC (SEC file 801-50838); The Vanguard Group, Inc. (SEC file 801-11953); Wellington Management Company LLP (SEC file 801-15908)). VANGUARD HORIZON FUNDS (CIK 932471, N-CEN 0000932471-25-001212 filed 2025-12-10)."
+    },
+    {
+      "slug": "vanguard-quantitative-funds",
+      "name": "VANGUARD QUANTITATIVE FUNDS",
+      "ciks": [
+        "799127"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (D. E. Shaw Investment Management, LLC (SEC file 801-64222); Los Angeles Capital Management LLC (SEC file 801-60934); Wellington Management Company LLP (SEC file 801-15908)). VANGUARD QUANTITATIVE FUNDS (CIK 799127, N-CEN 0000799127-25-000027 filed 2025-12-10)."
+    },
+    {
+      "slug": "vanguard-scottsdale-funds",
+      "name": "VANGUARD SCOTTSDALE FUNDS",
+      "ciks": [
+        "1021882"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (Ariel Investments, LLC (SEC file 801-18767); Frontier Capital Management Company, LLC (SEC file 801-15724); The Vanguard Group, Inc. (SEC file 801-11953); Wellington Management Company LLP (SEC file 801-15908)). VANGUARD SCOTTSDALE FUNDS (CIK 1021882, N-CEN 0001021882-25-000227 filed 2025-11-12)."
+    },
+    {
+      "slug": "vanguard-valley-forge-funds",
+      "name": "VANGUARD VALLEY FORGE FUNDS",
+      "ciks": [
+        "889519"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (Baillie Gifford Overseas Ltd (SEC file 801-21051); The Vanguard Group, Inc. (SEC file 801-11953)). VANGUARD VALLEY FORGE FUNDS (CIK 889519, N-CEN 0000889519-26-000022 filed 2026-03-12)."
+    },
+    {
+      "slug": "vanguard-variable-insurance-funds",
+      "name": "VANGUARD VARIABLE INSURANCE FUNDS",
+      "ciks": [
+        "857490"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (ArrowMark Colorado Holdings, LLC (SEC file 801-69868); Baillie Gifford Overseas Ltd (SEC file 801-21051); Hotchkis and Wiley Capital Management, LLC (SEC file 801-60512); Lazard Asset Management LLC (SEC file 801-61701); PRIMECAP Management Company (SEC file 801-19765); Schroder Investment Management North America Inc. (SEC file 801-15834); The Vanguard Group, Inc. (SEC file 801-11953); Wellington Management Company LLP (SEC file 801-15908)). VANGUARD VARIABLE INSURANCE FUNDS (CIK 857490, N-CEN 0000857490-26-000150 filed 2026-03-12)."
+    },
+    {
+      "slug": "vanguard-whitehall-funds",
+      "name": "VANGUARD WHITEHALL FUNDS",
+      "ciks": [
+        "1004655"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (Baillie Gifford Overseas Ltd (SEC file 801-21051); Cooke & Bieler, LP (SEC file 801-60411); Donald Smith & Co., Inc. (SEC file 801-10798); Pzena Investment Management, LLC (SEC file 801-50838); Schroder Investment Management North America Inc. (SEC file 801-15834); The Vanguard Group, Inc. (SEC file 801-11953); Wellington Management Company LLP (SEC file 801-15908)). VANGUARD WHITEHALL FUNDS (CIK 1004655, N-CEN 0001004655-26-000003 filed 2026-01-12)."
+    },
+    {
+      "slug": "venerable-investment-advisers",
+      "name": "Venerable Investment Advisers, LLC",
+      "ciks": [
+        "1995745"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Venerable Investment Advisers, LLC (SEC file 801-130496). Registrants: Venerable Variable Insurance Trust (CIK 1995745, N-CEN 0001410368-26-026295 filed 2026-03-16)."
+    },
+    {
+      "slug": "victory-capital-management",
+      "name": "Victory Capital Management Inc.",
+      "ciks": [
+        "802716",
+        "908695",
+        "1547580",
+        "2042316",
+        "2042317"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Victory Capital Management Inc (SEC file 801-46878); Victory Capital Management Inc. (SEC file 801-46878). Registrants: Victory Portfolios IV (CIK 2042316, N-CEN 0001004726-26-009544 filed 2026-10-08); Victory Variable Insurance Funds II (CIK 2042317, N-CEN 0000940400-26-010044 filed 2026-03-13); Victory Portfolios II (CIK 1547580, N-CEN 0001004726-26-008117 filed 2026-09-11); VICTORY PORTFOLIOS (CIK 802716, N-CEN 0001004726-26-008118 filed 2026-09-11); VICTORY PORTFOLIOS III (CIK 908695, N-CEN 0001004726-26-005718 filed 2026-07-10)."
+    },
+    {
+      "slug": "virtus",
+      "name": "Virtus",
+      "ciks": [
+        "34273",
+        "792359",
+        "836412",
+        "867297",
+        "1005020",
+        "1018593",
+        "1214935",
+        "1227857",
+        "1260563",
+        "1383441",
+        "1501103",
+        "1528811",
+        "1636289",
+        "1648403",
+        "1778114"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Virtus Alternative Investment Advisers, LLC (SEC file 801-67924); Virtus Investment Advisers, LLC (SEC file 801-5995). Registrants: VIRTUS OPPORTUNITIES TRUST (CIK 1005020, N-CEN 0000940400-26-029002 filed 2026-08-12); VIRTUS ASSET TRUST (CIK 1018593, N-CEN 0000940400-26-010027 filed 2026-03-13); VIRTUS VARIABLE INSURANCE TRUST (CIK 792359, N-CEN 0000940400-26-010029 filed 2026-03-13); VIRTUS EQUITY TRUST (CIK 34273, N-CEN 0000940400-25-012320 filed 2025-12-15); Virtus Investment Trust (CIK 867297, N-CEN 0000940400-26-036387 filed 2026-09-11); Virtus Equity & Convertible Income Fund (NIE) (CIK 1383441, N-CEN 0000940400-26-012985 filed 2026-04-14); Virtus Artificial Intelligence & Technology Opportunities Fund (AIO) (CIK 1778114, N-CEN 0000940400-26-012986 filed 2026-04-14); Virtus Diversified Income & Convertible Fund (ACV) (CIK 1636289, N-CEN 0000940400-26-012987 filed 2026-04-14); Virtus ETF Trust II (CIK 1648403, N-CEN 0000940400-26-039258 filed 2026-10-13); Virtus Stone Harbor Emerging Markets Income Fund (EDF) (CIK 1501103, N-CEN 0000940400-26-003090 filed 2026-02-13); Virtus Global Multi-Sector Income Fund (VGI) (CIK 1528811, N-CEN 0000940400-26-003089 filed 2026-02-13); Virtus Total Return Fund Inc. (ZTR) (CIK 836412, N-CEN 0000940400-26-003091 filed 2026-02-13); Virtus Dividend, Interest & Premium Strategy Fund (NFJ) (CIK 1260563, N-CEN 0000940400-26-012983 filed 2026-04-14); Virtus Convertible & Income Fund (NCV, NCV-PA) (CIK 1214935, N-CEN 0000940400-26-012988 filed 2026-04-14); Virtus Convertible & Income Fund II (NCZ, NCZ-PA) (CIK 1227857, N-CEN 0000940400-26-012984 filed 2026-04-14)."
+    },
+    {
+      "slug": "voya-investments",
+      "name": "Voya Investments, LLC",
+      "ciks": [
+        "2646",
+        "2663",
+        "2664",
+        "837276",
+        "895430",
+        "1015965",
+        "1039001",
+        "1063946",
+        "1066602",
+        "1417802"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Voya Investments, LLC (SEC file 801-48282). Registrants: Voya PARTNERS INC (CIK 1039001, N-CEN 0000940400-26-010015 filed 2026-03-13); Voya INVESTORS TRUST (CIK 837276, N-CEN 0000940400-26-010014 filed 2026-03-13); Voya INTERMEDIATE BOND PORTFOLIO (CIK 2646, N-CEN 0000940400-26-010013 filed 2026-03-13); Voya VARIABLE PORTFOLIOS INC (CIK 1015965, N-CEN 0000940400-26-010018 filed 2026-03-13); Voya FUNDS TRUST (CIK 1066602, N-CEN 0000940400-26-023364 filed 2026-06-09); Voya MUTUAL FUNDS (CIK 895430, N-CEN 0000940400-26-000208 filed 2026-01-14); Voya EQUITY TRUST (CIK 1063946, N-CEN 0000940400-26-029050 filed 2026-08-14); Voya Infrastructure, Industrials & Materials Fund (IDE) (CIK 1417802, N-CEN 0000940400-26-015968 filed 2026-05-11); VOYA GOVERNMENT MONEY MARKET PORTFOLIO (CIK 2663, N-CEN 0000940400-26-010012 filed 2026-03-13); Voya VARIABLE FUNDS (CIK 2664, N-CEN 0000940400-26-010016 filed 2026-03-13)."
+    },
+    {
+      "slug": "warren-capital-group",
+      "name": "Warren Capital Group",
+      "ciks": [
+        "1484018"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Warren Capital Group (SEC file 801-121205). Registrants: Spinnaker ETF Series (CIK 1484018, N-CEN 0001484018-26-000101 filed 2026-10-14)."
+    },
+    {
+      "slug": "water-island-capital",
+      "name": "Water Island Capital, LLC",
+      "ciks": [
+        "1105076",
+        "1779306"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Water Island Capital, LLC (SEC file 801-57341). Registrants: AltShares Trust (CIK 1779306, N-CEN 0001410368-26-079143 filed 2026-08-12); ARBITRAGE FUNDS (CIK 1105076, N-CEN 0001410368-26-079144 filed 2026-08-12)."
+    },
+    {
+      "slug": "wellington-management-company-llp",
+      "name": "Wellington Management Company LLP",
+      "ciks": [
+        "105544",
+        "2026275"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Wellington Management Company LLP (SEC file 801-15908). Registrants: VANGUARD WELLESLEY INCOME FUND (CIK 105544, N-CEN 0000105544-25-000029 filed 2025-12-10); Wellington Global Multi-Strategy Fund (CIK 2026275, N-CEN 0001410368-26-000865 filed 2026-01-13)."
+    },
+    {
+      "slug": "western-asset-management-company",
+      "name": "Western Asset Management Company, LLC",
+      "ciks": [
+        "75398",
+        "1163792"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Western Asset Management Company, LLC (SEC file 801-08162). Registrants: Western Asset Investment Grade Income Fund Inc. (PAI) (CIK 75398, N-CEN 0000940400-26-009806 filed 2026-03-11); WESTERN ASSET PREMIER BOND FUND (WEA) (CIK 1163792, N-CEN 0000940400-26-009808 filed 2026-03-11)."
+    },
+    {
+      "slug": "william-blair-investment-management",
+      "name": "William Blair Investment Management, LLC",
+      "ciks": [
+        "822632"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: William Blair Investment Management, LLC (SEC file 801-80640). Registrants: WILLIAM BLAIR FUNDS (CIK 822632, N-CEN 0001410368-26-023865 filed 2026-03-12)."
+    },
+    {
+      "slug": "williamsburg-investment-trust",
+      "name": "WILLIAMSBURG INVESTMENT TRUST",
+      "ciks": [
+        "842512"
+      ],
+      "evidence": "Its own family: its latest N-CEN names investment advisers of more than one firm across its funds (Davenport and Company LLC (SEC file 801-13057); Leavell Investment Management, Inc. (SEC file 801-14752); Lowe, Brockenbrough and Company, Inc. (SEC file 801-6691)). WILLIAMSBURG INVESTMENT TRUST (CIK 842512, N-CEN 0000910472-26-007512 filed 2026-05-27)."
+    },
+    {
+      "slug": "wilmington-funds-management-corporation",
+      "name": "Wilmington Funds Management Corporation",
+      "ciks": [
+        "830744"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Wilmington Funds Management Corporation (SEC file 801-22071). Registrants: WILMINGTON FUNDS (CIK 830744, N-CEN 0000940400-26-026232 filed 2026-07-14)."
+    },
+    {
+      "slug": "wilshire-advisors",
+      "name": "Wilshire Advisors LLC",
+      "ciks": [
+        "890453",
+        "1807333",
+        "1807334"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Wilshire Advisors LLC (SEC file 801-36233). Registrants: Wilshire Private Assets Fund (CIK 1807334, N-CEN 0002048251-26-004793 filed 2026-06-10); Wilshire Private Assets Master Fund (CIK 1807333, N-CEN 0002048251-26-004794 filed 2026-06-10); WILSHIRE MUTUAL FUNDS INC (CIK 890453, N-CEN 0000894189-26-007835 filed 2026-03-13)."
+    },
+    {
+      "slug": "wisconsin-capital-management",
+      "name": "Wisconsin Capital Management, LLC",
+      "ciks": [
+        "1395397"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Wisconsin Capital Management, LLC (SEC file 801-53829). Registrants: WISCONSIN CAPITAL FUNDS INC (CIK 1395397, N-CEN 0000910472-26-008996 filed 2026-06-12)."
+    },
+    {
+      "slug": "wisdomtree-asset-management",
+      "name": "WisdomTree Asset Management, Inc.",
+      "ciks": [
+        "1350487"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: WisdomTree Asset Management, Inc. (SEC file 801-66567). Registrants: WisdomTree Trust (CIK 1350487, N-CEN 0000940400-26-036402 filed 2026-09-14)."
+    },
+    {
+      "slug": "yorktown-management-and-research-company",
+      "name": "Yorktown Management and Research Company, Inc.",
+      "ciks": [
+        "764859"
+      ],
+      "evidence": "Investment advisers (one firm) of the funds in each registrant's latest N-CEN that names one: Yorktown Management and Research Company, Inc. (SEC file 801-23441). Registrants: AMERICAN PENSION INVESTORS TRUST (CIK 764859, N-CEN 0000910472-26-005316 filed 2026-04-08)."
+    },
+    {
+      "slug": "yorkville-america-investment-trust",
+      "name": "Yorkville America Investment Trust",
+      "ciks": [
+        "1040674"
+      ],
+      "evidence": "Its own family: no N-CEN in its EDGAR submissions index. Yorkville America Investment Trust (CIK 1040674)."
+    }
+  ]
+}

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { DocumentBody } from "../../../components/document/document.js";
-import { RULEBOOK_VERSION } from "../../../lib/engine/dealer/rulebook.js";
+import { RULEBOOK_VERSION } from "../../../lib/engine/rulebook.js";
 import { RULEBOOK_CHANGELOG_PATH, readRepoDoc } from "../../../lib/tradeables/repo-docs.js";
 import styles from "../page.module.css";
 

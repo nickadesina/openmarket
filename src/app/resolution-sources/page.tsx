@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { RULEBOOK_VERSION } from "../../lib/engine/dealer/rulebook.js";
+import { RULEBOOK_VERSION } from "../../lib/engine/rulebook.js";
 import {
   LICENSE,
   MARKDOWN_PATH,

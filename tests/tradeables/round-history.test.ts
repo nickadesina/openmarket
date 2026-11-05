@@ -1,24 +1,32 @@
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import params from "../../backtest/out/params.json";
-import { DEALER_PARAMS } from "../../src/lib/config/dealer.js";
-import { parseCsv } from "../../src/lib/config/listing-anchors.js";
-import { RULEBOOK_VERSION } from "../../src/lib/engine/dealer/rulebook.js";
+import { RULEBOOK_VERSION } from "../../src/lib/engine/rulebook.js";
+import { parseCsv } from "../../src/lib/tradeables/csv.js";
 import {
+  DATA_THROUGH,
+  EVENTS_CSV_PATH,
+  MEGA_THRESHOLD_USD,
   ROUND_HISTORY_COLUMNS,
   renderRoundHistoryCsv,
   renderRoundHistoryJson,
   roundHistoryRows,
+  SOURCES_CSV_PATH,
+  tierOf,
 } from "../../src/lib/tradeables/round-history.js";
 
+/** events.csv's digest as v1's backtest/out/params.json recorded it (tag archive/dealer-v1). */
+const PUBLISHED_EVENTS_SHA256 = "257c8789fa80ec234d653f2e86b4d8ef05362b4e97cb80a4aa171376239f6849";
+
+const eventsCsv = readFileSync(EVENTS_CSV_PATH, "utf8");
 const inputs = {
-  eventsCsv: readFileSync("backtest/events.csv", "utf8"),
-  sourcesCsv: readFileSync("backtest/data/sources.csv", "utf8"),
-  dataThrough: params.data_through,
-  eventsSha256: params.inputs_sha256["events.csv"],
-  megaThresholdUsd: DEALER_PARAMS.tier.mega_threshold_usd,
+  eventsCsv,
+  sourcesCsv: readFileSync(SOURCES_CSV_PATH, "utf8"),
+  dataThrough: DATA_THROUGH,
+  eventsSha256: createHash("sha256").update(eventsCsv).digest("hex"),
+  megaThresholdUsd: MEGA_THRESHOLD_USD,
   rulebookVersion: RULEBOOK_VERSION,
 };
 const rows = roundHistoryRows(inputs);
@@ -66,12 +74,18 @@ describe("the round-history export", () => {
     expect(parsed).toEqual(rows);
   });
 
-  it("carries the digest and data date from params.json, and the license", () => {
+  it("calls a last print of $10B or more mega", () => {
+    expect(tierOf(10_000_000_000, MEGA_THRESHOLD_USD)).toBe("mega");
+    expect(tierOf(9_999_999_999, MEGA_THRESHOLD_USD)).toBe("redhot");
+    expect(() => tierOf(0, MEGA_THRESHOLD_USD)).toThrow(RangeError);
+  });
+
+  it("carries the digest and data date the dataset was published with, and the license", () => {
     const header = JSON.parse(renderRoundHistoryJson(rows, inputs)) as Record<string, unknown>;
     expect(header).toMatchObject({
-      as_of: params.data_through,
+      as_of: "2026-10-19",
       rows: 64,
-      events_sha256: params.inputs_sha256["events.csv"],
+      events_sha256: PUBLISHED_EVENTS_SHA256,
       rulebook_version: RULEBOOK_VERSION,
       license: "CC BY 4.0, cite OpenMarket",
     });

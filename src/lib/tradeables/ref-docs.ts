@@ -1,297 +1,237 @@
-import type { EventFlagConfidence, QuoteFlagState, QuoteReason } from "../db/schema.js";
-import { FLAG_KINDS } from "../engine/dealer/lifecycle.js";
-import type { RefFlag, RefFlagsPayload } from "../services/dealer/ref-flags.js";
-import type {
-  RefHistoryPayload,
-  RefHistoryQuote,
-  RefHistoryReference,
-} from "../services/dealer/ref-history.js";
-import type { RefListingSummary, RefListingsPayload } from "../services/dealer/ref-listings.js";
-import type { RefMid, RefMidsPayload } from "../services/dealer/ref-mids.js";
-import type {
-  RefForwardReference,
-  RefHazardReference,
-  RefReferencePayload,
-} from "../services/dealer/ref-reference.js";
+import type { RulebookPayload } from "../services/get-rulebook.js";
+import type { RefCorrectionsPayload } from "../services/index/ref-corrections.js";
+import type { RefEnvelope } from "../services/index/ref-envelope.js";
+import type { RefMarksPayload } from "../services/index/ref-marks.js";
+import type { RefMethodologyPayload } from "../services/index/ref-methodology.js";
+import type { RefNamePayload } from "../services/index/ref-name.js";
+import type { RefNamesPayload } from "../services/index/ref-names.js";
+import type { RefRevisionsPayload } from "../services/index/ref-revisions.js";
+import type { RefSpvPayload } from "../services/index/ref-spv.js";
 
 /**
- * The /ref docs page's content that is not prose: each route's fields,
- * checked against the payload types so a field added to a payload fails the
- * typecheck until it is documented here, and the keys the page and
- * docs/tradeables/ref-examples.json never show.
- *
- * Withheld: the dealer's parameters, the blend's weights and schedule, a
- * mid's inputs and a quote's spread and cap carry the construction the
- * tradeables brief keeps off every page (b, Q, κ, p_floor, s_floor, the
- * flag multipliers, λ, k, μ, σ_tier, the leak hazards, the blend weights).
+ * The /ref docs page's content that is not prose: each route's query and
+ * top-level fields, checked against the payload types so a field added to a
+ * payload fails the typecheck until it is documented here. The example
+ * payloads are generated from a database (`npm run export:ref-examples`,
+ * docs/tradeables/ref-examples.json), never written by hand.
  */
-export const WITHHELD_KEYS = [
-  "parameters",
-  "blend",
-  "weights",
-  "components",
-  "inputs",
-  "half_spread",
-  "cap_usd_effective",
-] as const;
 
-type Withheld = (typeof WITHHELD_KEYS)[number];
+/** Where the datasets' licence is served (public/data/LICENSE), linked from every CSV. */
+export const DATA_LICENSE_PATH = "/data/LICENSE";
 
-/** One line per field, keyed by the payload type's own keys minus the withheld ones. */
-type FieldDocs<T> = { readonly [K in Exclude<keyof T, Withheld>]-?: string };
+/** The attribution line the licence asks for (public/data/LICENSE). */
+export const ATTRIBUTION = "OpenMarket marks index, openmarket.systems, CC BY 4.0";
+
+/** One line per field, keyed by the payload type's own keys. */
+type FieldDocs<T> = { readonly [K in keyof T]-?: string };
 
 export const ENVELOPE_FIELDS = {
-  model_version:
-    "The prior's formulas and the backtest parameters that produced the figures, as semver. A rerun of the backtest that changes a parameter is a new version.",
-  rulebook_version:
-    "The settlement rulebook in force (/rulebook). A changed rule is a new version.",
-  blend_version:
-    "The published schedule by which model, traded price and crowd are weighted. A changed weight is a new version.",
-  as_of: "When the server answered, UTC.",
-} as const;
-
-/** Every member of a string union, checked exhaustive by the compiler. */
-function members<T extends string>(all: Record<T, true>): string {
-  return Object.keys(all).join(", ");
-}
-
-const QUOTE_REASONS = members<QuoteReason>({
-  list: true,
-  requote: true,
-  fill: true,
-  widen: true,
-  restore: true,
-});
-const FLAG_STATES = members<QuoteFlagState>({ normal: true, widened: true });
-const CONFIDENCES = members<EventFlagConfidence>({ high: true, medium: true, low: true });
+  methodology_version:
+    "The methodology the figures were computed under (/methodology). A changed rule or constant is a new version.",
+  ce_version: "The common-equivalent conversion's own version.",
+  rulebook_version: "The settlement rulebook in force (/rulebook): source classes and their ranks.",
+  as_of:
+    "When the payload was computed, UTC. A quarter's figures can change as late filings arrive.",
+  lag_note: "The N-PORT lag, in one sentence, on every payload.",
+} as const satisfies FieldDocs<RefEnvelope>;
 
 export interface RouteDoc {
+  readonly id: string;
   readonly path: string;
   readonly query: readonly (readonly [string, string])[];
   readonly summary: string;
   readonly fields: Readonly<Record<string, string>>;
-  readonly items?: { readonly name: string; readonly fields: Readonly<Record<string, string>> };
-  readonly example: string;
+  /** The key of its example in docs/tradeables/ref-examples.json, when it has one. */
+  readonly example?: string;
 }
 
-const listing = {
-  slug: "The name's slug, used in every other route.",
-  name: "The company's name.",
-  tier: "mega or redhot, by the last print (at or above $10B is mega).",
-  binary_event: "What resolves the binary: priced_round, or public_s1 for the labs.",
-  listed_at: "When the listing was made.",
-  listing_model_version: "The model version the listing was made under.",
-  forward_t_days: "The forward's expiry in days from each open, a contract term.",
-  anchor:
-    "The last priced round the listing is anchored on: round, date, post-money, source URL and rank.",
-  instruments:
-    "The live binary and forward: id, kind, epoch, question, state, open, expiry, widening.",
-} as const satisfies FieldDocs<RefListingSummary>;
-
-const reference = {
-  instrument_id: "The instrument the reference is for.",
-  as_of: "When this reference row was published.",
-  blend_version: "The blend schedule the row was computed under.",
-  model_version: "The model version of the mid it blends.",
-  rulebook_version: "The rulebook version in force when it was published.",
-  model_only:
-    "True when no traded price and no crowd enter the blend: the reference is the model mid and says so.",
-} as const;
-
-const forwardReference = {
-  ...reference,
-  ln: "The forward's reference level, natural log of USD.",
-  usd: "The same level in dollars.",
-} as const satisfies FieldDocs<RefForwardReference>;
-
-const hazardReference = {
-  ...reference,
-  p: "The binary's reference probability of the event by its expiry.",
-} as const satisfies FieldDocs<RefHazardReference>;
-
-const referencePayload = {
-  ...ENVELOPE_FIELDS,
-  slug: "The name's slug.",
-  name: "The company's name.",
-  tier: "mega or redhot.",
-  reference_forward: `The forward's reference: ${Object.keys(forwardReference).join(", ")}. Null before the first publish.`,
-  reference_hazard: `The binary's reference: ${Object.keys(hazardReference).join(", ")}. Null before the first publish.`,
-  last_print:
-    "The latest print: round, date, post-money in USD and ln, source URL and rank, and the flag it came from.",
-  next_expiry: "The live instrument that expires first: kind, id, expiry.",
-  dealer_inventory_sign:
-    "The sign of the dealer's forward inventory (-1, 0, 1), never its size; null with no live forward.",
-  instruments: "Each live instrument with its tournament question's slug.",
-} as const satisfies FieldDocs<RefReferencePayload>;
-
-const historyReference = {
-  id: "The reference row's id.",
-  kind: "forward or binary.",
-  as_of: "When the row was published.",
-  value: "ln USD for a forward, the probability for a binary.",
-  usd: "A forward's value in dollars; null for a binary.",
-  blend_version: "The blend schedule the row was computed under.",
-  model_version: "The model version of the mid it blends.",
-  rulebook_version: "The rulebook version in force.",
-} as const satisfies FieldDocs<RefHistoryReference>;
-
-const historyQuote = {
-  sequence: "The quote's position on the tape.",
-  instrument_id: "The instrument quoted.",
-  kind: "forward or binary.",
-  epoch: "The instrument's epoch for this name and kind.",
-  posted_at: "When the quote was posted.",
-  reason: `Why it was posted: ${QUOTE_REASONS}.`,
-  model_mid_id: "The model mid it was quoted around.",
-  mid_ln: "The forward's quote mid, ln USD.",
-  mid_usd: "The same in dollars.",
-  bid_ln: "The forward's bid, ln USD; null when that side is pulled.",
-  bid_usd: "The same in dollars.",
-  ask_ln: "The forward's ask, ln USD; null when that side is pulled.",
-  ask_usd: "The same in dollars.",
-  price: "The binary's YES price.",
-  dealer_inventory_sign: "The sign of the dealer's inventory after the quote.",
-  flag_state: `${FLAG_STATES}: widened while an event flag holds.`,
-  model_version: "The model version of the mid quoted around.",
-  rulebook_version: "The rulebook version in force.",
-} as const satisfies FieldDocs<RefHistoryQuote>;
-
-const mid = {
-  id: "The mid's id; references and quotes cite it.",
-  instrument_id: "The instrument the mid is for.",
-  kind: "forward or binary.",
-  epoch: "The instrument's epoch.",
-  computed_at: "When the model computed it.",
-  model_version: "The model version that computed it.",
-  rulebook_version: "The rulebook version in force.",
-  mid_ln: "A forward's mid, ln USD.",
-  mid_usd: "The same in dollars.",
-  p: "A binary's model probability.",
-  run_id: "The dealer run that wrote it.",
-} as const satisfies FieldDocs<RefMid>;
-
-const flag = {
-  id: "The flag's id; mids that moved on it cite it.",
-  kind: `What was observed: ${FLAG_KINDS.join(", ")}.`,
-  source_url: "Where it was observed.",
-  source_rank: "Its rank in the rulebook's source hierarchy, when it has one.",
-  observed_at: "When it was observed.",
-  published_at: "When the source published it, when known.",
-  terms: "The terms as extracted: amount, valuation and basis, lead, price per share, outlet.",
-  confidence: `How sure the extraction is: ${CONFIDENCES}.`,
-  dedupe_key: "The key that makes one event one flag.",
-  promoted_from: "The flag this print was promoted from, if any.",
-  cited_by_mids: "The ids of mids that cite this flag.",
-} as const satisfies FieldDocs<RefFlag>;
-
-const cursorQuery = [
-  ["limit", "1 to 1000, default 200."],
-  ["cursor", "next_cursor from the previous page."],
-] as const;
+const FAMILIES_VERSION =
+  "The version of data/index/filer-families.json the families were taken from.";
+const ISSUER_SHORT = "The name: slug and display name.";
+const SLUG_404 = "An unknown slug is 404 NAME_NOT_FOUND.";
+const PAGE_QUERY: readonly (readonly [string, string])[] = [
+  ["limit", "Rows per page, 1 to 1000; default 200."],
+  ["cursor", "The previous page's next_cursor."],
+];
 
 export const REF_ROUTES: readonly RouteDoc[] = [
   {
-    path: "/api/ref/listings",
-    query: [],
-    summary: "Every listed name with its tier, contract terms, anchor round and live instruments.",
-    fields: {
-      ...ENVELOPE_FIELDS,
-      listings: "One entry per listed name.",
-    } satisfies FieldDocs<RefListingsPayload>,
-    items: { name: "listings[]", fields: listing },
-    example: "listings",
-  },
-  {
-    path: "/api/ref/{slug}",
+    id: "names",
+    path: "/api/ref/names",
     query: [],
     summary:
-      "A name's current reference price for both contracts, its last print, its next expiry and the dealer's inventory sign.",
-    fields: referencePayload,
-    example: "reference",
+      "Every watchlist name with its headline label's latest consensus, dispersion, family count and latest filing date.",
+    fields: {
+      ...ENVELOPE_FIELDS,
+      families_version: FAMILIES_VERSION,
+      names:
+        "One row per watchlist name, by slug: slug, name, listed_on and listing_url (the final prospectus), security_label and quarter of the headline, consensus_usd, n_families, dispersion_pct (null below two families) with the high and low family, latest_filed_on, latest_as_of, live_marks, labels, last_print (with its source_url), spv_vehicles, coverage (what full-text search found naming it) and no_marks (why a name with no live mark has none: code and reason). A name with no per-share series has null headline fields and its live_marks count.",
+    } satisfies FieldDocs<RefNamesPayload>,
+    example: "names",
   },
   {
-    path: "/api/ref/{slug}/history",
+    id: "name",
+    path: "/api/ref/{slug}",
+    query: [],
+    summary: `One name: per label the quarterly consensus and dispersion, each family's marks with the filings behind them, revisions, mark versus print; the prints; the structure table and its common-equivalent result; the SPV panel. ${SLUG_404}`,
+    fields: {
+      ...ENVELOPE_FIELDS,
+      families_version: FAMILIES_VERSION,
+      issuer:
+        "slug, name, legal_name, watchlisted, incorporation_state with the filing it was read from, listed_on and listing_url (the final prospectus) once listed.",
+      marks_summary:
+        "Counts of the live marks: live, in_series, and those kept out of per-share series (no_per_share, not_comparable_label, after_listing); latest_filed_on and latest_as_of.",
+      coverage:
+        "What EDGAR full-text search found naming the name (data/index/filing-counts.json): the search's dates, nport_filings, ncsr_filings, nport_families, families and latest_filed. Null when it was not searched.",
+      no_marks:
+        "Null when the name has a live mark; otherwise code (named_in_no_fund_filing, named_in_ncsr_only, no_matching_holding, not_ingested, not_searched), reason in one sentence, and the N-PORT filings it names when there are ten or fewer, each with whether ingest read it.",
+      out_of_series:
+        "Live marks published as filed that enter no per-share series, grouped by status (no_per_share, not_comparable_label, after_listing) and security_label: reason, n_marks, n_filers, latest_as_of and recent[] (the newest twelve, each with its document). The marks route serves every row.",
+      headline:
+        "The label and quarter the daily page leads with: security_label, quarter, consensus_usd, n_families, dispersion_pct. Null without a per-share series.",
+      labels:
+        "Per security label: consensus[] (quarter, consensus_usd, n_families, dispersion with high and low family, the families used, mark_vs_print), family_marks[] (each family's mark by as-of date with n_funds, intra_family_split, mark_vs_print and documents[] carrying accession and document_url), revisions[].",
+      last_print: "The latest priced round or IPO on or before today; null without one.",
+      prints:
+        "Every print: priced rounds and IPOs, and Form D offerings as evidence of size and date, each with its source.",
+      structure:
+        "The live certificate of incorporation's series table, the round it prices, and common_equivalent and structure_gap (or unsupported with the reason). Null until a certificate is transcribed.",
+      spv: "vehicles[] matched from Form D (with the latest filing's terms) and quotes[] from public pages with their premiums.",
+    } satisfies FieldDocs<RefNamePayload>,
+    example: "name",
+  },
+  {
+    id: "marks",
+    path: "/api/ref/{slug}/marks",
     query: [
-      ["from", "ISO 8601 instant; the window's start."],
-      ["to", "ISO 8601 instant; the window's end, default now."],
-      ...cursorQuery,
+      ...PAGE_QUERY,
+      [
+        "include",
+        "superseded: add the rows a later filing or a correction replaced. Default: live rows only.",
+      ],
+      ["label", "Only rows on this security label, exactly (Series F-1 Preferred)."],
     ],
-    summary: "Every published reference row and every dealer quote for a name, newest first.",
+    summary: `Every filer mark on the name as filed, in the order recorded, each with the document it came from. ${SLUG_404}`,
     fields: {
       ...ENVELOPE_FIELDS,
-      slug: "The name's slug.",
-      from: "The window's start, or null.",
-      to: "The window's end.",
-      references: "Published reference rows.",
-      quotes: "The dealer's quote tape.",
-      next_cursor: "Pass as cursor for the next page; null on the last.",
-    } satisfies FieldDocs<RefHistoryPayload>,
-    items: { name: "references[]", fields: historyReference },
-    example: "history",
+      families_version: FAMILIES_VERSION,
+      issuer: "slug, name and listed_on.",
+      include: "live, or superseded when superseded rows are included.",
+      security_label: "The label filter, or null.",
+      marks:
+        "One row each: mark_id, status (live or superseded), superseded_by, correction_id, series_status (in_series, or the rule that keeps a live row out), the label and kind, the holding as filed (name, title, asset category, balance, units, value_usd, fair-value level, restricted), mark_per_share_usd, as_of, recorded_at, the filer's family, and document (source class and rank, accession, document_url, form, filer, fund series, filed_on, period_end, content hash, parser version).",
+      next_cursor: "Pass as cursor for the next page; null on the last page.",
+    } satisfies FieldDocs<RefMarksPayload>,
+    example: "marks",
   },
   {
-    path: "/api/ref/{slug}/mids",
-    query: cursorQuery,
-    summary: "The model's forecast log for a name: every mid it published, newest first.",
+    id: "revisions",
+    path: "/api/ref/{slug}/revisions",
+    query: [],
+    summary: `Every family revision on the name across labels, oldest first, with the rule's constants. ${SLUG_404}`,
     fields: {
       ...ENVELOPE_FIELDS,
-      slug: "The name's slug.",
-      mids: "The model's mids.",
-      next_cursor: "Pass as cursor for the next page; null on the last.",
-    } satisfies FieldDocs<RefMidsPayload>,
-    items: { name: "mids[]", fields: mid },
-    example: "mids",
+      families_version: FAMILIES_VERSION,
+      issuer: ISSUER_SHORT,
+      rule: "revision_threshold_ln and leader_window_days, as the methodology sets them.",
+      revisions:
+        "security_label, family, from and to as-of dates and marks, ln, direction, role (leader or follower), the leader's family and date, and lag_days.",
+    } satisfies FieldDocs<RefRevisionsPayload>,
+    example: "revisions",
   },
   {
-    path: "/api/ref/{slug}/flags",
-    query: cursorQuery,
-    summary: "The events observed for a name and the mids that moved on them, newest first.",
+    id: "spv",
+    path: "/api/ref/{slug}/spv",
+    query: [],
+    summary: `The name's SPV panel: vehicles matched from Form D, and unit quotes from public pages with their premium over consensus. ${SLUG_404}`,
     fields: {
       ...ENVELOPE_FIELDS,
-      slug: "The name's slug.",
-      flags: "Observed events.",
-      next_cursor: "Pass as cursor for the next page; null on the last.",
-    } satisfies FieldDocs<RefFlagsPayload>,
-    items: { name: "flags[]", fields: flag },
-    example: "flags",
+      families_version: FAMILIES_VERSION,
+      issuer: ISSUER_SHORT,
+      headline: "The label and quarter premiums are computed against, as in /api/ref/{slug}.",
+      vehicles:
+        "vehicle_name, vehicle_cik, match_method and match_note, latest_filing (accession, document_url, offering and sold amounts, minimum, fees, first sale, jurisdiction, related persons) and n_filings.",
+      quotes:
+        "platform, captured_at, the captured page (document_url, content hash), the quoted price and fees as the page states them, and premium (or none with the reason).",
+    } satisfies FieldDocs<RefSpvPayload>,
+    example: "spv",
   },
   {
+    id: "methodology",
+    path: "/api/ref/methodology",
+    query: [["include", "families: add every filer family with its CIKs and evidence."]],
+    summary:
+      "The methodology's constants as the engine exports them, and the inputs its rules read that exist as data. In prose at /methodology.",
+    fields: {
+      ...ENVELOPE_FIELDS,
+      families_version: FAMILIES_VERSION,
+      methodology:
+        "Every constant: methodology_version, ce_version, ce_basis, per_share_units, revision_threshold_ln, leader_window_days, intra_family_split_tolerance, min_families_for_dispersion.",
+      security_labels:
+        "Which labels enter per-share series (Common, and labels matching per_share_series_pattern), the labels that do not, and the security kinds.",
+      listings:
+        "Names whose final prospectus is on EDGAR, with its date and URL: marks as of that date or later enter no series.",
+      families:
+        "The families file: version, note, n_families, n_ciks; list[] with include=families.",
+    } satisfies FieldDocs<RefMethodologyPayload>,
+    example: "methodology",
+  },
+  {
+    id: "corrections",
+    path: "/api/ref/corrections",
+    query: PAGE_QUERY,
+    summary:
+      "Every published correction, newest first. A correction writes new rows and supersedes the old; nothing is edited in place.",
+    fields: {
+      ...ENVELOPE_FIELDS,
+      corrections:
+        "correction_id, published_at, methodology_version, kind (row, methodology or parser), summary, diff_md, affected, and rows_written per table.",
+      next_cursor: "Pass as cursor for the next page; null on the last page.",
+    } satisfies FieldDocs<RefCorrectionsPayload>,
+    example: "corrections",
+  },
+  {
+    id: "rulebook",
     path: "/api/ref/rulebook",
     query: [],
     summary:
-      "The settlement rulebook as data, with the rules not yet enforced. In prose at /rulebook.",
+      "The settlement rulebook as data, with the rules not yet served. In prose at /rulebook.",
     fields: {
       ...ENVELOPE_FIELDS,
       rulebook:
-        "The rules: print, announcement, source ranks, revision, the binary's and the forward's.",
-      not_built: "Rules that are the contract's intent but not enforced by the code yet.",
-    },
-    example: "rulebook",
+        "The rules: print, announcement, source ranks, revision, the source classes ranked within each purpose, and the rules every contract on the index shares.",
+      not_built: "Rules that are the contracts' intent but not served by the code yet.",
+    } satisfies FieldDocs<RulebookPayload>,
   },
 ];
 
-export const QUOTE_FIELDS = historyQuote;
-
-/** A copy of `value` with every withheld key removed, at any depth. */
-export function withholdKeys(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(withholdKeys);
-  if (value !== null && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value)
-        .filter(([key]) => !(WITHHELD_KEYS as readonly string[]).includes(key))
-        .map(([key, child]) => [key, withholdKeys(child)]),
-    );
-  }
-  return value;
+export interface DatasetDoc {
+  readonly path: string;
+  readonly summary: string;
+  readonly query: readonly (readonly [string, string])[];
 }
 
-/** The first `count` entries of every array, so an example stays readable. */
-export function firstEntries(value: unknown, count: number): unknown {
-  if (Array.isArray(value)) return value.slice(0, count).map((item) => firstEntries(item, count));
-  if (value !== null && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, child]) => [key, firstEntries(child, count)]),
-    );
-  }
-  return value;
-}
+/** The CSV downloads (src/app/data/*.csv/route.ts), CC BY 4.0. */
+export const DATASETS: readonly DatasetDoc[] = [
+  {
+    path: "/data/filer-marks.csv",
+    summary:
+      "Every filer mark, one row per holding as filed: the label, balance, value and per-share mark, the filer's family, and the document's accession and URL.",
+    query: [
+      ["include", "superseded: add replaced rows, with status and superseded_by."],
+      ["issuer", "One name's rows (a slug: anthropic); the file each name page links."],
+    ],
+  },
+  {
+    path: "/data/certificate-terms.csv",
+    summary:
+      "One row per series of each transcribed certificate of incorporation: original issue price, preference, participation, seniority, shares authorized, with the certificate's accession and URL.",
+    query: [["include", "superseded: add corrected transcriptions."]],
+  },
+  {
+    path: "/data/spv-matches.csv",
+    summary:
+      "One row per vehicle Form D: the vehicle, the name it is matched to (or unmatched) and how, the offering's terms, accession and URL.",
+    query: [["issuer", "One name's vehicles (a slug)."]],
+  },
+];

@@ -1,20 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { setTimeout as delay } from "node:timers/promises";
 
 import { type Kysely, sql } from "kysely";
 import { Client } from "pg";
 
-import {
-  createTournamentSession,
-  TOURNAMENT_SESSION_COOKIE,
-} from "../../src/lib/auth/tournament-session.js";
 import { createPooledDatabase, destroyDatabase } from "../../src/lib/db/client.js";
 import { createMigrator } from "../../src/lib/db/migrator.js";
-import type { CompanyRow, Database, MarketRow } from "../../src/lib/db/schema.js";
-import { seedBinary } from "../../src/lib/engine/dealer/binary.js";
-import { settleLmsrBook } from "../../src/lib/services/dealer/settle-lmsr-book.js";
-import { upsertIdentity } from "../../src/lib/services/tournament/sign-in.js";
-import { ensurePaperAccount } from "../../src/lib/services/user.js";
+import type { Database } from "../../src/lib/db/schema.js";
 
 export const TEST_DATABASE_SKIP_REASON =
   "DATABASE_URL_TEST is not set; PostgreSQL integration tests require a disposable database.";
@@ -25,11 +16,6 @@ export interface PostgresTestDatabase {
   readonly schema: string;
   readonly applicationName: string;
   dispose(): Promise<void>;
-}
-
-export interface HeldAdvisoryLock {
-  waitForWaiter(timeoutMs?: number): Promise<void>;
-  release(): Promise<void>;
 }
 
 export function testDatabaseUrl(): string | undefined {
@@ -156,6 +142,16 @@ export async function createPostgresTestDatabase(
 export async function resetPostgresTestDatabase(db: Kysely<Database>): Promise<void> {
   await sql`
     truncate table
+      ingest_runs,
+      spv_quotes,
+      spv_vehicles,
+      certificate_series,
+      certificates,
+      prints,
+      filer_marks,
+      corrections,
+      issuers,
+      source_documents,
       event_flag_reviews,
       tournament_restriction_companies,
       tournament_restriction_attestations,
@@ -195,173 +191,4 @@ export async function resetPostgresTestDatabase(db: Kysely<Database>): Promise<v
       companies
     restart identity cascade
   `.execute(db);
-}
-
-export async function holdAdvisoryLock(
-  testDatabase: PostgresTestDatabase,
-  key: bigint,
-): Promise<HeldAdvisoryLock> {
-  const blocker = new Client({ connectionString: testDatabase.connectionString });
-  await blocker.connect();
-  await blocker.query("begin");
-
-  try {
-    await blocker.query("select pg_advisory_xact_lock($1::bigint)", [key.toString()]);
-  } catch (error) {
-    await blocker.query("rollback").catch(() => undefined);
-    await blocker.end().catch(() => undefined);
-    throw error;
-  }
-
-  let released = false;
-  return {
-    async waitForWaiter(timeoutMs = 5_000): Promise<void> {
-      const observer = new Client({
-        connectionString: testDatabase.connectionString,
-      });
-      await observer.connect();
-      const deadline = Date.now() + timeoutMs;
-      try {
-        while (Date.now() < deadline) {
-          const result = await observer.query<{ waiter_count: string }>(
-            `select count(*)::text as waiter_count
-               from pg_locks locks
-               join pg_stat_activity activity on activity.pid = locks.pid
-              where locks.locktype = 'advisory'
-                and locks.granted = false
-                and activity.application_name = $1`,
-            [testDatabase.applicationName],
-          );
-          if (Number(result.rows[0]?.waiter_count ?? "0") > 0) return;
-          await delay(10);
-        }
-      } finally {
-        await observer.end();
-      }
-      throw new Error("Timed out waiting for the trade transaction to block");
-    },
-    async release(): Promise<void> {
-      if (released) return;
-      released = true;
-      try {
-        await blocker.query("commit");
-      } finally {
-        await blocker.end();
-      }
-    },
-  };
-}
-
-/**
- * A two-outcome LMSR book, the shape a dealer binary trades on, with its
- * sequence-0 mark. Fixture only: the dealer lists real books itself.
- */
-export async function createBinaryBook(
-  db: Kysely<Database>,
-  input: {
-    readonly slug: string;
-    readonly name?: string;
-    readonly b?: number;
-    readonly yesProbability?: number;
-  },
-): Promise<{ readonly company: CompanyRow; readonly market: MarketRow }> {
-  const b = input.b ?? 100;
-  const seeded = seedBinary(input.yesProbability ?? 0.5, b);
-  return db.transaction().execute(async (transaction) => {
-    const name = input.name ?? "Integration Market";
-    const company = await transaction
-      .insertInto("companies")
-      .values({ name, slug: input.slug, logo_path: "/integration.svg" })
-      .onConflict((conflict) => conflict.column("slug").doUpdateSet({ name }))
-      .returningAll()
-      .executeTakeFirstOrThrow();
-    const market = await transaction
-      .insertInto("markets")
-      .values({
-        company_id: company.id,
-        status: "open",
-        n_buckets: 2,
-        bucket_grid_version: "binary-v1",
-        metric_kind: "yes_probability",
-        anchor_valuation: null,
-        anchor_date: null,
-        anchor_description: null,
-        b,
-        sigma: null,
-        initial_q: [...seeded.q],
-        q: [...seeded.q],
-        current_metric: seeded.yesProbability,
-        settled_at: null,
-      })
-      .returningAll()
-      .executeTakeFirstOrThrow();
-    await transaction
-      .insertInto("marks")
-      .values({
-        market_id: market.id,
-        market_sequence: "0",
-        trade_id: null,
-        ts: sql<Date>`clock_timestamp()`,
-        value: market.current_metric,
-      })
-      .execute();
-    return { company, market };
-  });
-}
-
-/** Settles a fixture binary book YES or NO through the settle job's LMSR payout. */
-export async function settleBinaryBook(
-  db: Kysely<Database>,
-  marketId: string,
-  outcome: "yes" | "no",
-  sourceUrl = "https://example.test/settlement",
-): Promise<void> {
-  await db.transaction().execute(async (transaction) => {
-    const market = await transaction
-      .selectFrom("markets")
-      .select(["id as market_id", "n_buckets", "mm_cash_flow_cents", "rounding_reserve_cents"])
-      .where("id", "=", marketId)
-      .forUpdate()
-      .executeTakeFirstOrThrow();
-    const { ts } = await transaction
-      .selectNoFrom(sql<Date>`clock_timestamp()`.as("ts"))
-      .executeTakeFirstOrThrow();
-    await settleLmsrBook(transaction, {
-      market,
-      winningBucket: outcome === "yes" ? 1 : 0,
-      settledValue: outcome === "yes" ? "1.00" : "0.00",
-      sourceUrl,
-      sourceDescription: null,
-      ts,
-    });
-  });
-}
-
-export interface TestTrader {
-  /** The paper account (`users.id`). */
-  readonly id: string;
-  readonly tournamentUserId: string;
-  readonly handle: string;
-}
-
-/** A development-provider tournament identity with its paper account open. */
-export async function createTrader(db: Kysely<Database>, handle: string): Promise<TestTrader> {
-  const { userId: tournamentUserId } = await upsertIdentity(db, {
-    provider: "dev",
-    providerUserId: handle.toLowerCase(),
-    handle,
-    displayName: handle,
-    avatarUrl: null,
-    verified: false,
-    providerCreatedAt: null,
-  });
-  return { id: await ensurePaperAccount(db, tournamentUserId), tournamentUserId, handle };
-}
-
-/** A `Cookie` header value carrying a fresh session for the tournament user. */
-export async function sessionCookie(
-  db: Kysely<Database>,
-  tournamentUserId: string,
-): Promise<string> {
-  return `${TOURNAMENT_SESSION_COOKIE}=${await createTournamentSession(db, tournamentUserId)}`;
 }

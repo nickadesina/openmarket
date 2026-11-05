@@ -2,6 +2,9 @@
  * Layer audit: import direction inside src, enforced.
  *
  *   engine      → engine only, no packages. Pure arithmetic.
+ *   ingest/parse → engine and ingest/parse only; of packages, zod. Pure parsers.
+ *   ingest/fetch → ingest and node: builtins only. The only network code.
+ *   ingest/*    → never db, services, components, app or lib/client.
  *   services    → never components, app, or lib/client; never react or next.
  *   lib/client  → never db or a service's runtime code (types are fine).
  *   components  → never db; services only as `import type`; never node: builtins.
@@ -34,8 +37,22 @@ function walk(dir: string, out: string[] = []): string[] {
 
 function layerOf(
   file: string,
-): "engine" | "services" | "db" | "client" | "lib" | "components" | "app" | "other" {
+):
+  | "engine"
+  | "ingest-parse"
+  | "ingest-fetch"
+  | "ingest"
+  | "services"
+  | "db"
+  | "client"
+  | "lib"
+  | "components"
+  | "app"
+  | "other" {
   if (file.startsWith("src/lib/engine/")) return "engine";
+  if (file.startsWith("src/lib/ingest/parse/")) return "ingest-parse";
+  if (file.startsWith("src/lib/ingest/fetch/")) return "ingest-fetch";
+  if (file.startsWith("src/lib/ingest/")) return "ingest";
   if (file.startsWith("src/lib/services/")) return "services";
   if (file.startsWith("src/lib/db/")) return "db";
   if (file.startsWith("src/lib/client/")) return "client";
@@ -120,9 +137,24 @@ for (const absolute of walk(join(ROOT, "src"))) {
     const targetLayer = isRelative ? layerOf(`${target}.ts`) : "package";
     const fail = (rule: string) => violations.push({ file, line, rule, specifier });
 
+    const isIngest = (target: string) =>
+      target === "ingest-parse" || target === "ingest-fetch" || target === "ingest";
+
     switch (layer) {
       case "engine":
         if (!isRelative || targetLayer !== "engine") fail("engine imports engine only");
+        break;
+      case "ingest-parse":
+        if (isRelative ? !["engine", "ingest-parse"].includes(targetLayer) : specifier !== "zod")
+          fail("ingest/parse imports engine, ingest/parse and zod only");
+        break;
+      case "ingest-fetch":
+        if (isRelative ? !isIngest(targetLayer) : !specifier.startsWith("node:"))
+          fail("ingest/fetch imports ingest and node builtins only");
+        break;
+      case "ingest":
+        if (isRelative && !(isIngest(targetLayer) || targetLayer === "engine"))
+          fail("ingest never imports db, services or UI");
         break;
       case "services":
         if (targetLayer === "components" || targetLayer === "app" || targetLayer === "client")

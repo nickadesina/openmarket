@@ -1,6 +1,28 @@
 import type { ColumnType, Generated, Insertable, Selectable, Updateable } from "kysely";
-import type { FlagKind } from "../engine/dealer/lifecycle.js";
-import type { Tier } from "../engine/dealer/prior.js";
+
+import type { SecurityKind } from "../engine/index/series.js";
+import type { SourceClass } from "../engine/rulebook.js";
+
+/*
+ * Most tables below are v1's (the dealer and the tournament, archived at the
+ * tags `archive/dealer-v1` and `archive/tournament-v1`). They stay in the
+ * database and in this schema because migrations 001-019 created them; v2
+ * code reads only `api_keys`, `api_key_usage` and `rate_limits` of them, and
+ * the marks index's own tables (migration 020, after the v1 tables below).
+ */
+
+/** `event_flags.kind` (decision 0001); inlined from v1's dealer lifecycle (tag archive/dealer-v1). */
+export type FlagKind =
+  | "form_d"
+  | "form_d_amend"
+  | "charter"
+  | "scoop"
+  | "release"
+  | "s1_public"
+  | "print"
+  | "user_submitted";
+/** `listings.tier`; inlined from v1's dealer prior (tag archive/dealer-v1). */
+export type Tier = "mega" | "redhot";
 
 export type MarketStatus = "open" | "settled";
 /**
@@ -535,6 +557,190 @@ export interface DealerPnlView {
   current_metric: ColumnType<number, never, never>;
 }
 
+/*
+ * The marks index (migration 020; docs/prompts/v2/README.md, "Data model").
+ * `numeric` columns arrive from pg as decimal strings and are written as
+ * strings, so no per-share mark passes through a float. Only
+ * `filer_marks.superseded_by` (once) and `issuers`' watchlist fields change
+ * after insert; triggers hold source_documents and corrections append-only.
+ */
+
+/** `source_documents.source_class`: the rulebook's classes; `source_rank` is `sourceRank(class)`. */
+export type IndexSourceClass = SourceClass;
+
+/** `filer_marks.security_kind`: the engine's kinds (src/lib/engine/index/series.ts). */
+export type { SecurityKind };
+
+/** A decimal string: pg's representation of `numeric`. */
+type Numeric = string;
+
+export interface IssuersTable {
+  id: GeneratedImmutable<string>;
+  slug: Immutable<string>;
+  name: string;
+  legal_name: string | null;
+  search_phrases: ColumnType<string[], string, string>;
+  match_pattern: string;
+  incorporation_state: string | null;
+  incorporation_source_id: string | null;
+  watchlisted: ColumnType<boolean, boolean | undefined, boolean>;
+  created_at: GeneratedImmutable<Date>;
+  /** The date of the issuer's final IPO prospectus on EDGAR (migration 022); null while private. */
+  listed_on: ColumnType<string | null, string | null | undefined, string | null>;
+  listing_url: ColumnType<string | null, string | null | undefined, string | null>;
+}
+
+export interface SourceDocumentsTable {
+  id: GeneratedImmutable<string>;
+  source_class: Immutable<IndexSourceClass>;
+  source_rank: Immutable<number>;
+  accession: Immutable<string | null>;
+  document_url: Immutable<string>;
+  filer_cik: Immutable<string | null>;
+  filer_name: Immutable<string>;
+  fund_series_id: Immutable<string | null>;
+  fund_series_name: Immutable<string | null>;
+  form_type: Immutable<string | null>;
+  filed_on: Immutable<string | null>;
+  period_end: Immutable<string | null>;
+  fetched_at: Immutable<Date>;
+  content_sha256: Immutable<string>;
+  parser_version: Immutable<string>;
+}
+
+export interface FilerMarksTable {
+  id: GeneratedImmutable<string>;
+  document_id: Immutable<string>;
+  issuer_id: Immutable<string>;
+  holding_index: Immutable<number>;
+  holding_name: Immutable<string>;
+  holding_title: Immutable<string>;
+  asset_category: Immutable<string | null>;
+  security_label: Immutable<string>;
+  security_kind: Immutable<SecurityKind>;
+  balance: Immutable<Numeric | null>;
+  units: Immutable<string | null>;
+  value_usd: Immutable<Numeric>;
+  mark_per_share_usd: Immutable<Numeric | null>;
+  fair_value_level: Immutable<string | null>;
+  is_restricted: Immutable<boolean | null>;
+  as_of: Immutable<string>;
+  /** Set once, when a later filing replaces this row. */
+  superseded_by: ColumnType<string | null, string | null | undefined, string>;
+  correction_id: Immutable<string | null>;
+  created_at: GeneratedImmutable<Date>;
+}
+
+export type PrintOrigin = "events.csv" | "certificate" | "form_d";
+
+export interface PrintsTable {
+  id: GeneratedImmutable<string>;
+  issuer_id: Immutable<string>;
+  round_name: Immutable<string>;
+  event_type: string;
+  announced_on: string;
+  post_money_usd: Numeric | null;
+  amount_raised_usd: Numeric | null;
+  series_label: string | null;
+  price_per_share_usd: Numeric | null;
+  price_source_id: string | null;
+  source_url: string | null;
+  origin: PrintOrigin;
+}
+
+export interface CertificatesTable {
+  id: GeneratedImmutable<string>;
+  issuer_id: Immutable<string>;
+  document_id: Immutable<string>;
+  filed_on: Immutable<string>;
+  kind: Immutable<"restated" | "amendment">;
+  entered_by: Immutable<string>;
+  notes: string | null;
+  /** SHA-256 of the transcription as imported (migration 022). */
+  transcription_sha256: Immutable<string>;
+  /** Set once, when a changed transcription corrects this one. */
+  superseded_by: ColumnType<string | null, string | null | undefined, string>;
+  correction_id: Immutable<string | null>;
+  created_at: GeneratedImmutable<Date>;
+  /** Migration 023: the series the filing creates. */
+  newest_series_label: Immutable<string>;
+  common_shares_authorized: Immutable<Numeric | null>;
+  unmodelled_terms: ColumnType<string[], string | undefined, never>;
+}
+
+export interface CertificateSeriesTable {
+  id: GeneratedImmutable<string>;
+  certificate_id: Immutable<string>;
+  series_label: Immutable<string>;
+  original_issue_price_usd: Immutable<Numeric>;
+  liquidation_multiple: Immutable<Numeric>;
+  participating: Immutable<boolean>;
+  participation_cap_multiple: Immutable<Numeric | null>;
+  seniority: Immutable<number>;
+  shares_authorized: Immutable<Numeric>;
+  conversion_price_usd: Immutable<Numeric | null>;
+  ratchet: Immutable<JsonValue | null>;
+}
+
+export type SpvMatchMethod = "alias" | "manual" | "unmatched";
+
+export interface SpvVehiclesTable {
+  id: GeneratedImmutable<string>;
+  document_id: Immutable<string>;
+  issuer_id: string | null;
+  vehicle_name: Immutable<string>;
+  vehicle_cik: Immutable<string>;
+  related_persons: ColumnType<JsonValue, string | undefined, string>;
+  jurisdiction: Immutable<string | null>;
+  total_offering_usd: Immutable<Numeric | null>;
+  total_sold_usd: Immutable<Numeric | null>;
+  min_investment_usd: Immutable<Numeric | null>;
+  sales_commission_usd: Immutable<Numeric | null>;
+  finders_fee_usd: Immutable<Numeric | null>;
+  first_sale_on: Immutable<string | null>;
+  match_method: SpvMatchMethod;
+  match_note: string | null;
+}
+
+export interface SpvQuotesTable {
+  id: GeneratedImmutable<string>;
+  issuer_id: Immutable<string>;
+  spv_vehicle_id: Immutable<string | null>;
+  document_id: Immutable<string>;
+  platform: Immutable<string>;
+  quoted_price_per_share_usd: Immutable<Numeric | null>;
+  quoted_valuation_usd: Immutable<Numeric | null>;
+  upfront_fee_pct: Immutable<Numeric | null>;
+  mgmt_fee_pct: Immutable<Numeric | null>;
+  carry_pct: Immutable<Numeric | null>;
+  layers: ColumnType<number, number | undefined, never>;
+  captured_at: Immutable<Date>;
+}
+
+export interface CorrectionsTable {
+  id: GeneratedImmutable<string>;
+  published_at: Immutable<Date>;
+  methodology_version: Immutable<string>;
+  kind: Immutable<"row" | "methodology" | "parser">;
+  summary: Immutable<string>;
+  diff_md: Immutable<string>;
+  affected: ColumnType<JsonValue, string, never>;
+}
+
+export type IngestRunStatus = "running" | "ok" | "failed";
+
+export interface IngestRunsTable {
+  id: GeneratedImmutable<string>;
+  source_class: Immutable<IndexSourceClass>;
+  started_at: GeneratedImmutable<Date>;
+  finished_at: Date | null;
+  status: IngestRunStatus;
+  documents_seen: ColumnType<number, number | undefined, number>;
+  documents_new: ColumnType<number, number | undefined, number>;
+  marks_new: ColumnType<number, number | undefined, number>;
+  error: string | null;
+}
+
 export interface Database {
   companies: CompaniesTable;
   markets: MarketsTable;
@@ -575,6 +781,16 @@ export interface Database {
   event_flag_reviews: EventFlagReviewsTable;
   tournament_restriction_attestations: TournamentRestrictionAttestationsTable;
   tournament_restriction_companies: TournamentRestrictionCompaniesTable;
+  issuers: IssuersTable;
+  source_documents: SourceDocumentsTable;
+  filer_marks: FilerMarksTable;
+  prints: PrintsTable;
+  certificates: CertificatesTable;
+  certificate_series: CertificateSeriesTable;
+  spv_vehicles: SpvVehiclesTable;
+  spv_quotes: SpvQuotesTable;
+  corrections: CorrectionsTable;
+  ingest_runs: IngestRunsTable;
 }
 
 export type CompanyRow = Selectable<CompaniesTable>;
@@ -632,3 +848,18 @@ export type ForwardPositionUpdate = Updateable<ForwardPositionsTable>;
 
 export type ReferencePriceRow = Selectable<ReferencePricesTable>;
 export type ReferencePriceInsert = Insertable<ReferencePricesTable>;
+
+export type IssuerRow = Selectable<IssuersTable>;
+export type IssuerInsert = Insertable<IssuersTable>;
+export type SourceDocumentRow = Selectable<SourceDocumentsTable>;
+export type SourceDocumentInsert = Insertable<SourceDocumentsTable>;
+export type FilerMarkRow = Selectable<FilerMarksTable>;
+export type FilerMarkInsert = Insertable<FilerMarksTable>;
+export type PrintRow = Selectable<PrintsTable>;
+export type PrintInsert = Insertable<PrintsTable>;
+export type CertificateRow = Selectable<CertificatesTable>;
+export type CertificateSeriesRow = Selectable<CertificateSeriesTable>;
+export type SpvVehicleRow = Selectable<SpvVehiclesTable>;
+export type SpvQuoteRow = Selectable<SpvQuotesTable>;
+export type CorrectionRow = Selectable<CorrectionsTable>;
+export type IngestRunRow = Selectable<IngestRunsTable>;

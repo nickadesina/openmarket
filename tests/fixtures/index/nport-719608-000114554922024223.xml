@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?><edgarSubmission xmlns="http://www.sec.gov/edgar/nport" xmlns:com="http://www.sec.gov/edgar/common" xmlns:ncom="http://www.sec.gov/edgar/nportcommon" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <headerData>
+    <submissionType>NPORT-P</submissionType>
+    <isConfidential>false</isConfidential>
+    <filerInfo>
+
+      <filer>
+        <issuerCredentials>
+          <cik>0000719608</cik>
+          <ccc>XXXXXXXX</ccc>
+        </issuerCredentials>
+      </filer>
+
+
+      <seriesClassInfo>
+        <seriesId>S000009598</seriesId>
+        <classId>C000026242</classId>
+        <classId>C000164821</classId>
+        <classId>C000026236</classId>
+        <classId>C000026248</classId>
+        <classId>C000026246</classId>
+        <classId>C000026244</classId>
+        <classId>C000224595</classId>
+        <classId>C000026238</classId>
+        <classId>C000026235</classId>
+        <classId>C000068559</classId>
+        <classId>C000179981</classId>
+        <classId>C000224596</classId>
+        <classId>C000026239</classId>
+        <classId>C000189496</classId>
+        <classId>C000077861</classId>
+        <classId>C000026240</classId>
+        <classId>C000189497</classId>
+        <classId>C000026243</classId>
+        <classId>C000026247</classId>
+        <classId>C000148459</classId>
+        <classId>C000026237</classId>
+      </seriesClassInfo>
+
+
+    </filerInfo>
+  </headerData>
+  <formData>
+    <genInfo>
+      <regName>New Economy Fund</regName>
+      <regFileNumber>811-03735</regFileNumber>
+      <regCik>0000719608</regCik>
+      <regLei>J154YSXJZPP8R8ZPNM12</regLei>
+      <regStreet1>333 South Hope Street</regStreet1>
+      <regStreet2>55th Floor</regStreet2>
+      <regCity>Los Angeles</regCity>
+      <regStateConditional regCountry="US" regState="US-CA"/>
+      <regZipOrPostalCode>90071</regZipOrPostalCode>
+      <regPhone>9499755000</regPhone>
+      <seriesName>New Economy Fund</seriesName>
+      <seriesId>S000009598</seriesId>
+      <seriesLei>J154YSXJZPP8R8ZPNM12</seriesLei>
+      <repPdEnd>2022-11-30</repPdEnd>
+      <repPdDate>2022-02-28</repPdDate>
+      <isFinalFiling>N</isFinalFiling>
+    </genInfo>
+    <fundInfo>
+      <totAssets>30299781409.780000000000</totAssets>
+      <totLiabs>96728163.820000000000</totLiabs>
+      <netAssets>30203053245.960000000000</netAssets>
+      <assetsAttrMiscSec>0.000000000000</assetsAttrMiscSec>
+      <assetsInvested>0.000000000000</assetsInvested>
+      <amtPayOneYrBanksBorr>0.000000000000</amtPayOneYrBanksBorr>
+      <amtPayOneYrCtrldComp>0.000000000000</amtPayOneYrCtrldComp>
+      <amtPayOneYrOthAffil>0.000000000000</amtPayOneYrOthAffil>
+      <amtPayOneYrOther>0.000000000000</amtPayOneYrOther>
+      <amtPayAftOneYrBanksBorr>0.000000000000</amtPayAftOneYrBanksBorr>
+      <amtPayAftOneYrCtrldComp>0.000000000000</amtPayAftOneYrCtrldComp>
+      <amtPayAftOneYrOthAffil>0.000000000000</amtPayAftOneYrOthAffil>
+      <amtPayAftOneYrOther>0.000000000000</amtPayAftOneYrOther>
+      <delayDeliv>0.000000000000</delayDeliv>
+      <standByCommit>0.000000000000</standByCommit>
+      <liquidPref>0.000000000000</liquidPref>
+      <cshNotRptdInCorD>0.000000000000</cshNotRptdInCorD>
+      <borrowers>
+        <borrower aggrVal="7371748.250000000000" lei="1V8Y6QCX6YMJ2OELII46" name="CREDIT SUISSE SEC (USA) LLC"/>
+        <borrower aggrVal="126860.000000000000" lei="549300445CON3DBMU275" name="CIBC WORLD MARKETS CORP"/>
+        <borrower aggrVal="29990037.710000000000" lei="549300HN4UKV1E2R3U73" name="BOFA SECURITIES  INC."/>
+        <borrower aggrVal="302642.000000000000" lei="549300JRHF1MHHWUAW04" name="NATIONAL FINANCIAL SERVICE LLC"/>
+        <borrower aggrVal="4958982.000000000000" lei="549300K66TF1ST7A3V76" name="NATL BK OF CAD FINANCIAL INC."/>
+        <borrower aggrVal="24593432.850000000000" lei="549300KUN9K9K32C6D97" name="BNP PARIBAS PB INTL LTD"/>
+        <borrower aggrVal="5332800.800000000000" lei="549300QJJX6CVVUXLE15" name="RBC DOMINION SECURITIES INC"/>
+        <borrower aggrVal="8879714.200000000000" lei="9R7GPTSO7KV3UQJZQ078" name="MORGAN STANLEY &amp; CO. LLC"/>
+        <borrower aggrVal="2512652.590000000000" lei="BFM8T61CT2L1QCEMIK50" name="UBS AG LONDON"/>
+        <borrower aggrVal="28551928.000000000000" lei="FOR8UP27PHTHYVLBNG30" name="GOLDMAN SACHS &amp; CO. LLC"/>
+        <borrower aggrVal="25764130.240000000000" lei="G5GSEF7VJP5I7OUK5573" name="BARCLAYS BANK PLC"/>
+        <borrower aggrVal="416271.800000000000" lei="MBNUM2BPBDO7JBLYG310" name="CITIGROUP GLOBAL MARKETS INC"/>
+        <borrower aggrVal="1617465.000000000000" lei="RCNB6OTYUAMMP879YW96" name="BNP PARIBAS SECURITIES CORP"/>
+        <borrower aggrVal="1910268.000000000000" lei="RUC0QBLBRPRCU4W1NE59" name="BMO CAPITAL MARKETS CORP"/>
+        <borrower aggrVal="11698988.280000000000" lei="T6FIZBDPKLYJKFCRVK44" name="UBS SECURITIES LLC"/>
+        <borrower aggrVal="2465226.000000000000" lei="VYVVCKR63DVZZN70PB21" name="WELLS FARGO SECURITIES LLC"/>
+        <borrower aggrVal="3095140.740000000000" lei="ZBUT11V806EZRVTWT807" name="J.P. MORGAN SECURITIES LLC"/>
+        <borrower aggrVal="414736.240000000000" lei="ZI8Q1A8EI8LQFJNM0D94" name="PERSHING LLC"/>
+      </borrowers>
+      <isNonCashCollateral>N</isNonCashCollateral>
+      <returnInfo>
+        <monthlyTotReturns>
+          <monthlyTotReturn classId="C000026235" rtn1="1.798914990000" rtn2="-11.997576000000" rtn3="-2.591656000000"/>
+          <monthlyTotReturn classId="C000026236" rtn1="1.731581990000" rtn2="-12.056364000000" rtn3="-2.655828000000"/>
+          <monthlyTotReturn classId="C000026237" rtn1="1.729962000000" rtn2="-12.049927000000" rtn3="-2.673868000000"/>
+          <monthlyTotReturn classId="C000026238" rtn1="1.758650000000" rtn2="-12.012249990000" rtn3="-2.625745000000"/>
+          <monthlyTotReturn classId="C000026239" rtn1="1.783136000000" rtn2="-11.994181000000" rtn3="-2.601751000000"/>
+          <monthlyTotReturn classId="C000026240" rtn1="1.813605990000" rtn2="-11.972008000000" rtn3="-2.564769990000"/>
+          <monthlyTotReturn classId="C000026242" rtn1="1.724623990000" rtn2="-12.042802000000" rtn3="-2.660500000000"/>
+          <monthlyTotReturn classId="C000026243" rtn1="1.782386000000" rtn2="-12.001718000000" rtn3="-2.601440000000"/>
+          <monthlyTotReturn classId="C000026244" rtn1="1.804508000000" rtn2="-12.002668000000" rtn3="-2.591904000000"/>
+          <monthlyTotReturn classId="C000026246" rtn1="1.739071990000" rtn2="-12.067613000000" rtn3="-2.639425000000"/>
+          <monthlyTotReturn classId="C000026247" rtn1="1.776905000000" rtn2="-12.004680000000" rtn3="-2.614348000000"/>
+          <monthlyTotReturn classId="C000026248" rtn1="1.806363990000" rtn2="-11.976760000000" rtn3="-2.590324990000"/>
+          <monthlyTotReturn classId="C000068559" rtn1="1.827745990000" rtn2="-11.976130000000" rtn3="-2.573674990000"/>
+          <monthlyTotReturn classId="C000077861" rtn1="1.817467990000" rtn2="-11.962000000000" rtn3="-2.574490000000"/>
+          <monthlyTotReturn classId="C000148459" rtn1="1.755052000000" rtn2="-12.025299000000" rtn3="-2.639791990000"/>
+          <monthlyTotReturn classId="C000164821" rtn1="1.819399990000" rtn2="-11.984620000000" rtn3="-2.586598000000"/>
+          <monthlyTotReturn classId="C000179981" rtn1="1.835556000000" rtn2="-11.981300000000" rtn3="-2.558515990000"/>
+          <monthlyTotReturn classId="C000189496" rtn1="1.808864000000" rtn2="-11.966350000000" rtn3="-2.588050000000"/>
+          <monthlyTotReturn classId="C000189497" rtn1="1.810513000000" rtn2="-11.972665000000" rtn3="-2.565419990000"/>
+          <monthlyTotReturn classId="C000224595" rtn1="1.811163990000" rtn2="-11.976480000000" rtn3="-2.587145990000"/>
+          <monthlyTotReturn classId="C000224596" rtn1="1.823655000000" rtn2="-11.981408000000" rtn3="-2.570824000000"/>
+        </monthlyTotReturns>
+        <othMon1 netRealizedGain="379281756.75" netUnrealizedAppr="14931571071.38"/>
+        <othMon2 netRealizedGain="266735532.67" netUnrealizedAppr="-4476170362.54"/>
+        <othMon3 netRealizedGain="102555829.89" netUnrealizedAppr="-912982437.44"/>
+      </returnInfo>
+      <mon1Flow redemption="487266810.5400" reinvestment="2439811018.1000" sales="472100541.0200"/>
+      <mon2Flow redemption="412893494.0200" reinvestment="553.2600" sales="435880487.2300"/>
+      <mon3Flow redemption="321010736.3200" reinvestment="312.1900" sales="352537565.7200"/>
+
+    </fundInfo>
+    <invstOrSecs>
+      <invstOrSec>
+        <name>SK HYNIX INC</name>
+        <lei>988400XAIK6XISWQV045</lei>
+        <title>SK HYNIX INC</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <isin value="KR7000660001"/>
+          <ticker value="000660"/>
+          <other otherDesc="CG Symbol" value="000660"/>
+        </identifiers>
+        <balance>1719963.000000000000</balance>
+        <units>NS</units>
+        <currencyConditional curCd="KRW" exchangeRt="1202.350000"/>
+        <valUSD>177935884.340000000000</valUSD>
+        <pctVal>0.5891321082</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>KR</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+        <fairValLevel>2</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>HEFEI MEYER OPTOELECTRONIC TECHNOLOGY INC</name>
+        <lei>N/A</lei>
+        <title>HEFEI MEYER OPTOELECTRONIC TECHNOLOGY INC A (SZSE NORTH)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <isin value="CNE100001JZ1"/>
+          <ticker value="002690"/>
+          <other otherDesc="CG Symbol" value="002690.ZK"/>
+        </identifiers>
+        <balance>3843219.000000000000</balance>
+        <units>NS</units>
+        <currencyConditional curCd="CNY" exchangeRt="6.311049"/>
+        <valUSD>22081448.590000000000</valUSD>
+        <pctVal>0.0731099880</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>CN</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+        <fairValLevel>2</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>EPIC GAMES INC</name>
+        <lei>549300I2RHITL4UP9K78</lei>
+        <title>EPIC GAMES INC PP (DRS) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="748448Z"/>
+          <other otherDesc="CGSymbol" value="ECE283892"/>
+        </identifiers>
+        <balance>84438.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>92518716.600000000000</valUSD>
+        <pctVal>0.3063223968</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+    </invstOrSecs>
+    <signature>
+      <ncom:dateSigned>2022-04-27</ncom:dateSigned>
+      <ncom:nameOfApplicant>New Economy Fund</ncom:nameOfApplicant>
+      <ncom:signature>Scott Lewis</ncom:signature>
+      <ncom:signerName>Scott Lewis</ncom:signerName>
+      <ncom:title>Analyst</ncom:title>
+    </signature>
+  </formData>
+  <documents>XXXX</documents>
+</edgarSubmission>

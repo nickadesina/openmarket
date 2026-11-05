@@ -1,151 +1,291 @@
 # Contracts
 
-Normative definition of the two instruments OpenMarket trades per listed
-name. `README.md` section 2 records the product decision (D10–D14);
-`TECHNICAL_DESIGN.md` says how they are built. Where this file and the
-Claude Doc "OpenMarket Contract Specification — Agent & Dependency-Graph
-Guide" differ, this file wins. A rule marked *not built* is the
-contract's intent; the code does not enforce it yet.
+Normative specification of five contracts that settle on the OpenMarket
+marks index (decision `0003`, README D15). **OpenMarket designs these
+contracts and quotes, lists and settles none of them.** A venue that
+lists one licenses the feed and names, in its own rulebook, the
+`methodology_version`, the `ce_version` where the contract uses one, and
+the `rulebook_version` the contract settles under; the venue runs the
+book, holds the collateral, applies its restricted-person rule and
+pays. Nothing here is an offer, a quote or a view on where any name
+should trade.
+
+The index is specified by `METHODOLOGY.md` (normative for every series);
+the formulas below restate it for reading and yield to it where they
+differ. The rules the contracts share are code
+(`src/lib/engine/rulebook.ts`, `RULEBOOK.contracts`), versioned, and
+published at `/rulebook` and `GET /api/ref/rulebook`. A rule marked *not
+built* is the contracts' intent; the code does not serve it yet. v1's
+contracts (the dealer's quarterly binary and next-print forward) are in
+`docs/archive/v1/CONTRACTS-v1.md`.
+
+| Contract | Settles on | Why it is better than the v1 forward |
+| --- | --- | --- |
+| 1. Mark-level binary | Whether a named filer's next disclosed mark on a series is above a strike | Short-dated, resolves on a filing; the edge belongs to people who talk to GPs, not company insiders |
+| 2. Dispersion range | High minus low across filers on a series at the next filing date | A view on disagreement, not on level; nobody inside the company has an edge |
+| 3. Mark versus print | Where the next priced round lands relative to the consensus mark | The one number the whole thesis reduces to; settles on a certificate |
+| 4. Perp basis | The log difference between a perp venue's mark at expiry and the next certificate price | The tracking error every perp venue and hedging desk carries and cannot price; the venue is the natural customer |
+| 5. Structure spread | The headline valuation versus the certificate's common-equivalent at the next round | Prices how much of the headline is preference stack |
+
+Contracts 1 and 2 settle on **marks**; contracts 3, 4 and 5 settle on
+the **next priced round**, through its certificate. The two families
+share some rules and differ on the rest, below.
 
 ## Definitions
 
 | Term | Definition |
 | --- | --- |
-| Listed name | A private company with two live contracts. Launch set: OpenAI, Anthropic, Anduril, Modal, Instinct. |
-| Listing rule | Last print ≥ ~$500M; last priced round ≤ 9 months ago; lead of last round identifiable from public record. Scale by adding names, never contract types or states. |
-| Print | Post-money of a **priced** primary equity round, publicly reported per the rulebook. For the labs, an IPO first-day-close market cap is also a print. Not: SAFEs, notes, same-price extensions, secondaries, tenders, debt. |
-| Announcement | First public, dated statement that a priced round closed. "In talks" reporting is not an announcement. |
-| Entry price F₀ | The side of the dealer's quote a position fills at when it opens (ask for a long, bid for a short), in ln USD. Each position carries its own F₀. |
-| Expiry T | Binary: calendar quarter-end. Forward: **per name** (`listings.forward_t_days`), rolling. |
-| Settlement hierarchy | Published, versioned source ranking. Rank 1 company/lead release; 2 SEC filing; 3 two independent Tier-1 outlets citing closed terms; 4 one Tier-1 outlet. A state charter never settles; it widens the forward like any flag (re-centring the mid on its price-per-share is *not built*). Rank 3–4 promotion waits for an admin queue that is *not built*: the settle job promotes rank 1–2 only. |
-| Clip κ | Symmetric bound on the forward's payout in log units. Default 1.0 (0.37×–2.72× of F₀). |
-| Position cap Q | Max net notional the dealer holds per side per name. Default $25,000. |
-| Void | A forward cancelled with full refund because no print occurred by T. A normal outcome, not an error. |
+| Index | OpenMarket's published series of private-company marks, derived from `filer_marks` rows under `METHODOLOGY_VERSION`. Every published number carries `methodology_version`, `ce_version`, `rulebook_version` and `as_of`. |
+| Name, label | An issuer (`issuers.slug`) and a security label (`Series F Preferred`, `Common`, …). Marks on different labels are never pooled. |
+| Filer mark | One per-share mark on one security, from one filer, as of one date, with its source document. Never adjusted, interpolated, smoothed or carried forward; a missing filing is a missing row. |
+| Source rank | A source class's rank within one purpose (`RULEBOOK.source_purposes`). For a filer mark: `ncsr` 1, `nport` 2, `fund_holdings_page` 3, `closed_end_nav` 4. For a round's per-share price and terms: `delaware_coi` 1. A rank picks which of one filer's documents stands for a security and date; it never weighs one filer against another. |
+| Filer family | Funds under one adviser, which share a valuation committee (`data/index/filer-families.json`). A family's mark on a label and date is the median of its funds' marks. "Filer" in a contract means a family. |
+| Quarter Q | A calendar quarter. A family's mark enters Q by its `as_of`; within Q each family contributes its latest mark. |
+| Consensus C | Per label per quarter, the median of family marks, with `n_families`. Never a mean. |
+| Dispersion | High minus low across families on a label in Q, as a percentage of the median: `100 · (max − min) / median`, the methodology's normalisation. Needs `n_families ≥ 2`. |
+| Repricing event | A priced round, tender or secondary, public S-1, IPO or acquisition of the name, announced per the rulebook at any rank, valuation disclosed or not. |
+| Print | The post-money of a priced primary equity round, publicly reported per the rulebook's print-side ranks (1 company or lead-investor release; 2 SEC filing; 3 two independent Tier-1 outlets; 4 one), with the 7-day revision window. |
+| Next round R | The first priced round announced strictly after listing and at or before the contract's deadline T, at any rank, valuation disclosed or not (`resolveNextRound`). |
+| Certificate price | The new series' original issue price per share in R's Delaware certificate of incorporation (`certificate_series.original_issue_price_usd`), as the index holds it. |
+| Common-equivalent CE | Under `CE_VERSION`: the certificate's waterfall evaluated at the headline post-money; the common's per-share payout times the fully diluted share count (`post_money / price per share`). Preferred share counts are shares authorized (`basis: "authorized"`, an upper bound on the preference stack). A ratchet, or any term the function does not model, returns `unsupported`. |
+| Deadline T | A print-settled contract's last date for R's announcement, and a mark-level binary's last date for the filer's mark to be published. A contract term. |
+| Settlement date | For a print-settled contract: when the index holds R's certificate price, and no later than T plus the venue's certificate lag (a contract term: certificates are bought on order). |
+| Observation date D | For a contract on a quarter: 00:00 UTC on the 75th day after Q's last day (`observationDate`). |
+| n_min | A contract's minimum number of filer families on a label. At least 2 where a consensus or a dispersion is read; the venue may set more. |
+| Void | Every position is cancelled and the venue refunds under its own rulebook. A normal outcome, not an error. |
 
-Units: valuations are natural-log USD internally, dollars at the API.
-Money is integer cents. Time is UTC.
+Units: per-share marks and prices in USD; log ratios are natural logs;
+time is UTC.
 
-## Contract A — quarterly timing binary
+## Rules every contract shares
 
-Pays $1 if the name announces a priced round (labs: files a public S-1)
-on or before the current calendar quarter-end. Prices **when**.
+- **Versions.** The contract names a `methodology_version` (1.0.0 or
+  later: 0.x is a draft), a `ce_version` where it uses one, and a
+  `rulebook_version`. It settles under those; a later version never
+  changes its settlement. *Not built:* the index publishes each series
+  under the current methodology version only; a contract naming an
+  earlier one settles on the value recomputed from the published rows
+  under that version.
+- **What enters.** A contract reads the index as published at its
+  observation date, its deadline or its settlement date; a row published
+  later does not enter. *Not built:* no route serves the index as
+  published on a past date; every row records when it was fetched and
+  created, so the value can be recomputed from the rows.
+- **Corrections.** A correction (a new row plus a `corrections` row)
+  published before a contract settles enters. One published after does
+  not re-settle: the index publishes it with its diff, and the settled
+  value stands.
+- **Restricted persons.** The venue's rulebook names them. At least: the
+  name's officers, directors, employees and investors with information
+  rights; the staff of a contributing filer's valuation process
+  (committee, adviser's pricing team, fund administrator), who know a
+  mark before it is filed; and, for contracts 3 to 5, the next round's
+  investors and counsel, who know its terms before they are public; and,
+  for every contract, OpenMarket's operator and anyone who works on the
+  index, who see ingested rows and corrections before they publish. The
+  index's defence is that it has no financial interest in its own number.
 
-- Outcomes YES / NO. Resolves YES on the first qualifying announcement
-  **strictly after the binary's listing time** and ≤ T; NO at T + 1 day
-  otherwise. "Quarter" names the expiry, not an event window: any
-  qualifying announcement between listing and T counts, including a
-  second round in the same calendar quarter.
-- Expiry T is the current calendar quarter-end if at least 21 days
-  remain at listing, otherwise the next quarter-end. The first binary
-  for a name lists at listing; each successor lists the same day its
-  predecessor resolves or expires (decision 0002).
-- LMSR with liquidity b (default $2,000); price clamped to
-  [p_floor, 1 − p_floor], p_floor = 0.05. Worst-case house loss per
-  quarter is b·ln(1/p_floor) ≈ $6,000 — not b·ln 2, which only holds
-  when the house starts at 50/50.
-- A round with undisclosed valuation still resolves YES. A same-price
-  extension, tender or secondary does not resolve. A confidential S-1
-  resolves only when it becomes public before T.
+## Contracts that settle on marks (1, 2)
 
-## Contract B — next-print forward
+- **Repricing void.** A repricing event announced strictly after listing
+  and at or before the as-of of the marks the contract reads voids it
+  (`resolveRepricing`). Committees re-mark a name on a new round, a
+  tender or an exit, and the name's insiders know of each first; voiding
+  removes the one channel by which their knowledge reaches the marks. An
+  event after that as-of does not void: a mark reflects what was known
+  or knowable at its date.
+- **Void on no filing.** The filers the contract reads publish no mark
+  on its label by its observation date or deadline, or fewer than n_min
+  families do.
+- **A filer stops filing.** Its last mark is never carried forward. A
+  series is computed from the families present.
 
-Cash-settled forward on ln(next print), voided with refund if no print
-by T. Prices **how big**, conditional on a round.
+## Contracts that settle on the next round (3, 4, 5)
 
-Payout per unit notional, long position:
+- **The round is the settlement event.** The contract settles on R
+  (`resolveNextRound`). A repricing event does not void it: a tender or
+  a secondary before R is not R and changes nothing; R itself settles
+  it.
+- **Void on no print.** No priced round is announced by T.
+- **Void on no certificate.** By the settlement date, the index holds no
+  certificate for R giving a per-share price for the new series.
+- **Exit void.** An acquisition or IPO announced after listing and
+  before R voids the contract: no certificate will price a next round.
+- **Closing.** The venue closes the contract to new positions at R's
+  first public report (any rank; reporting that a round is in talks is
+  not yet an announcement, and a venue may close earlier on it).
 
-    payout = N · clip(ln V − F₀, −κ, +κ)
+## Contract 1 — mark-level binary
 
-Short pays the negative. Max gain or loss per position is N·κ.
+Pays 1 if a named filer's next disclosed mark on one label of one name
+is at or above a strike K; 0 otherwise.
 
-- Settles on the first print after open with a qualifying post-money
-  dated ≤ T, per the hierarchy. A range settles at its midpoint.
-  Price-per-share alone does not settle.
-- Undisclosed valuation: wait up to T for a qualifying post-money, then
-  void. Revision by a higher-ranked source within 7 days supersedes
-  (*not built*: such a settlement is recorded `final: false`, and no
-  correcting settlement is written).
-- Down rounds settle normally; shorts are paid.
-- Acquisition before a print settles only if a cash-equivalent equity
-  value is disclosed; otherwise void.
-- Collateral: N·κ posted at open, released at settlement or void.
-- On settlement a new forward lists with the dealer's first quote
-  anchored on the print; on void, at the current mid. T resets.
+- **Underlying.** The family mark of the named filer F on label L: the
+  median of F's funds' per-share marks for one `as_of`, under the named
+  `methodology_version`.
+- **Observation.** F's next disclosed mark: the first document of F's
+  published in the index after listing and by T that carries a
+  per-share mark on L with an `as_of` later than F's latest mark on L
+  published at listing. The family mark takes every document of F's for
+  that `as_of` published by the end of that UTC day. The contract
+  resolves on that publication; it does not wait for T.
+- **Settlement source and rank.** Filer marks, `filer_mark` ranks: for
+  one fund and date, the higher-ranked document stands. A higher-ranked
+  document for the same date published after resolution (the N-CSR
+  after the N-PORT) does not re-settle, as a correction does not.
+- **Formula.** YES iff `M_F ≥ K` (K in USD per share). Terms: name, L,
+  F, K, T.
+- **Void.** F publishes no per-share mark on L by T (a holding reported
+  without a share balance has no per-share mark). A repricing event
+  announced after listing and at or before the mark's `as_of`.
+- **Why the edge sits with brokers and analysts.** The observation is
+  one committee's number, not the company's. Who can call it are the
+  people who talk to the GPs and advisers behind F, and the analysts who
+  read F's marking history (the index publishes every revision and how
+  far F lags a move). A company insider knows the company, not the
+  committee; anything they know reaches the mark only through a
+  repricing event, which voids the contract. F's own valuation staff
+  are restricted persons.
 
-Launch T (days): OpenAI 270, Anthropic 180, Anduril 270, Modal 120,
-Instinct 90. These are declared values (`FORWARD_T_DAYS` in
-`backtest/analyze.py`, published through `params.json`); the backtest
-will propose revisions once `per_name_t` runs, and an operator applies
-them.
+## Contract 2 — dispersion range
 
-## Why two contracts
+A strip of ranges on the dispersion of family marks on one label of one
+name at the next filing date; the range that contains it pays 1, the
+rest 0.
 
-A single blended forward (settle flat if no round) prices
-P(round) × E[step-up | round] in one number, hides the hazard, and pays
-nobody for calling a stall. Separation costs one extra price per name
-and gives the API two numbers nobody else publishes: a quarterly hazard
-and a conditional valuation.
+- **Underlying.** The index's dispersion on `(name, label, Q)` under the
+  named `methodology_version`: high minus low across families, as a
+  percentage of the median, `100 · (max − min) / median`, with the high
+  and low families named.
+- **Observation.** The next filing date is the quarter the contract
+  lists into (`observedQuarterEnd`: the current quarter with at least 21
+  days left, otherwise the next), read at its observation date D: every
+  family's latest mark on the label with `as_of` in Q, from documents
+  published by D.
+- **Settlement source and rank.** Filer marks, `filer_mark` ranks. A
+  family whose funds split by more than 0.1 % is flagged
+  `intra_family_split`; the flag changes neither the family mark (the
+  median of its funds) nor the settlement.
+- **Formula.** Range i pays 1 iff `lo_i ≤ dispersion < hi_i`. The
+  ranges partition `[0, ∞)`, the last open above; a value on a boundary
+  belongs to the higher range. Terms: name, label, Q, the boundaries,
+  n_min (at least 2).
+- **Void.** Fewer than n_min families on the label for Q by D. A
+  repricing event announced after listing and at or before Q's last
+  millisecond. A family that stops filing is absent, which can narrow
+  the dispersion; that is the risk the contract carries, and n_min
+  bounds it.
+- **Why the edge sits with brokers and analysts.** Dispersion is the
+  disagreement between committees, not a level. No company insider sets
+  it or learns it early, and no single filer controls it. The edge is
+  knowing each family's policy (who marks to the last round, who to
+  secondaries, who lags), which brokers hear from the GPs and analysts
+  read in the index's history.
 
-## The dealer
+## Contract 3 — mark versus print
 
-The venue always quotes both contracts. Forward quote around the model
-mid m with inventory I and risk aversion γ (default 0.5):
+A cash-settled forward on where the next priced round lands relative to
+the consensus mark.
 
-    m̃ = m − γ·κ·I/Q        s = s_floor + σ_tier·|I|/Q
-    bid = m̃ − s             ask = m̃ + s
+- **Underlying.** `X = ln(P_R / C_prior)`, where `P_R` is R's certificate
+  price and `C_prior` is the consensus on label L for the latest
+  calendar quarter that ended before R's announcement and had at least
+  n_min families published at that announcement, under the named
+  `methodology_version`. Rows published after R's announcement do not
+  enter `C_prior`. X is the negative of the index's mark versus print,
+  `ln(mark / print price)`, taken at the round. L is named at listing
+  (the newest preferred series with at least n_min families).
+- **Observation.** R's announcement fixes `C_prior`; the certificate
+  fixes `P_R` on the settlement date.
+- **Settlement source and rank.** The certificate (`delaware_coi`, rank
+  1 for `print_price_and_terms`; no lower rank enters); R by the
+  print-side ranks; `C_prior` from filer marks by `filer_mark` rank.
+- **Formula.** Per unit notional N, long:
 
-s_floor = 0.05; σ_tier = prior-error sd (0.35 mega-cap, 0.62 red-hot).
-A fill that would push |I| past Q (Q/2 while flagged) is refused; a
-side with no room left is pulled.
+      payout = N · clip(X − X₀, −κ, +κ)
 
-Event flags (Tier-1 scoop, Form D, charter amendment, "closing"
-statement): the forward's s × 3 and Q ÷ 2 for new positions, until the
-model re-prices or 72 h pass. The binary is seeded once per quarter at
-the model p with a fixed b and is not re-centred or re-scaled
-mid-quarter, so its bound stays b·ln(1/p_floor).
+  Short pays the negative; X₀ is the level a position opens at; the
+  clip κ is the venue's term. Max gain or loss per position is N·κ.
+  Terms: name, L, T, the certificate lag, κ, n_min.
+- **Void.** Void on no print by T. No certificate price for the new
+  series by the settlement date. An exit before R. No quarter before R
+  with at least n_min families on L published at R's announcement.
+- **Where the edge sits.** Before R is reported, its insiders (the
+  company, the round's investors and counsel) know `P_R`; the contract
+  cannot design that away, so it rests on the venue's restricted-person
+  rule and on closing at R's first public report. `C_prior` is public
+  before R. Among everyone else, the edge is with brokers who see where
+  secondaries clear against the marks and analysts who know how far
+  committees sit from the rounds that follow, not with the company,
+  which neither sets nor sees the marks.
 
-Hard loss bound per name: Q·κ per forward settlement plus
-b·ln(1/p_floor) per binary quarter. Five names at defaults, ~2
-settlements and 4 quarters a year each: ≈ $370k/yr worst case. The
-backtest (`backtest/`) puts the realised insider loss near 20% of the
-bound carried.
+## Contract 4 — perp basis
 
-Restricted persons: employees, directors and investors of a listed name
-may not trade it. Self-attested on the forecaster's profile in play
-money (README D12); KYC-backed later.
+A cash-settled swap on the log difference between a perp venue's mark
+at expiry and the next round's certificate price.
 
-## Lifecycle
+- **Underlying.** `B = ln(P_perp / P_R)`. `P_perp` is the venue's
+  published mark price of its perpetual on the name, time-weighted over
+  the UTC day of T (the expiry), per share. A perp quoted as a
+  valuation converts with the share count the venue publishes for it,
+  named in the contract's terms: that count's error is part of the
+  tracking error the contract prices. `P_R` is R's certificate price.
+- **Observation.** The perp at T; the certificate on the settlement
+  date.
+- **Settlement source and rank.** The perp mark and share count are the
+  venue's, outside this rulebook. The certificate (`delaware_coi`, rank
+  1); R by the print-side ranks.
+- **Formula.** Per unit notional N, long:
 
-quoting → widened (flag) → quoting (re-price or 72 h)
-quoting | widened → resolved (qualifying event ≤ T) → roll
-quoting | widened → expired (T passes) → roll
-(binary: expired pays NO; forward: expired voids with refund)
-forward: quoting | widened → resolved as a void (acquisition with no
-disclosed value) → refund → roll
+      payout = N · clip(B − B₀, −κ, +κ)
 
-## Tournament mapping
+  Terms: name, the perp and its mark source, the share count, T, the
+  certificate lag, κ.
+- **Void.** Void on no print by T. No certificate price for the new
+  series by the settlement date. An exit before R. The venue publishes
+  no perp mark for T. R does not void it.
+- **Where the edge sits.** The perp venue and the desks hedging its
+  positions carry this tracking error and are its natural customers.
+  The edge on `P_R` before R is reported is the round's insiders', as in
+  contract 3, and is bounded the same way. After R is reported, the
+  headline is public but the per-share price is not until the
+  certificate is read: the edge is with analysts who read prior
+  certificates and model the share count, not with the company.
 
-A tournament question is one of the two contracts, nothing else
-(decision 0004). There are no buckets and no floor: "nothing by
-expiry" is NO on A and a void on B, as the contracts already say.
+## Contract 5 — structure spread
 
-| Contract | Question | Forecast | Resolves | Score |
-| --- | --- | --- | --- | --- |
-| A | "Does [Name] announce a priced round / file an S-1 by [quarter-end]?" | one probability p of YES | YES, or NO (anything else, including nothing by T) | the n = 2 log score 100/ln 2 · ln(2 · max(p_outcome, ε)), ε = 0.001, time-averaged over the open window |
-| B | "What will [Name]'s next post-money be?" | one level x > 0 in the question's unit ($B, or $T from a $1T listing mid) | the settling post-money y in that unit, or **void** with the forward | max(100 · (1 − \|ln(x/y)\| / ln 2), −896.6), time-averaged over the open window; unscored if the forward voids |
+A cash-settled forward on how much of the next round's headline is
+preference stack.
 
-Time before a forecaster's first forecast scores 0 on both (A: "said
-50%"; B: "missed by 2×"); exact is 100 on both.
+- **Underlying.** `G = ln(post_money_R / CE_R)`: R's headline post-money
+  (the print of round R, by the print-side ranks and revision window,
+  as it stands on the settlement date) over the common-equivalent value
+  under the named `ce_version`, from R's certificate. This is the
+  index's structure gap for R.
+- **Observation.** On the settlement date.
+- **Settlement source and rank.** The certificate (`delaware_coi`, rank
+  1 for `print_price_and_terms`); the post-money by the print-side ranks.
+- **Formula.** Per unit notional N, long:
 
-Forecasts are append-only rows; every score and aggregate is
-recomputable from them. The crowd aggregate is one number: on A the
-pooled P(YES) (geometric mean of odds, extremized), on B the median of
-the forecasters' ln x. It is a component of the published reference
-price (A: P(YES); B: the median as ln USD) once ≥ 10 forecasters are on
-a question.
+      payout = N · clip(G − G₀, −κ, +κ)
+
+  Terms: name, T, the certificate lag, `ce_version`, κ.
+- **Void.** Void on no print: no priced round by T, or R's post-money
+  undisclosed by the settlement date. No certificate for R by the
+  settlement date. CE returns `unsupported` (a ratchet, or any term the
+  function does not model). An exit before R.
+- **Where the edge sits.** The terms are the round's insiders' until the
+  certificate is filed and bought, which the venue's restricted-person
+  rule and closing at R's first report bound. The edge open to everyone
+  else is structural: analysts who read the name's earlier certificates
+  (seniority, multiples, participation) and know how its rounds are
+  usually papered. The company's employees outside the round know the
+  terms no better than the certificate states them.
 
 ## Not open
 
-Two contracts per name; void-and-refund on no print; log units; the
-dealer always quotes; scaling by names not states; parameters come from
-the backtest, not by hand.
+OpenMarket quotes, lists and settles none of these contracts. Void on
+no print; void and refund are the venue's. Every published number
+carries its versions, and a contract settles under the versions it
+names. A filer's mark is never adjusted; a missing filing is a missing
+row. Every input obeys the source rule (decision `0003` §4).

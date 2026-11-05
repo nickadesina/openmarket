@@ -1,13 +1,9 @@
 import { execFileSync } from "node:child_process";
 
-/**
- * Playwright global setup: lists the five names and runs one dealer job
- * against DATABASE_URL_TEST (`seed-dealer.ts`, under tsx so the dealer
- * config's JSON import loads). No production route is involved.
- */
+/** Seeds the test database (tests/browser/seed.ts) before the specs, when there is one. */
 export default function globalSetup(): void {
-  if ((process.env.DATABASE_URL_TEST ?? "").trim() === "") return;
-  execFileSync("npx", ["tsx", "tests/browser/seed-dealer.ts"], {
+  if (!process.env.DATABASE_URL_TEST?.trim()) return;
+  execFileSync("node_modules/.bin/tsx", ["tests/browser/seed.ts"], {
     stdio: "inherit",
     env: process.env,
   });

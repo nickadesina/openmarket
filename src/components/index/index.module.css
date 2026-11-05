@@ -1,0 +1,433 @@
+/* The index's pages: the daily page, a name page, corrections. */
+
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+  padding: var(--space-5) 0 var(--space-7);
+}
+
+.pageHeader {
+  display: grid;
+  max-width: 64rem;
+  gap: var(--space-2);
+}
+
+.pageHeader h1 {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-tight);
+}
+
+.lede {
+  max-width: 80ch;
+  margin: 0;
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+}
+
+.muted {
+  max-width: 80ch;
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+.crumb {
+  composes: sectionHead from "../../styles/shared.module.css";
+}
+
+.crumb a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.crumb a:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--color-primary);
+  text-underline-offset: 0.25rem;
+}
+
+.sectionHead {
+  composes: sectionHead from "../../styles/shared.module.css";
+}
+
+.section {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-3);
+  scroll-margin-top: calc(var(--header-height) + var(--space-2));
+}
+
+.sectionTitle {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-4);
+}
+
+.sectionTitle h2 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-tight);
+}
+
+.link {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--color-border);
+  text-underline-offset: 0.25rem;
+}
+
+.link:hover {
+  text-decoration-color: var(--color-primary);
+}
+
+.link:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
+  list-style: none;
+}
+
+/* The figures row: 2px ink top rule over a gray box of ruled cells. */
+.figures {
+  display: grid;
+  margin: 0;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  border: 1px solid var(--color-border);
+  border-top: 2px solid var(--color-ink);
+}
+
+.figure {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border-right: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.figure dt {
+  color: var(--color-ink);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.figure dd {
+  margin: 0;
+}
+
+.figureValue {
+  font-family: var(--font-num);
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  line-height: var(--line-height-tight);
+}
+
+.figureValue a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--color-border);
+  text-underline-offset: 0.25rem;
+}
+
+.figureValue a:hover {
+  text-decoration-color: var(--color-primary);
+}
+
+/* The consensus is the index's price: red, as DESIGN.md gives prices. */
+.price {
+  color: var(--color-primary);
+}
+
+.figureNote {
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.figureNote a {
+  color: inherit;
+}
+
+/* A ruled note: what the page cannot say, and why. */
+.note {
+  max-width: 80ch;
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-left: 2px solid var(--color-warning);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+.note p {
+  margin: 0;
+}
+
+.note p + p,
+.note p + ul,
+.note ul + p {
+  margin-top: var(--space-2);
+}
+
+.note ul {
+  margin-bottom: 0;
+  padding-left: var(--space-5);
+}
+
+.noteHead {
+  color: var(--color-warning);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.scroller {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  /* At phone width a table keeps its columns and scrolls in its own box. */
+  min-width: 40rem;
+  border: 1px solid var(--color-border);
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.table th {
+  height: var(--row-compact);
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-hover);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+  vertical-align: top;
+}
+
+.table tbody tr:hover {
+  background: var(--color-surface-hover);
+}
+
+/* A group's head row inside a table: a quarter of family marks. */
+.table .groupRow th {
+  background: var(--color-surface);
+  border-bottom-color: var(--color-border-subtle);
+  scroll-margin-top: calc(var(--header-height) + var(--space-2));
+  text-transform: none;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  letter-spacing: 0;
+}
+
+/* Outranks `.table .groupRow th`: the anchored quarter is marked. */
+.table .groupRow th:target {
+  background: var(--color-primary-subtle);
+}
+
+.table tr:target td {
+  background: var(--color-primary-subtle);
+}
+
+.num {
+  font-family: var(--font-num);
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.table th.num {
+  text-align: right;
+}
+
+.mono {
+  font-family: var(--font-num);
+  white-space: nowrap;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.wrap {
+  min-width: 14rem;
+  overflow-wrap: anywhere;
+}
+
+.flag {
+  color: var(--color-warning);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tag {
+  display: inline-block;
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-border);
+  color: var(--color-ink-muted);
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* A collapsible module: a ruled summary row that opens its body. */
+.details {
+  min-width: 0;
+  border: 1px solid var(--color-border);
+}
+
+.details > summary {
+  display: flex;
+  flex-wrap: wrap;
+  min-height: var(--control-height);
+  padding: var(--space-2) var(--space-3);
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  cursor: pointer;
+  list-style: none;
+}
+
+.details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.details > summary::before {
+  content: "+";
+  width: 0.75rem;
+  font-family: var(--font-num);
+  font-weight: 700;
+}
+
+.details[open] > summary::before {
+  content: "−";
+}
+
+.details > summary:hover {
+  background: var(--color-surface-hover);
+}
+
+.details > summary:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.details[open] > summary {
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.detailsBody {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-3);
+}
+
+.summaryTitle {
+  font-size: var(--font-size-md);
+  font-weight: 700;
+}
+
+.summaryFacts {
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+}
+
+.subhead {
+  margin: 0;
+  font-family: var(--font-caps);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+/* The versions every figure on the page was computed under. */
+.versions {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+  gap: var(--space-1) var(--space-4);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+}
+
+.versions div {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.versions dt {
+  font-family: var(--font-caps);
+  font-weight: 700;
+  letter-spacing: var(--caps-tracking);
+  text-transform: uppercase;
+}
+
+.versions dd {
+  margin: 0;
+  font-family: var(--font-num);
+}
+
+.visuallyHidden {
+  composes: visuallyHidden from "../../styles/shared.module.css";
+}
+
+@media (max-width: 42rem) {
+  .figureValue {
+    font-size: var(--font-size-lg);
+  }
+
+  .figures {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.list {
+  max-width: 80ch;
+  margin: 0;
+  padding-left: var(--space-5);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+}
+
+.list li + li {
+  margin-top: var(--space-2);
+}

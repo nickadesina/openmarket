@@ -1,375 +1,249 @@
-# Technical design — dealer, forwards, reference price
+# Technical design: the marks index (v2)
 
-Status (2026-10-22): built, except milestone 4 (ingest: `/api/cron/ingest`,
-the extractor, the admin resolution queue). Each section marks what is
-not built. `README.md` section 2 is the decision record and wins on
-conflict; `CONTRACTS.md` is normative for instrument semantics; this
-file says how they are built inside the codebase.
+How the index is built, from the code as it stands on 2026-11-05. The
+product is decision `0003`; the build contract is
+`docs/prompts/v2/README.md`; the arithmetic's public spec is
+`METHODOLOGY.md`; the settlement rules are `src/lib/engine/rulebook.ts`
+(published at `/rulebook`). Where this file and the code disagree, the code
+is right and this file is a defect. Section 11 lists what is not built.
+v1's technical design (the dealer) is `docs/archive/v1/TECHNICAL_DESIGN.md`.
 
-The LMSR engine (`src/lib/engine`) is the binary's market maker; the
-41-bucket grid survives only as a read-only implied distribution
-derived from the forward mid.
+## 1. Shape
 
-## 1. Scope
+One per-share mark on one security, from one filer, as of one date, with
+its source document, is a `filer_marks` row. Everything published is a pure
+function of those rows, the other tables and the checked-in files under
+`data/index/`, recomputed on every read under the versions the payload
+names. Nothing derived is stored.
 
-Play-money version of the dealer design: five listed names, two
-instruments each, a house that always quotes, a published model mid,
-and a reference-price API. Reuses the ledger, idempotency, replay
-verification, Vercel + Neon deployment and the tournament branch's
-identity, forecast log, scoring and provenance. Real money, rails and
-the onshore listing are out of scope; nothing here assumes them or
-blocks them.
+```
+EDGAR (full-text search, N-PORT XML, Form D XML)     data/index/*.json, data/round-history/*.csv
+        │ ingest/fetch (the only network code)                 │
+        ▼ ingest/parse (pure parsers)                          ▼
+   services/index/ingest-*, import-*  ──────►  PostgreSQL (migrations 020–023)
+                                                     │
+                       services/index/get-name-index, list-names, ref-*, data-csv
+                         (engine/index: labels, families, consensus, dispersion,
+                          revisions, mark vs print, SPV premium, waterfall)
+                                                     │
+              ┌──────────────────────────────────────┼──────────────────────────┐
+     /api/ref/* (withRefRoute)           /data/*.csv (withCsvRoute)      pages (server components)
+```
 
-Rules that hold throughout: valuations are ln USD in the engine and
-dollars at the API; money is integer cents; every published price
-carries `model_version`, `rulebook_version` and (for the reference)
-`blend_version`; nothing is computed in the UI that the API does not
-return; every mutation is idempotent; every derived table is
-rebuildable from an append-only log and `verify:replay` proves it.
+## 2. Layers
 
-## 2. Architecture
+| Path | What | May import |
+| --- | --- | --- |
+| `src/lib/engine/index/` | Pure arithmetic: `series.ts` (labels), `mark.ts` (per-share), `families.ts`, `consensus.ts`, `listing.ts` (listed names, headline), `print.ts` (mark versus print), `revisions.ts`, `spv.ts`, `waterfall.ts` (`CE_VERSION`), `methodology.ts` (`METHODOLOGY_VERSION`, every constant) | engine only |
+| `src/lib/engine/rulebook.ts` | Rulebook 2.0.0: prints, source classes and ranks by purpose, the contract rules | engine only |
+| `src/lib/ingest/parse/` | `nport.ts`, `efts.ts`, `form-d.ts`, `ncen.ts`, `submissions.ts`, `watchlist.ts`, `families.ts`, `certificate.ts`, `spv-quote.ts`, `xml.ts` | engine, ingest/parse, zod |
+| `src/lib/ingest/fetch/` | `sec.ts` (the SEC client), `efts.ts` (full-text search paging), `disk-cache.ts` | ingest, node builtins |
+| `src/lib/services/index/` | One file per operation (section 4–6) | engine, ingest, db, api |
+| `src/app/api/ref/*`, `src/app/data/*` | Thin routes | services |
+| `src/app/**/page.tsx` | Server components; read services directly (the audit allows `app` anything) | anything |
+| `src/components/*` | UI; services as types only | services as types |
 
-Scheduled jobs do all writing that is not a user trade. Two are built
-(`/api/cron/dealer`, `/api/cron/settle`); ingest is not, so
-`event_flags` is written only by tests, fixtures and the evidence route
-(decision 0001):
-
-    outside        EDGAR + state filings · Tier-1 press RSS · base rates
-                        │                │                 │
-    cron jobs      ingest ──→ mid model ──→ dealer ──→ settle + roll
-    (Actions →        │           │           │            │
-     /api/cron/*)     ▼           ▼           ▼            ▼
-    Postgres      event_flags  model_mids   quotes      ledger
-                                                     (trades, positions)
-                        │                     │            ▲
-    routes + UI    reference API (/api/ref/*)   trade + /t ─┘
-
-Routes read versioned tables. The only web write paths are trade
-execution (existing ledger) and tournament forecasts (existing event
-log).
+`scripts/audit-deps.ts` enforces the table; `scripts/audit-styles.ts` the
+type ramp, the 4px grid and the colour tokens.
 
 ## 3. Data model
 
-Migrations `007_dealer`, `009_dealer_pnl` (`quotes.sequence`, the
-`dealer_pnl` view), `010_api_keys` and `011_tournament_bridge`
-(`event_flag_reviews`, restricted-person attestations,
-`event_flags.submitted_by`/`submitted_kind`), Kysely-typed in
-`src/lib/db/schema.ts`; the table below is a summary, `schema.ts` is
-the column-level truth. Each instrument's book is one `markets` row,
-linked by `markets.instrument_id` (nullable, unique): the binary in the
-`yes_probability` shape, the forward as `forward_ln` (`n_buckets = 2`,
-q = open long and short notional in USD from [0, 0], b = κ,
-`current_metric` = mid in USD). Log tables are append-only via the
-trigger pattern the tournament branch uses.
+Migration `020_marks_index` holds the v2 tables: `issuers`,
+`source_documents`, `filer_marks`, `prints`, `certificates`,
+`certificate_series`, `spv_vehicles`, `spv_quotes`, `corrections`,
+`ingest_runs` (columns in `docs/prompts/v2/README.md`). `021` makes a
+holding unique once as filed and once per correction; `022` lets a
+certificate be corrected like a mark (`superseded_by`,
+`transcription_sha256`) and adds an issuer's listing (`listed_on`,
+`listing_url`); `023` adds a certificate's newest series, common shares
+authorized and the terms the conversion does not model. Triggers keep
+`source_documents` and `corrections` append-only and let a filer mark
+change only by being superseded once. Money is `numeric` USD; dates of
+record are `date` (read as `YYYY-MM-DD` strings, `db/client.ts`).
+Migrations `001`–`019` are v1's and stay; v2 reads only `api_keys`,
+`api_key_usage` and `rate_limits` of v1's tables.
 
-| Table | Purpose | Key columns |
-| --- | --- | --- |
-| `listings` | one row per listed name, versioned parameters | `company_id`, `tier`, `kappa`, `cap_cents`, `b_cents`, `spread_floor`, `forward_t_days`, `p_floor`, `model_version`, anchor and source, `listed_at`, `delisted_at` |
-| `instruments` | one row per live or past contract | `listing_id`, `kind` (binary/forward), `epoch`, `question`, `opens_at`, `expires_at`, `entry_ref_ln`, `state`, `widened_until`, `resolution_json` |
-| `event_flags` | ingested public evidence (append-only) | `company_id`, `kind`, `source_url`, `source_rank`, `observed_at`, `published_at`, `terms_json`, `confidence`, `dedupe_key`, `promoted_from`, `run_id` |
-| `model_mids` | every mid the model produced (append-only) | `instrument_id`, `model_version`, `rulebook_version`, `computed_at`, `mid_ln` or `p`, `inputs_json` |
-| `quotes` | every two-way quote posted (append-only; the tape) | `instrument_id`, `posted_at`, `bid_ln`, `ask_ln` or `price`, `mid_ln`, `half_spread`, `inventory_cents`, `cap_cents_effective`, `flag_state`, `model_mid_id` |
-| `forward_positions` | open and settled forward positions | `instrument_id`, `user_id`, `side`, `notional_cents`, `entry_ln`, `trade_id`, `settled_at`, `settle_ln`, `payout_cents`, `voided_at` |
-| `reference_prices` | the published blend | `listing_id`, `kind`, `as_of`, `value`, `blend_version`, `w_model`, `w_traded`, `w_crowd`, `components_json` |
-| `tournament_instrument_links` | bridge | `question_id`, `instrument_id` |
-| `cron_runs` | job idempotency | `job`, `run_id` (unique), `started_at`, `finished_at` |
-| `source_health` | per-source last success, written by ingest; ships empty so `/admin/dealer` reads it from day one | `source`, `last_success_at`, `last_error_at`, `last_error` |
+## 4. Ingest
 
-`event_flags`, pinned for the ingest (Nick, 2026-10-21):
+Run in this order (README §4 has the commands):
 
-- `kind` is a closed enum: `form_d | form_d_amend | charter | scoop |
-  release | s1_public | print | user_submitted`. No free text.
-- `terms_json` has a fixed shape: `{amount_usd?, valuation_usd?,
-  valuation_basis: "pre"|"post"|"unknown", lead?, pps_usd?, outlet?,
-  quote?}`. The mid model and settlement read only `valuation_usd` and
-  `valuation_basis`.
-- `print` rows carry `promoted_from` (FK to the `release`/`s1_public`
-  flag they came from; null for admin-created prints) and require
-  `source_rank`. Rank is nullable on every other kind.
-- `dedupe_key` is indexed, not unique: syndications of one scoop share
-  a key and the rulebook counts distinct outlets within it. `run_id`
-  is a FK to `cron_runs` for provenance.
-- `observed_at` is required, `published_at` nullable; the table is
-  append-only by trigger.
+1. `index:watchlist` syncs `data/index/watchlist.json` (20 names, 7
+   candidates; search phrases, a match pattern, the listing, Form D
+   phrases) into `issuers`.
+2. `index:search` runs EDGAR full-text search for every phrase over
+   NPORT-P, N-CSR and N-CSRS and writes `filings-by-name.csv`,
+   `filer-counts.md` and `filing-counts.json` (the counts as data, which
+   the pages read; `--recount` rewrites the two counts files from the CSV
+   without searching).
+3. `index:families` drafts `filer-families.json` from each registrant's
+   latest N-CEN adviser; Nick reviews it (version 0.1.0 today).
+4. `index:ingest -- --source=nport` fetches each N-PORT primary document
+   the search found, stores it once (`(document_url, content_sha256)`),
+   and writes each holding matching an issuer's pattern as a `filer_marks`
+   row as filed: balance, units, value, `value / balance` when the units
+   are shares, the label from `classifySecurity`, and the rulebook's rank.
+   An amendment supersedes its fund's earlier report for the period.
+5. `index:ingest -- --source=form_d` reads Form Ds whose vehicle name
+   matches an issuer's vehicle pattern into `spv_vehicles` (or
+   `unmatched`); an issuer's own Form D sets `incorporation_state` and is a
+   print-side date and size.
+6. `index:prints` imports `data/round-history/events.csv` priced rounds
+   into `prints`.
+7. `index:certificates` validates and imports
+   `data/index/certificates/<slug>/<filed_on>.json` and links each to the
+   round it prices; a changed transcription is a correction.
+8. `index:spv-quotes` imports `data/index/spv-quotes/` captures.
+9. `index:relabel` re-reads every live label with the classifier and
+   publishes the differences as one `parser` correction.
 
-A binary instrument maps onto the existing `markets` LMSR columns with
-`n_buckets = 2`, so `quote`/`execute-trade` run unchanged. A forward
-trade writes a `trades` row for cash and idempotency (`strike_index =
--1`, `contract_side` as long/short) plus a `forward_positions` row;
-collateral N·κ is reserved from `users.cash_balance_cents` at open and
-released at settlement or void.
+The SEC client sends `SEC_USER_AGENT` on every request and keeps one start
+per 150 ms with backoff on 429 and 5xx. `GET /api/cron/ingest` (Vercel
+Cron, 07:23 UTC, `CRON_SECRET`) runs N-PORT incrementally from a week
+before the last ok `ingest_runs` row, stopping 45 s before the 300 s limit.
 
-## 4. Ingestion — not built (milestone 4, decision 0001)
+Real data in the development database on 2026-11-05: 5,003 N-PORT
+documents and 813 Form Ds; 15,293 live marks on 13 names; 7 names with
+none (section 6).
 
-Planned: `/api/cron/ingest`, every 15 minutes from Vercel Cron
-with `Authorization: Bearer $CRON_SECRET` and a UTC slot run ID
-(manual callers may supply `X-Run-Id`; the dealer route pattern: `requireCronSecret` in `src/lib/auth/cron.ts`,
-`runCronJob` in `src/lib/services/dealer/cron-run.ts`). Five names only.
+## 5. The arithmetic
 
-| Source | Method | Flags |
-| --- | --- | --- |
-| EDGAR full-text + Form D feed | query by CIK and issuer name; parse Form D XML | `form_d`, `form_d_amend` |
-| Delaware / CA Secretary of State | entity watchlist; on a new certificate, extract series and original issue price | `charter` |
-| Tier-1 press RSS + company newsrooms | headline + lede through an LLM extractor with a fixed schema | `scoop`, `release`, `s1_public` |
-| EDGAR S-1 / F-1 | filer-name watch | `s1_public` |
+`engine/index/` implements `METHODOLOGY.md` 0.1.0 and nothing else
+(`tests/engine/index/methodology.test.ts` holds the constants table to the
+code). Labels: preferred series and `Common` enter per-share series;
+`SPV interest`, `Warrant`, `SAFE`, `Convertible Note` and `Unclassified`
+are published but compared with nothing. A family's mark is the median of
+its funds' marks on a label and date (`intra_family_split` above 0.1 %);
+the consensus is the median of each family's latest mark in a calendar
+quarter; dispersion is `(max − min) / median` from two families. Marks as
+of a listed name's prospectus date or later enter no series. The headline
+label is the one with the most families in the latest quarter with a
+consensus. `resolveFamily` indexes a families object's CIKs once (a
+`WeakMap`), so a name with thousands of marks resolves in linear time.
 
-Extraction schema `{company, kind, amount_usd?, valuation_usd?,
-valuation_basis: pre|post|unknown, lead?, published_at?, outlet, url,
-quote, confidence}`; a `release` below high confidence waits for admin
-confirmation before it can become a `print`. `dedupe_key =
-sha256(company, kind, outlet-or-filer, published_at::date,
-round(valuation, 1 sf))`. Promotion of a `release`/`s1_public` row to
-`print` is done by the settle job, never by ingest; an admin can create
-a `print` by hand with a source URL (Instinct's seed and Series A were
-never announced). Latency target: scoop on RSS → flag in 15 min →
-dealer widened in 30. Per-source last-success is surfaced; a `print`
-with no preceding `scoop` is logged as an ingestion miss.
+## 6. Read services
 
-## 5. Mid model
+- `getNameIndex(db, slug)` (`get-name-index.ts`): the issuer; live marks
+  split by `seriesStatus` into the series' inputs and `marks_summary`;
+  per label the consensus by quarter (with dispersion, the families used
+  and mark versus print), each family mark with its documents, and
+  revisions; prints; the live certificate's structure with
+  `commonEquivalent` and `structureGap` (or `unsupported` / `no_headline`
+  with the reason); SPV vehicles (latest Form D per vehicle CIK) and quotes
+  with premiums; `coverage` and `no_marks` (`name-coverage.ts`); and
+  `out_of_series`, the live marks outside every series grouped by status
+  and label with the rule's sentence and the newest twelve as filed. The
+  independent reads run concurrently.
+- `name-coverage.ts` imports `data/index/filing-counts.json` (bundled, as
+  `published-families.ts` bundles the families file) and states why a name
+  has no live mark from those counts: named in no N-PORT, N-CSR or N-CSRS
+  (Cognition, Modal, Safe Superintelligence, Thinking Machines Lab); named
+  only in N-CSR text, which is not parsed (Scale AI, Anysphere); or named
+  in N-PORT filings that were read with no matching holding (Rippling:
+  Powerlaw Corp.'s 0002052053-26-000004), else not yet ingested.
+- `listNames(db)` computes every watchlisted name's index concurrently and
+  keeps the daily page's row of each (about 0.4 s warm on the development
+  data; was 1.1 s sequential with the linear family scan).
+- The routes' services (`ref-*.ts`) wrap these under the envelope;
+  `data-csv.ts` streams the CSV tables in keyset batches.
 
-`src/lib/engine/dealer/prior.ts`, pure. TypeScript port of
-`backtest/sim.py`'s prior; `tests/engine/dealer/prior.test.ts` agrees
-with `backtest/out/prior_golden.json` (written by `backtest/golden.py`
-from sim.py) to 1e-9. The dealer job's `mids` step
-(`services/dealer/compute-mids.ts`, third after `state` and `list`)
-appends a `model_mids` row per live instrument when the mid or its
-inputs moved; there is no separate mid route.
+## 7. API and downloads
 
-- Forward mid: `m = ln V_last + μ_tier`; on a scoop with a valuation,
-  `m = ln V_leak` (re-centre, keep width). A charter filing only widens
-  the forward; re-centring on price-per-share is not built (the
-  rulebook text still describes it). μ_tier = leave-one-out median
-  realised log step-up of the other names in the tier (backtest:
-  mega-cap 0.65–0.73, red-hot 1.10–1.34).
-- Binary p: Weibull hazard (k = 1.6; λ = 11 months mega, 7 red-hot)
-  conditioned on survival to the binary's listing, over the interval to
-  its expiry; a scoop or release dated on or before listing raises it to
-  max(p, 0.80) if expiry is within 60 days of it, 0.95 otherwise;
-  clamped to [p_floor, 1 − p_floor]. (sim.py knows only scoops; the
-  service also counts releases.)
-- Heat is not a price input. v1 heat is the tier, which sets λ and
-  σ_tier; b and Q are flat until `heat_scaled_q` runs. v2 is a
-  percentile from X mention velocity, HN/GitHub, Wikipedia.
-- `model_version` is semver in `src/lib/config/dealer.ts`; any formula
-  or base-rate change bumps it. `inputs_json` stores everything needed
-  to re-derive a mid by hand. Parameters are owned by the backtest.
+Every `/api/ref/*` payload opens with `methodology_version`, `ce_version`,
+`rulebook_version`, `as_of`, `lag_note` (`ref-envelope.ts`). Routes:
+`names`, `{slug}`, `{slug}/marks` (keyset, `include=superseded`,
+`label=`), `{slug}/revisions`, `{slug}/spv`, `methodology`
+(`include=families`), `corrections`, `rulebook`. `withRefRoute`
+(`api/ref-route.ts`) validates the query's names and values (and the slug)
+before it draws one unit of the `ref` quota (60 a minute per network, or a
+key's own), caches anonymous responses 60 s and keeps keyed ones private.
+`/ref` documents every route with an example payload generated from the
+development database (`npm run export:ref-examples` writes
+`docs/tradeables/ref-examples.json`).
 
-## 6. Dealer
+Downloads (`withCsvRoute`, CC BY 4.0, `Link: …/data/LICENSE`):
+`/data/filer-marks.csv`, `/data/certificate-terms.csv`,
+`/data/spv-matches.csv`; `issuer=<slug>` limits filer marks and SPV
+matches to one name, the file each name page links. Every row carries its
+accession and document URL.
 
-`src/lib/engine/dealer/binary.ts` (existing LMSR, two outcomes),
-`src/lib/engine/dealer/forward.ts` (quoter), `/api/cron/dealer` every
-15 minutes (steps in `DEALER_STEPS` order: state, list, mids, requote,
-reference). A forward fill does not read the `quotes` tape: inside the
-trade transaction, with the instrument locked, `executeForwardTrade`
-recomputes the quote from the latest mid, the inventory and the flag
-state (`get-instrument-quote.ts`).
+**Response size.** Vercel caps a function's buffered response body at
+4.5 MB (`FUNCTION_PAYLOAD_TOO_LARGE`); its guide to that limit names
+streaming as the way past it ("streaming functions, which don't have this
+limit", vercel.com/kb/guide/how-to-bypass-vercel-body-size-limit-serverless-functions,
+read 2026-11-05). The CSV routes stream a `ReadableStream` one database
+batch at a time and never hold the file, so the full file (8.1 MB live,
+12.7 MB with superseded rows on the development data) is served as a
+stream; the per-name files (the largest, SpaceX with superseded rows, is
+4.9 MB) are the same stream filtered. If a deployment ever shows a 413 on
+the full file, the per-name files are the fallback and the pages already
+link them. Pages and JSON payloads are buffered: the largest name page
+(Databricks) is 3.1 MB of HTML, 0.24 MB gzipped.
 
-Forward quote, per-name T, event-flag multipliers and the hard loss
-bound are as `CONTRACTS.md` → The dealer specifies; this document does
-not restate them. γ, s_floor, Q, b, κ and T come from the versioned
-`listings` row (written from `params.json` by `seed:listings`);
-σ_tier and the flag multipliers from `DEALER_PARAMS`
-(`src/lib/config/dealer.ts`). A fill that would push |I| past Q (Q/2
-while widened) is refused; a side with no room left is pulled.
-Notional-for-notional fills at the bid/ask.
+## 8. Pages
 
-State machine on `instruments.state` (`engine/dealer/lifecycle.ts`),
-one fixture test per transition, transitions as `CONTRACTS.md` →
-Lifecycle: quoting → widened on a flag (`widened_until` = the flag's
-`observed_at` + `flag_hours`, extended by later flags), back on a
-newer `model_mids` row or expiry of the hold; resolved on a qualifying
-event ≤ expiry; expired otherwise; both list a successor immediately.
+Server components under `src/app`; pages that read the database are
+`force-dynamic` and call the services directly (`getRuntimeDatabase()`), so
+a page and its API payload come from the same function. Static pages read
+repository files at build.
 
-Settlement (`/api/cron/settle`, hourly): one transaction per
-instrument; binary pays $1/YES share; forward pays
-`N·clip(settle_ln − entry_ln, −κ, κ)`; a `settlements` row with the
-source URL, the rank and rulebook version written into
-`source_description` and `instruments.resolution_json`; collateral
-released; successor listed. A forward settled while a higher rank could
-still supersede it is recorded `final: false`; the correcting
-settlement is not built. View `dealer_pnl` (`009`), one row per
-instrument: realised, open collateral, unrealised, bound.
+- `/`: every watchlist name with a consensus (headline label and quarter,
+  consensus, dispersion, families, latest filing, last print), highest
+  dispersion first, each figure linking the name page's quarter; then the
+  names without one with the reason (`no_marks`, or "no per-share series"
+  when every live mark is outside the series, as for a name whose holdings
+  are all Unclassified). The lag and the versions are stated.
+- `/n/[slug]`: the headline figures (each linking its quarter or its
+  filing); the listing note for a listed name; per label a plain-SVG chart
+  (`components/index/mark-chart.tsx`: every family mark a dot linking its
+  first filing, the consensus line at quarter ends, the quarter's range,
+  the last print as a dashed line at its date and, with a certificate
+  price, at its per-share price; log scale when the range is threefold),
+  the consensus by quarter, every family mark of the latest four quarters
+  with its filing (earlier quarters fold), and revisions; the marks outside
+  the series as filed; prints; structure; the SPV panel (Form D vehicles,
+  and why no unit quote is published); the per-name CSVs and JSON. Open
+  Graph and Twitter text: the name, the dispersion and families, the label
+  and quarter, the latest filing date (`components/index/share-text.ts`).
+- `/methodology`: `METHODOLOGY.md` through the document component, its
+  Constants table rebuilt from `METHODOLOGY`
+  (`tradeables/methodology-doc.ts`).
+- `/corrections`: the policy and every `corrections` row, newest first,
+  with its diff.
+- `/rulebook`, `/rulebook/changelog`, `/resolution-sources`, `/ref`: kept.
+  Nav: Index, Methodology, Rulebook, API, Corrections; resolution sources
+  from the footer. v1's paths redirect to `/`.
 
-Restricted persons: an attestation (on the profile, README D12) listing
-any listed name the user is employed by, a director of, or invested in;
-those instruments are hidden in the UI and refused at the API.
+## 9. Tests
 
-UI: the market page `/m/[slug]` has the forward chart, a read-only
-implied ladder and distribution from the forward mid and σ_tier, and
-one ticket switching Forward (Long/Short, notional, live bid/ask in
-dollars, max gain/loss, expiry) and Binary (YES/NO by `market_id`).
+`npm run test:unit` (engine, parsers, services, routes, pages' helpers);
+`npm run test:integration` (PostgreSQL, one schema per suite, rows written
+by the import services from real EDGAR fixtures in
+`tests/fixtures/index/`); the browser smoke specs (`tests/browser/`),
+whose global setup runs `tests/browser/seed.ts` against
+`DATABASE_URL_TEST`: the real watchlist, three real N-PORT filings, the
+round history and two Form Ds, through the same services.
 
-## 7. Tournament bridge
+## 10. Deployment
 
-The `/t` tournament has append-only forecast events, scoring,
-leaderboard, X sign-in and Merkle commitments. Since decision 0004 its
-questions are the dealer's two contracts and nothing else: a binary
-takes one probability of YES, a forward one level in its unit. There
-are no buckets. The bridge is a mapping, not a mechanism:
+Vercel and Neon; `scripts/vercel-build.ts` validates the environment,
+migrates and builds. `.env.example` is the contract: `DATABASE_URL`
+(pooled), `DATABASE_URL_UNPOOLED`, `CRON_SECRET`, `APP_ORIGIN`,
+`SEC_USER_AGENT`. The ingest scripts run from an operator's machine
+against the database; only N-PORT runs in the cron.
 
-Mapping per `CONTRACTS.md` → Tournament mapping, built in milestone 7
-and reshaped by 0004 (`services/dealer/tournament-bridge.ts`; README D9
-has the rules):
+## 11. Not built
 
-- List: the dealer's list step (and the settle job's roll) creates,
-  opens and links the instrument's question in the same transaction,
-  through the tournament's admin services' in-transaction variants
-  (`saveDraftQuestionIn`, `openQuestionIn`, …), so their invariants hold.
-  A binary links a `kind: binary` question closing at its expiry. A
-  forward links a `kind: forward` question with `expiry_at` = T, in
-  USD_T when the instrument's listing mid (its first `model_mids` row)
-  is $1T or more and USD_B otherwise; it has no edges. The rulebook text
-  is built from `engine/dealer/rulebook.ts`. Instruments listed before
-  the bridge are linked on the next list step while
-  `TOURNAMENT_LINKED_QUESTIONS=1`.
-- Settle: the settle job closes the question (back-dated to the
-  announcement, never before it opened) and resolves it as its run, in
-  the settlement's transaction: a binary's YES or NO becomes its
-  `outcome`, a settled forward's post-money in the question's unit its
-  `resolved_value`, with the source rank as the rung. A forward void
-  voids the question, which writes no scores. `verify:replay` checks
-  each link: the settle run's first resolution carries the outcome, or
-  the value, the instrument's own settlement implies.
-- Crowd: the reference step reads the linked question's latest
-  `tournament_aggregates` row: `p` for a binary, ln(`value` · USD per
-  unit) for a forward (the median of the forecasters' levels). blend.ts
-  gives it weight from N_min (10); blend 1.1.0 is the first under this
-  definition (1.0.0 read a median off the bucket vector). The component
-  records the question's `kind` and `unit` (null for a binary).
-- Evidence: `POST /api/t/questions/[slug]/evidence` files a
-  `user_submitted` flag that an admin confirms against a later
-  independent flag, or rejects (`event_flag_reviews`). The fixed bonus
-  score a confirmation pays waits on its size (README D9).
-
-The bridge is off unless `TOURNAMENT_LINKED_QUESTIONS=1` (README D9).
-
-## 8. Reference price API
-
-Public, read-only, 60 s anonymous cache (keyed requests are private and
-uncached), every payload carrying `model_version`,
-`rulebook_version`, `blend_version`, `as_of`.
-
-Blend (`src/lib/engine/dealer/blend.ts`):
-
-    R   = w_m·m + w_t·p̄_traded + w_c·p̄_crowd
-    w_t = min(0.6, V_30d / (V_30d + V₀))         V₀ = $50k
-    w_c = min(0.3, n / (n + n₀)) · [n ≥ N_min]   n₀ = 20, N_min = 10
-    w_m = 1 − w_t − w_c
-
-m is the latest `model_mids` value, not the skewed quote mid m̃, so the
-dealer's own inventory never moves the reference. p̄_traded is the
-30-day average on the instrument's book (forward: notional-weighted F₀;
-binary: cash-weighted YES price); p̄_crowd the linked question's latest
-aggregate (forward: ln of the median of its forecasters' levels, in USD;
-binary: P(YES); the crowd's definition since blend 1.1.0, decision 0004). With n₀ = 20 the
-0.3 cap binds from N_min on, so w_c is 0 or 0.3. With no flow and no
-crowd the reference *is* the model mid and says so (`model_only`). The
-constants are policy, published under `BLEND_VERSION` (README D14).
-
-| Endpoint | Returns |
-| --- | --- |
-| `GET /api/ref/listings` | names, tiers, live instruments, parameters, T |
-| `GET /api/ref/[slug]` | reference forward (ln and USD), reference hazard, components and weights, last print, next expiry, `dealer_inventory_sign` |
-| `GET /api/ref/[slug]/history?from=&to=` | `reference_prices` rows plus the `quotes` tape (inventory as its sign), each on its own keyset cursor |
-| `GET /api/ref/[slug]/mids` | the model's forecast log, unredacted |
-| `GET /api/ref/[slug]/flags` | public evidence used |
-| `GET /api/ref/rulebook` | current rulebook as JSON |
-
-Auth: public at 60 req/min per network bucket (`rate_limits` scope
-`ref`); keyed tier via `api_keys` (migration `010`, SHA-256 of the key
-only, `npm run api-key:create`) with per-key quotas, present from day
-one so the first desk that asks gets a key the same day. A bad or
-revoked key is a 401, not the public tier. Logs page with `limit`
-(≤ 1000) and `cursor`.
-
-## 9. Settlement and rulebook
-
-`src/lib/engine/dealer/rulebook.ts`, versioned, exported at
-`/api/ref/rulebook`, with `backtest/events.csv` as the fixture every
-rule change must still resolve identically (or re-baseline in the same
-commit). v1 rules are the table in `CONTRACTS.md` → Definitions plus:
-Tier-1 outlets = Bloomberg, Reuters, WSJ, FT, The Information,
-TechCrunch, Axios, NYT; syndications count once; pre-money + amount
-converts to post; ranges settle at midpoint; 7-day revision window;
-binary at quarter-end 23:59:59 UTC.
-
-Workflow: the settle job promotes high-confidence rank 1–2 releases and
-S-1s with a source URL and a post-money to prints and resolves from
-them. Rank 3–4 is reported as pending on `/admin/dealer` (read-only);
-the 24-hour admin queue (`RULEBOOK.review.review_hours`) is not built,
-and neither is the rank-3 "two independent outlets" check at
-promotion (`pressRank` exists but only tests call it).
-
-## 10. Backtest harness
-
-`backtest/`: `sim.py`, `analyze.py`, `golden.py`, `events.csv` (59
-priced rounds, 56 in Jan 2024–Oct 2026, 14 names), `data/*.csv`
-(`sources.csv` gives the listing anchors' URLs), `out/`.
-`backtest.yml` runs on PRs touching `backtest/`,
-`src/lib/engine/dealer/` or `src/lib/config/dealer.ts` and posts the
-summary table as a PR comment.
-
-| Scenario | Measures | Status |
-| --- | --- | --- |
-| `none` | prior calibration, void rate, resolution count | run |
-| `at_listing` | insider knows the print, hits the cap pre-leak | run: $53k/yr on five names, 20% of the ~$260k/yr bound |
-| `at_leak` | lawful scoop-reader, perfect direction (upper bound) | run: $2.3k/yr |
-| `down_round` | 20% of prints flat, 10% at −0.5 log, insider | to run — the sample has no down rounds |
-| `heat_scaled_q` | Q $50k red-hot / $10k mega, same total | to run |
-| `per_name_t` | per-listing T vs uniform 3 / 12 months | to run |
-| `b_sweep` | b ∈ {500, 1k, 2k, 4k} × p_floor ∈ {0.05, 0.10} | to run |
-
-The harness owns μ, λ, k, σ_tier, the leak-jump parameters and the T
-proposals, written to `backtest/out/params.json` and read by
-`src/lib/config/dealer.ts` at build time. A hand-edited parameter is a
-failing test.
-
-Known limits: survivorship (every sampled name kept stepping up); no
-time value or inventory skew in the loss model; leak-reader binary loss
-is zero by construction; Instinct's early dates are filing dates;
-Anthropic Series D has no dated close.
-
-## 11. Infrastructure
-
-| Concern | Choice |
-| --- | --- |
-| Scheduling | Vercel Cron (Pro), configured in `vercel.json`: dealer at :05/:20/:35/:50, settle hourly at :41, provenance hourly at :07; bearer `CRON_SECRET`. Routes have a 300 s limit. Ingest is not built. The daily 06:23 UTC `dealer-alerts.yml` Action checks widening and successful-run freshness (dealer ≤1 h; settle/provenance ≤3 h), excluding its own `alerts-` probes. |
-| Idempotency | `cron_runs.run_id` unique; explicit `X-Run-Id` wins, otherwise Vercel uses job/UTC interval slots, other callers use a UUID. Provenance additionally batches hours under an advisory lock; invocation records cover idle hours and posting errors. |
-| LLM extraction | not built: planned as one provider behind `src/lib/services/ingest/extract.ts` with `EXTRACT_API_KEY` |
-| Secrets | `CRON_SECRET`, the tournament's X OAuth credentials, the Solana provenance key (`.env.example`); `EXTRACT_API_KEY` and `EDGAR_USER_AGENT` arrive with ingest |
-| Observability | `/admin/dealer`: `dealer_pnl`, live instruments, recent runs, pending rank 3–4 promotions (read-only), the evidence queue, `source_health` (empty until ingest); `dealer-alerts.yml` fails daily if any instrument is widened > 72 h or a scheduled job is stale/missing; the silent-source (24 h) check ships with ingest |
-| Replay | `verify:replay` rebuilds quotes-derived state, forward payouts and `reference_prices` |
-| Migration | `007_dealer` is additive; `008` (owner-approved, deletes data) removed the ladder markets, Stripe and the username accounts; `011_tournament_bridge` is additive; `npm run seed:listings` idempotent on `(company, listed_at)` |
-
-## 12. Build plan
-
-| # | Milestone | Gate | Depends on |
-| --- | --- | --- | --- |
-| 1 | Merge tournament branch to `master` (done, #2) | existing CI green | — |
-| 2 | Rulebook + fixtures + `backtest.yml` (done) | fixtures resolve; summary posted on PR | — |
-| 3 | `007_dealer` + `seed:listings` (done) | migrate + replay in build | 1 |
-| 4 | Ingest + flags + admin queue (not started; owned by Nick; until then tests read `tests/fixtures/event-flags.json`) | seeded scoop → flag in < 15 min | 2, 3 |
-| 5 | Mid model (TS port) (done) | agrees with `sim.py` to 1e-9 | 2, 3 |
-| 6 | Dealer + settlement + ticket UI, ladder and username accounts deleted (done: `008`, README D1) | five names quoting; a fixture print settles both instruments and rolls, in an integration test against CI Postgres | 3, 5 |
-| 7 | Tournament bridge (done: README D9, D12) | crowd weight appears with ≥ 10 forecasters | 1, 6 |
-| 8 | Reference API + `/admin/dealer` + alerts (done; the admin resolution actions wait on 4) | public endpoints cached, versions in every payload | 6, 7 |
-
-## 13. Open decisions (Nick) and risks
-
-Decisions: per-name T launch values; Q per name (flat $25k until
-`heat_scaled_q`); κ per name (labs may warrant 0.7); b and p_floor;
-blend constants; extraction provider (Nick's, with ingest);
-play-money restricted-person enforcement; closing a forward before
-settlement.
-
-Risks: the down-round blind spot (sample has none; first one costs the
-cap); ingestion silence (alerts make it visible, not impossible); the
-binary bleeds as much as the forward and leaks 89% of the time (b is
-the first thing to cut); dealer/administrator conflict (blend,
-inventory sign and forecast log are the v1 mitigations); legal surface
-of a cash-settled forward (play money carries none; design is
-rails-agnostic).
-
-Not open: two contracts per name; void-and-refund; log units; the
-dealer always quotes; parameters from the backtest; versions on every
-published number.
+- N-CSR and N-CSRS schedules: listed by the search, not parsed
+  (`data/index/sources-status.md`).
+- Fund holdings pages (Fidelity: a client-side app; ARK Venture: a
+  JavaScript challenge) and DXYZ (no per-holding value): not built.
+- SPV unit quotes: no public page quotes units without a login; the SPV
+  premium is never computed on real data.
+- Certificates: none transcribed, so no structure table, no per-share
+  print, no mark versus print and no common-equivalent on any name.
+- Form D, prints, certificates and quotes are not in the daily cron.
+- A route serving the index as published on a past date, and series under
+  an earlier `methodology_version` (rulebook `NOT_BUILT`).
+- The corrections reporting address (not published).
+- Page caching: every page view recomputes from the rows (the API is
+  cached 60 s at the edge; the pages are not).

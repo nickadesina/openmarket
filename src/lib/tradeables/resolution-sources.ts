@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import data from "../../../docs/tradeables/resolution-sources.json";
-import { RULEBOOK } from "../engine/dealer/rulebook.js";
+import { RULEBOOK } from "../engine/rulebook.js";
 
 /**
  * The resolution-source map (docs/prompts/tradeables, item 1): how each venue
@@ -79,18 +79,20 @@ function lowerFirst(text: string): string {
 /** OpenMarket's row: every rule-bearing field is read from RULEBOOK. */
 export function openMarketRow(asOf: string): ResolutionSourceRow {
   const ranks = RULEBOOK.source_ranks.map(({ rank, source }) => `${rank} ${source}`).join("; ");
-  const kinds = (["binary", "forward"] as const).filter((kind) => kind in RULEBOOK);
+  const filerMarks = RULEBOOK.source_purposes
+    .find((purpose) => purpose.purpose === "filer_mark")!
+    .ranks.map(({ rank, source_class }) => `${rank} ${source_class}`)
+    .join("; ");
   return {
     venue: OPENMARKET,
-    product:
-      "Quarterly timing binary (a priced round by quarter-end; a public S-1 for the labs) and a cash-settled forward on the next post-money, both quoted by the venue as dealer",
+    product: `Contracts that settle on the marks index (${RULEBOOK.contracts.kinds.join(", ")}), as CONTRACTS.md and the rulebook specify them; OpenMarket quotes, lists and settles none`,
     launched: null,
-    instrument: kinds.join(" and "),
-    settlement_source: `${RULEBOOK.print.definition} For the labs, also ${lowerFirst(RULEBOOK.print.also_for_labs)} Ranked sources: ${ranks}. Tier-1 outlets: ${RULEBOOK.tier1_outlets.join(", ")}.`,
+    instrument: RULEBOOK.contracts.kinds.join(", "),
+    settlement_source: `Filer marks in the index, ranked by source class: ${filerMarks}. Prints: ${RULEBOOK.print.definition} For the labs, also ${lowerFirst(RULEBOOK.print.also_for_labs)} Ranked sources: ${ranks}. Tier-1 outlets: ${RULEBOOK.tier1_outlets.join(", ")}.`,
     source_published: true,
     revision_window: `${RULEBOOK.revision_window_days} days for a higher-ranked source, plus ${RULEBOOK.observation_grace_days} day of observation grace after the deadline`,
-    void_rule: RULEBOOK.forward.void,
-    status: "paper markets live",
+    void_rule: RULEBOOK.contracts.no_print,
+    status: "rulebook published; no market live (the v1 paper markets are archived)",
     notes: `The rulebook is code, versioned (v${RULEBOOK.version}), and published as JSON at ${RULEBOOK_PATH}.`,
     sources: [`${SITE_ORIGIN}${RULEBOOK_PATH}`],
     verified: asOf,

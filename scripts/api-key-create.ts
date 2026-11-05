@@ -1,5 +1,5 @@
 /**
- * Mints a reference API key (README D14) and prints it once:
+ * Mints a reference API key (v1 README D14, kept in v2) and prints it once:
  *
  *   npm run api-key:create -- --name="Desk name"
  *   npm run api-key:create -- --name="Desk name" --quota=1200
@@ -20,7 +20,7 @@ import {
   isApiKeyTier,
 } from "../src/lib/auth/api-key.js";
 import { createDirectDatabase, destroyDatabase } from "../src/lib/db/client.js";
-import { insertApiKey } from "../src/lib/services/dealer/ref-access.js";
+import { insertApiKey } from "../src/lib/services/ref-access.js";
 
 function argument(name: string): string | undefined {
   const prefix = `--${name}=`;

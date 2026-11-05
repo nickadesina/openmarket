@@ -9,28 +9,55 @@ types.setTypeParser(types.builtins.DATE, (value) => value);
 
 import type { Database } from "./schema.js";
 
-type DirectClient = Client & {
+/** One lease of the direct client: its queries, and a release that hands it to the next caller. */
+interface DirectLease {
+  query: Client["query"];
   release(error?: Error | boolean): void;
-};
+}
 
+/**
+ * One connection, leased to one caller at a time: Kysely acquires a
+ * connection per query (or per transaction), so concurrent reads
+ * (`Promise.all`) queue here instead of overlapping on the client, which pg
+ * deprecates.
+ */
 class DirectClientPool {
   readonly options = Object.freeze({ direct: true });
 
   readonly #connectionString: string;
-  #client: Promise<DirectClient> | undefined;
+  #client: Promise<Client> | undefined;
   #destroyed = false;
+  #free: Promise<void> = Promise.resolve();
 
   constructor(connectionString: string) {
     this.#connectionString = connectionString;
   }
 
-  connect(): Promise<DirectClient> {
+  async connect(): Promise<DirectLease> {
     if (this.#destroyed) {
-      return Promise.reject(new Error("The direct database client is destroyed"));
+      throw new Error("The direct database client is destroyed");
     }
 
     this.#client ??= this.#open();
-    return this.#client;
+    const previous = this.#free;
+    let release!: () => void;
+    this.#free = new Promise((resolve) => {
+      release = resolve;
+    });
+    await previous;
+    const client = await this.#client.catch((error: unknown) => {
+      release();
+      throw error;
+    });
+    let released = false;
+    return {
+      query: client.query.bind(client) as Client["query"],
+      release: () => {
+        if (released) return;
+        released = true;
+        release();
+      },
+    };
   }
 
   async end(): Promise<void> {
@@ -44,18 +71,10 @@ class DirectClientPool {
     await client.end();
   }
 
-  async #open(): Promise<DirectClient> {
+  async #open(): Promise<Client> {
     const client = new Client({ connectionString: this.#connectionString });
     await client.connect();
-
-    Object.defineProperty(client, "release", {
-      configurable: false,
-      enumerable: false,
-      value: () => undefined,
-      writable: false,
-    });
-
-    return client as DirectClient;
+    return client;
   }
 }
 

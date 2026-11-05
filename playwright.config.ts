@@ -43,6 +43,7 @@ const port = origin.port;
 
 export default defineConfig({
   testDir: "./tests/browser",
+  globalSetup: "./tests/browser/global-setup.ts",
   fullyParallel: false,
   workers: 1,
   retries: 0,
@@ -57,7 +58,7 @@ export default defineConfig({
   use: {
     baseURL: appOrigin,
     // A pinned locale: a POSIX shell's default ("en-US@posix") is not a valid
-    // BCP 47 tag, and the chart library's Intl calls throw on it.
+    // BCP 47 tag, and Intl calls throw on it.
     locale: "en-US",
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
@@ -79,11 +80,12 @@ export default defineConfig({
   ],
   ...(hasTestDatabase
     ? {
-        // Lists the five names and runs one dealer job against DATABASE_URL_TEST.
-        globalSetup: "./tests/browser/global-setup.ts",
         webServer: {
           command: `npm run dev -- -H ${origin.hostname} -p ${port}`,
-          url: appOrigin,
+          // Readiness polls a page that reads no database: Playwright starts this
+          // server before global setup migrates and seeds DATABASE_URL_TEST, and
+          // the index pages answer 500 on an empty database.
+          url: `${appOrigin}/rulebook`,
           reuseExistingServer: false,
           // A first compile in a git worktree can wait on the file watcher scanning its
           // siblings; four minutes keeps that from failing the run before a test does.
@@ -94,9 +96,6 @@ export default defineConfig({
             DATABASE_URL: process.env.DATABASE_URL_TEST!,
             DATABASE_URL_UNPOOLED: process.env.DATABASE_URL_TEST!,
             APP_ORIGIN: appOrigin,
-            // Specs sign in without X, the only identity; `next dev` is the only place this works.
-            TOURNAMENT_DEV_SIGN_IN: "1",
-            TOURNAMENT_ADMIN_X_IDS: "dev:pw_admin",
           },
         },
       }

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { RULEBOOK } from "../../src/lib/engine/dealer/rulebook.js";
+import { RULEBOOK } from "../../src/lib/engine/rulebook.js";
 import {
   openMarketRow,
   renderResolutionSourcesMarkdown,
@@ -85,7 +85,8 @@ describe("OpenMarket's row", () => {
       expect(row.settlement_source.toLowerCase()).toContain(source.toLowerCase());
     }
     expect(row.revision_window).toContain(`${RULEBOOK.revision_window_days} days`);
-    expect(row.void_rule).toBe(RULEBOOK.forward.void);
+    expect(row.void_rule).toBe(RULEBOOK.contracts.no_print);
+    for (const kind of RULEBOOK.contracts.kinds) expect(row.instrument).toContain(kind);
     expect(row.notes).toContain(`v${RULEBOOK.version}`);
   });
 

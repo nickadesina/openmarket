@@ -3,7 +3,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { ServiceError } from "../api/errors.js";
 
 /**
- * Reference API keys (README D14, migration 010): `om_` and 43 base64url
+ * Reference API keys (v1 README D14, kept in v2; migration 010): `om_` and 43 base64url
  * characters of 32 random bytes. The key is shown once at creation; the
  * table holds only its SHA-256, which is enough for a 256-bit random secret.
  */

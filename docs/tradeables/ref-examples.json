@@ -1,366 +1,1012 @@
 {
-  "captured_at": "2026-10-27T18:45:44.673Z",
+  "generated_at": "2026-11-05T01:08:57.803Z",
+  "generated_by": "npm run export:ref-examples",
   "slug": "anthropic",
-  "note": "Real responses from a development server. Keys withheld: parameters, blend, weights, components, inputs, half_spread, cap_usd_effective. Arrays keep their first 2 entries.",
+  "note": "Payloads from the route services against the development database with ingested EDGAR data. Arrays keep their first 2 entries and strings their first 400 characters; each example's cuts list what was cut and its length.",
   "examples": {
-    "listings": {
-      "request": "GET /api/ref/listings",
+    "names": {
+      "request": "GET /api/ref/names",
       "response": {
-        "model_version": "1.0.0",
-        "rulebook_version": "1.0.0",
-        "blend_version": "1.1.0",
-        "as_of": "2026-10-27T18:45:41.999Z",
-        "listings": [
+        "methodology_version": "0.1.0",
+        "ce_version": "0.1.0",
+        "rulebook_version": "2.0.0",
+        "as_of": "2026-11-05T01:08:57.803Z",
+        "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so the latest quarter can change as late reports arrive.",
+        "families_version": "0.1.0",
+        "names": [
           {
             "slug": "anduril",
             "name": "Anduril",
-            "tier": "mega",
-            "binary_event": "priced_round",
-            "listed_at": "2026-10-20T00:00:00.000Z",
-            "listing_model_version": "1.0.0",
-            "forward_t_days": 270,
-            "anchor": {
-              "round": "Series H",
-              "date": "2026-05-13",
-              "post_money_usd": 61000000000,
-              "source_url": "https://www.anduril.com/news/anduril-announces-usd5b-series-h-raise",
-              "source_rank": 1
+            "listed_on": null,
+            "security_label": "Series H Preferred",
+            "quarter": "2026Q3",
+            "consensus_usd": 68.95269990592662,
+            "n_families": 5,
+            "dispersion_pct": 6.5987263822992315,
+            "dispersion_high_family": "fidelity-fmr",
+            "dispersion_low_family": "blackrock",
+            "latest_filed_on": "2026-10-30",
+            "latest_as_of": "2026-08-31",
+            "live_marks": 745,
+            "labels": 4,
+            "last_print": {
+              "round_name": "Series H",
+              "announced_on": "2026-05-13",
+              "post_money_usd": "61000000000",
+              "price_per_share_usd": null
             },
-            "instruments": [
-              {
-                "id": "be0e2d15-7a46-4d7d-8138-6c78a41f0f83",
-                "kind": "binary",
-                "epoch": 1,
-                "question": "Will Anduril announce a priced round by 2026-12-31?",
-                "state": "quoting",
-                "opens_at": "2026-10-27T18:44:11.184Z",
-                "expires_at": "2026-12-31T23:59:59.999Z",
-                "widened_until": null
+            "spv_vehicles": 87,
+            "coverage": {
+              "searched": {
+                "fetched_at": "2026-11-04T23:40:03.716Z",
+                "start_date": "2019-01-01",
+                "end_date": "2026-11-04"
               },
-              {
-                "id": "6d915c34-0305-4258-9d12-5e5d5574b6f4",
-                "kind": "forward",
-                "epoch": 1,
-                "question": "What will Anduril's next post-money valuation be?",
-                "state": "quoting",
-                "opens_at": "2026-10-27T18:44:11.184Z",
-                "expires_at": "2027-07-24T18:44:11.184Z",
-                "widened_until": null
-              }
-            ]
+              "nport_filings": 486,
+              "ncsr_filings": 174,
+              "nport_families": 12,
+              "families": 14,
+              "latest_filed": "2026-10-30"
+            },
+            "no_marks": null
           },
           {
             "slug": "anthropic",
             "name": "Anthropic",
-            "tier": "mega",
-            "binary_event": "public_s1",
-            "listed_at": "2026-10-20T00:00:00.000Z",
-            "listing_model_version": "1.0.0",
-            "forward_t_days": 180,
-            "anchor": {
-              "round": "Series H",
-              "date": "2026-05-28",
-              "post_money_usd": 965000000000,
-              "source_url": "https://www.anthropic.com/news/series-h",
-              "source_rank": 1
+            "listed_on": null,
+            "security_label": "Series H-1 Preferred",
+            "quarter": "2026Q3",
+            "consensus_usd": 777.53,
+            "n_families": 5,
+            "dispersion_pct": 25.77141717152199,
+            "dispersion_high_family": "t-rowe-price",
+            "dispersion_low_family": "franklin-templeton",
+            "latest_filed_on": "2026-10-30",
+            "latest_as_of": "2026-08-31",
+            "live_marks": 731,
+            "labels": 12,
+            "last_print": {
+              "round_name": "Series H",
+              "announced_on": "2026-05-28",
+              "post_money_usd": "965000000000",
+              "price_per_share_usd": null
             },
-            "instruments": [
+            "spv_vehicles": 76,
+            "coverage": {
+              "searched": {
+                "fetched_at": "2026-11-04T23:40:03.716Z",
+                "start_date": "2019-01-01",
+                "end_date": "2026-11-04"
+              },
+              "nport_filings": 717,
+              "ncsr_filings": 239,
+              "nport_families": 21,
+              "families": 43,
+              "latest_filed": "2026-10-30"
+            },
+            "no_marks": null
+          }
+        ]
+      },
+      "cuts": [
+        {
+          "path": "names",
+          "length": 20
+        }
+      ]
+    },
+    "name": {
+      "request": "GET /api/ref/anthropic",
+      "response": {
+        "methodology_version": "0.1.0",
+        "ce_version": "0.1.0",
+        "rulebook_version": "2.0.0",
+        "as_of": "2026-11-05T01:08:57.803Z",
+        "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so the latest quarter can change as late reports arrive.",
+        "families_version": "0.1.0",
+        "issuer": {
+          "slug": "anthropic",
+          "name": "Anthropic",
+          "legal_name": "Anthropic, PBC",
+          "watchlisted": true,
+          "incorporation_state": null,
+          "incorporation_source": null,
+          "listed_on": null,
+          "listing_url": null
+        },
+        "marks_summary": {
+          "live": 731,
+          "in_series": 615,
+          "no_per_share": 7,
+          "not_comparable_label": 109,
+          "after_listing": 0,
+          "latest_filed_on": "2026-10-30",
+          "latest_as_of": "2026-08-31"
+        },
+        "coverage": {
+          "searched": {
+            "fetched_at": "2026-11-04T23:40:03.716Z",
+            "start_date": "2019-01-01",
+            "end_date": "2026-11-04"
+          },
+          "nport_filings": 717,
+          "ncsr_filings": 239,
+          "nport_families": 21,
+          "families": 43,
+          "latest_filed": "2026-10-30"
+        },
+        "no_marks": null,
+        "out_of_series": [
+          {
+            "status": "not_comparable_label",
+            "security_label": "Unclassified",
+            "reason": "The classifier names no security for it: the title names no series or class (often the issuer's name alone), or one the holding's name contradicts, or it is a right, swap, loan, debt or derivative. Which security it is is not known, so it is compared with nothing (METHODOLOGY.md, Security labels).",
+            "n_marks": 105,
+            "n_filers": 29,
+            "latest_as_of": "2026-08-31",
+            "recent": [
               {
-                "id": "ee87a385-9a4e-484d-a259-62d1d8dae3ab",
-                "kind": "binary",
-                "epoch": 1,
-                "question": "Will Anthropic publicly file an S-1 by 2026-12-31?",
-                "state": "quoting",
-                "opens_at": "2026-10-27T18:44:11.184Z",
-                "expires_at": "2026-12-31T23:59:59.999Z",
-                "widened_until": null
+                "source_class": "nport",
+                "accession": "0001193125-26-439060",
+                "document_url": "https://www.sec.gov/Archives/edgar/data/44201/000119312526439060/primary_doc.xml",
+                "filer_name": "Growth Fund of America",
+                "filed_on": "2026-10-30",
+                "mark_id": "297d04c7-6711-4f7a-8124-95b287dc973d",
+                "filer_cik": "44201",
+                "fund_series_id": "S000009228",
+                "fund_series_name": "Growth Fund of America",
+                "holding_title": "ANTHROPIC PBC PP (PHYSICAL) (NOT LISTED OR TRADING)",
+                "balance": "519146.00",
+                "value_usd": "390044772.72",
+                "mark_per_share_usd": "751.3200000000000000",
+                "as_of": "2026-08-31"
               },
               {
-                "id": "fcb03c6b-8977-4c45-bb6d-e00a83969f40",
-                "kind": "forward",
-                "epoch": 1,
-                "question": "What will Anthropic's next post-money valuation be?",
-                "state": "quoting",
-                "opens_at": "2026-10-27T18:44:11.184Z",
-                "expires_at": "2027-04-25T18:44:11.184Z",
-                "widened_until": null
+                "source_class": "nport",
+                "accession": "0001193125-26-439062",
+                "document_url": "https://www.sec.gov/Archives/edgar/data/719608/000119312526439062/primary_doc.xml",
+                "filer_name": "New Economy Fund",
+                "filed_on": "2026-10-30",
+                "mark_id": "5073681a-2eb0-4f4d-ae09-5d7264f07861",
+                "filer_cik": "719608",
+                "fund_series_id": "S000009598",
+                "fund_series_name": "New Economy Fund",
+                "holding_title": "ANTHROPIC PBC PP (PHYSICAL) (NOT LISTED OR TRADING)",
+                "balance": "96339.00",
+                "value_usd": "72381417.48",
+                "mark_per_share_usd": "751.3200000000000000",
+                "as_of": "2026-08-31"
+              }
+            ]
+          },
+          {
+            "status": "no_per_share",
+            "security_label": "Unclassified",
+            "reason": "No per-share mark: the balance is not counted in shares (N-PORT units other than NS) or is not above zero, so the row counts toward value only (METHODOLOGY.md, The unit).",
+            "n_marks": 6,
+            "n_filers": 1,
+            "latest_as_of": "2026-06-30",
+            "recent": [
+              {
+                "source_class": "nport",
+                "accession": "0001410368-26-085820",
+                "document_url": "https://www.sec.gov/Archives/edgar/data/2044519/000141036826085820/primary_doc.xml",
+                "filer_name": "Coatue Innovative Strategies Fund",
+                "filed_on": "2026-08-26",
+                "mark_id": "40e98d55-7ef2-479f-9036-79e31c712aa7",
+                "filer_cik": "2044519",
+                "fund_series_id": null,
+                "fund_series_name": "Coatue Innovative Strategies Fund",
+                "holding_title": "ANTHROPIC",
+                "balance": "964742.00000000",
+                "value_usd": "568242203.05000000",
+                "mark_per_share_usd": null,
+                "as_of": "2026-06-30"
+              },
+              {
+                "source_class": "nport",
+                "accession": "0001410368-26-085820",
+                "document_url": "https://www.sec.gov/Archives/edgar/data/2044519/000141036826085820/primary_doc.xml",
+                "filer_name": "Coatue Innovative Strategies Fund",
+                "filed_on": "2026-08-26",
+                "mark_id": "75f3f789-0c28-43fd-868f-af1983f60aa2",
+                "filer_cik": "2044519",
+                "fund_series_id": null,
+                "fund_series_name": "Coatue Innovative Strategies Fund",
+                "holding_title": "ANTHROPIC",
+                "balance": "886728.00000000",
+                "value_usd": "522291215.92000000",
+                "mark_per_share_usd": null,
+                "as_of": "2026-06-30"
               }
             ]
           }
-        ]
-      }
-    },
-    "reference": {
-      "request": "GET /api/ref/anthropic",
-      "response": {
-        "model_version": "1.0.0",
-        "rulebook_version": "1.0.0",
-        "blend_version": "1.1.0",
-        "as_of": "2026-10-27T18:45:42.344Z",
-        "slug": "anthropic",
-        "name": "Anthropic",
-        "tier": "mega",
-        "reference_forward": {
-          "instrument_id": "fcb03c6b-8977-4c45-bb6d-e00a83969f40",
-          "as_of": "2026-10-27T18:44:11.184Z",
-          "blend_version": "1.1.0",
-          "model_version": "1.0.0",
-          "rulebook_version": "1.0.0",
-          "model_only": true,
-          "ln": 28.24293060759329,
-          "usd": 1843949044585.99
-        },
-        "reference_hazard": {
-          "instrument_id": "ee87a385-9a4e-484d-a259-62d1d8dae3ab",
-          "as_of": "2026-10-27T18:44:11.184Z",
-          "blend_version": "1.1.0",
-          "model_version": "1.0.0",
-          "rulebook_version": "1.0.0",
-          "model_only": true,
-          "p": 0.19504853429410363
-        },
-        "last_print": {
-          "round": "Series H",
-          "date": "2026-05-28",
-          "post_money_usd": 965000000000,
-          "post_money_ln": 27.595393938285397,
-          "source_url": "https://www.anthropic.com/news/series-h",
-          "source_rank": 1,
-          "flag_id": null
-        },
-        "next_expiry": {
-          "kind": "binary",
-          "instrument_id": "ee87a385-9a4e-484d-a259-62d1d8dae3ab",
-          "expires_at": "2026-12-31T23:59:59.999Z"
-        },
-        "dealer_inventory_sign": 0,
-        "instruments": [
-          {
-            "id": "ee87a385-9a4e-484d-a259-62d1d8dae3ab",
-            "kind": "binary",
-            "epoch": 1,
-            "state": "quoting",
-            "opens_at": "2026-10-27T18:44:11.184Z",
-            "expires_at": "2026-12-31T23:59:59.999Z",
-            "widened_until": null,
-            "question_slug": null
-          },
-          {
-            "id": "fcb03c6b-8977-4c45-bb6d-e00a83969f40",
-            "kind": "forward",
-            "epoch": 1,
-            "state": "quoting",
-            "opens_at": "2026-10-27T18:44:11.184Z",
-            "expires_at": "2027-04-25T18:44:11.184Z",
-            "widened_until": null,
-            "question_slug": null
-          }
-        ]
-      }
-    },
-    "history": {
-      "request": "GET /api/ref/anthropic/history?limit=2",
-      "response": {
-        "model_version": "1.0.0",
-        "rulebook_version": "1.0.0",
-        "blend_version": "1.1.0",
-        "as_of": "2026-10-27T18:45:42.603Z",
-        "slug": "anthropic",
-        "from": null,
-        "to": "2026-10-27T18:45:42.603Z",
-        "references": [
-          {
-            "id": "542ed7ca-0472-48da-8aff-73c9df3c583c",
-            "kind": "forward",
-            "as_of": "2026-10-27T18:44:11.184Z",
-            "value": 28.24293060759329,
-            "usd": 1843949044585.99,
-            "blend_version": "1.1.0",
-            "model_version": "1.0.0",
-            "rulebook_version": "1.0.0"
-          },
-          {
-            "id": "88c0813c-a911-4ca3-b163-c9df1b9cf1c6",
-            "kind": "binary",
-            "as_of": "2026-10-27T18:44:11.184Z",
-            "value": 0.19504853429410363,
-            "usd": null,
-            "blend_version": "1.1.0",
-            "model_version": "1.0.0",
-            "rulebook_version": "1.0.0"
-          }
         ],
-        "quotes": [
+        "headline": {
+          "security_label": "Series H-1 Preferred",
+          "quarter": "2026Q3",
+          "consensus_usd": 777.53,
+          "n_families": 5,
+          "dispersion_pct": 25.77141717152199
+        },
+        "labels": [
           {
-            "sequence": "3",
-            "instrument_id": "ee87a385-9a4e-484d-a259-62d1d8dae3ab",
-            "kind": "binary",
-            "epoch": 1,
-            "posted_at": "2026-10-27T18:44:11.184Z",
-            "reason": "list",
-            "model_mid_id": "34d16af0-ea8a-4bfc-abf7-b43d19a6cef2",
-            "mid_ln": null,
-            "mid_usd": null,
-            "bid_ln": null,
-            "bid_usd": null,
-            "ask_ln": null,
-            "ask_usd": null,
-            "price": 0.19504853429410363,
-            "dealer_inventory_sign": 0,
-            "flag_state": "normal",
-            "model_version": "1.0.0",
-            "rulebook_version": "1.0.0"
-          },
-          {
-            "sequence": "4",
-            "instrument_id": "fcb03c6b-8977-4c45-bb6d-e00a83969f40",
-            "kind": "forward",
-            "epoch": 1,
-            "posted_at": "2026-10-27T18:44:11.184Z",
-            "reason": "list",
-            "model_mid_id": "d00726b3-4f89-4335-a2ad-94575d5910b5",
-            "mid_ln": 28.24293060759329,
-            "mid_usd": 1843949044585.99,
-            "bid_ln": 28.19293060759329,
-            "bid_usd": 1754018588490.17,
-            "ask_ln": 28.29293060759329,
-            "ask_usd": 1938490333763.44,
-            "price": null,
-            "dealer_inventory_sign": 0,
-            "flag_state": "normal",
-            "model_version": "1.0.0",
-            "rulebook_version": "1.0.0"
-          }
-        ],
-        "next_cursor": null
-      }
-    },
-    "mids": {
-      "request": "GET /api/ref/anthropic/mids?limit=2",
-      "response": {
-        "model_version": "1.0.0",
-        "rulebook_version": "1.0.0",
-        "blend_version": "1.1.0",
-        "as_of": "2026-10-27T18:45:43.048Z",
-        "slug": "anthropic",
-        "mids": [
-          {
-            "id": "34d16af0-ea8a-4bfc-abf7-b43d19a6cef2",
-            "instrument_id": "ee87a385-9a4e-484d-a259-62d1d8dae3ab",
-            "kind": "binary",
-            "epoch": 1,
-            "computed_at": "2026-10-27T18:44:11.184Z",
-            "model_version": "1.0.0",
-            "rulebook_version": "1.0.0",
-            "mid_ln": null,
-            "p": 0.19504853429410363,
-            "run_id": "manual-ref-examples-1",
-            "mid_usd": null
-          },
-          {
-            "id": "d00726b3-4f89-4335-a2ad-94575d5910b5",
-            "instrument_id": "fcb03c6b-8977-4c45-bb6d-e00a83969f40",
-            "kind": "forward",
-            "epoch": 1,
-            "computed_at": "2026-10-27T18:44:11.184Z",
-            "model_version": "1.0.0",
-            "rulebook_version": "1.0.0",
-            "mid_ln": 28.24293060759329,
-            "p": null,
-            "run_id": "manual-ref-examples-1",
-            "mid_usd": 1843949044585.99
-          }
-        ],
-        "next_cursor": null
-      }
-    },
-    "flags": {
-      "request": "GET /api/ref/anthropic/flags?limit=2",
-      "response": {
-        "model_version": "1.0.0",
-        "rulebook_version": "1.0.0",
-        "blend_version": "1.1.0",
-        "as_of": "2026-10-27T18:45:44.307Z",
-        "slug": "anthropic",
-        "flags": [],
-        "next_cursor": null
-      }
-    },
-    "rulebook": {
-      "request": "GET /api/ref/rulebook",
-      "response": {
-        "model_version": "1.0.0",
-        "rulebook_version": "1.0.0",
-        "blend_version": "1.1.0",
-        "as_of": "2026-10-27T18:45:44.669Z",
-        "rulebook": {
-          "version": "1.0.0",
-          "print": {
-            "definition": "The post-money valuation of a priced primary equity round, publicly reported.",
-            "also_for_labs": "An IPO's first-day closing market capitalisation.",
-            "not_prints": [
-              "SAFEs and convertible notes",
-              "same-price extensions"
+            "security_label": "Common",
+            "consensus": [
+              {
+                "quarter": "2026Q2",
+                "quarter_start": "2026-04-01",
+                "quarter_end": "2026-06-30",
+                "consensus_usd": 589.0097504971347,
+                "n_families": 2,
+                "dispersion": {
+                  "pct": 0.00008471943464127048,
+                  "high": {
+                    "family_slug": "innovation-access-fund",
+                    "family_name": "Innovation Access Fund",
+                    "mark_per_share_usd": 589.01,
+                    "as_of": "2026-06-30"
+                  },
+                  "low": {
+                    "family_slug": "t-rowe-price",
+                    "family_name": "T. Rowe Price",
+                    "mark_per_share_usd": 589.0095009942694,
+                    "as_of": "2026-06-30"
+                  }
+                },
+                "families": [
+                  {
+                    "family_slug": "innovation-access-fund",
+                    "family_name": "Innovation Access Fund",
+                    "mark_per_share_usd": 589.01,
+                    "as_of": "2026-06-30"
+                  },
+                  {
+                    "family_slug": "t-rowe-price",
+                    "family_name": "T. Rowe Price",
+                    "mark_per_share_usd": 589.0095009942694,
+                    "as_of": "2026-06-30"
+                  }
+                ],
+                "mark_vs_print": {
+                  "status": "none",
+                  "reason": "no_certificate_price"
+                }
+              }
             ],
-            "conversions": [
-              "A pre-money valuation plus the amount raised is the post-money.",
-              "A reported range settles at its midpoint (the ingest records the midpoint)."
-            ]
+            "family_marks": [
+              {
+                "family_slug": "innovation-access-fund",
+                "family_name": "Innovation Access Fund",
+                "family_mapped": true,
+                "as_of": "2026-06-30",
+                "mark_per_share_usd": 589.01,
+                "n_funds": 1,
+                "min_fund_mark_usd": 589.01,
+                "max_fund_mark_usd": 589.01,
+                "intra_family_split": false,
+                "documents": [
+                  {
+                    "source_class": "nport",
+                    "accession": "0001193125-26-374492",
+                    "document_url": "https://www.sec.gov/Archives/edgar/data/1905379/000119312526374492/primary_doc.xml",
+                    "filer_name": "Innovation Access Fund",
+                    "filed_on": "2026-08-28",
+                    "mark_id": "27b94a5f-8359-4c72-9771-78cf6f9bb533",
+                    "filer_cik": "1905379",
+                    "fund_series_id": null,
+                    "fund_series_name": "Innovation Access Fund",
+                    "holding_title": "Private Equity",
+                    "balance": "67532",
+                    "value_usd": "39777023.32",
+                    "mark_per_share_usd": "589.0100000000000000"
+                  }
+                ],
+                "mark_vs_print": {
+                  "status": "none",
+                  "reason": "no_certificate_price"
+                }
+              },
+              {
+                "family_slug": "t-rowe-price",
+                "family_name": "T. Rowe Price",
+                "family_mapped": true,
+                "as_of": "2026-06-30",
+                "mark_per_share_usd": 589.0095009942694,
+                "n_funds": 2,
+                "min_fund_mark_usd": 589.0094998240367,
+                "max_fund_mark_usd": 589.0095021645021,
+                "intra_family_split": false,
+                "documents": [
+                  {
+                    "source_class": "nport",
+                    "accession": "0001099263-26-009627",
+                    "document_url": "https://www.sec.gov/Archives/edgar/data/1795351/000109926326009627/primary_doc.xml",
+                    "filer_name": "T. Rowe Price Exchange-Traded Funds, Inc.",
+                    "filed_on": "2026-08-27",
+                    "mark_id": "77379089-913a-49c6-98e2-5f04cd189700",
+                    "filer_cik": "1795351",
+                    "fund_series_id": "S000086172",
+                    "fund_series_name": "T. Rowe Price Technology ETF",
+                    "holding_title": "ANTHROPIC PBC COMMON PP TC5NX97S5",
+                    "balance": "1386.000000",
+                    "value_usd": "816367.170000",
+                    "mark_per_share_usd": "589.0095021645021645"
+                  },
+                  {
+                    "source_class": "nport",
+                    "accession": "0001099263-26-009574",
+                    "document_url": "https://www.sec.gov/Archives/edgar/data/819930/000109926326009574/primary_doc.xml",
+                    "filer_name": "T. ROWE PRICE SCIENCE & TECHNOLOGY FUND, INC.",
+                    "filed_on": "2026-08-27",
+                    "mark_id": "9de8cbdb-fc68-4f92-916d-dc4ac021c82a",
+                    "filer_cik": "819930",
+                    "fund_series_id": "S000002119",
+                    "fund_series_name": "T. Rowe Price Science & Technology Fund, Inc.",
+                    "holding_title": "Anthropic PBC Common Stock PP",
+                    "balance": "22732.000000",
+                    "value_usd": "13389363.950000",
+                    "mark_per_share_usd": "589.0094998240366004"
+                  }
+                ],
+                "mark_vs_print": {
+                  "status": "none",
+                  "reason": "no_certificate_price"
+                }
+              }
+            ],
+            "revisions": []
           },
-          "announcement": "The first public, dated statement that a priced round closed. Reporting that a round is in talks is not an announcement.",
-          "source_ranks": [
+          {
+            "security_label": "Series B Preferred",
+            "consensus": [
+              {
+                "quarter": "2024Q1",
+                "quarter_start": "2024-01-01",
+                "quarter_end": "2024-03-31",
+                "consensus_usd": 30.004500057296376,
+                "n_families": 1,
+                "dispersion": null,
+                "families": [
+                  {
+                    "family_slug": "fidelity-fmr",
+                    "family_name": "Fidelity (FMR)",
+                    "mark_per_share_usd": 30.004500057296376,
+                    "as_of": "2024-03-31"
+                  }
+                ],
+                "mark_vs_print": {
+                  "status": "none",
+                  "reason": "no_certificate_price"
+                }
+              },
+              {
+                "quarter": "2024Q2",
+                "quarter_start": "2024-04-01",
+                "quarter_end": "2024-06-30",
+                "consensus_usd": 30,
+                "n_families": 1,
+                "dispersion": null,
+                "families": [
+                  {
+                    "family_slug": "fidelity-fmr",
+                    "family_name": "Fidelity (FMR)",
+                    "mark_per_share_usd": 30,
+                    "as_of": "2024-06-30"
+                  }
+                ],
+                "mark_vs_print": {
+                  "status": "none",
+                  "reason": "no_certificate_price"
+                }
+              }
+            ],
+            "family_marks": [
+              {
+                "family_slug": "fidelity-fmr",
+                "family_name": "Fidelity (FMR)",
+                "family_mapped": true,
+                "as_of": "2024-03-31",
+                "mark_per_share_usd": 30.004500057296376,
+                "n_funds": 1,
+                "min_fund_mark_usd": 30.004500057296376,
+                "max_fund_mark_usd": 30.004500057296376,
+                "intra_family_split": false,
+                "documents": [
+                  {
+                    "source_class": "nport",
+                    "accession": "0001752724-24-116650",
+                    "document_url": "https://www.sec.gov/Archives/edgar/data/720318/000175272424116650/primary_doc.xml",
+                    "filer_name": "Variable Insurance Products Fund IV",
+                    "filed_on": "2024-05-23",
+                    "mark_id": "47436b32-025f-4ac6-b1a1-72fd74c5c26a",
+                    "filer_cik": "720318",
+                    "fund_series_id": "S000007755",
+                    "fund_series_name": "VIP Technology Portfolio",
+                    "holding_title": "ANTHROPIC PBC SER B PC PP",
+                    "balance": "78539.00000000",
+                    "value_usd": "2356523.43000000",
+                    "mark_per_share_usd": "30.0045000572963750"
+                  }
+                ],
+                "mark_vs_print": {
+                  "status": "none",
+                  "reason": "no_certificate_price"
+                }
+              },
+              {
+                "family_slug": "fidelity-fmr",
+                "family_name": "Fidelity (FMR)",
+                "family_mapped": true,
+                "as_of": "2024-04-30",
+                "mark_per_share_usd": 30.0045,
+                "n_funds": 1,
+                "min_fund_mark_usd": 30.0045,
+                "max_fund_mark_usd": 30.0045,
+                "intra_family_split": false,
+                "documents": [
+                  {
+                    "source_class": "nport",
+                    "accession": "0001752724-24-151088",
+                    "document_url": "https://www.sec.gov/Archives/edgar/data/315700/000175272424151088/primary_doc.xml",
+                    "filer_name": "Fidelity Advisor Series VII",
+                    "filed_on": "2024-06-28",
+                    "mark_id": "c0d8b736-7198-4d52-81de-fd234fc6cdaa",
+                    "filer_cik": "315700",
+                    "fund_series_id": "S000005322",
+                    "fund_series_name": "Fidelity Advisor Technology Fund",
+                    "holding_title": "ANTHROPIC PBC SER B PC PP",
+                    "balance": "190100.00000000",
+                    "value_usd": "5703855.45000000",
+                    "mark_per_share_usd": "30.0045000000000000"
+                  }
+                ],
+                "mark_vs_print": {
+                  "status": "none",
+                  "reason": "no_certificate_price"
+                }
+              }
+            ],
+            "revisions": [
+              {
+                "family_slug": "fidelity-fmr",
+                "family_name": "Fidelity (FMR)",
+                "from_as_of": "2024-08-31",
+                "to_as_of": "2024-09-30",
+                "from_mark_usd": 30,
+                "to_mark_usd": 32.25,
+                "ln": 0.07232066157962608,
+                "direction": "up",
+                "role": "leader",
+                "leader_family_slug": null,
+                "leader_as_of": null,
+                "lag_days": null
+              },
+              {
+                "family_slug": "fidelity-fmr",
+                "family_name": "Fidelity (FMR)",
+                "from_as_of": "2024-09-30",
+                "to_as_of": "2024-10-31",
+                "from_mark_usd": 32.25,
+                "to_mark_usd": 35.43,
+                "ln": 0.09404087563559915,
+                "direction": "up",
+                "role": "leader",
+                "leader_family_slug": null,
+                "leader_as_of": null,
+                "lag_days": null
+              }
+            ]
+          }
+        ],
+        "last_print": {
+          "round_name": "Series H",
+          "event_type": "priced_round",
+          "announced_on": "2026-05-28",
+          "post_money_usd": "965000000000",
+          "amount_raised_usd": "65000000000",
+          "series_label": null,
+          "price_per_share_usd": null,
+          "source_url": "https://www.anthropic.com/news/series-h",
+          "origin": "events.csv",
+          "price_source": null
+        },
+        "prints": [
+          {
+            "round_name": "Series C",
+            "event_type": "priced_round",
+            "announced_on": "2023-05-23",
+            "post_money_usd": "4100000000",
+            "amount_raised_usd": "450000000",
+            "series_label": null,
+            "price_per_share_usd": null,
+            "source_url": "https://www.anthropic.com/news/anthropic-series-c",
+            "origin": "events.csv",
+            "price_source": null
+          },
+          {
+            "round_name": "Series D",
+            "event_type": "priced_round",
+            "announced_on": "2024-01-11",
+            "post_money_usd": "18400000000",
+            "amount_raised_usd": "750000000",
+            "series_label": null,
+            "price_per_share_usd": null,
+            "source_url": "https://www.forbes.com/sites/alexkonrad/2024/01/11/anthropic-750million-funding-round-menlo-ventures/",
+            "origin": "events.csv",
+            "price_source": null
+          }
+        ],
+        "structure": null,
+        "spv": {
+          "vehicles": [
             {
-              "rank": 1,
-              "source": "Company or lead-investor release"
+              "vehicle_name": "Coastline Venture Partners Anthropic LLC",
+              "vehicle_cik": "2146809",
+              "match_method": "alias",
+              "match_note": "\"Anthropic\" in the vehicle name \"Coastline Venture Partners Anthropic LLC\" matches anthropic's vehicle pattern /\\bAnthropic\\b/i. Found by full-text search for anthropic.",
+              "latest_filing": {
+                "source_class": "form_d",
+                "accession": "0002146809-26-000001",
+                "document_url": "https://www.sec.gov/Archives/edgar/data/2146809/000214680926000001/primary_doc.xml",
+                "filer_name": "Coastline Venture Partners Anthropic LLC",
+                "filed_on": "2026-07-23",
+                "total_offering_usd": "4055618",
+                "total_sold_usd": "4055618",
+                "min_investment_usd": "0",
+                "sales_commission_usd": "0",
+                "finders_fee_usd": "0",
+                "first_sale_on": "2026-06-18",
+                "jurisdiction": "DELAWARE",
+                "related_persons": [
+                  {
+                    "name": "Coastline Venture Partners LLC",
+                    "clarification": "Manager",
+                    "relationships": [
+                      "Promoter"
+                    ]
+                  }
+                ]
+              },
+              "n_filings": 1
             },
             {
-              "rank": 2,
-              "source": "SEC filing"
+              "vehicle_name": "Inflection Ventures Anthropic Fund I LLC",
+              "vehicle_cik": "2128726",
+              "match_method": "alias",
+              "match_note": "\"Anthropic\" in the vehicle name \"Inflection Ventures Anthropic Fund I LLC\" matches anthropic's vehicle pattern /\\bAnthropic\\b/i. Found by full-text search for anthropic.",
+              "latest_filing": {
+                "source_class": "form_d",
+                "accession": "0002128726-26-000001",
+                "document_url": "https://www.sec.gov/Archives/edgar/data/2128726/000212872626000001/primary_doc.xml",
+                "filer_name": "Inflection Ventures Anthropic Fund I LLC",
+                "filed_on": "2026-05-15",
+                "total_offering_usd": "306000",
+                "total_sold_usd": "306000",
+                "min_investment_usd": "0",
+                "sales_commission_usd": "0",
+                "finders_fee_usd": "0",
+                "first_sale_on": "2026-05-07",
+                "jurisdiction": "DELAWARE",
+                "related_persons": [
+                  {
+                    "name": "Inflection Venture Capital LLC",
+                    "clarification": "Manager",
+                    "relationships": [
+                      "Promoter"
+                    ]
+                  }
+                ]
+              },
+              "n_filings": 1
             }
           ],
-          "tier1_outlets": [
-            "Bloomberg",
-            "Reuters"
-          ],
-          "syndication": "Syndicated copies of one report count as one outlet: a reprint counts under the outlet that originated it.",
-          "charter": "A state charter's price per share re-centres the model mid and never settles.",
-          "revision_window_days": 7,
-          "revision": "A higher-ranked source dated within the revision window of the first print supersedes it, even when dated after expiry. A settlement is final once nothing can outrank it or the window and the observation grace have passed.",
-          "observation_grace_days": 1,
-          "review": {
-            "auto_resolve_max_rank": 2,
-            "review_hours": 24
-          },
-          "binary": {
-            "resolves_yes": "On the first qualifying announcement at or before quarter-end 23:59:59.999 UTC: a priced round (labs: a public S-1).",
-            "resolves_no": "One day after quarter-end, if nothing qualified.",
-            "undisclosed_valuation": "A priced round with an undisclosed valuation still resolves YES.",
-            "labs": "A confidential S-1 resolves only once it is public before quarter-end.",
-            "window": "Any qualifying announcement strictly after the binary's listing time and at or before its expiry counts, including a second round in the same calendar quarter (decision 0002).",
-            "expiry_floor_days": 21,
-            "expiry": "The current calendar quarter-end if at least 21 days remain at listing, otherwise the next quarter-end.",
-            "roll": "Each successor lists the same day its predecessor resolves or expires."
-          },
-          "forward": {
-            "settles": "On the first print after the position's instrument opened, with a qualifying post-money dated at or before expiry.",
-            "undisclosed_valuation": "Waits until expiry for a qualifying post-money, then voids with full refund.",
-            "void": "No print by expiry voids every position with full refund of collateral.",
-            "down_rounds": "Settle normally; shorts are paid.",
-            "acquisition": "An acquisition before a print settles at a disclosed cash-equivalent equity value; with none disclosed the forward voids when it is announced.",
-            "roll": "On settlement the successor opens anchored on the print; on void, at the current mid."
-          }
+          "quotes": []
+        }
+      },
+      "cuts": [
+        {
+          "path": "out_of_series",
+          "length": 4
         },
-        "not_built": [
+        {
+          "path": "out_of_series[0].recent",
+          "length": 12
+        },
+        {
+          "path": "out_of_series[1].recent",
+          "length": 6
+        },
+        {
+          "path": "labels",
+          "length": 12
+        },
+        {
+          "path": "labels[1].consensus",
+          "length": 11
+        },
+        {
+          "path": "labels[1].family_marks",
+          "length": 27
+        },
+        {
+          "path": "labels[1].revisions",
+          "length": 12
+        },
+        {
+          "path": "prints",
+          "length": 6
+        },
+        {
+          "path": "spv.vehicles",
+          "length": 76
+        }
+      ]
+    },
+    "marks": {
+      "request": "GET /api/ref/anthropic/marks?limit=2",
+      "response": {
+        "methodology_version": "0.1.0",
+        "ce_version": "0.1.0",
+        "rulebook_version": "2.0.0",
+        "as_of": "2026-11-05T01:08:57.803Z",
+        "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so the latest quarter can change as late reports arrive.",
+        "families_version": "0.1.0",
+        "issuer": {
+          "slug": "anthropic",
+          "name": "Anthropic",
+          "listed_on": null
+        },
+        "include": "live",
+        "security_label": null,
+        "marks": [
           {
-            "rule": "charter",
-            "note": "Charter re-centring: the mid reads scoops only, and a charter only widens the forward like any flag."
+            "mark_id": "47436b32-025f-4ac6-b1a1-72fd74c5c26a",
+            "status": "live",
+            "superseded_by": null,
+            "correction_id": null,
+            "series_status": "in_series",
+            "security_label": "Series B Preferred",
+            "security_kind": "preferred",
+            "holding_name": "ANTHROPIC PBC",
+            "holding_title": "ANTHROPIC PBC SER B PC PP",
+            "asset_category": "EP",
+            "balance": "78539.00000000",
+            "units": "NS",
+            "value_usd": "2356523.43000000",
+            "mark_per_share_usd": "30.0045000572963750",
+            "fair_value_level": "3",
+            "is_restricted": true,
+            "as_of": "2024-03-31",
+            "recorded_at": "2026-11-04T23:37:21.653326Z",
+            "family": {
+              "family_slug": "fidelity-fmr",
+              "family_name": "Fidelity (FMR)",
+              "family_mapped": true
+            },
+            "document": {
+              "source_class": "nport",
+              "source_rank": 2,
+              "accession": "0001752724-24-116650",
+              "document_url": "https://www.sec.gov/Archives/edgar/data/720318/000175272424116650/primary_doc.xml",
+              "form_type": "NPORT-P",
+              "filer_cik": "720318",
+              "filer_name": "Variable Insurance Products Fund IV",
+              "fund_series_id": "S000007755",
+              "fund_series_name": "VIP Technology Portfolio",
+              "filed_on": "2024-05-23",
+              "period_end": "2024-03-31",
+              "content_sha256": "d9d3cd0ccb8be3399b7563ef85ed96f944cabb7990b8c398a300f390f3df7b3d",
+              "parser_version": "nport-0.1.0"
+            }
           },
           {
-            "rule": "review",
-            "note": "Rank 3 and 4 review queue: the settle job promotes rank 1 and 2 releases only and reports rank 3 and 4 as pending."
+            "mark_id": "c0d8b736-7198-4d52-81de-fd234fc6cdaa",
+            "status": "live",
+            "superseded_by": null,
+            "correction_id": null,
+            "series_status": "in_series",
+            "security_label": "Series B Preferred",
+            "security_kind": "preferred",
+            "holding_name": "ANTHROPIC PBC",
+            "holding_title": "ANTHROPIC PBC SER B PC PP",
+            "asset_category": "EP",
+            "balance": "190100.00000000",
+            "units": "NS",
+            "value_usd": "5703855.45000000",
+            "mark_per_share_usd": "30.0045000000000000",
+            "fair_value_level": "3",
+            "is_restricted": true,
+            "as_of": "2024-04-30",
+            "recorded_at": "2026-11-04T23:37:34.808047Z",
+            "family": {
+              "family_slug": "fidelity-fmr",
+              "family_name": "Fidelity (FMR)",
+              "family_mapped": true
+            },
+            "document": {
+              "source_class": "nport",
+              "source_rank": 2,
+              "accession": "0001752724-24-151088",
+              "document_url": "https://www.sec.gov/Archives/edgar/data/315700/000175272424151088/primary_doc.xml",
+              "form_type": "NPORT-P",
+              "filer_cik": "315700",
+              "filer_name": "Fidelity Advisor Series VII",
+              "fund_series_id": "S000005322",
+              "fund_series_name": "Fidelity Advisor Technology Fund",
+              "filed_on": "2024-06-28",
+              "period_end": "2024-04-30",
+              "content_sha256": "e21b0a140c0a162d77725af8fe4361c734c2905549829b3385ea1f44a7632a92",
+              "parser_version": "nport-0.1.0"
+            }
+          }
+        ],
+        "next_cursor": "eyJtYXJrcyI6eyJhdCI6IjIwMjYtMTEtMDRUMjM6Mzc6MzQuODA4MDQ3WiIsImtleSI6ImMwZDhiNzM2LTcxOTgtNGQ1Mi04MWRlLWZkMjM0ZmM2Y2RhYSJ9fQ"
+      },
+      "cuts": []
+    },
+    "revisions": {
+      "request": "GET /api/ref/anthropic/revisions",
+      "response": {
+        "methodology_version": "0.1.0",
+        "ce_version": "0.1.0",
+        "rulebook_version": "2.0.0",
+        "as_of": "2026-11-05T01:08:57.803Z",
+        "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so the latest quarter can change as late reports arrive.",
+        "families_version": "0.1.0",
+        "issuer": {
+          "slug": "anthropic",
+          "name": "Anthropic"
+        },
+        "rule": {
+          "revision_threshold_ln": 0.005,
+          "leader_window_days": 180
+        },
+        "revisions": [
+          {
+            "security_label": "Series B Preferred",
+            "family_slug": "fidelity-fmr",
+            "family_name": "Fidelity (FMR)",
+            "from_as_of": "2024-08-31",
+            "to_as_of": "2024-09-30",
+            "from_mark_usd": 30,
+            "to_mark_usd": 32.25,
+            "ln": 0.07232066157962608,
+            "direction": "up",
+            "role": "leader",
+            "leader_family_slug": null,
+            "leader_as_of": null,
+            "lag_days": null
+          },
+          {
+            "security_label": "Series D Preferred",
+            "family_slug": "fidelity-fmr",
+            "family_name": "Fidelity (FMR)",
+            "from_as_of": "2024-08-31",
+            "to_as_of": "2024-09-30",
+            "from_mark_usd": 30,
+            "to_mark_usd": 32.25,
+            "ln": 0.07232066157962608,
+            "direction": "up",
+            "role": "leader",
+            "leader_family_slug": null,
+            "leader_as_of": null,
+            "lag_days": null
           }
         ]
-      }
+      },
+      "cuts": [
+        {
+          "path": "revisions",
+          "length": 69
+        }
+      ]
+    },
+    "spv": {
+      "request": "GET /api/ref/anthropic/spv",
+      "response": {
+        "methodology_version": "0.1.0",
+        "ce_version": "0.1.0",
+        "rulebook_version": "2.0.0",
+        "as_of": "2026-11-05T01:08:57.803Z",
+        "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so the latest quarter can change as late reports arrive.",
+        "families_version": "0.1.0",
+        "issuer": {
+          "slug": "anthropic",
+          "name": "Anthropic"
+        },
+        "headline": {
+          "security_label": "Series H-1 Preferred",
+          "quarter": "2026Q3",
+          "consensus_usd": 777.53,
+          "n_families": 5,
+          "dispersion_pct": 25.77141717152199
+        },
+        "vehicles": [
+          {
+            "vehicle_name": "Coastline Venture Partners Anthropic LLC",
+            "vehicle_cik": "2146809",
+            "match_method": "alias",
+            "match_note": "\"Anthropic\" in the vehicle name \"Coastline Venture Partners Anthropic LLC\" matches anthropic's vehicle pattern /\\bAnthropic\\b/i. Found by full-text search for anthropic.",
+            "latest_filing": {
+              "source_class": "form_d",
+              "accession": "0002146809-26-000001",
+              "document_url": "https://www.sec.gov/Archives/edgar/data/2146809/000214680926000001/primary_doc.xml",
+              "filer_name": "Coastline Venture Partners Anthropic LLC",
+              "filed_on": "2026-07-23",
+              "total_offering_usd": "4055618",
+              "total_sold_usd": "4055618",
+              "min_investment_usd": "0",
+              "sales_commission_usd": "0",
+              "finders_fee_usd": "0",
+              "first_sale_on": "2026-06-18",
+              "jurisdiction": "DELAWARE",
+              "related_persons": [
+                {
+                  "name": "Coastline Venture Partners LLC",
+                  "clarification": "Manager",
+                  "relationships": [
+                    "Promoter"
+                  ]
+                }
+              ]
+            },
+            "n_filings": 1
+          },
+          {
+            "vehicle_name": "Inflection Ventures Anthropic Fund I LLC",
+            "vehicle_cik": "2128726",
+            "match_method": "alias",
+            "match_note": "\"Anthropic\" in the vehicle name \"Inflection Ventures Anthropic Fund I LLC\" matches anthropic's vehicle pattern /\\bAnthropic\\b/i. Found by full-text search for anthropic.",
+            "latest_filing": {
+              "source_class": "form_d",
+              "accession": "0002128726-26-000001",
+              "document_url": "https://www.sec.gov/Archives/edgar/data/2128726/000212872626000001/primary_doc.xml",
+              "filer_name": "Inflection Ventures Anthropic Fund I LLC",
+              "filed_on": "2026-05-15",
+              "total_offering_usd": "306000",
+              "total_sold_usd": "306000",
+              "min_investment_usd": "0",
+              "sales_commission_usd": "0",
+              "finders_fee_usd": "0",
+              "first_sale_on": "2026-05-07",
+              "jurisdiction": "DELAWARE",
+              "related_persons": [
+                {
+                  "name": "Inflection Venture Capital LLC",
+                  "clarification": "Manager",
+                  "relationships": [
+                    "Promoter"
+                  ]
+                }
+              ]
+            },
+            "n_filings": 1
+          }
+        ],
+        "quotes": []
+      },
+      "cuts": [
+        {
+          "path": "vehicles",
+          "length": 76
+        }
+      ]
+    },
+    "methodology": {
+      "request": "GET /api/ref/methodology",
+      "response": {
+        "methodology_version": "0.1.0",
+        "ce_version": "0.1.0",
+        "rulebook_version": "2.0.0",
+        "as_of": "2026-11-05T01:08:57.803Z",
+        "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so the latest quarter can change as late reports arrive.",
+        "families_version": "0.1.0",
+        "methodology": {
+          "methodology_version": "0.1.0",
+          "ce_version": "0.1.0",
+          "ce_basis": "authorized",
+          "per_share_units": "NS",
+          "revision_threshold_ln": 0.005,
+          "leader_window_days": 180,
+          "intra_family_split_tolerance": 0.001,
+          "min_families_for_dispersion": 2
+        },
+        "security_labels": {
+          "per_share_common": "Common",
+          "per_share_series_pattern": "^Series (?:Seed|[A-Z]{1,2}(?:-\\d{1,2})?) Preferred$",
+          "not_per_share": [
+            "Unclassified",
+            "SPV interest"
+          ],
+          "security_kinds": [
+            "preferred",
+            "common"
+          ]
+        },
+        "listings": [
+          {
+            "slug": "spacex",
+            "name": "SpaceX",
+            "listed_on": "2026-06-12",
+            "listing_url": "https://www.sec.gov/Archives/edgar/data/1181412/000162828026042639/spaceexplorationtechnologi.htm"
+          }
+        ],
+        "families": {
+          "version": "0.1.0",
+          "note": "Registrant CIKs grouped by the adviser firm their latest N-CEN names for their funds (drafted by npm run index:families from EDGAR; edited by hand where a registrant files no N-CEN). A CIK in no family is its own family. P3's engine reads this file.",
+          "n_families": 293,
+          "n_ciks": 798
+        }
+      },
+      "cuts": [
+        {
+          "path": "security_labels.not_per_share",
+          "length": 5
+        },
+        {
+          "path": "security_labels.security_kinds",
+          "length": 8
+        }
+      ]
+    },
+    "corrections": {
+      "request": "GET /api/ref/corrections?limit=1",
+      "response": {
+        "methodology_version": "0.1.0",
+        "ce_version": "0.1.0",
+        "rulebook_version": "2.0.0",
+        "as_of": "2026-11-05T01:08:57.803Z",
+        "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so the latest quarter can change as late reports arrive.",
+        "corrections": [
+          {
+            "correction_id": "b5a904a0-6f18-4acd-b41d-3b1185fc9038",
+            "published_at": "2026-11-05T00:03:14.688000Z",
+            "methodology_version": "0.1.0",
+            "kind": "parser",
+            "summary": "Security labels re-read with the methodology's classifier (engine/index/series.ts classifySecurity): 8229 of 15284 live marks get a new label or kind. The filers' figures are unchanged.",
+            "diff_md": "| Issuer | Label as stored | Label as read now | Rows |\n| --- | --- | --- | --- |\n| anduril | Class B Common (common) | Common (common) | 130 |\n| anduril | Class C Common (common) | Common (common) | 102 |\n| anduril | Preferred (preferred) | Unclassified (preferred) | 17 |\n| anduril | Common (common) | Unclassified (unknown) | 11 |\n| anthropic | Common (common) | Unclassified (unknown) | 70 |\n| an…",
+            "affected": {
+              "rows": 8229,
+              "parser": "the methodology's classifier (engine/index/series.ts classifySecurity)",
+              "changes": [
+                {
+                  "rows": 130,
+                  "issuer": "anduril",
+                  "to_kind": "common",
+                  "to_label": "Common",
+                  "from_kind": "common",
+                  "from_label": "Class B Common"
+                },
+                {
+                  "rows": 102,
+                  "issuer": "anduril",
+                  "to_kind": "common",
+                  "to_label": "Common",
+                  "from_kind": "common",
+                  "from_label": "Class C Common"
+                }
+              ],
+              "per_share_changed": 0
+            },
+            "rows_written": {
+              "filer_marks": 8229,
+              "certificates": 0
+            }
+          }
+        ],
+        "next_cursor": null
+      },
+      "cuts": [
+        {
+          "path": "corrections[0].diff_md",
+          "length": 3424
+        },
+        {
+          "path": "corrections[0].affected.changes",
+          "length": 51
+        }
+      ]
     }
   }
 }

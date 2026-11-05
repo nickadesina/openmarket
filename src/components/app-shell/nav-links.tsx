@@ -14,7 +14,7 @@ export function NavLinks() {
   const pathname = usePathname();
   const navRef = useRef<HTMLElement>(null);
   // At phone width the links scroll sideways; keep the current section in view,
-  // also when the strip resizes (the account control settles after its read).
+  // also when the strip resizes.
   useEffect(() => {
     const nav = navRef.current;
     if (nav === null) return;
@@ -33,11 +33,16 @@ export function NavLinks() {
     observer.observe(nav);
     return () => observer.disconnect();
   }, [pathname]);
-  // The tournament is the product; the markets are a paper demo beside it.
   const links = [
-    { href: "/t", label: "Tournament", current: within(pathname, "/t") },
-    { href: "/m", label: "Markets", current: within(pathname, "/m") },
-    { href: "/portfolio", label: "Portfolio", current: pathname === "/portfolio" },
+    {
+      href: "/",
+      label: "Index",
+      current: pathname === "/" || within(pathname, "/n"),
+    },
+    { href: "/methodology", label: "Methodology", current: within(pathname, "/methodology") },
+    { href: "/rulebook", label: "Rulebook", current: within(pathname, "/rulebook") },
+    { href: "/ref", label: "API", current: within(pathname, "/ref") },
+    { href: "/corrections", label: "Corrections", current: within(pathname, "/corrections") },
   ];
 
   return (
