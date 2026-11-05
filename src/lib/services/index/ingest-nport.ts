@@ -62,6 +62,13 @@ export interface IngestNportOptions {
   readonly deadlineMs?: number;
   /** Skip the search and ingest these (tests, reruns). */
   readonly candidates?: readonly NportCandidate[];
+  /**
+   * Read every candidate again, even one with marks for every issuer the
+   * search names: after a watchlist pattern changes, a stored document can
+   * hold holdings of an issuer its search did not attribute to it (P2's xAI
+   * fix). Rows already stored are not written twice.
+   */
+  readonly refetch?: boolean;
   readonly now?: () => Date;
   readonly log?: (message: string) => void;
 }
@@ -387,12 +394,13 @@ async function triage(
   db: Kysely<Database>,
   candidates: readonly NportCandidate[],
   issuerIds: ReadonlyMap<string, string>,
+  refetch: boolean,
 ): Promise<{ skipped: number; queue: NportCandidate[] }> {
   const unseen: NportCandidate[] = [];
   const incomplete: NportCandidate[] = [];
   let skipped = 0;
   for (const candidate of candidates) {
-    if (await alreadyIngested(db, candidate, issuerIds)) {
+    if (!refetch && (await alreadyIngested(db, candidate, issuerIds))) {
       skipped += 1;
       continue;
     }
@@ -472,6 +480,7 @@ export async function ingestNport(
       db,
       candidates,
       new Map(issuers.map((issuer) => [issuer.slug, issuer.id])),
+      options.refetch === true,
     );
     tally.documentsSkipped = skipped;
     tally.documentsSeen = skipped;

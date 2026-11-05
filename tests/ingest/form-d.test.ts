@@ -80,6 +80,8 @@ describe("Form D", () => {
     ]) {
       expect(isVehicle({ issuerName, industryGroup: null })).toBe(true);
     }
-    expect(isVehicle({ issuerName: "Stripe, Inc.", industryGroup: "Other Technology" })).toBe(false);
+    expect(isVehicle({ issuerName: "Stripe, Inc.", industryGroup: "Other Technology" })).toBe(
+      false,
+    );
   });
 });
