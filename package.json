@@ -28,6 +28,7 @@
     "export:objections": "tsx scripts/export-objections.ts",
     "export:resolution-sources": "tsx scripts/export-resolution-sources.ts",
     "export:round-history": "tsx scripts/export-round-history.ts",
+    "export:ref-examples": "tsx --env-file-if-exists=.env.local scripts/export-ref-examples.ts",
     "api-key:create": "tsx --env-file-if-exists=.env.local scripts/api-key-create.ts",
     "export:tradeables": "npm run export:resolution-sources && npm run export:round-history",
     "index:watchlist": "tsx --env-file-if-exists=.env.local scripts/index-watchlist.ts",

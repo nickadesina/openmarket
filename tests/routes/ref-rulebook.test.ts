@@ -8,6 +8,7 @@ vi.mock("../../src/lib/logging/server-log.js", () => ({
 
 import { GET } from "../../src/app/api/ref/rulebook/route.js";
 import { RULEBOOK_VERSION, SOURCE_CLASSES } from "../../src/lib/engine/rulebook.js";
+import { ENVELOPE_KEYS, LAG_NOTE } from "../../src/lib/services/index/ref-envelope.js";
 
 describe("GET /api/ref/rulebook", () => {
   it("publishes the rulebook with its version and nothing of v1's dealer envelope", async () => {
@@ -15,7 +16,11 @@ describe("GET /api/ref/rulebook", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("public, max-age=60, s-maxage=60");
     const body = await response.json();
+    expect(Object.keys(body).slice(0, ENVELOPE_KEYS.length)).toEqual([...ENVELOPE_KEYS]);
     expect(body).toMatchObject({
+      methodology_version: "0.1.0",
+      ce_version: "0.1.0",
+      lag_note: LAG_NOTE,
       rulebook_version: RULEBOOK_VERSION,
       rulebook: { version: RULEBOOK_VERSION, revision_window_days: 7 },
     });

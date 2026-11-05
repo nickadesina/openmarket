@@ -8,13 +8,11 @@ import { logReadRequest, logUnexpectedError } from "../logging/server-log.js";
 import type { CsvTable } from "../services/index/data-csv.js";
 import { consumeRefQuota } from "../services/ref-access.js";
 import { csvLine, csvRecord } from "../tradeables/csv.js";
+import { DATA_LICENSE_PATH } from "../tradeables/ref-docs.js";
 import { type ErrorCode, isServiceError } from "./errors.js";
 import { assertOnlyQueryParameters } from "./pagination.js";
 import { REF_CACHE_SECONDS } from "./ref-route.js";
 import { errorCode, jsonError, jsonUnexpectedError, REQUEST_ID_HEADER } from "./response.js";
-
-/** Where the datasets' licence is served (public/data/LICENSE). */
-export const DATA_LICENSE_PATH = "/data/LICENSE";
 
 export interface CsvRouteContext {
   readonly db: Kysely<Database>;

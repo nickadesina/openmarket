@@ -16,6 +16,12 @@ import type { RefSpvPayload } from "../services/index/ref-spv.js";
  * docs/tradeables/ref-examples.json), never written by hand.
  */
 
+/** Where the datasets' licence is served (public/data/LICENSE), linked from every CSV. */
+export const DATA_LICENSE_PATH = "/data/LICENSE";
+
+/** The attribution line the licence asks for (public/data/LICENSE). */
+export const ATTRIBUTION = "OpenMarket marks index, openmarket.systems, CC BY 4.0";
+
 /** One line per field, keyed by the payload type's own keys. */
 type FieldDocs<T> = { readonly [K in keyof T]-?: string };
 
