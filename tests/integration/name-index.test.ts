@@ -129,7 +129,7 @@ postgresDescribe(suiteName, () => {
   it("serves one name: labels, family marks with their filing, prints and SPVs", async () => {
     const index = await getNameIndex(postgres.db, "anthropic", { families: FAMILIES, now: NOW });
     expect(index).toMatchObject({
-      methodology_version: "0.1.0",
+      methodology_version: "0.2.0",
       ce_version: "0.1.0",
       rulebook_version: "2.0.0",
       as_of: "2026-11-05T12:00:00.000Z",
@@ -144,12 +144,23 @@ postgresDescribe(suiteName, () => {
     ]);
     const f1 = index!.labels[0]!;
     expect(f1.consensus).toHaveLength(1);
+    // One family on the date: its mark is published, with no consensus (METHODOLOGY.md, three families).
     expect(f1.consensus[0]).toMatchObject({
-      quarter: "2026Q3",
-      consensus_usd: 777.53,
+      as_of: "2026-08-31",
+      consensus_usd: null,
       n_families: 1,
       dispersion: null,
-      mark_vs_print: { status: "none", reason: "no_certificate_price" },
+      mark_vs_print: { status: "none", reason: "no_consensus" },
+    });
+    expect(f1.family_marks[0]!.mark_vs_print).toEqual({
+      status: "none",
+      reason: "no_certificate_price",
+    });
+    expect(index!.headline).toBeNull();
+    expect(index!.no_headline).toEqual({
+      code: "too_few_families",
+      reason:
+        "No as-of date has 3 families on one security; the most is 1 family (Series F-1 Preferred, 2026-08-31).",
     });
     expect(f1.family_marks[0]!.documents[0]).toMatchObject({
       accession: "0000035402-26-006778",
@@ -264,21 +275,28 @@ postgresDescribe(suiteName, () => {
 
   it("lists every watchlisted name with its headline", async () => {
     const list = await listNames(postgres.db, { families: FAMILIES, now: NOW });
-    expect(list.methodology_version).toBe("0.1.0");
+    expect(list.methodology_version).toBe("0.2.0");
     const anthropic = list.names.find((name) => name.slug === "anthropic");
+    // Fidelity alone marks Anthropic here: one family, so no headline, and the row says why.
     expect(anthropic).toMatchObject({
-      quarter: "2026Q3",
-      n_families: 1,
+      security_label: null,
+      as_of: null,
+      consensus_usd: null,
+      n_families: null,
       dispersion_pct: null,
+      no_headline: { code: "too_few_families" },
       latest_filed_on: "2026-10-26",
       live_marks: 3,
       labels: 3,
       spv_vehicles: 1,
     });
-    // Each label has one family at $777.53 (Fidelity marks all three alike): the tie goes to the label's name.
-    expect(anthropic!.security_label).toBe("Series F-1 Preferred");
     const openai = list.names.find((name) => name.slug === "openai");
-    expect(openai).toMatchObject({ security_label: null, live_marks: 0, spv_vehicles: 0 });
+    expect(openai).toMatchObject({
+      security_label: null,
+      live_marks: 0,
+      spv_vehicles: 0,
+      no_headline: { code: "no_marks" },
+    });
     expect(openai!.last_print).not.toBeNull();
   });
 });

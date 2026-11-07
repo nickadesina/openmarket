@@ -105,7 +105,7 @@ postgresDescribe(suiteName, () => {
       .selectFrom("corrections")
       .selectAll()
       .executeTakeFirstOrThrow();
-    expect(correction).toMatchObject({ kind: "parser", methodology_version: "0.1.0" });
+    expect(correction).toMatchObject({ kind: "parser", methodology_version: "0.2.0" });
     expect(correction.diff_md).toContain("| anthropic | Series F-1 Preferred (preferred) |");
 
     const corrected = await live();

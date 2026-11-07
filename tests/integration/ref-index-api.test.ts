@@ -167,7 +167,7 @@ async function published(response: Response): Promise<any> {
   const body = await response.json();
   expect(Object.keys(body).slice(0, ENVELOPE_KEYS.length)).toEqual([...ENVELOPE_KEYS]);
   expect(body).toMatchObject({
-    methodology_version: "0.1.0",
+    methodology_version: "0.2.0",
     ce_version: "0.1.0",
     rulebook_version: "2.0.0",
   });
@@ -237,10 +237,11 @@ postgresDescribe(suiteName, () => {
     expect(body.families_version).toBe(PUBLISHED_FILER_FAMILIES.version);
     const anthropic = body.names.find((name: { slug: string }) => name.slug === "anthropic");
     expect(anthropic).toMatchObject({
-      quarter: "2026Q3",
-      consensus_usd: 777.53,
-      n_families: 1,
+      as_of: null,
+      consensus_usd: null,
+      n_families: null,
       dispersion_pct: null,
+      no_headline: { code: "too_few_families" },
       latest_filed_on: "2026-10-26",
       live_marks: 3,
       spv_vehicles: 1,
@@ -253,7 +254,9 @@ postgresDescribe(suiteName, () => {
   it("serves one name with every family mark's filing, and 404s an unknown slug", async () => {
     const body = await published(await nameRoute(get("/api/ref/anthropic"), slug("anthropic")));
     expect(body.issuer.slug).toBe("anthropic");
-    expect(body.headline).toMatchObject({ security_label: "Series F-1 Preferred" });
+    // One family (Fidelity) marks it here: too few for a headline.
+    expect(body.headline).toBeNull();
+    expect(body.no_headline).toMatchObject({ code: "too_few_families" });
     for (const label of body.labels) {
       for (const mark of label.family_marks) {
         for (const document of mark.documents) {
@@ -371,7 +374,7 @@ postgresDescribe(suiteName, () => {
     });
 
     const spv = await published(await spvRoute(get("/api/ref/anthropic/spv"), slug("anthropic")));
-    expect(spv.headline).toMatchObject({ security_label: "Series F-1 Preferred" });
+    expect(spv.headline).toBeNull();
     expect(spv.vehicles).toEqual([
       expect.objectContaining({
         vehicle_cik: "2136346",
@@ -411,7 +414,7 @@ postgresDescribe(suiteName, () => {
     expect(first.corrections).toHaveLength(1);
     expect(first.corrections[0]).toMatchObject({
       kind: "row",
-      methodology_version: "0.1.0",
+      methodology_version: "0.2.0",
       rows_written: { filer_marks: 0, certificates: 1 },
     });
     const second = await published(
