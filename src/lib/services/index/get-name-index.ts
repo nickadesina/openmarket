@@ -1,7 +1,7 @@
 /**
  * Everything one name page needs (`GET /api/ref/[slug]`, `/n/[slug]`),
  * computed with the engine (src/lib/engine/index/) from the tables: per
- * label the quarterly consensus and dispersion, each family's marks with the
+ * label the consensus and dispersion on each as-of date, each family's marks with the
  * documents behind them, revisions and mark versus print; the prints; the
  * live certificate's structure table and its common-equivalent result; and
  * the SPV vehicles and quotes with premiums. Nothing is stored; everything
@@ -23,6 +23,7 @@ import {
   familyMarks,
 } from "../../engine/index/families.js";
 import { headlinePoint, isPrivateMark } from "../../engine/index/listing.js";
+import { METHODOLOGY } from "../../engine/index/methodology.js";
 import {
   type MarkVersusPrint,
   markVersusPrint,
@@ -97,21 +98,22 @@ export interface DispersionFamilyPayload {
   readonly as_of: string;
 }
 
+/** One label on one as-of date: every family's mark as of that date, and their consensus. */
 export interface ConsensusPayload {
-  readonly quarter: string;
-  readonly quarter_start: string;
-  readonly quarter_end: string;
-  readonly consensus_usd: number;
+  /** The as-of date every family mark of the point shares (METHODOLOGY.md, "Comparison date"). */
+  readonly as_of: string;
   readonly n_families: number;
-  /** Null below `min_families_for_dispersion` families. */
+  /** Median of the family marks; null below `min_families_for_consensus` families. */
+  readonly consensus_usd: number | null;
+  /** Null below `min_families_for_dispersion` families, or with a zero median. */
   readonly dispersion: {
     readonly pct: number;
     readonly high: DispersionFamilyPayload;
     readonly low: DispersionFamilyPayload;
   } | null;
-  /** The family marks the quarter used: each family's latest in it. */
+  /** Every family's mark as of the date. */
   readonly families: readonly DispersionFamilyPayload[];
-  /** The consensus against the last print, as of the quarter's latest family mark. */
+  /** The consensus against the last print as of the date; `no_consensus` without a consensus. */
   readonly mark_vs_print: MarkVsPrintPayload;
 }
 
@@ -220,7 +222,7 @@ export interface SpvQuotePayload {
   readonly premium:
     | (Extract<SpvPremium, { status: "ok" }> & {
         readonly security_label: string;
-        readonly consensus_quarter: string;
+        readonly consensus_as_of: string;
       })
     | { readonly status: "none"; readonly reason: string };
 }
@@ -274,14 +276,16 @@ export interface NameIndex extends RefEnvelope {
   readonly no_marks: NoMarks | null;
   /** Live marks published as filed that enter no per-share series, by reason and label. */
   readonly out_of_series: readonly OutOfSeriesGroup[];
-  /** The label and quarter the daily page leads with (METHODOLOGY.md, "Headline label"). */
+  /** The label and as-of date the daily page leads with (METHODOLOGY.md, "Headline label"). */
   readonly headline: {
     readonly security_label: string;
-    readonly quarter: string;
+    readonly as_of: string;
     readonly consensus_usd: number;
     readonly n_families: number;
     readonly dispersion_pct: number | null;
   } | null;
+  /** Why there is no headline, in one sentence from the rows; null when there is one. */
+  readonly no_headline: NoHeadline | null;
   readonly labels: readonly LabelPayload[];
   /** The latest priced round (or IPO) on or before today; null without one. */
   readonly last_print: PrintPayload | null;
@@ -292,6 +296,16 @@ export interface NameIndex extends RefEnvelope {
     readonly vehicles: readonly SpvVehiclePayload[];
     readonly quotes: readonly SpvQuotePayload[];
   };
+}
+
+export interface NoHeadline {
+  /**
+   * `no_marks`: no live mark; `no_per_share_series`: no live mark enters a
+   * per-share series; `too_few_families`: no as-of date has
+   * `min_families_for_consensus` families on one label.
+   */
+  readonly code: "no_marks" | "no_per_share_series" | "too_few_families";
+  readonly reason: string;
 }
 
 export interface NameIndexOptions {
@@ -516,16 +530,10 @@ function dispersionFamily(point: {
 }
 
 function consensusPayload(point: ConsensusPoint, prints: readonly PrintInput[]): ConsensusPayload {
-  const asOf = point.families.reduce(
-    (latest, family) => (family.asOf > latest ? family.asOf : latest),
-    point.quarterStart,
-  );
   return {
-    quarter: point.quarter,
-    quarter_start: point.quarterStart,
-    quarter_end: point.quarterEnd,
-    consensus_usd: point.consensusUsd,
+    as_of: point.asOf,
     n_families: point.nFamilies,
+    consensus_usd: point.consensusUsd,
     dispersion:
       point.dispersion === null
         ? null
@@ -535,12 +543,52 @@ function consensusPayload(point: ConsensusPoint, prints: readonly PrintInput[]):
             low: dispersionFamily(point.dispersion.low),
           },
     families: point.families.map(dispersionFamily),
-    mark_vs_print: markVsPrintPayload(
-      markVersusPrint(
-        { securityLabel: point.securityLabel, asOf, markPerShareUsd: point.consensusUsd },
-        prints,
-      ),
-    ),
+    mark_vs_print:
+      point.consensusUsd === null
+        ? { status: "none", reason: "no_consensus" }
+        : markVsPrintPayload(
+            markVersusPrint(
+              {
+                securityLabel: point.securityLabel,
+                asOf: point.asOf,
+                markPerShareUsd: point.consensusUsd,
+              },
+              prints,
+            ),
+          ),
+  };
+}
+
+const plural = (count: number, one: string, many = `${one}s`) =>
+  `${count} ${count === 1 ? one : many}`;
+
+/** Why a name has no headline, from its rows (null when it has one). */
+export function noHeadline(
+  headline: ConsensusPoint | null,
+  points: readonly ConsensusPoint[],
+  summary: MarksSummary,
+  noMarks: NoMarks | null,
+): NoHeadline | null {
+  if (headline !== null) return null;
+  if (summary.live === 0) {
+    return { code: "no_marks", reason: noMarks?.reason ?? "No live filer mark." };
+  }
+  if (points.length === 0) {
+    return {
+      code: "no_per_share_series",
+      reason: `${plural(summary.live, "live mark")}, none of them in a per-share series: each is published as filed on the name page, with the rule that keeps it out.`,
+    };
+  }
+  // The point with the most families, the latest on a tie, then the label's name.
+  const most = [...points].sort(
+    (a, b) =>
+      b.nFamilies - a.nFamilies ||
+      b.asOf.localeCompare(a.asOf) ||
+      a.securityLabel.localeCompare(b.securityLabel),
+  )[0]!;
+  return {
+    code: "too_few_families",
+    reason: `No as-of date has ${METHODOLOGY.min_families_for_consensus} families on one security; the most is ${plural(most.nFamilies, "family", "families")} (${most.securityLabel}, ${most.asOf}).`,
   };
 }
 
@@ -857,7 +905,7 @@ async function loadQuotes(
     .execute();
   return rows.map((row) => {
     const captured = row.captured_at.toISOString().slice(0, 10);
-    const headline = headlinePoint(points.filter((point) => point.quarterStart <= captured));
+    const headline = headlinePoint(points.filter((point) => point.asOf <= captured));
     let premium: SpvQuotePayload["premium"];
     if (headline === null) premium = { status: "none", reason: "no_consensus_before_capture" };
     else {
@@ -870,7 +918,7 @@ async function loadQuotes(
           carryPct: row.carry_pct === null ? null : Number(row.carry_pct),
           layers: row.layers,
         },
-        headline.consensusUsd,
+        headline.consensusUsd!,
       );
       premium =
         result.status === "none"
@@ -878,7 +926,7 @@ async function loadQuotes(
           : {
               ...result,
               security_label: headline.securityLabel,
-              consensus_quarter: headline.quarter,
+              consensus_as_of: headline.asOf,
             };
     }
     return {
@@ -947,6 +995,7 @@ export async function getNameIndex(
       )
       .at(-1) ?? null;
   const headline = headlinePoint(points);
+  const noMarks = rows.length === 0 ? await noMarksReason(db, issuer.slug) : null;
 
   return {
     ...refEnvelope(now),
@@ -972,18 +1021,19 @@ export async function getNameIndex(
     },
     marks_summary: summary,
     coverage: nameCoverage(issuer.slug),
-    no_marks: rows.length === 0 ? await noMarksReason(db, issuer.slug) : null,
+    no_marks: noMarks,
     out_of_series: outOfSeriesGroups(rows, issuer.listed_on),
     headline:
       headline === null
         ? null
         : {
             security_label: headline.securityLabel,
-            quarter: headline.quarter,
-            consensus_usd: headline.consensusUsd,
+            as_of: headline.asOf,
+            consensus_usd: headline.consensusUsd!,
             n_families: headline.nFamilies,
             dispersion_pct: headline.dispersion?.pct ?? null,
           },
+    no_headline: noHeadline(headline, points, summary, noMarks),
     labels,
     last_print: lastPrint,
     prints,

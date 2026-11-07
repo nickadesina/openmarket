@@ -1,7 +1,8 @@
 /**
  * The daily page's rows (`GET /api/ref/names`, `/`): every watchlisted
- * issuer with its headline label's latest consensus, dispersion, family
- * count, the latest filing date behind its marks, and its SPV and print
+ * issuer with its headline: the label and as-of date with the latest
+ * consensus, its dispersion and family count; or, without one, why; the
+ * latest filing date behind its marks, and its SPV and print
  * counts. Computed as the name page computes them (get-name-index.ts), from
  * the same rows under the same versions.
  */
@@ -10,7 +11,7 @@ import type { Kysely } from "kysely";
 import type { Database } from "../../db/schema.js";
 import type { FilerFamilies } from "../../engine/index/families.js";
 import { loadFilerFamilies } from "./data-files.js";
-import { getNameIndex, type NameIndex } from "./get-name-index.js";
+import { getNameIndex, type NameIndex, type NoHeadline } from "./get-name-index.js";
 import type { NameCoverage, NoMarks } from "./name-coverage.js";
 import { type RefEnvelope, refEnvelope } from "./ref-envelope.js";
 
@@ -20,12 +21,12 @@ export interface NameRow {
   readonly listed_on: string | null;
   /** The final prospectus the listing date is read from. */
   readonly listing_url: string | null;
-  /** The headline label and quarter (METHODOLOGY.md, "Headline label"); null without a per-share series. */
+  /** The headline label and as-of date (METHODOLOGY.md, "Headline label"); null without a headline. */
   readonly security_label: string | null;
-  readonly quarter: string | null;
+  readonly as_of: string | null;
   readonly consensus_usd: number | null;
   readonly n_families: number | null;
-  /** Null below two families. */
+  /** Null without a headline, or with a zero median. */
   readonly dispersion_pct: number | null;
   readonly dispersion_high_family: string | null;
   readonly dispersion_low_family: string | null;
@@ -46,6 +47,8 @@ export interface NameRow {
   readonly coverage: NameCoverage | null;
   /** Why it has no live mark; null when it has one. */
   readonly no_marks: NoMarks | null;
+  /** Why it has no headline, in one sentence; null when it has one. */
+  readonly no_headline: NoHeadline | null;
 }
 
 export interface NamesList extends RefEnvelope {
@@ -81,14 +84,14 @@ function nameRow(index: NameIndex): NameRow {
       ? undefined
       : index.labels
           .find((label) => label.security_label === headline.security_label)
-          ?.consensus.find((entry) => entry.quarter === headline.quarter);
+          ?.consensus.find((entry) => entry.as_of === headline.as_of);
   return {
     slug: index.issuer.slug,
     name: index.issuer.name,
     listed_on: index.issuer.listed_on,
     listing_url: index.issuer.listing_url,
     security_label: headline?.security_label ?? null,
-    quarter: headline?.quarter ?? null,
+    as_of: headline?.as_of ?? null,
     consensus_usd: headline?.consensus_usd ?? null,
     n_families: headline?.n_families ?? null,
     dispersion_pct: headline?.dispersion_pct ?? null,
@@ -111,5 +114,6 @@ function nameRow(index: NameIndex): NameRow {
     spv_vehicles: index.spv.vehicles.length,
     coverage: index.coverage,
     no_marks: index.no_marks,
+    no_headline: index.no_headline,
   };
 }

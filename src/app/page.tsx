@@ -2,16 +2,17 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import {
+  dateId,
   formatInstant,
   formatPercent,
   formatPerShare,
   formatValuation,
   plural,
-  quarterId,
 } from "../components/index/format.js";
 import shared from "../components/index/index.module.css";
 import { Versions } from "../components/index/versions.js";
 import { getRuntimeDatabase } from "../lib/db/runtime.js";
+import { METHODOLOGY } from "../lib/engine/index/methodology.js";
 import type { NameRow } from "../lib/services/index/list-names.js";
 import { getRefNames } from "../lib/services/index/ref-names.js";
 import styles from "./page.module.css";
@@ -52,7 +53,7 @@ function LastPrint({ print }: { readonly print: NameRow["last_print"] }) {
 }
 
 function IndexedRow({ row }: { readonly row: NameRow }) {
-  const anchor = `/n/${row.slug}#${quarterId(row.security_label!, row.quarter!)}`;
+  const anchor = `/n/${row.slug}#${dateId(row.security_label!, row.as_of!)}`;
   return (
     <tr>
       <th scope="row" data-label="Name">
@@ -80,7 +81,7 @@ function IndexedRow({ row }: { readonly row: NameRow }) {
       <td data-label="Security">
         <div>
           {row.security_label}
-          <span className={styles.sub}>{row.quarter}</span>
+          <span className={styles.sub}>as of {row.as_of}</span>
         </div>
       </td>
       <td className={shared.num} data-label="Consensus">
@@ -93,7 +94,7 @@ function IndexedRow({ row }: { readonly row: NameRow }) {
       <td className={shared.num} data-label="Dispersion">
         <div>
           {row.dispersion_pct === null ? (
-            <span className={styles.none}>One family</span>
+            <span className={styles.none}>Zero median</span>
           ) : (
             <Link className={shared.link} href={anchor}>
               {formatPercent(row.dispersion_pct)}
@@ -125,11 +126,16 @@ function IndexedRow({ row }: { readonly row: NameRow }) {
   );
 }
 
+const NO_HEADLINE_TAGS: Readonly<Record<NonNullable<NameRow["no_headline"]>["code"], string>> = {
+  no_marks: "No filer marks",
+  no_per_share_series: "No per-share series",
+  too_few_families: "Too few families",
+};
+
 function UnindexedRow({ row }: { readonly row: NameRow }) {
-  let why: string;
-  if (row.no_marks !== null) why = row.no_marks.reason;
-  else
-    why = `${plural(row.live_marks, "live mark")}, none of them in a per-share series: see the name page for each mark as filed and the rule that keeps it out.`;
+  const code =
+    row.no_headline?.code ?? (row.no_marks === null ? "no_per_share_series" : "no_marks");
+  const why = row.no_headline?.reason ?? row.no_marks?.reason ?? "";
   return (
     <tr>
       <th scope="row" data-label="Name">
@@ -141,9 +147,7 @@ function UnindexedRow({ row }: { readonly row: NameRow }) {
       </th>
       <td data-label="Why" className={styles.why}>
         <div>
-          <span className={styles.tagline}>
-            {row.no_marks === null ? "No per-share series" : "No filer marks"}
-          </span>
+          <span className={styles.tagline}>{NO_HEADLINE_TAGS[code]}</span>
           {why}
         </div>
       </td>
@@ -188,9 +192,9 @@ export default async function IndexPage() {
         <h1>Private-company marks from public filings</h1>
         <p className={shared.lede}>
           What registered funds say each private company's shares are worth, filing by filing: the
-          consensus mark (the median across filer families) on each name's most-held security, and
-          the dispersion between the highest and lowest family. Every figure links to the filing it
-          came from.
+          consensus mark (the median across filer families marking one security as of one date) on
+          each name's most-held security, and the dispersion between the highest and lowest family.
+          Every figure links to the filing it came from.
         </p>
         <p className={shared.muted}>{payload.lag_note}</p>
         <Versions
@@ -215,7 +219,7 @@ export default async function IndexPage() {
             <thead>
               <tr>
                 <th scope="col">Name</th>
-                <th scope="col">Security · quarter</th>
+                <th scope="col">Security · as of</th>
                 <th scope="col" className={shared.num}>
                   Consensus
                 </th>
@@ -237,10 +241,12 @@ export default async function IndexPage() {
           </table>
         </div>
         <p className={shared.muted}>
-          Security: the label with the most families in the latest quarter that has a consensus
-          (METHODOLOGY.md, Headline label); each name page shows every label. Dispersion is (high −
-          low) / median of the family marks, published from two families. A family is the funds
-          under one adviser, which mark a security alike.
+          Security: the label with the most families on the latest as-of date that has a consensus
+          (METHODOLOGY.md, Headline label); each name page shows every label. Families are compared
+          only on the same as-of date. The consensus is the median of the family marks and is
+          published from {METHODOLOGY.min_families_for_consensus} families; dispersion is (high −
+          low) / median, from {METHODOLOGY.min_families_for_dispersion}. A family is the funds under
+          one adviser, which mark a security alike.
         </p>
       </section>
 

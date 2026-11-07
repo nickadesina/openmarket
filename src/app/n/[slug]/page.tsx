@@ -4,13 +4,13 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 
 import {
+  dateId,
   formatCount,
   formatInstant,
   formatPercent,
   formatPerShare,
   formatValuation,
   plural,
-  quarterId,
 } from "../../../components/index/format.js";
 import styles from "../../../components/index/index.module.css";
 import {
@@ -24,6 +24,7 @@ import { SpvPanel, Structure } from "../../../components/index/structure-spv.js"
 import { Versions } from "../../../components/index/versions.js";
 import { isServiceError } from "../../../lib/api/errors.js";
 import { getRuntimeDatabase } from "../../../lib/db/runtime.js";
+import { METHODOLOGY } from "../../../lib/engine/index/methodology.js";
 import type {
   LabelPayload,
   MarkDocument,
@@ -63,9 +64,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-/** Headline first, then the labels with the most families in their latest quarter. */
+/** Headline first, then the labels with the most families on their latest consensus date. */
 function orderLabels(index: NameIndex): LabelPayload[] {
-  const families = (label: LabelPayload) => label.consensus.at(-1)?.n_families ?? 0;
+  const families = (label: LabelPayload) =>
+    label.consensus.filter((point) => point.consensus_usd !== null).at(-1)?.n_families ?? 0;
   return [...index.labels].sort(
     (a, b) =>
       Number(b.security_label === index.headline?.security_label) -
@@ -96,9 +98,11 @@ function latestDocument(index: NameIndex): MarkDocument | undefined {
 function HeadlineFigures({ index }: { readonly index: NameIndex }) {
   const headline = index.headline;
   const label = index.labels.find((entry) => entry.security_label === headline?.security_label);
-  const point = label?.consensus.find((entry) => entry.quarter === headline?.quarter);
+  const point = label?.consensus.find((entry) => entry.as_of === headline?.as_of);
   const anchor =
-    headline === null ? "#filer-marks" : `#${quarterId(headline.security_label, headline.quarter)}`;
+    headline === null ? "#filer-marks" : `#${dateId(headline.security_label, headline.as_of)}`;
+  const tooFew = index.no_headline?.code === "too_few_families";
+  const needs = `Needs ${METHODOLOGY.min_families_for_consensus} families on one date`;
   const latest = latestDocument(index);
   const print = index.last_print;
   const familyLink = (family: NonNullable<typeof point>["families"][number]) => {
@@ -121,8 +125,10 @@ function HeadlineFigures({ index }: { readonly index: NameIndex }) {
         </dd>
         <dd className={styles.figureNote}>
           {headline === null
-            ? "No per-share series"
-            : `${headline.security_label}, ${headline.quarter}: median of family marks`}
+            ? tooFew
+              ? needs
+              : "No per-share series"
+            : `${headline.security_label}, as of ${headline.as_of}: median of family marks`}
         </dd>
       </div>
       <div className={styles.figure}>
@@ -136,7 +142,11 @@ function HeadlineFigures({ index }: { readonly index: NameIndex }) {
         </dd>
         <dd className={styles.figureNote}>
           {point?.dispersion == null ? (
-            "Needs two families"
+            headline === null ? (
+              needs
+            ) : (
+              "Zero median"
+            )
           ) : (
             <>
               High {point.dispersion.high.family_name} {familyLink(point.dispersion.high)}; low{" "}
@@ -280,6 +290,9 @@ export default async function NamePage({ params }: PageProps) {
       </header>
 
       <HeadlineFigures index={index} />
+      {index.no_headline?.code === "too_few_families" ? (
+        <p className={styles.muted}>{index.no_headline.reason}</p>
+      ) : null}
       <p className={styles.muted}>{index.lag_note}</p>
       <ListedNote index={index} />
       <NoMarksNote index={index} />

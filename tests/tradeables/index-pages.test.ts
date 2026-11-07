@@ -3,11 +3,11 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import {
+  dateId,
   formatLogChange,
   formatPercent,
   formatPerShare,
   formatValuation,
-  quarterId,
 } from "../../src/components/index/format.js";
 import { METHODOLOGY } from "../../src/lib/engine/index/methodology.js";
 import { withLiveConstants } from "../../src/lib/tradeables/methodology-doc.js";
@@ -64,7 +64,7 @@ describe("the pages' figures", () => {
     expect(formatLogChange(Math.log(0.5))).toBe("−50.0%");
   });
 
-  it("anchors a label's quarter", () => {
-    expect(quarterId("Series F-1 Preferred", "2026Q3")).toBe("series-f-1-preferred-2026q3");
+  it("anchors a label's as-of date", () => {
+    expect(dateId("Series F-1 Preferred", "2026-08-31")).toBe("series-f-1-preferred-2026-08-31");
   });
 });

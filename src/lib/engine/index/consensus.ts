@@ -1,19 +1,16 @@
 /**
- * Consensus and dispersion per label per calendar quarter. Funds' quarters
- * end in different months, so a family's mark enters the calendar quarter
- * its `as_of` falls in, and within a quarter each family contributes its
- * latest mark. Consensus is the median of family marks, never a mean.
+ * Consensus and dispersion per label per as-of date (METHODOLOGY.md,
+ * "Comparison date"). A family's mark is compared only with other families'
+ * marks as of the same date: funds' fiscal quarters end in different months,
+ * and a July mark beside an August one measures reporting timing, not
+ * disagreement. Nothing is carried forward: a family with no mark on a date
+ * is absent from that date. Consensus is the median of family marks, never a
+ * mean, published from `min_families_for_consensus` families; dispersion
+ * from `min_families_for_dispersion`.
  */
 import { assertNonNegative } from "../assert.js";
 import type { FamilyMarkPoint } from "./families.js";
-import {
-  assertIsoDate,
-  assertNonEmptyString,
-  calendarQuarter,
-  compareText,
-  median,
-  quarterBounds,
-} from "./mark.js";
+import { assertIsoDate, assertNonEmptyString, compareText, type IsoDate, median } from "./mark.js";
 import { METHODOLOGY } from "./methodology.js";
 import { isComparableLabel } from "./series.js";
 
@@ -33,16 +30,14 @@ export interface Dispersion {
 
 export interface ConsensusPoint {
   readonly securityLabel: string;
-  /** `2026Q3`. */
-  readonly quarter: string;
-  readonly quarterStart: string;
-  readonly quarterEnd: string;
-  /** Median of the family marks. */
-  readonly consensusUsd: number;
+  /** The as-of date every family mark of the point shares. */
+  readonly asOf: IsoDate;
   readonly nFamilies: number;
+  /** Median of the family marks; null below `min_families_for_consensus` families. */
+  readonly consensusUsd: number | null;
   /** Null below `min_families_for_dispersion` families, or when the median is zero. */
   readonly dispersion: Dispersion | null;
-  /** Each family's latest mark in the quarter, sorted by family slug. */
+  /** Each family's mark as of the date, sorted by family slug. */
   readonly families: readonly FamilyMarkPoint[];
 }
 
@@ -69,6 +64,13 @@ export function validateFamilyMarkPoints(marks: readonly FamilyMarkPoint[]): voi
   }
 }
 
+/** The median of the family marks, or null below `min_families_for_consensus` values. */
+export function consensusUsd(values: readonly number[]): number | null {
+  for (const value of values) assertNonNegative(value, "value");
+  if (values.length < METHODOLOGY.min_families_for_consensus) return null;
+  return median(values);
+}
+
 /**
  * (max − min) / median in percent; null for fewer than
  * `min_families_for_dispersion` values or a zero median.
@@ -79,24 +81,6 @@ export function dispersionPct(values: readonly number[]): number | null {
   const center = median(values);
   if (center <= 0) return null;
   return ((Math.max(...values) - Math.min(...values)) / center) * 100;
-}
-
-/** Each family's latest mark per label per calendar quarter. */
-export function latestInQuarter(marks: readonly FamilyMarkPoint[]): FamilyMarkPoint[] {
-  validateFamilyMarkPoints(marks);
-  const latest = new Map<string, FamilyMarkPoint>();
-  for (const mark of marks) {
-    if (!isComparableLabel(mark.securityLabel)) continue;
-    const key = JSON.stringify([mark.securityLabel, calendarQuarter(mark.asOf), mark.familySlug]);
-    const current = latest.get(key);
-    if (current === undefined || mark.asOf > current.asOf) latest.set(key, mark);
-  }
-  return [...latest.values()].sort(
-    (left, right) =>
-      compareText(left.securityLabel, right.securityLabel) ||
-      compareText(left.asOf, right.asOf) ||
-      compareText(left.familySlug, right.familySlug),
-  );
 }
 
 function toDispersionFamily(mark: FamilyMarkPoint): DispersionFamily {
@@ -110,7 +94,7 @@ function toDispersionFamily(mark: FamilyMarkPoint): DispersionFamily {
 
 function consensusPoint(
   securityLabel: string,
-  quarter: string,
+  asOf: IsoDate,
   members: readonly FamilyMarkPoint[],
 ): ConsensusPoint {
   const families = [...members].sort((left, right) =>
@@ -124,14 +108,11 @@ function consensusPoint(
       left.markPerShareUsd - right.markPerShareUsd ||
       compareText(left.familySlug, right.familySlug),
   );
-  const { start, end } = quarterBounds(quarter);
   return {
     securityLabel,
-    quarter,
-    quarterStart: start,
-    quarterEnd: end,
-    consensusUsd: median(values),
+    asOf,
     nFamilies: families.length,
+    consensusUsd: consensusUsd(values),
     dispersion:
       pct === null
         ? null
@@ -145,25 +126,27 @@ function consensusPoint(
 }
 
 /**
- * The consensus series: per label per calendar quarter, the median of each
- * family's latest mark in that quarter, `n_families`, and dispersion with
- * the high and low families named. Labels that do not enter per-share series
- * are skipped. Sorted by label, then quarter.
+ * The consensus series: one point per label per as-of date on which any
+ * family marked the label, with every family's mark as of that date,
+ * `n_families`, the median of the family marks from
+ * `min_families_for_consensus` families, and dispersion with the high and
+ * low families named from `min_families_for_dispersion`. Labels that do not
+ * enter per-share series are skipped. Sorted by label, then date.
  */
 export function consensusSeries(marks: readonly FamilyMarkPoint[]): ConsensusPoint[] {
-  const buckets = new Map<string, { label: string; quarter: string; members: FamilyMarkPoint[] }>();
-  for (const mark of latestInQuarter(marks)) {
-    const quarter = calendarQuarter(mark.asOf);
-    const key = JSON.stringify([mark.securityLabel, quarter]);
-    const bucket = buckets.get(key) ?? { label: mark.securityLabel, quarter, members: [] };
+  validateFamilyMarkPoints(marks);
+  const buckets = new Map<string, { label: string; asOf: IsoDate; members: FamilyMarkPoint[] }>();
+  for (const mark of marks) {
+    if (!isComparableLabel(mark.securityLabel)) continue;
+    const key = JSON.stringify([mark.securityLabel, mark.asOf]);
+    const bucket = buckets.get(key) ?? { label: mark.securityLabel, asOf: mark.asOf, members: [] };
     bucket.members.push(mark);
     buckets.set(key, bucket);
   }
   return [...buckets.values()]
-    .map((bucket) => consensusPoint(bucket.label, bucket.quarter, bucket.members))
+    .map((bucket) => consensusPoint(bucket.label, bucket.asOf, bucket.members))
     .sort(
       (left, right) =>
-        compareText(left.securityLabel, right.securityLabel) ||
-        compareText(left.quarter, right.quarter),
+        compareText(left.securityLabel, right.securityLabel) || compareText(left.asOf, right.asOf),
     );
 }

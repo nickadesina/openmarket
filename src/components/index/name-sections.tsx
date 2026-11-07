@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { METHODOLOGY } from "../../lib/engine/index/methodology.js";
 import type {
   ConsensusPayload,
   DispersionFamilyPayload,
@@ -12,6 +13,7 @@ import type {
   PrintPayload,
 } from "../../lib/services/index/get-name-index.js";
 import {
+  dateId,
   formatBalance,
   formatCount,
   formatDollars,
@@ -21,17 +23,15 @@ import {
   formatValuation,
   labelId,
   plural,
-  quarterId,
 } from "./format.js";
 import styles from "./index.module.css";
 import { MarkChart } from "./mark-chart.js";
 
-/** The family marks of this many latest quarters show in full; earlier ones fold. */
-const OPEN_QUARTERS = 4;
+/** The family marks of this many latest as-of dates show in full; earlier ones fold. */
+const OPEN_DATES = 6;
 
-function quarterOf(iso: string): string {
-  return `${iso.slice(0, 4)}Q${Math.ceil(Number(iso.slice(5, 7)) / 3)}`;
-}
+/** Fewest families on one date for a consensus (METHODOLOGY.md, "Consensus mark"). */
+const MIN_FAMILIES = METHODOLOGY.min_families_for_consensus;
 
 /** A filing as a link: its accession, or "filing" when it has none. */
 export function DocumentLink({
@@ -81,6 +81,7 @@ const PRINT_REASONS: Readonly<Record<string, string>> = {
   no_print_on_or_before_mark: "No priced round on or before",
   no_certificate_price: "No certificate price",
   zero_mark: "Zero mark",
+  no_consensus: "No consensus",
 };
 
 function VersusPrint({ result }: { readonly result: MarkVsPrintPayload }) {
@@ -95,17 +96,46 @@ function VersusPrint({ result }: { readonly result: MarkVsPrintPayload }) {
   );
 }
 
+/** The dates with a consensus, newest first; the others are counted, their marks listed below. */
 function ConsensusTable({ label }: { readonly label: LabelPayload }) {
-  const rows = [...label.consensus].reverse();
+  const rows = label.consensus.filter((point) => point.consensus_usd !== null).reverse();
+  const below = label.consensus.length - rows.length;
+  const belowNote =
+    below === 0
+      ? null
+      : `${plural(below, "other as-of date")} ${below === 1 ? "has" : "have"} fewer than ${MIN_FAMILIES} families, so no consensus; ${below === 1 ? "its" : "their"} family marks are below.`;
+  if (rows.length === 0) {
+    return (
+      <p className={styles.muted}>
+        No as-of date has {MIN_FAMILIES} families on this label, so it has no consensus;{" "}
+        {plural(label.consensus.length, "date")} of family marks are below.
+      </p>
+    );
+  }
+  return (
+    <>
+      <ConsensusRows label={label} rows={rows} />
+      {belowNote === null ? null : <p className={styles.muted}>{belowNote}</p>}
+    </>
+  );
+}
+
+function ConsensusRows({
+  label,
+  rows,
+}: {
+  readonly label: LabelPayload;
+  readonly rows: readonly ConsensusPayload[];
+}) {
   return (
     <div className={styles.scroller}>
       <table className={styles.table}>
         <caption className={styles.visuallyHidden}>
-          {label.security_label}: consensus and dispersion by quarter
+          {label.security_label}: consensus and dispersion by as-of date
         </caption>
         <thead>
           <tr>
-            <th scope="col">Quarter</th>
+            <th scope="col">As of</th>
             <th scope="col" className={styles.num}>
               Consensus
             </th>
@@ -122,7 +152,7 @@ function ConsensusTable({ label }: { readonly label: LabelPayload }) {
         </thead>
         <tbody>
           {rows.map((point) => (
-            <ConsensusRow key={point.quarter} label={label} point={point} />
+            <ConsensusRow key={point.as_of} label={label} point={point} />
           ))}
         </tbody>
       </table>
@@ -137,13 +167,13 @@ function ConsensusRow({
   readonly label: LabelPayload;
   readonly point: ConsensusPayload;
 }) {
-  const anchor = `#${quarterId(label.security_label, point.quarter)}`;
+  const anchor = `#${dateId(label.security_label, point.as_of)}`;
   return (
     <tr>
-      <td className={styles.mono}>{point.quarter}</td>
+      <td className={styles.mono}>{point.as_of}</td>
       <td className={styles.num}>
         <a className={`${styles.link} ${styles.price}`} href={anchor}>
-          {formatPerShare(point.consensus_usd)}
+          {point.consensus_usd === null ? "—" : formatPerShare(point.consensus_usd)}
         </a>
       </td>
       <td className={styles.num}>
@@ -153,7 +183,7 @@ function ConsensusRow({
       </td>
       <td className={styles.num}>
         {point.dispersion === null ? (
-          <span className={styles.muted}>Needs 2</span>
+          <span className={styles.muted}>—</span>
         ) : (
           formatPercent(point.dispersion.pct)
         )}
@@ -200,7 +230,7 @@ function FamilyMarkRow({
         {used ? (
           <span className={styles.tag}>In consensus</span>
         ) : (
-          <span className={styles.muted}>Earlier in quarter</span>
+          <span className={styles.muted}>Under {MIN_FAMILIES} families</span>
         )}
         {mark.intra_family_split ? (
           <span
@@ -226,33 +256,34 @@ function FamilyMarkRow({
   );
 }
 
-function QuarterGroup({
+/** The point's sentence: its consensus and families, or why it has no consensus. */
+function pointFacts(point: ConsensusPayload | undefined, count: number): string {
+  if (point?.consensus_usd == null) {
+    return `${plural(count, "family", "families")}: no consensus (needs ${MIN_FAMILIES})`;
+  }
+  return `consensus ${formatPerShare(point.consensus_usd)} from ${plural(point.n_families, "family", "families")}${point.dispersion === null ? "" : `, dispersion ${formatPercent(point.dispersion.pct)}`}`;
+}
+
+function DateGroup({
   label,
-  quarter,
+  asOf,
   marks,
 }: {
   readonly label: LabelPayload;
-  readonly quarter: string;
+  readonly asOf: string;
   readonly marks: readonly FamilyMarkPayload[];
 }) {
-  const point = label.consensus.find((entry) => entry.quarter === quarter);
-  const used = new Set(point?.families.map((family) => `${family.family_slug}@${family.as_of}`));
+  const point = label.consensus.find((entry) => entry.as_of === asOf);
+  const used = point?.consensus_usd != null;
   return (
     <>
       <tr className={styles.groupRow}>
-        <th scope="colgroup" colSpan={6} id={quarterId(label.security_label, quarter)}>
-          <strong>{quarter}</strong>
-          {point === undefined
-            ? null
-            : ` · consensus ${formatPerShare(point.consensus_usd)} from ${plural(point.n_families, "family", "families")}`}
+        <th scope="colgroup" colSpan={6} id={dateId(label.security_label, asOf)}>
+          <strong>{asOf}</strong> · {pointFacts(point, marks.length)}
         </th>
       </tr>
       {marks.map((mark) => (
-        <FamilyMarkRow
-          key={`${mark.family_slug}${mark.as_of}`}
-          mark={mark}
-          used={used.has(`${mark.family_slug}@${mark.as_of}`)}
-        />
+        <FamilyMarkRow key={`${mark.family_slug}${mark.as_of}`} mark={mark} used={used} />
       ))}
     </>
   );
@@ -260,10 +291,10 @@ function QuarterGroup({
 
 function FamilyMarksTable({
   label,
-  quarters,
+  dates,
 }: {
   readonly label: LabelPayload;
-  readonly quarters: readonly (readonly [string, readonly FamilyMarkPayload[]])[];
+  readonly dates: readonly (readonly [string, readonly FamilyMarkPayload[]])[];
 }) {
   return (
     <div className={styles.scroller}>
@@ -283,8 +314,8 @@ function FamilyMarksTable({
           </tr>
         </thead>
         <tbody>
-          {quarters.map(([quarter, marks]) => (
-            <QuarterGroup key={quarter} label={label} quarter={quarter} marks={marks} />
+          {dates.map(([asOf, marks]) => (
+            <DateGroup key={asOf} label={label} asOf={asOf} marks={marks} />
           ))}
         </tbody>
       </table>
@@ -292,34 +323,40 @@ function FamilyMarksTable({
   );
 }
 
-/** Earlier quarters, one row each: every family mark of the quarter, linked to its first filing. */
-function EarlierQuarters({
+/** Earlier dates, one row each: every family mark as of the date, linked to its first filing. */
+function EarlierDates({
   label,
-  quarters,
+  dates,
 }: {
   readonly label: LabelPayload;
-  readonly quarters: readonly (readonly [string, readonly FamilyMarkPayload[]])[];
+  readonly dates: readonly (readonly [string, readonly FamilyMarkPayload[]])[];
 }) {
   return (
     <div className={styles.scroller}>
       <table className={styles.table}>
         <thead>
           <tr>
-            <th scope="col">Quarter</th>
+            <th scope="col">As of</th>
             <th scope="col" className={styles.num}>
               Consensus
             </th>
-            <th scope="col">Family marks (as of), each linking its filing</th>
+            <th scope="col">Family marks, each linking its filing</th>
           </tr>
         </thead>
         <tbody>
-          {quarters.map(([quarter, marks]) => {
-            const point = label.consensus.find((entry) => entry.quarter === quarter);
+          {dates.map(([asOf, marks]) => {
+            const point = label.consensus.find((entry) => entry.as_of === asOf);
             return (
-              <tr key={quarter} id={quarterId(label.security_label, quarter)}>
-                <td className={styles.mono}>{quarter}</td>
+              <tr key={asOf} id={dateId(label.security_label, asOf)}>
+                <td className={styles.mono}>{asOf}</td>
                 <td className={styles.num}>
-                  {point === undefined ? "—" : formatPerShare(point.consensus_usd)}
+                  {point?.consensus_usd == null ? (
+                    <span className={styles.muted}>
+                      {plural(marks.length, "family", "families")}
+                    </span>
+                  ) : (
+                    formatPerShare(point.consensus_usd)
+                  )}
                 </td>
                 <td className={styles.wrap}>
                   {marks.map((mark, index) => (
@@ -332,8 +369,7 @@ function EarlierQuarters({
                         <DocumentLink document={mark.documents[0]}>
                           {formatPerShare(mark.mark_per_share_usd)}
                         </DocumentLink>
-                      )}{" "}
-                      ({mark.as_of.slice(5)})
+                      )}
                     </span>
                   ))}
                 </td>
@@ -347,31 +383,30 @@ function EarlierQuarters({
 }
 
 function FamilyMarks({ label }: { readonly label: LabelPayload }) {
-  const byQuarter = new Map<string, FamilyMarkPayload[]>();
+  const byDate = new Map<string, FamilyMarkPayload[]>();
   for (const mark of [...label.family_marks].sort(
     (a, b) => b.as_of.localeCompare(a.as_of) || a.family_name.localeCompare(b.family_name),
   )) {
-    const quarter = quarterOf(mark.as_of);
-    byQuarter.set(quarter, [...(byQuarter.get(quarter) ?? []), mark]);
+    byDate.set(mark.as_of, [...(byDate.get(mark.as_of) ?? []), mark]);
   }
-  const quarters = [...byQuarter.entries()];
-  const recent = quarters.slice(0, OPEN_QUARTERS);
-  const earlier = quarters.slice(OPEN_QUARTERS);
+  const dates = [...byDate.entries()];
+  const recent = dates.slice(0, OPEN_DATES);
+  const earlier = dates.slice(OPEN_DATES);
   const earlierCount = earlier.reduce((sum, [, marks]) => sum + marks.length, 0);
   return (
     <>
-      <h4 className={styles.subhead}>Family marks, each with its filings</h4>
-      <FamilyMarksTable label={label} quarters={recent} />
+      <h4 className={styles.subhead}>Family marks by as-of date, each with its filings</h4>
+      <FamilyMarksTable label={label} dates={recent} />
       {earlier.length === 0 ? null : (
         <details className={styles.details}>
           <summary>
-            <span className={styles.summaryTitle}>Earlier quarters</span>
+            <span className={styles.summaryTitle}>Earlier dates</span>
             <span className={styles.summaryFacts}>
-              {plural(earlier.length, "quarter")}, {plural(earlierCount, "family mark")}
+              {plural(earlier.length, "as-of date")}, {plural(earlierCount, "family mark")}
             </span>
           </summary>
           <div className={styles.detailsBody}>
-            <EarlierQuarters label={label} quarters={earlier} />
+            <EarlierDates label={label} dates={earlier} />
           </div>
         </details>
       )}
@@ -435,12 +470,14 @@ function Revisions({ label }: { readonly label: LabelPayload }) {
 }
 
 function labelFacts(label: LabelPayload): string {
-  const last = label.consensus.at(-1);
-  if (last === undefined) return plural(label.family_marks.length, "family mark");
-  return `${last.quarter}: ${formatPerShare(last.consensus_usd)}, ${plural(last.n_families, "family", "families")}${last.dispersion === null ? "" : `, dispersion ${formatPercent(last.dispersion.pct)}`}`;
+  const last = label.consensus.filter((point) => point.consensus_usd !== null).at(-1);
+  if (last === undefined) {
+    return `${plural(label.family_marks.length, "family mark")}; no date with ${MIN_FAMILIES} families`;
+  }
+  return `${last.as_of}: ${pointFacts(last, last.n_families)}`;
 }
 
-/** One label: its chart, the consensus by quarter, and every family mark with its filings. */
+/** One label: its chart, the consensus by as-of date, and every family mark with its filings. */
 export function LabelSection({
   label,
   headline,
@@ -453,7 +490,7 @@ export function LabelSection({
   const body = (
     <>
       <MarkChart label={label} lastPrint={lastPrint} />
-      <h4 className={styles.subhead}>Consensus by quarter</h4>
+      <h4 className={styles.subhead}>Consensus by as-of date</h4>
       <ConsensusTable label={label} />
       <FamilyMarks label={label} />
       <Revisions label={label} />

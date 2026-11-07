@@ -8,7 +8,7 @@
 import { SHARE_UNITS } from "./mark.js";
 import { CE_BASIS, CE_VERSION } from "./waterfall.js";
 
-export const METHODOLOGY_VERSION = "0.1.0";
+export const METHODOLOGY_VERSION = "0.2.0";
 
 export const METHODOLOGY = Object.freeze({
   methodology_version: METHODOLOGY_VERSION,
@@ -24,8 +24,10 @@ export const METHODOLOGY = Object.freeze({
   leader_window_days: 180,
   /** A family's funds disagree (`intra_family_split`) when (max − min) / median exceeds this. */
   intra_family_split_tolerance: 0.001,
-  /** Dispersion is published only with at least this many families on the label in the quarter. */
-  min_families_for_dispersion: 2,
+  /** A consensus is published only with at least this many families on the label on one as-of date. */
+  min_families_for_consensus: 3,
+  /** Dispersion is published only with at least this many families on the label on one as-of date. */
+  min_families_for_dispersion: 3,
 } as const);
 
 export type Methodology = typeof METHODOLOGY;

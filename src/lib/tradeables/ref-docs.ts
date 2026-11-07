@@ -30,8 +30,7 @@ export const ENVELOPE_FIELDS = {
     "The methodology the figures were computed under (/methodology). A changed rule or constant is a new version.",
   ce_version: "The common-equivalent conversion's own version.",
   rulebook_version: "The settlement rulebook in force (/rulebook): source classes and their ranks.",
-  as_of:
-    "When the payload was computed, UTC. A quarter's figures can change as late filings arrive.",
+  as_of: "When the payload was computed, UTC. A date's figures can change as late filings arrive.",
   lag_note: "The N-PORT lag, in one sentence, on every payload.",
 } as const satisfies FieldDocs<RefEnvelope>;
 
@@ -60,12 +59,12 @@ export const REF_ROUTES: readonly RouteDoc[] = [
     path: "/api/ref/names",
     query: [],
     summary:
-      "Every watchlist name with its headline label's latest consensus, dispersion, family count and latest filing date.",
+      "Every watchlist name with its headline (the label and as-of date of its latest consensus, with dispersion and family count) or why it has none, and its latest filing date.",
     fields: {
       ...ENVELOPE_FIELDS,
       families_version: FAMILIES_VERSION,
       names:
-        "One row per watchlist name, by slug: slug, name, listed_on and listing_url (the final prospectus), security_label and quarter of the headline, consensus_usd, n_families, dispersion_pct (null below two families) with the high and low family, latest_filed_on, latest_as_of, live_marks, labels, last_print (with its source_url), spv_vehicles, coverage (what full-text search found naming it) and no_marks (why a name with no live mark has none: code and reason). A name with no per-share series has null headline fields and its live_marks count.",
+        "One row per watchlist name, by slug: slug, name, listed_on and listing_url (the final prospectus), security_label and as_of of the headline, consensus_usd, n_families, dispersion_pct with the high and low family, latest_filed_on, latest_as_of (the newest mark's date), live_marks, labels, last_print (with its source_url), spv_vehicles, coverage (what full-text search found naming it), no_marks (why a name with no live mark has none: code and reason) and no_headline (why a name has no headline: code no_marks, no_per_share_series or too_few_families, and reason). A name with no headline has null headline fields.",
     } satisfies FieldDocs<RefNamesPayload>,
     example: "names",
   },
@@ -73,7 +72,7 @@ export const REF_ROUTES: readonly RouteDoc[] = [
     id: "name",
     path: "/api/ref/{slug}",
     query: [],
-    summary: `One name: per label the quarterly consensus and dispersion, each family's marks with the filings behind them, revisions, mark versus print; the prints; the structure table and its common-equivalent result; the SPV panel. ${SLUG_404}`,
+    summary: `One name: per label the consensus and dispersion on each as-of date, each family's marks with the filings behind them, revisions, mark versus print; the prints; the structure table and its common-equivalent result; the SPV panel. ${SLUG_404}`,
     fields: {
       ...ENVELOPE_FIELDS,
       families_version: FAMILIES_VERSION,
@@ -88,9 +87,11 @@ export const REF_ROUTES: readonly RouteDoc[] = [
       out_of_series:
         "Live marks published as filed that enter no per-share series, grouped by status (no_per_share, not_comparable_label, after_listing) and security_label: reason, n_marks, n_filers, latest_as_of and recent[] (the newest twelve, each with its document). The marks route serves every row.",
       headline:
-        "The label and quarter the daily page leads with: security_label, quarter, consensus_usd, n_families, dispersion_pct. Null without a per-share series.",
+        "The label and as-of date the daily page leads with: security_label, as_of, consensus_usd, n_families, dispersion_pct. Null when no as-of date has min_families_for_consensus families on one label.",
+      no_headline:
+        "Null with a headline; otherwise code (no_marks, no_per_share_series, too_few_families) and reason in one sentence from the rows.",
       labels:
-        "Per security label: consensus[] (quarter, consensus_usd, n_families, dispersion with high and low family, the families used, mark_vs_print), family_marks[] (each family's mark by as-of date with n_funds, intra_family_split, mark_vs_print and documents[] carrying accession and document_url), revisions[].",
+        "Per security label: consensus[], one point per as-of date (as_of, n_families, consensus_usd and dispersion with the high and low family, each null below min_families_for_consensus or min_families_for_dispersion families, every family's mark as of the date, mark_vs_print), family_marks[] (each family's mark by as-of date with n_funds, intra_family_split, mark_vs_print and documents[] carrying accession and document_url), revisions[].",
       last_print: "The latest priced round or IPO on or before today; null without one.",
       prints:
         "Every print: priced rounds and IPOs, and Form D offerings as evidence of size and date, each with its source.",
@@ -148,7 +149,7 @@ export const REF_ROUTES: readonly RouteDoc[] = [
       ...ENVELOPE_FIELDS,
       families_version: FAMILIES_VERSION,
       issuer: ISSUER_SHORT,
-      headline: "The label and quarter premiums are computed against, as in /api/ref/{slug}.",
+      headline: "The label and as-of date premiums are computed against, as in /api/ref/{slug}.",
       vehicles:
         "vehicle_name, vehicle_cik, match_method and match_note, latest_filing (accession, document_url, offering and sold amounts, minimum, fees, first sale, jurisdiction, related persons) and n_filings.",
       quotes:
@@ -166,7 +167,7 @@ export const REF_ROUTES: readonly RouteDoc[] = [
       ...ENVELOPE_FIELDS,
       families_version: FAMILIES_VERSION,
       methodology:
-        "Every constant: methodology_version, ce_version, ce_basis, per_share_units, revision_threshold_ln, leader_window_days, intra_family_split_tolerance, min_families_for_dispersion.",
+        "Every constant: methodology_version, ce_version, ce_basis, per_share_units, revision_threshold_ln, leader_window_days, intra_family_split_tolerance, min_families_for_consensus, min_families_for_dispersion.",
       security_labels:
         "Which labels enter per-share series (Common, and labels matching per_share_series_pattern), the labels that do not, and the security kinds.",
       listings:
