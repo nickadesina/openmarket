@@ -23,7 +23,7 @@ function documentedConstants(): Map<string, string> {
 describe("METHODOLOGY", () => {
   it("is frozen and versioned", () => {
     expect(Object.isFrozen(METHODOLOGY)).toBe(true);
-    expect(METHODOLOGY_VERSION).toBe("0.1.0");
+    expect(METHODOLOGY_VERSION).toBe("0.2.0");
     expect(METHODOLOGY.methodology_version).toBe(METHODOLOGY_VERSION);
     expect(METHODOLOGY.ce_version).toBe(CE_VERSION);
     expect(index.METHODOLOGY).toBe(METHODOLOGY);
@@ -34,7 +34,8 @@ describe("METHODOLOGY", () => {
       revision_threshold_ln: 0.005,
       leader_window_days: 180,
       intra_family_split_tolerance: 0.001,
-      min_families_for_dispersion: 2,
+      min_families_for_consensus: 3,
+      min_families_for_dispersion: 3,
     });
   });
 

@@ -1,16 +1,21 @@
-import type { LabelPayload, PrintPayload } from "../../lib/services/index/get-name-index.js";
+import { METHODOLOGY } from "../../lib/engine/index/methodology.js";
+import type {
+  ConsensusPayload,
+  LabelPayload,
+  PrintPayload,
+} from "../../lib/services/index/get-name-index.js";
 import { formatPercent, formatPerShare, formatValuation, plural } from "./format.js";
 import styles from "./mark-chart.module.css";
 
 /**
  * One label's marks over time, drawn as plain SVG on the server: every
- * family's mark as an ink dot that links its filing, the quarterly
- * consensus (median of families, at the quarter's end) as red points,
- * the range of the quarter's family marks as a pale band, and the last
- * print as a dashed line: vertical at its announcement, and horizontal at
- * its per-share price when a certificate gives one. Nothing is
- * interpolated: consensus points are not joined, because a line between
- * quarters would draw values no filer published.
+ * family's mark as an ink dot that links its filing, the consensus on each
+ * as-of date with enough families (the median of the families' marks as of
+ * that date) as a red point at that date, the range of those family marks
+ * as a pale band, and the last print as a dashed line: vertical at its
+ * announcement, and horizontal at its per-share price when a certificate
+ * gives one. Nothing is interpolated: consensus points are not joined,
+ * because a line between dates would draw values no filer published.
  */
 
 const WIDTH = 720;
@@ -95,6 +100,14 @@ function xTicks(start: number, end: number): { at: number; label: string }[] {
   return ticks;
 }
 
+/** The label's points that have a consensus, oldest first. */
+function priced(label: LabelPayload): (ConsensusPayload & { readonly consensus_usd: number })[] {
+  return label.consensus.filter(
+    (point): point is ConsensusPayload & { readonly consensus_usd: number } =>
+      point.consensus_usd !== null,
+  );
+}
+
 export interface MarkChartProps {
   readonly label: LabelPayload;
   readonly lastPrint: PrintPayload | null;
@@ -102,27 +115,30 @@ export interface MarkChartProps {
 
 /** The chart's one-paragraph reading, for the caption and screen readers. */
 export function chartSummary(label: LabelPayload): string {
-  const first = label.consensus[0];
-  const last = label.consensus.at(-1);
-  if (first === undefined || last === undefined) return "No consensus on this label.";
+  const points = priced(label);
+  const first = points[0];
+  const last = points.at(-1);
+  const drawn = `${plural(label.family_marks.length, "family mark")} drawn, each linking its filing.`;
+  if (first === undefined || last === undefined) {
+    const most = Math.max(0, ...label.consensus.map((point) => point.n_families));
+    return `Consensus: none, no as-of date has ${METHODOLOGY.min_families_for_consensus} families on this label (at most ${most}). ${drawn}`;
+  }
   const range =
     first === last
-      ? `Consensus ${formatPerShare(last.consensus_usd)} in ${last.quarter}`
-      : `Consensus ${formatPerShare(first.consensus_usd)} in ${first.quarter}, ${formatPerShare(last.consensus_usd)} in ${last.quarter}`;
+      ? `Consensus ${formatPerShare(last.consensus_usd)} as of ${last.as_of}`
+      : `Consensus ${formatPerShare(first.consensus_usd)} as of ${first.as_of}, ${formatPerShare(last.consensus_usd)} as of ${last.as_of}`;
   const dispersion =
     last.dispersion === null
-      ? `${plural(last.n_families, "family", "families")} in ${last.quarter}, too few for dispersion`
-      : `dispersion ${formatPercent(last.dispersion.pct)} across ${plural(last.n_families, "family", "families")} in ${last.quarter}`;
-  return `${range}; ${dispersion}. ${plural(label.family_marks.length, "family mark")} drawn, each linking its filing.`;
+      ? `${plural(last.n_families, "family", "families")} on ${last.as_of}`
+      : `dispersion ${formatPercent(last.dispersion.pct)} across ${plural(last.n_families, "family", "families")} on ${last.as_of}`;
+  return `${range}; ${dispersion}. ${drawn}`;
 }
 
 export function MarkChart({ label, lastPrint }: MarkChartProps) {
   const marks = label.family_marks;
   if (marks.length === 0) return null;
-  const dates = [
-    ...marks.map((mark) => day(mark.as_of)),
-    ...label.consensus.map((point) => day(point.quarter_end)),
-  ];
+  const points = priced(label);
+  const dates = marks.map((mark) => day(mark.as_of));
   let start = Math.min(...dates);
   let end = Math.max(...dates);
   const printDay = lastPrint === null ? null : day(lastPrint.announced_on);
@@ -144,7 +160,7 @@ export function MarkChart({ label, lastPrint }: MarkChartProps) {
       : null;
   const values = [
     ...marks.map((mark) => mark.mark_per_share_usd),
-    ...label.consensus.map((point) => point.consensus_usd),
+    ...points.map((point) => point.consensus_usd),
     ...(printPps === null ? [] : [printPps]),
   ];
   const y = yScale(values);
@@ -156,14 +172,19 @@ export function MarkChart({ label, lastPrint }: MarkChartProps) {
           <span className={styles.keyDot} aria-hidden="true" />
           Family mark (links its filing)
         </li>
-        <li>
-          <span className={styles.keyConsensus} aria-hidden="true" />
-          Consensus: median of families, at quarter end
-        </li>
-        <li>
-          <span className={styles.keyBand} aria-hidden="true" />
-          Range of the quarter's family marks
-        </li>
+        {points.length === 0 ? null : (
+          <>
+            <li>
+              <span className={styles.keyConsensus} aria-hidden="true" />
+              Consensus: median of {METHODOLOGY.min_families_for_consensus} or more families on one
+              as-of date
+            </li>
+            <li>
+              <span className={styles.keyBand} aria-hidden="true" />
+              Range of that date's family marks
+            </li>
+          </>
+        )}
         {printShown ? (
           <li>
             <span className={styles.keyPrint} aria-hidden="true" />
@@ -216,15 +237,15 @@ export function MarkChart({ label, lastPrint }: MarkChartProps) {
             y1={MARGIN.top + PLOT_H}
             y2={MARGIN.top + PLOT_H}
           />
-          {label.consensus.map((point) => {
+          {points.map((point) => {
             const marksOf = point.families.map((family) => family.mark_per_share_usd);
             const top = y.at(Math.max(...marksOf));
             const bottom = y.at(Math.min(...marksOf));
             return (
               <rect
-                key={`band${point.quarter}`}
+                key={`band${point.as_of}`}
                 className={styles.band}
-                x={x(day(point.quarter_end)) - 5}
+                x={x(day(point.as_of)) - 5}
                 width={10}
                 y={top - 2}
                 height={Math.max(bottom - top, 0) + 4}
@@ -263,19 +284,6 @@ export function MarkChart({ label, lastPrint }: MarkChartProps) {
               )}
             </g>
           ) : null}
-          {label.consensus.map((point) => (
-            <circle
-              key={`c${point.quarter}`}
-              className={styles.consensusPoint}
-              cx={x(day(point.quarter_end))}
-              cy={y.at(point.consensus_usd)}
-              r={4}
-            >
-              <title>
-                {`${point.quarter} consensus ${formatPerShare(point.consensus_usd)} from ${plural(point.n_families, "family", "families")}${point.dispersion === null ? "" : `, dispersion ${formatPercent(point.dispersion.pct)}`}`}
-              </title>
-            </circle>
-          ))}
           {marks.map((mark) => {
             const document = mark.documents[0];
             const cx = x(day(mark.as_of));
@@ -297,6 +305,20 @@ export function MarkChart({ label, lastPrint }: MarkChartProps) {
               </a>
             );
           })}
+          {/* Consensus points last: they share their date with the family dots and would hide beneath them. */}
+          {points.map((point) => (
+            <circle
+              key={`c${point.as_of}`}
+              className={styles.consensusPoint}
+              cx={x(day(point.as_of))}
+              cy={y.at(point.consensus_usd)}
+              r={4}
+            >
+              <title>
+                {`${point.as_of} consensus ${formatPerShare(point.consensus_usd)} from ${plural(point.n_families, "family", "families")}${point.dispersion === null ? "" : `, dispersion ${formatPercent(point.dispersion.pct)}`}`}
+              </title>
+            </circle>
+          ))}
         </svg>
       </div>
       <figcaption className={styles.caption}>

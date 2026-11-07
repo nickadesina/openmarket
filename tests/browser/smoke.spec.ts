@@ -93,6 +93,12 @@ test("the corrections page states the policy and lists the log", async ({ page }
   await expect(page.getByRole("heading", { level: 1, name: "Corrections" })).toBeVisible();
   await expect(page.getByText(/A row is never edited in place/)).toBeVisible();
   await expect(page.getByText("No correction has been published.")).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "open a correction issue on GitHub" }),
+  ).toHaveAttribute(
+    "href",
+    "https://github.com/nickadesina/openmarket/issues/new?template=correction.yml",
+  );
 });
 
 test("an unknown name is not found", async ({ page }) => {

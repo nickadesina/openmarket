@@ -149,13 +149,14 @@ rows plus the checked-in data files, under `METHODOLOGY_VERSION` (start
   family (default: the registrant itself). A family's mark on a label and
   date is the median of its funds' marks; if they differ by more than
   0.1 % the row is flagged `intra_family_split`.
-- **Comparison date.** Funds' quarters end in different months. A
-  family's mark enters a calendar quarter by `as_of`; within a quarter
-  each family contributes its latest mark.
-- **Consensus mark** per label per quarter: median of family marks, with
-  `n_families`. Never a mean.
+- **Comparison date** (methodology 0.2.0; 0.1.0 used calendar quarters).
+  Families are compared only on the same `as_of` date: one point per
+  label and date, each family's mark on exactly that date, none carried
+  forward.
+- **Consensus mark** per label per as-of date: median of family marks,
+  with `n_families`; from 3 families. Never a mean.
 - **Dispersion:** `(max − min) / median` of family marks, in percent,
-  with the high and low families named. Needs `n_families ≥ 2`.
+  with the high and low families named. Needs `n_families ≥ 3`.
 - **Mark versus last print:** `ln(mark / print_pps)` where the print is
   the latest priced round announced on or before `as_of` whose
   certificate gives a per-share price for the same label or for the
@@ -244,7 +245,7 @@ to the document it came from. v1 paths (`/m`, `/t`, `/portfolio`,
 | P3 | `p3-derived-series.md` — `engine/index`, `METHODOLOGY.md` | P1 | `engine/index`, tests | Built: `engine/index` and `METHODOLOGY.md` 0.1.0 (draft until Nick signs it). |
 | P6 | `p6-rulebook-and-contracts.md` — rulebook v2 source classes, `CONTRACTS.md` v2 | P1 | `engine/rulebook.ts`, `CONTRACTS.md` | Built: rulebook 2.0.0 and `CONTRACTS.md` v2. Not built: a past-date observation route and series under earlier methodology versions (rulebook `NOT_BUILT`). |
 | P4 | `p4-certificates-prints-spv.md` | P2, P3 | `data/index`, `services/index` | Built: migrations `022`–`023`, the certificate, print, Form D and SPV-quote importers, the listing rule, `index:relabel`, the read services. No data: no certificate transcribed, no unit quote captured (no public page quotes units). Form D is not in the cron. |
-| P5 | `p5-site-and-api.md` — routes, pages, CSV, docs | P2–P4, P6 | `app`, `components`, docs | Built: the envelope and every route, the CSVs (streamed; `issuer=` per name), `/ref`, `/`, `/n/[slug]`, `/methodology`, `/corrections`, Open Graph text, `TECHNICAL_DESIGN.md`, browser specs on a seeded database. Not built: page caching (each view recomputes), the corrections reporting address. |
+| P5 | `p5-site-and-api.md` — routes, pages, CSV, docs | P2–P4, P6 | `app`, `components`, docs | Built: the envelope and every route, the CSVs (streamed; `issuer=` per name), `/ref`, `/`, `/n/[slug]`, `/methodology`, `/corrections`, Open Graph text, `TECHNICAL_DESIGN.md`, browser specs on a seeded database. Not built: page caching (each view recomputes). Corrections are reported as GitHub issues (`.github/ISSUE_TEMPLATE/correction.yml`). |
 
 ## Open questions this build answers or leaves (decision 0003)
 

@@ -3,6 +3,15 @@
 Newest first. A version changes only by a new entry here and a new
 `RULEBOOK_VERSION`; a published version is never edited.
 
+## 2.1.0 (2026-11-07)
+
+Follows methodology 0.2.0, which compares filer families only on the
+same as-of date and publishes a consensus or a dispersion only from
+three families. The marks family's settlement rule now reads "the
+spread of filer families' marks on one as-of date within the
+contract's quarter" (it read "on a quarter"). Calendar quarters remain
+the contracts' observation windows; no other rule changes.
+
 ## 2.0.0 (2026-11-04)
 
 The rulebook of the marks index (decision 0003). Nothing settles at

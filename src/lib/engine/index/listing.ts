@@ -9,8 +9,10 @@
  * listing date stay what they were.
  *
  * The headline label: a name's daily figure is the consensus on the label
- * with the most families in the latest quarter that has any consensus; ties
- * go to the label with the higher consensus, then to the label's name.
+ * with the most families on the latest as-of date that has any consensus
+ * (at least `min_families_for_consensus` families on one label); ties go to
+ * the label with the higher consensus, then to the label's name. A name
+ * with no such date has no headline.
  */
 import type { ConsensusPoint } from "./consensus.js";
 import { assertIsoDate, compareText, type IsoDate } from "./mark.js";
@@ -23,20 +25,21 @@ export function isPrivateMark(asOf: IsoDate, listedOn: IsoDate | null): boolean 
   return asOf < listedOn;
 }
 
-/** The headline point among a name's consensus points, or null when it has none. */
+/** The headline point among a name's consensus points, or null when none has a consensus. */
 export function headlinePoint(points: readonly ConsensusPoint[]): ConsensusPoint | null {
-  if (points.length === 0) return null;
-  const latest = points.reduce(
-    (quarter, point) => (point.quarter > quarter ? point.quarter : quarter),
-    points[0]!.quarter,
+  const priced = points.filter((point) => point.consensusUsd !== null);
+  if (priced.length === 0) return null;
+  const latest = priced.reduce(
+    (asOf, point) => (point.asOf > asOf ? point.asOf : asOf),
+    priced[0]!.asOf,
   );
   return (
-    [...points]
-      .filter((point) => point.quarter === latest)
+    priced
+      .filter((point) => point.asOf === latest)
       .sort(
         (left, right) =>
           right.nFamilies - left.nFamilies ||
-          right.consensusUsd - left.consensusUsd ||
+          right.consensusUsd! - left.consensusUsd! ||
           compareText(left.securityLabel, right.securityLabel),
       )[0] ?? null
   );

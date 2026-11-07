@@ -91,9 +91,9 @@ export function labelId(label: string): string {
     .replace(/^-|-$/g, "");
 }
 
-/** The anchor of one label's quarter on a name page. */
-export function quarterId(label: string, quarter: string): string {
-  return `${labelId(label)}-${quarter.toLowerCase()}`;
+/** The anchor of one label's as-of date on a name page: "series-f-1-preferred-2026-08-31". */
+export function dateId(label: string, asOf: string): string {
+  return `${labelId(label)}-${asOf}`;
 }
 
 /** An instant as its UTC date and minute: 2026-11-05 12:00 UTC. */

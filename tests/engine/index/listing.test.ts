@@ -17,18 +17,33 @@ describe("isPrivateMark", () => {
 });
 
 describe("headlinePoint", () => {
-  it("takes the latest quarter's label with the most families", () => {
+  function point(familySlug: string, securityLabel: string, asOf: string, mark: number) {
+    return { familySlug, familyName: familySlug, securityLabel, asOf, markPerShareUsd: mark };
+  }
+
+  it("takes the latest as-of date with a consensus, not the latest date", () => {
     const points = consensusSeries(familyMarks(EXAMPLE_ROWS.map(toFundMark), EXAMPLE_FAMILIES));
     const headline = headlinePoint(points);
-    expect(headline).not.toBeNull();
-    const latest = points
-      .map((point) => point.quarter)
-      .sort()
-      .at(-1);
-    expect(headline!.quarter).toBe(latest);
-    for (const point of points.filter((other) => other.quarter === latest)) {
-      expect(headline!.nFamilies).toBeGreaterThanOrEqual(point.nFamilies);
-    }
+    // 2026-08-31 has two families, too few; 2026-07-31 has three.
+    expect(headline).toMatchObject({ asOf: "2026-07-31", nFamilies: 3 });
+    expect(headlinePoint(points.filter((entry) => entry.asOf !== "2026-07-31"))).toBeNull();
     expect(headlinePoint([])).toBeNull();
+  });
+
+  it("on that date, takes the label with the most families, then the higher consensus", () => {
+    const points = consensusSeries([
+      point("a", "Series A Preferred", "2026-08-31", 10),
+      point("b", "Series A Preferred", "2026-08-31", 11),
+      point("c", "Series A Preferred", "2026-08-31", 12),
+      point("a", "Common", "2026-08-31", 5),
+      point("b", "Common", "2026-08-31", 6),
+      point("c", "Common", "2026-08-31", 7),
+      point("d", "Common", "2026-08-31", 8),
+      point("a", "Series B Preferred", "2026-09-30", 20),
+      point("b", "Series B Preferred", "2026-09-30", 21),
+    ]);
+    expect(headlinePoint(points)).toMatchObject({ securityLabel: "Common", nFamilies: 4 });
+    const tied = points.filter((entry) => entry.securityLabel !== "Common");
+    expect(headlinePoint(tied)).toMatchObject({ securityLabel: "Series A Preferred" });
   });
 });

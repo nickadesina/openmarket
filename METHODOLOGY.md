@@ -1,6 +1,6 @@
 # OpenMarket methodology
 
-**v0.1.0 — draft, Nick's to sign before the first post.**
+**v0.2.0 — draft, Nick's to sign before the first post.**
 
 This document specifies how OpenMarket turns public filings into the numbers
 it publishes. The arithmetic is `src/lib/engine/index/`; every payload names
@@ -57,7 +57,7 @@ that class. The classes are, in the build brief's default order:
 The ranks themselves, and which source settles a contract written on the
 index, are the rulebook's: published at `/rulebook`, defined in
 `src/lib/engine/rulebook.ts`, with changes recorded in
-`docs/RULEBOOK_CHANGELOG.md`. Version 0.1.0 of this methodology does not
+`docs/RULEBOOK_CHANGELOG.md`. This version of the methodology does not
 combine classes: rows from two classes for the same fund, label and date are
 two rows of that fund, and the fund contributes their median.
 
@@ -136,11 +136,19 @@ they give one family mark of $751.32, without the flag.
 
 ## Comparison date
 
-Funds' fiscal quarters end in different months. A family's mark enters the
-calendar quarter its as-of date falls in, and within a calendar quarter each
-family contributes its latest mark on the label. Marks from different months
-of one quarter are therefore compared with each other; a revaluation inside
-the quarter shows as dispersion.
+Families are compared only on the same date: a mark's as-of date, the
+report date the filing gives (in N-PORT, `repPdDate`, usually a month-end). Funds'
+fiscal quarters end in different months, so on a given date only some
+families report; a family's mark as of July 31 is never compared with
+another's as of August 31, because the gap between them would measure
+reporting timing as well as disagreement.
+
+Per label, each as-of date on which any family marked the label is one
+point of the series, with every family's mark as of exactly that date. A
+family with no mark on that date is absent from it: no mark is carried
+forward from an earlier date or back from a later one. A point with fewer
+than three families publishes its family marks and no consensus or
+dispersion (below).
 
 ## Listed names
 
@@ -154,10 +162,14 @@ The date and the prospectus are recorded in `data/index/watchlist.json`
 (`listing`), from EDGAR, never from a report.
 
 Example. SpaceX's final prospectus was filed on 2026-06-12 (424B4,
-0001628280-26-042639). Its 2026Q2 consensus is computed from marks as of
-April and May 2026; funds' marks as of 2026-06-30 and after, filed at
-Level 1 or Level 2 of the fair-value hierarchy (quoted prices, or quoted
-prices less a lock-up discount), are listed-stock marks.
+0001628280-26-042639). Its headline is its consensus on `Common` as of
+2026-04-30, $526.59 from four families (BlackRock Global Allocation Fund,
+0002071691-26-015449; Fidelity Blue Chip Growth Fund, 0000035402-26-004040;
+Franklin Growth Opportunities Fund, 0002071691-26-014424; T. Rowe Price
+Global Stock Fund, 0001099263-26-008016; each $526.59 a share); funds'
+marks as of 2026-06-30 and after, filed at Level 1 or Level 2 of the
+fair-value hierarchy (quoted prices, or quoted prices less a lock-up
+discount), are listed-stock marks.
 
 The rule reads the listing date, not a filer's fair-value level: a filer
 that files a private holding at Level 1 is a filer's mark like any other
@@ -165,44 +177,64 @@ and is not dropped.
 
 ## Headline label
 
-A name's daily figure is the consensus on one label: the label with the
-most families in the latest calendar quarter that has any consensus. Ties
-go to the label with the higher consensus, then to the label that sorts
-first. The name page shows every label; the headline only orders the
-daily page.
+A name's daily figure is the consensus on one label as of one date: the
+latest as-of date on which any label has a consensus (at least three
+families), and on that date the label with the most families. Ties go to
+the label with the higher consensus, then to the label that sorts first. A
+name with no as-of date on which three families marked one label has no
+headline; the daily page says so, with the most families any one date has.
+The name page shows every label and every date; the headline only orders
+the daily page.
 
 ## Consensus mark
 
-Per label per calendar quarter, the consensus mark is the median of the
-family marks, published with `n_families`. With an even number of families
-the median is the mean of the middle two. The consensus is never a mean of
-all marks, and families are not weighted by position size.
+Per label per as-of date, the consensus mark is the median of the family
+marks as of that date, published with `n_families`. It is published only
+with at least 3 families (`min_families_for_consensus`): with two, the
+median is the midpoint of two filers' marks, and the figure would be a
+statement about one pair of funds rather than a consensus. With an even
+number of families the median is the mean of the middle two. The consensus
+is never a mean of all marks, and families are not weighted by position
+size.
 
 ## Dispersion
 
-Per label per calendar quarter, dispersion is `(max − min) / median` of the
-family marks, in percent, with the high and the low family named. It is
-published only with at least 2 families (`min_families_for_dispersion`) and a
-median above zero.
+Per label per as-of date, dispersion is `(max − min) / median` of the family
+marks as of that date, in percent, with the high and the low family named.
+It is published only with at least 3 families (`min_families_for_dispersion`)
+and a median above zero.
 
-Example, 2026Q3, Anthropic PBC Series F-1 Preferred, on eight filings (not
-every filer of the quarter):
+Example, Anthropic PBC Series H-1 Preferred as of 2026-08-31. Four families
+marked it on that date; one fund's filing stands for each below, and every
+fund of each family marked the same per share (development data,
+2026-11-07):
 
-| Family | As of | Shares | Value | Mark | Accession |
+| Family | Fund | Shares | Value | Mark | Accession |
 | --- | --- | --- | --- | --- | --- |
-| Capital Group | 2026-08-31 | 2,859,590 | $2,148,467,158.80 | $751.32 | 0001193125-26-439060 |
-| Fidelity Mt. Vernon Street Trust | 2026-08-31 | 1,000 | $777,530.00 | $777.53 | 0000035402-26-006778 |
-| T. Rowe Price International Funds | 2026-07-31 | 73,486 | $43,283,952.12 | $589.0095 | 0001099263-26-010105 |
-| Franklin Strategic Series | 2026-07-31 | 49,656 | $29,247,855.73 | $589.0095 | 0002071691-26-023300 |
-| NYLIM Funds | 2026-07-31 | 147,622 | $86,950,760.41 | $589.0095 | 0002071691-26-022387 |
+| Capital Group | AMCAP Fund | 797,780 | $599,388,069.60 | $751.32 | 0001193125-26-439051 |
+| Fidelity (FMR) | Fidelity Equity Growth K6 Fund | 1,400 | $1,088,542.00 | $777.53 | 0000035402-26-006778 |
+| Strategic Advisers LLC | Strategic Advisers International Fund | 800 | $622,024.00 | $777.53 | 0000035402-26-006887 |
+| T. Rowe Price | T. Rowe Price Spectrum Moderate Allocation Fund | 1,622 | $1,280,390.58 | $789.39 | 0001099263-26-011054 |
 
-(Capital Group's row is Growth Fund of America's; New Economy Fund's mark is
-the same, above.) The consensus is the median of five, $589.0095, with
-`n_families` 5. Dispersion is (777.53 − 589.0095) / 589.0095 = 32.0 %, high
-Fidelity Mt. Vernon Street Trust, low Franklin Strategic Series (the three
-July marks agree to four decimals; Franklin's, $589.00949996 before
-rounding, is the lowest).
-Here the dispersion separates the July 31 marks from the August 31 marks.
+The consensus is the median of four, (777.53 + 777.53) / 2 = $777.53, with
+`n_families` 4. Dispersion is (789.39 − 751.32) / 777.53 = 4.9 %, high
+T. Rowe Price, low Capital Group.
+
+Franklin Templeton's latest mark on the series is as of 2026-07-31:
+Franklin Growth Opportunities Fund, 67,909 shares at $39,999,046.14
+(0002071691-26-023300), $589.01. It enters the 2026-07-31 point (Fidelity,
+Franklin Templeton and T. Rowe Price, each $589.01: consensus $589.01,
+dispersion under 0.1 %), not the 2026-08-31 one. Version 0.1.0 put it in
+the 2026Q3 point with the four August marks, and published a dispersion of
+25.8 % that measured when the funds report (see
+[Version history](#version-history)).
+
+Example below the threshold. Anthropic Series F-1 Preferred as of
+2026-08-31 has two families, Capital Group (Growth Fund of America,
+2,859,590 shares at $2,148,467,158.80, 0001193125-26-439060: $751.32) and
+Fidelity (Fidelity Equity Growth K6 Fund, 1,000 shares at $777,530.00,
+0000035402-26-006778: $777.53). Both marks are published on the name page;
+the date has no consensus and no dispersion.
 
 ## Mark versus last print
 
@@ -248,9 +280,9 @@ not levels.
 ## SPV premium
 
 For a unit quote on a public page, with a per-share price, against the
-consensus mark on the name's headline label in the latest quarter that
-starts on or before the capture (a page rarely says which series a vehicle
-holds; the payload names the label used):
+headline consensus computed from the points as of the capture's date or
+earlier (a page rarely says which series a vehicle holds; the payload names
+the label and the as-of date used):
 `ln(quoted_pps × (1 + upfront_fee) / consensus)`, with the fee-free premium
 `ln(quoted_pps / consensus)` beside it. Fees are recorded as percentages. When
 the page states no upfront fee, only the fee-free premium is published. The
@@ -308,16 +340,17 @@ No example: as of this draft no certificate has been transcribed.
 N-PORT-P is public only after a delay. In the filings cited here, each
 fund's public report covers the last month of one of its fiscal quarters and
 was filed 54 to 60 days after that date (for example, 0001193125-26-439060:
-period 2026-08-31, filed 2026-10-30). Every page states the lag. A quarter's
-consensus can change as late filers' reports arrive; each payload carries
-the `as_of` it was computed at.
+period 2026-08-31, filed 2026-10-30). Every page states the lag. A date's
+point gains families as late filers' reports for that date arrive, so its
+consensus and dispersion can change; each payload carries the `as_of` it was
+computed at.
 
 ## What is never done
 
 - A filer's mark is never adjusted, interpolated, smoothed, carried forward
   or filled. A missing filing is a missing row.
-- Marks on different labels are never pooled, and funds are never compared
-  in place of families.
+- Marks on different labels are never pooled, marks as of different dates
+  are never compared, and funds are never compared in place of families.
 - The consensus is never a mean, and no family is weighted by position size.
 - Nothing is forecast, no model mid is published, and no view is given on
   where a name should trade.
@@ -329,14 +362,15 @@ exports it and `/api/ref/methodology` publishes it:
 
 | Constant | Value | Meaning |
 | --- | --- | --- |
-| `methodology_version` | `0.1.0` | This document's version. |
+| `methodology_version` | `0.2.0` | This document's version. |
 | `ce_version` | `0.1.0` | The common-equivalent conversion's version. |
 | `ce_basis` | `authorized` | Preferred share counts in the waterfall are shares authorized. |
 | `per_share_units` | `NS` | A per-share mark is computed only for holdings counted in shares. |
 | `revision_threshold_ln` | `0.005` | Smallest \|ln(new / old)\| that is a revision. |
 | `leader_window_days` | `180` | Days before a revision in which its leader is sought. |
 | `intra_family_split_tolerance` | `0.001` | Spread among a family's funds, as a fraction of the family mark, above which the family mark is flagged. |
-| `min_families_for_dispersion` | `2` | Fewest families for which dispersion is published. |
+| `min_families_for_consensus` | `3` | Fewest families on one label and as-of date for which a consensus is published. |
+| `min_families_for_dispersion` | `3` | Fewest families on one label and as-of date for which dispersion is published. |
 
 ## Versioning and corrections
 
@@ -351,3 +385,59 @@ A correction to a published number is a new row and an entry at
 the rows affected. A row is never edited in place; the corrected row
 supersedes it. Corrections are of three kinds: a row (a filing read wrong),
 the methodology (a rule changed), or a parser (a reading rule changed).
+
+## Version history
+
+Each version is published with a correction of kind `methodology` at
+`/corrections`, carrying the diff.
+
+### 0.2.0 (2026-11-07, draft)
+
+What changed:
+
+- **Comparison date.** Consensus and dispersion are computed per label per
+  as-of date, from each family's mark on exactly that date, not per
+  calendar quarter from each family's latest mark in it.
+- **Three families.** A consensus needs three families on the label and
+  date (`min_families_for_consensus`, new), and so does dispersion
+  (`min_families_for_dispersion`, 2 → 3). A date with fewer publishes its
+  family marks only.
+- **Headline.** The latest as-of date with a consensus, and on it the
+  label with the most families. A name without one has no headline and
+  says why.
+- **SPV premium** reads the headline among the points as of the capture's
+  date or earlier.
+- **Payloads** (breaking): a consensus point's `quarter`, `quarter_start`
+  and `quarter_end` are replaced by `as_of`, and its `consensus_usd` is
+  null below three families (its `mark_vs_print` is then `none`,
+  `no_consensus`); the name's `headline.quarter` and the names list's
+  `quarter` are `as_of`; an SPV premium's `consensus_quarter` is
+  `consensus_as_of`; `no_headline` (code and reason) is new on the name and
+  on each names row.
+
+Why:
+
+1. **Mismatched dates.** Under 0.1.0 families whose fiscal quarters end in
+   different months were compared across different as-of dates. Anthropic
+   PBC Series H-1 Preferred, 2026Q3, showed dispersion 25.8 %, low Franklin
+   Templeton $589.01; Franklin's mark is as of 2026-07-31 and the other four
+   families' as of 2026-08-31 ($751.32 to $789.39, 4.9 % apart). The gap
+   was reporting timing, not disagreement between committees.
+2. **Two families.** With two families the median is their midpoint and the
+   dispersion is one pairwise gap that names both funds as the high and the
+   low. A name whose only labelled filers were two families showed a
+   dispersion of 83.6 % as its headline, while the other filers' marks on
+   that issuer (titles naming only the issuer, so `Unclassified`) stayed
+   outside every series. A headline that is a statement about two named
+   funds is not a consensus.
+
+What moves: names whose latest consensus mixed months now lead with a
+single date (Anthropic: Series H-1 Preferred as of 2026-08-31, $777.53 from
+four families, dispersion 4.9 %, was $777.53 from five, 25.8 %); names with
+no date on which three families mark one label have no headline. The diff
+is `docs/corrections/methodology-0.2.0.md`.
+
+### 0.1.0 (2026-11-04, draft)
+
+The first draft: consensus and dispersion per label per calendar quarter,
+from each family's latest mark in it; dispersion from two families.

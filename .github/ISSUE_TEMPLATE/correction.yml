@@ -1,0 +1,48 @@
+name: Correction
+description: A figure on OpenMarket that the public filing it came from contradicts.
+title: "Correction: <name>, <accession>"
+labels: ["correction"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Corrections are published at https://openmarket.systems/corrections with what changed, why, the diff and the rows affected. A row is never edited in place: the corrected row supersedes it.
+
+        Report what a public filing says. This issue is public: include no personal information, and nothing from a login, a paywall or a private message (the source rule, METHODOLOGY.md).
+  - type: input
+    id: name
+    attributes:
+      label: Name
+      description: The name's slug as on the site, from its page's address (`anthropic` for /n/anthropic).
+      placeholder: anthropic
+    validations:
+      required: true
+  - type: input
+    id: filing
+    attributes:
+      label: Filing
+      description: The filing's accession number, or its URL on sec.gov. Add the row's `mark_id` if you have it (on the name page's filings, in /api/ref/{slug}/marks or filer-marks.csv).
+      placeholder: 0000035402-26-006778
+    validations:
+      required: true
+  - type: textarea
+    id: wrong
+    attributes:
+      label: What is wrong
+      description: The figure or label OpenMarket publishes, and where (the page, route or CSV row).
+    validations:
+      required: true
+  - type: textarea
+    id: filing-says
+    attributes:
+      label: What the filing says
+      description: The holding as the filing states it (title, balance, units, value, as-of date), or the rule the figure breaks.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Where in the filing it appears (the schedule, the line, the XML element), or another public filing that shows it.
+    validations:
+      required: false

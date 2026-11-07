@@ -36,6 +36,7 @@
     "index:ingest": "tsx --env-file-if-exists=.env.local scripts/index-ingest.ts",
     "index:families": "tsx --env-file-if-exists=.env.local scripts/index-families.ts",
     "index:relabel": "tsx --env-file-if-exists=.env.local scripts/index-relabel.ts",
+    "index:correction": "tsx --env-file-if-exists=.env.local scripts/index-correction.ts",
     "index:prints": "tsx --env-file-if-exists=.env.local scripts/index-prints.ts",
     "index:certificates": "tsx --env-file-if-exists=.env.local scripts/index-certificates.ts",
     "index:spv-quotes": "tsx --env-file-if-exists=.env.local scripts/index-spv-quotes.ts"

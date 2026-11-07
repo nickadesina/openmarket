@@ -40,8 +40,8 @@ the API and the CSVs serve the same numbers to machines (CC BY 4.0).
 ## The lag
 
 N-PORT-P, the main source, is public about 60 days after the month-end it
-reports. Every page and payload states it; the latest quarter can change as
-late reports arrive, and every payload carries the `as_of` it was computed
+reports. Every page and payload states it; the latest dates' figures can
+change as late reports arrive, and every payload carries the `as_of` it was computed
 at.
 
 ## The source rule

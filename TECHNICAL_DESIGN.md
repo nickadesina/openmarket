@@ -107,25 +107,27 @@ none (section 6).
 
 ## 5. The arithmetic
 
-`engine/index/` implements `METHODOLOGY.md` 0.1.0 and nothing else
+`engine/index/` implements `METHODOLOGY.md` 0.2.0 and nothing else
 (`tests/engine/index/methodology.test.ts` holds the constants table to the
 code). Labels: preferred series and `Common` enter per-share series;
 `SPV interest`, `Warrant`, `SAFE`, `Convertible Note` and `Unclassified`
 are published but compared with nothing. A family's mark is the median of
 its funds' marks on a label and date (`intra_family_split` above 0.1 %);
-the consensus is the median of each family's latest mark in a calendar
-quarter; dispersion is `(max − min) / median` from two families. Marks as
-of a listed name's prospectus date or later enter no series. The headline
-label is the one with the most families in the latest quarter with a
-consensus. `resolveFamily` indexes a families object's CIKs once (a
+families are compared only on the same as-of date, one point per label and
+date with every family's mark on it and none carried forward; the
+consensus is the median of the family marks and dispersion `(max − min) /
+median`, each from three families. Marks as of a listed name's prospectus
+date or later enter no series. The headline is the label with the most
+families on the latest as-of date with a consensus; a name without one
+gets `no_headline` with the reason. `resolveFamily` indexes a families object's CIKs once (a
 `WeakMap`), so a name with thousands of marks resolves in linear time.
 
 ## 6. Read services
 
 - `getNameIndex(db, slug)` (`get-name-index.ts`): the issuer; live marks
   split by `seriesStatus` into the series' inputs and `marks_summary`;
-  per label the consensus by quarter (with dispersion, the families used
-  and mark versus print), each family mark with its documents, and
+  per label one consensus point per as-of date (the families' marks on it,
+  consensus and dispersion from three families, mark versus print), each family mark with its documents, and
   revisions; prints; the live certificate's structure with
   `commonEquivalent` and `structureGap` (or `unsupported` / `no_headline`
   with the reason); SPV vehicles (latest Form D per vehicle CIK) and quotes
@@ -186,24 +188,26 @@ Server components under `src/app`; pages that read the database are
 a page and its API payload come from the same function. Static pages read
 repository files at build.
 
-- `/`: every watchlist name with a consensus (headline label and quarter,
-  consensus, dispersion, families, latest filing, last print), highest
-  dispersion first, each figure linking the name page's quarter; then the
-  names without one with the reason (`no_marks`, or "no per-share series"
-  when every live mark is outside the series, as for a name whose holdings
-  are all Unclassified). The lag and the versions are stated.
-- `/n/[slug]`: the headline figures (each linking its quarter or its
+- `/`: every watchlist name with a consensus (headline label and as-of
+  date, consensus, dispersion, families, latest filing, last print),
+  highest dispersion first, each figure linking the name page's date; then
+  the names without one with the reason (`no_headline`: no live mark, no
+  per-share series when every live mark is outside the series, as for a
+  name whose holdings are all Unclassified, or too few families on any one
+  date). The lag and the versions are stated.
+- `/n/[slug]`: the headline figures (each linking its date or its
   filing); the listing note for a listed name; per label a plain-SVG chart
   (`components/index/mark-chart.tsx`: every family mark a dot linking its
-  first filing, the consensus line at quarter ends, the quarter's range,
+  first filing, the consensus as points at their as-of dates, that date's
+  range,
   the last print as a dashed line at its date and, with a certificate
   price, at its per-share price; log scale when the range is threefold),
-  the consensus by quarter, every family mark of the latest four quarters
-  with its filing (earlier quarters fold), and revisions; the marks outside
+  the consensus by as-of date, every family mark of the latest six dates
+  with its filing (earlier dates fold), and revisions; the marks outside
   the series as filed; prints; structure; the SPV panel (Form D vehicles,
   and why no unit quote is published); the per-name CSVs and JSON. Open
   Graph and Twitter text: the name, the dispersion and families, the label
-  and quarter, the latest filing date (`components/index/share-text.ts`).
+  and date, the latest filing date (`components/index/share-text.ts`).
 - `/methodology`: `METHODOLOGY.md` through the document component, its
   Constants table rebuilt from `METHODOLOGY`
   (`tradeables/methodology-doc.ts`).
@@ -244,6 +248,5 @@ against the database; only N-PORT runs in the cron.
 - Form D, prints, certificates and quotes are not in the daily cron.
 - A route serving the index as published on a past date, and series under
   an earlier `methodology_version` (rulebook `NOT_BUILT`).
-- The corrections reporting address (not published).
 - Page caching: every page view recomputes from the rows (the API is
   cached 60 s at the edge; the pages are not).

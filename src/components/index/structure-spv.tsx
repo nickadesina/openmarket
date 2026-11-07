@@ -244,7 +244,7 @@ function Quotes({ index }: { readonly index: NameIndex }) {
               </td>
               <td className={styles.num}>
                 {quote.premium.status === "ok"
-                  ? `${formatLogChange(quote.premium.premiumLn ?? quote.premium.grossPremiumLn)} vs ${quote.premium.security_label} ${quote.premium.consensus_quarter}`
+                  ? `${formatLogChange(quote.premium.premiumLn ?? quote.premium.grossPremiumLn)} vs ${quote.premium.security_label} as of ${quote.premium.consensus_as_of}`
                   : quote.premium.reason}
               </td>
               <td>

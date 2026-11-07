@@ -2,10 +2,10 @@
 export {
   type ConsensusPoint,
   consensusSeries,
+  consensusUsd,
   type Dispersion,
   type DispersionFamily,
   dispersionPct,
-  latestInQuarter,
   validateFamilyMarkPoints,
 } from "./consensus.js";
 export {
