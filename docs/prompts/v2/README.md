@@ -149,13 +149,14 @@ rows plus the checked-in data files, under `METHODOLOGY_VERSION` (start
   family (default: the registrant itself). A family's mark on a label and
   date is the median of its funds' marks; if they differ by more than
   0.1 % the row is flagged `intra_family_split`.
-- **Comparison date.** Funds' quarters end in different months. A
-  family's mark enters a calendar quarter by `as_of`; within a quarter
-  each family contributes its latest mark.
-- **Consensus mark** per label per quarter: median of family marks, with
-  `n_families`. Never a mean.
+- **Comparison date** (methodology 0.2.0; 0.1.0 used calendar quarters).
+  Families are compared only on the same `as_of` date: one point per
+  label and date, each family's mark on exactly that date, none carried
+  forward.
+- **Consensus mark** per label per as-of date: median of family marks,
+  with `n_families`; from 3 families. Never a mean.
 - **Dispersion:** `(max − min) / median` of family marks, in percent,
-  with the high and low families named. Needs `n_families ≥ 2`.
+  with the high and low families named. Needs `n_families ≥ 3`.
 - **Mark versus last print:** `ln(mark / print_pps)` where the print is
   the latest priced round announced on or before `as_of` whose
   certificate gives a per-share price for the same label or for the

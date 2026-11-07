@@ -40,9 +40,9 @@ share some rules and differ on the rest, below.
 | Filer mark | One per-share mark on one security, from one filer, as of one date, with its source document. Never adjusted, interpolated, smoothed or carried forward; a missing filing is a missing row. |
 | Source rank | A source class's rank within one purpose (`RULEBOOK.source_purposes`). For a filer mark: `ncsr` 1, `nport` 2, `fund_holdings_page` 3, `closed_end_nav` 4. For a round's per-share price and terms: `delaware_coi` 1. A rank picks which of one filer's documents stands for a security and date; it never weighs one filer against another. |
 | Filer family | Funds under one adviser, which share a valuation committee (`data/index/filer-families.json`). A family's mark on a label and date is the median of its funds' marks. "Filer" in a contract means a family. |
-| Quarter Q | A calendar quarter. A family's mark enters Q by its `as_of`; within Q each family contributes its latest mark. |
-| Consensus C | Per label per quarter, the median of family marks, with `n_families`. Never a mean. |
-| Dispersion | High minus low across families on a label in Q, as a percentage of the median: `100 · (max − min) / median`, the methodology's normalisation. Needs `n_families ≥ 2`. |
+| Quarter Q | A calendar quarter: a contract's observation window. The index itself has no quarters: it compares families only on the same as-of date. |
+| Consensus C | Per label per as-of date, the median of the family marks as of that date, with `n_families`; published from 3 families (`min_families_for_consensus`). Never a mean. |
+| Dispersion | High minus low across families on a label as of one date, as a percentage of the median: `100 · (max − min) / median`, the methodology's normalisation. Needs `n_families ≥ 3` (`min_families_for_dispersion`). |
 | Repricing event | A priced round, tender or secondary, public S-1, IPO or acquisition of the name, announced per the rulebook at any rank, valuation disclosed or not. |
 | Print | The post-money of a priced primary equity round, publicly reported per the rulebook's print-side ranks (1 company or lead-investor release; 2 SEC filing; 3 two independent Tier-1 outlets; 4 one), with the 7-day revision window. |
 | Next round R | The first priced round announced strictly after listing and at or before the contract's deadline T, at any rank, valuation disclosed or not (`resolveNextRound`). |
@@ -51,7 +51,7 @@ share some rules and differ on the rest, below.
 | Deadline T | A print-settled contract's last date for R's announcement, and a mark-level binary's last date for the filer's mark to be published. A contract term. |
 | Settlement date | For a print-settled contract: when the index holds R's certificate price, and no later than T plus the venue's certificate lag (a contract term: certificates are bought on order). |
 | Observation date D | For a contract on a quarter: 00:00 UTC on the 75th day after Q's last day (`observationDate`). |
-| n_min | A contract's minimum number of filer families on a label. At least 2 where a consensus or a dispersion is read; the venue may set more. |
+| n_min | A contract's minimum number of filer families on a label and as-of date. At least 3 where a consensus or a dispersion is read (the methodology publishes neither from fewer); the venue may set more. |
 | Void | Every position is cancelled and the venue refunds under its own rulebook. A normal outcome, not an error. |
 
 Units: per-share marks and prices in USD; log ratios are natural logs;
@@ -153,15 +153,16 @@ A strip of ranges on the dispersion of family marks on one label of one
 name at the next filing date; the range that contains it pays 1, the
 rest 0.
 
-- **Underlying.** The index's dispersion on `(name, label, Q)` under the
-  named `methodology_version`: high minus low across families, as a
-  percentage of the median, `100 · (max − min) / median`, with the high
-  and low families named.
-- **Observation.** The next filing date is the quarter the contract
-  lists into (`observedQuarterEnd`: the current quarter with at least 21
-  days left, otherwise the next), read at its observation date D: every
-  family's latest mark on the label with `as_of` in Q, from documents
-  published by D.
+- **Underlying.** The index's dispersion on `(name, label)` as of the
+  observed date under the named `methodology_version`: high minus low
+  across families, as a percentage of the median, `100 · (max − min) /
+  median`, with the high and low families named.
+- **Observation.** The next filing date is the latest as-of date in the
+  quarter Q the contract lists into (`observedQuarterEnd`: the current
+  quarter with at least 21 days left, otherwise the next) on which at
+  least n_min families marked the label, read at its observation date D
+  from documents published by D: each family's mark as of that date, none
+  carried from another.
 - **Settlement source and rank.** Filer marks, `filer_mark` ranks. A
   family whose funds split by more than 0.1 % is flagged
   `intra_family_split`; the flag changes neither the family mark (the
@@ -169,8 +170,8 @@ rest 0.
 - **Formula.** Range i pays 1 iff `lo_i ≤ dispersion < hi_i`. The
   ranges partition `[0, ∞)`, the last open above; a value on a boundary
   belongs to the higher range. Terms: name, label, Q, the boundaries,
-  n_min (at least 2).
-- **Void.** Fewer than n_min families on the label for Q by D. A
+  n_min (at least 3).
+- **Void.** No as-of date in Q with n_min families on the label by D. A
   repricing event announced after listing and at or before Q's last
   millisecond. A family that stops filing is absent, which can narrow
   the dispersion; that is the risk the contract carries, and n_min
@@ -188,9 +189,9 @@ A cash-settled forward on where the next priced round lands relative to
 the consensus mark.
 
 - **Underlying.** `X = ln(P_R / C_prior)`, where `P_R` is R's certificate
-  price and `C_prior` is the consensus on label L for the latest
-  calendar quarter that ended before R's announcement and had at least
-  n_min families published at that announcement, under the named
+  price and `C_prior` is the consensus on label L as of the latest
+  as-of date before R's announcement on which at least n_min families
+  marked L, from documents published at that announcement, under the named
   `methodology_version`. Rows published after R's announcement do not
   enter `C_prior`. X is the negative of the index's mark versus print,
   `ln(mark / print price)`, taken at the round. L is named at listing
@@ -208,7 +209,7 @@ the consensus mark.
   clip κ is the venue's term. Max gain or loss per position is N·κ.
   Terms: name, L, T, the certificate lag, κ, n_min.
 - **Void.** Void on no print by T. No certificate price for the new
-  series by the settlement date. An exit before R. No quarter before R
+  series by the settlement date. An exit before R. No as-of date before R
   with at least n_min families on L published at R's announcement.
 - **Where the edge sits.** Before R is reported, its insiders (the
   company, the round's investors and counsel) know `P_R`; the contract
