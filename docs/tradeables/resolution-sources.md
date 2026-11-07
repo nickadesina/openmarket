@@ -1,6 +1,6 @@
 # How private-company valuation venues settle
 
-As of 2026-10-26. One row per venue or product that prices a private company's valuation. OpenMarket's row is computed from its rulebook (v2.0.0, https://openmarket.systems/api/ref/rulebook). Rows marked unverified have not been confirmed against a primary source. "Unknown" marks a field the research did not establish.
+As of 2026-10-26. One row per venue or product that prices a private company's valuation. OpenMarket's row is computed from its rulebook (v2.1.0, https://openmarket.systems/api/ref/rulebook). Rows marked unverified have not been confirmed against a primary source. "Unknown" marks a field the research did not establish.
 
 License: CC BY 4.0, cite OpenMarket.
 
@@ -40,7 +40,7 @@ License: CC BY 4.0, cite OpenMarket.
 
 **Kalshi.** The DCM a US listing would resemble. Kalshi's contract rules go through CFTC self-certification; its head of research has described the resolvability test on the record. A third-party reference price is what Kalshi would need to list these names. Sources read 2026-10-26.
 
-**OpenMarket.** The rulebook is code, versioned (v2.0.0), and published as JSON at /api/ref/rulebook. Sources read 2026-10-26.
+**OpenMarket.** The rulebook is code, versioned (v2.1.0), and published as JSON at /api/ref/rulebook. Sources read 2026-10-26.
 
 ## Context
 

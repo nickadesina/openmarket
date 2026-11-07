@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-07T23:33:26.758Z",
+  "generated_at": "2026-11-07T23:48:04.862Z",
   "generated_by": "npm run export:ref-examples",
   "slug": "anthropic",
   "note": "Payloads from the route services against the development database with ingested EDGAR data. Arrays keep their first 2 entries and strings their first 400 characters; each example's cuts list what was cut and its length.",
@@ -9,8 +9,8 @@
       "response": {
         "methodology_version": "0.2.0",
         "ce_version": "0.1.0",
-        "rulebook_version": "2.0.0",
-        "as_of": "2026-11-07T23:33:26.758Z",
+        "rulebook_version": "2.1.0",
+        "as_of": "2026-11-07T23:48:04.862Z",
         "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so figures for the latest dates can change as late reports arrive.",
         "families_version": "0.1.0",
         "names": [
@@ -106,8 +106,8 @@
       "response": {
         "methodology_version": "0.2.0",
         "ce_version": "0.1.0",
-        "rulebook_version": "2.0.0",
-        "as_of": "2026-11-07T23:33:26.758Z",
+        "rulebook_version": "2.1.0",
+        "as_of": "2026-11-07T23:48:04.862Z",
         "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so figures for the latest dates can change as late reports arrive.",
         "families_version": "0.1.0",
         "issuer": {
@@ -635,8 +635,8 @@
       "response": {
         "methodology_version": "0.2.0",
         "ce_version": "0.1.0",
-        "rulebook_version": "2.0.0",
-        "as_of": "2026-11-07T23:33:26.758Z",
+        "rulebook_version": "2.1.0",
+        "as_of": "2026-11-07T23:48:04.862Z",
         "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so figures for the latest dates can change as late reports arrive.",
         "families_version": "0.1.0",
         "issuer": {
@@ -737,8 +737,8 @@
       "response": {
         "methodology_version": "0.2.0",
         "ce_version": "0.1.0",
-        "rulebook_version": "2.0.0",
-        "as_of": "2026-11-07T23:33:26.758Z",
+        "rulebook_version": "2.1.0",
+        "as_of": "2026-11-07T23:48:04.862Z",
         "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so figures for the latest dates can change as late reports arrive.",
         "families_version": "0.1.0",
         "issuer": {
@@ -794,8 +794,8 @@
       "response": {
         "methodology_version": "0.2.0",
         "ce_version": "0.1.0",
-        "rulebook_version": "2.0.0",
-        "as_of": "2026-11-07T23:33:26.758Z",
+        "rulebook_version": "2.1.0",
+        "as_of": "2026-11-07T23:48:04.862Z",
         "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so figures for the latest dates can change as late reports arrive.",
         "families_version": "0.1.0",
         "issuer": {
@@ -885,8 +885,8 @@
       "response": {
         "methodology_version": "0.2.0",
         "ce_version": "0.1.0",
-        "rulebook_version": "2.0.0",
-        "as_of": "2026-11-07T23:33:26.758Z",
+        "rulebook_version": "2.1.0",
+        "as_of": "2026-11-07T23:48:04.862Z",
         "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so figures for the latest dates can change as late reports arrive.",
         "families_version": "0.1.0",
         "methodology": {
@@ -943,56 +943,69 @@
       "response": {
         "methodology_version": "0.2.0",
         "ce_version": "0.1.0",
-        "rulebook_version": "2.0.0",
-        "as_of": "2026-11-07T23:33:26.758Z",
+        "rulebook_version": "2.1.0",
+        "as_of": "2026-11-07T23:48:04.862Z",
         "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so figures for the latest dates can change as late reports arrive.",
         "corrections": [
           {
-            "correction_id": "b5a904a0-6f18-4acd-b41d-3b1185fc9038",
-            "published_at": "2026-11-05T00:03:14.688000Z",
-            "methodology_version": "0.1.0",
-            "kind": "parser",
-            "summary": "Security labels re-read with the methodology's classifier (engine/index/series.ts classifySecurity): 8229 of 15284 live marks get a new label or kind. The filers' figures are unchanged.",
-            "diff_md": "| Issuer | Label as stored | Label as read now | Rows |\n| --- | --- | --- | --- |\n| anduril | Class B Common (common) | Common (common) | 130 |\n| anduril | Class C Common (common) | Common (common) | 102 |\n| anduril | Preferred (preferred) | Unclassified (preferred) | 17 |\n| anduril | Common (common) | Unclassified (unknown) | 11 |\n| anthropic | Common (common) | Unclassified (unknown) | 70 |\n| an…",
+            "correction_id": "c71159c3-6c49-47b6-b833-4b3f3e24a78a",
+            "published_at": "2026-11-07T23:35:11.883000Z",
+            "methodology_version": "0.2.0",
+            "kind": "methodology",
+            "summary": "Methodology 0.2.0: families are compared only on the same as-of date, and a consensus or a dispersion needs three families. Under 0.1.0 marks from different months of a calendar quarter were compared, and two families made a headline.",
+            "diff_md": "Methodology 0.1.0 → 0.2.0 (METHODOLOGY.md, \"Version history\"). No filer's\nrow changes; every derived figure is recomputed from the same rows.\n\n**What changed**\n\n| | 0.1.0 | 0.2.0 |\n| --- | --- | --- |\n| Comparison date | Calendar quarter; each family's latest mark in it | The mark's as-of date; each family's mark on exactly that date, none carried forward |\n| Consensus | From one family | From 3 f…",
             "affected": {
-              "rows": 8229,
-              "parser": "the methodology's classifier (engine/index/series.ts classifySecurity)",
-              "changes": [
+              "diff": "docs/corrections/methodology-0.2.0.md",
+              "constants": {
+                "ce_basis": "authorized",
+                "ce_version": "0.1.0",
+                "per_share_units": "NS",
+                "leader_window_days": 180,
+                "methodology_version": "0.2.0",
+                "revision_threshold_ln": 0.005,
+                "min_families_for_consensus": 3,
+                "min_families_for_dispersion": 3,
+                "intra_family_split_tolerance": 0.001
+              },
+              "headlines": [
                 {
-                  "rows": 130,
-                  "issuer": "anduril",
-                  "to_kind": "common",
-                  "to_label": "Common",
-                  "from_kind": "common",
-                  "from_label": "Class B Common"
+                  "slug": "anduril",
+                  "as_of": "2026-08-31",
+                  "n_families": 4,
+                  "no_headline": null,
+                  "consensus_usd": 70.69134995296332,
+                  "dispersion_pct": 6.432732309504298,
+                  "security_label": "Series H Preferred"
                 },
                 {
-                  "rows": 102,
-                  "issuer": "anduril",
-                  "to_kind": "common",
-                  "to_label": "Common",
-                  "from_kind": "common",
-                  "from_label": "Class C Common"
+                  "slug": "anthropic",
+                  "as_of": "2026-08-31",
+                  "n_families": 4,
+                  "no_headline": null,
+                  "consensus_usd": 777.53,
+                  "dispersion_pct": 4.896274098748593,
+                  "security_label": "Series H-1 Preferred"
                 }
               ],
-              "per_share_changed": 0
+              "families_version": "0.1.0",
+              "methodology_version": "0.2.0"
             },
             "rows_written": {
-              "filer_marks": 8229,
+              "filer_marks": 0,
               "certificates": 0
             }
           }
         ],
-        "next_cursor": null
+        "next_cursor": "eyJjb3JyZWN0aW9ucyI6eyJhdCI6IjIwMjYtMTEtMDdUMjM6MzU6MTEuODgzMDAwWiIsImtleSI6ImM3MTE1OWMzLTZjNDktNDdiNi1iODMzLTRiM2YzZTI0YTc4YSJ9fQ"
       },
       "cuts": [
         {
           "path": "corrections[0].diff_md",
-          "length": 3424
+          "length": 3643
         },
         {
-          "path": "corrections[0].affected.changes",
-          "length": 51
+          "path": "corrections[0].affected.headlines",
+          "length": 20
         }
       ]
     }

@@ -12,7 +12,7 @@ import { assertDate } from "./assert.js";
  * tests/fixtures/rulebook-events.json records, or re-baseline that file in
  * the same commit.
  */
-export const RULEBOOK_VERSION = "2.0.0";
+export const RULEBOOK_VERSION = "2.1.0";
 
 import { DAY_MS, utcMidnight } from "./time.js";
 
@@ -320,7 +320,7 @@ export const RULEBOOK = {
       "structure spread",
     ],
     settles_on_marks:
-      "The mark-level binary and the dispersion range settle on filer marks: a named filer's next disclosed mark, or the spread of every filer's marks on a quarter.",
+      "The mark-level binary and the dispersion range settle on filer marks: a named filer's next disclosed mark, or the spread of filer families' marks on one as-of date within the contract's quarter.",
     settles_on_prints:
       "Mark versus print, perp basis and structure spread settle on the next priced round, through its certificate.",
     versions:

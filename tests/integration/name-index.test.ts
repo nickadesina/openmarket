@@ -131,7 +131,7 @@ postgresDescribe(suiteName, () => {
     expect(index).toMatchObject({
       methodology_version: "0.2.0",
       ce_version: "0.1.0",
-      rulebook_version: "2.0.0",
+      rulebook_version: "2.1.0",
       as_of: "2026-11-05T12:00:00.000Z",
       issuer: { slug: "anthropic", listed_on: null },
       marks_summary: { live: 3, in_series: 3, after_listing: 0, latest_as_of: "2026-08-31" },

@@ -169,7 +169,7 @@ async function published(response: Response): Promise<any> {
   expect(body).toMatchObject({
     methodology_version: "0.2.0",
     ce_version: "0.1.0",
-    rulebook_version: "2.0.0",
+    rulebook_version: "2.1.0",
   });
   return body;
 }
