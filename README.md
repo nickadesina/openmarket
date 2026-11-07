@@ -148,6 +148,8 @@ npm run index:prints                        # data/round-history/events.csv → 
 npm run index:certificates                  # data/index/certificates/ (none transcribed yet)
 npm run index:spv-quotes                    # data/index/spv-quotes/ (none captured)
 npm run index:relabel [-- --dry-run]        # re-read labels; differences as one parser correction
+npm run index:correction -- --kind=methodology --version=<v> --summary="…" --diff=<file.md>
+                                            # a methodology change as one correction (idempotent)
 npm run export:ref-examples                 # /ref's example payloads from the database
 ```
 
@@ -210,17 +212,32 @@ between the docs and the code. Closed rows are removed;
 Nick delegated these calls on 2026-11-05 ("use your judgement"); each can
 be reopened.
 
-- **Methodology stays 0.1.0, a draft.** 1.0.0 is the version in force at
+- **Methodology is a draft until 1.0.0.** 1.0.0 is the version in force at
   the first post, which waits on the lawyer's read of `METHODOLOGY.md`,
   the corrections policy and the source rule (decision 0003, "Not
   engineering"). The site says draft until then.
+- **Methodology 0.2.0 (2026-11-07): families are compared on one as-of
+  date, from three.** 0.1.0 bucketed marks by calendar quarter and took
+  each family's latest in it, so funds with different fiscal quarter-ends
+  were compared across months (Anthropic Series H-1, 2026Q3: 25.8 %
+  dispersion that was a July mark beside August ones, which agree within
+  4.9 %); and two families made a headline, one pairwise gap naming two
+  funds. Consensus and dispersion are now per label per as-of date, each
+  needing three families (`min_families_for_consensus`,
+  `min_families_for_dispersion`); the headline is the latest date with a
+  consensus, and a name with none says why. The payloads' `quarter` fields
+  are `as_of` (breaking, acceptable at 0.x). It is published as a
+  `methodology` correction with its diff
+  (`docs/corrections/methodology-0.2.0.md`) by `npm run index:correction --
+  --kind=methodology --version=0.2.0 --summary="…"
+  --diff=docs/corrections/methodology-0.2.0.md`, run once per database.
 - **Hiive-named vehicles stay listed.** A vehicle's Form D is a public SEC
   filing; the source rule excludes the platforms' own indicators and pages,
   not the filings of vehicles that carry a platform's name. The index
   reads only the filing.
 - **SpaceX is treated as listed from 2026-06-12**, its final prospectus
   (424B4, 0001628280-26-042639): marks as of that date or later enter no
-  series, and its headline is 2026Q2's. It stays on the watchlist: its
+  series, and its headline is its consensus as of 2026-04-30. It stays on the watchlist: its
   private marks before the IPO are the record a print reconciliation needs.
 - **OpenMarket's operator is a restricted person** for every contract on
   the index (`CONTRACTS.md`, restricted persons): the index's defence is
@@ -236,9 +253,14 @@ be reopened.
   Plaid, Canva, Revolut and ByteDance, the candidates with the most
   families filing N-PORT on them, are watchlisted.
 - **The consensus is drawn as points, never a line**: a line between
-  quarters would draw values no filer published.
+  dates would draw values no filer published.
 - **Filer families 0.1.0 is accepted** as built from each registrant's
   N-CEN adviser.
-- **Still Nick's:** the corrections reporting address (`/corrections` says
-  it is not yet published; it must reach a real inbox), and setting
-  `SEC_USER_AGENT` in Vercel so the daily ingest runs.
+- **Corrections are reported as GitHub issues** (2026-11-07), now that
+  `nickadesina/openmarket` is public: `/corrections` links the issue form
+  (`.github/ISSUE_TEMPLATE/correction.yml`: the name, the filing's
+  accession or URL, what is wrong, what the filing says, evidence; label
+  `correction`; no personal data asked). This resolves the reporting
+  address.
+- **Still Nick's:** setting `SEC_USER_AGENT` in Vercel so the daily ingest
+  runs.

@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+/** Where corrections are reported: a public GitHub issue form (.github/ISSUE_TEMPLATE/correction.yml). */
+const REPORT_URL = "https://github.com/nickadesina/openmarket/issues/new?template=correction.yml";
+
 const KIND_TEXT: Readonly<Record<RefCorrection["kind"], string>> = {
   row: "Row: a filing read wrong",
   methodology: "Methodology: a rule or constant changed",
@@ -107,9 +110,13 @@ export default async function CorrectionsPage() {
             original's as filed.
           </li>
           <li>
-            To report one, name the filing's accession number and the row's <code>mark_id</code> (on
-            the name page's filings, in the marks route or the CSV) and say what the filing states.
-            The address reports go to is not yet published.
+            To report one,{" "}
+            <a className={styles.link} href={REPORT_URL} rel="noopener noreferrer">
+              open a correction issue on GitHub
+            </a>
+            : name the filing's accession number (and the row's <code>mark_id</code>, on the name
+            page's filings, in the marks route or the CSV) and say what the filing states. Issues
+            are public: include no personal information.
           </li>
         </ul>
       </section>

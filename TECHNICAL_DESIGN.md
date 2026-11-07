@@ -244,6 +244,5 @@ against the database; only N-PORT runs in the cron.
 - Form D, prints, certificates and quotes are not in the daily cron.
 - A route serving the index as published on a past date, and series under
   an earlier `methodology_version` (rulebook `NOT_BUILT`).
-- The corrections reporting address (not published).
 - Page caching: every page view recomputes from the rows (the API is
   cached 60 s at the edge; the pages are not).
