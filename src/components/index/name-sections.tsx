@@ -481,10 +481,13 @@ function labelFacts(label: LabelPayload): string {
 export function LabelSection({
   label,
   headline,
+  open = false,
   lastPrint,
 }: {
   readonly label: LabelPayload;
   readonly headline: boolean;
+  /** Opens a label that is not the headline: the first label of a name without one. */
+  readonly open?: boolean;
   readonly lastPrint: PrintPayload | null;
 }) {
   const body = (
@@ -509,7 +512,7 @@ export function LabelSection({
     );
   }
   return (
-    <details className={styles.details} id={labelId(label.security_label)}>
+    <details className={styles.details} id={labelId(label.security_label)} open={open}>
       <summary>
         <span className={styles.summaryTitle}>{label.security_label}</span>
         <span className={styles.summaryFacts}>{labelFacts(label)}</span>

@@ -306,11 +306,12 @@ export default async function NamePage({ params }: PageProps) {
               : `${plural(labels.length, "label")} with a per-share series; marks on different labels are never pooled`}
           </span>
         </div>
-        {labels.map((label) => (
+        {labels.map((label, position) => (
           <LabelSection
             key={label.security_label}
             label={label}
             headline={label.security_label === index.headline?.security_label}
+            open={index.headline === null && position === 0}
             lastPrint={index.last_print}
           />
         ))}
