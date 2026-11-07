@@ -23,7 +23,7 @@ export interface RefEnvelope {
  * nothing here is measured at request time.
  */
 export const LAG_NOTE =
-  "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so the latest quarter can change as late reports arrive.";
+  "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so figures for the latest dates can change as late reports arrive.";
 
 export const ENVELOPE_KEYS = [
   "methodology_version",

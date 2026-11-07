@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-05T01:08:57.803Z",
+  "generated_at": "2026-11-07T23:33:26.758Z",
   "generated_by": "npm run export:ref-examples",
   "slug": "anthropic",
   "note": "Payloads from the route services against the development database with ingested EDGAR data. Arrays keep their first 2 entries and strings their first 400 characters; each example's cuts list what was cut and its length.",
@@ -7,24 +7,25 @@
     "names": {
       "request": "GET /api/ref/names",
       "response": {
-        "methodology_version": "0.1.0",
+        "methodology_version": "0.2.0",
         "ce_version": "0.1.0",
         "rulebook_version": "2.0.0",
-        "as_of": "2026-11-05T01:08:57.803Z",
-        "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so the latest quarter can change as late reports arrive.",
+        "as_of": "2026-11-07T23:33:26.758Z",
+        "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so figures for the latest dates can change as late reports arrive.",
         "families_version": "0.1.0",
         "names": [
           {
             "slug": "anduril",
             "name": "Anduril",
             "listed_on": null,
+            "listing_url": null,
             "security_label": "Series H Preferred",
-            "quarter": "2026Q3",
-            "consensus_usd": 68.95269990592662,
-            "n_families": 5,
-            "dispersion_pct": 6.5987263822992315,
+            "as_of": "2026-08-31",
+            "consensus_usd": 70.69134995296332,
+            "n_families": 4,
+            "dispersion_pct": 6.432732309504298,
             "dispersion_high_family": "fidelity-fmr",
-            "dispersion_low_family": "blackrock",
+            "dispersion_low_family": "neuberger-berman-investment-advisers",
             "latest_filed_on": "2026-10-30",
             "latest_as_of": "2026-08-31",
             "live_marks": 745,
@@ -33,7 +34,8 @@
               "round_name": "Series H",
               "announced_on": "2026-05-13",
               "post_money_usd": "61000000000",
-              "price_per_share_usd": null
+              "price_per_share_usd": null,
+              "source_url": "https://www.anduril.com/news/anduril-announces-usd5b-series-h-raise"
             },
             "spv_vehicles": 87,
             "coverage": {
@@ -48,19 +50,21 @@
               "families": 14,
               "latest_filed": "2026-10-30"
             },
-            "no_marks": null
+            "no_marks": null,
+            "no_headline": null
           },
           {
             "slug": "anthropic",
             "name": "Anthropic",
             "listed_on": null,
+            "listing_url": null,
             "security_label": "Series H-1 Preferred",
-            "quarter": "2026Q3",
+            "as_of": "2026-08-31",
             "consensus_usd": 777.53,
-            "n_families": 5,
-            "dispersion_pct": 25.77141717152199,
+            "n_families": 4,
+            "dispersion_pct": 4.896274098748593,
             "dispersion_high_family": "t-rowe-price",
-            "dispersion_low_family": "franklin-templeton",
+            "dispersion_low_family": "capital-group",
             "latest_filed_on": "2026-10-30",
             "latest_as_of": "2026-08-31",
             "live_marks": 731,
@@ -69,7 +73,8 @@
               "round_name": "Series H",
               "announced_on": "2026-05-28",
               "post_money_usd": "965000000000",
-              "price_per_share_usd": null
+              "price_per_share_usd": null,
+              "source_url": "https://www.anthropic.com/news/series-h"
             },
             "spv_vehicles": 76,
             "coverage": {
@@ -84,7 +89,8 @@
               "families": 43,
               "latest_filed": "2026-10-30"
             },
-            "no_marks": null
+            "no_marks": null,
+            "no_headline": null
           }
         ]
       },
@@ -98,11 +104,11 @@
     "name": {
       "request": "GET /api/ref/anthropic",
       "response": {
-        "methodology_version": "0.1.0",
+        "methodology_version": "0.2.0",
         "ce_version": "0.1.0",
         "rulebook_version": "2.0.0",
-        "as_of": "2026-11-05T01:08:57.803Z",
-        "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so the latest quarter can change as late reports arrive.",
+        "as_of": "2026-11-07T23:33:26.758Z",
+        "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so figures for the latest dates can change as late reports arrive.",
         "families_version": "0.1.0",
         "issuer": {
           "slug": "anthropic",
@@ -224,36 +230,21 @@
         ],
         "headline": {
           "security_label": "Series H-1 Preferred",
-          "quarter": "2026Q3",
+          "as_of": "2026-08-31",
           "consensus_usd": 777.53,
-          "n_families": 5,
-          "dispersion_pct": 25.77141717152199
+          "n_families": 4,
+          "dispersion_pct": 4.896274098748593
         },
+        "no_headline": null,
         "labels": [
           {
             "security_label": "Common",
             "consensus": [
               {
-                "quarter": "2026Q2",
-                "quarter_start": "2026-04-01",
-                "quarter_end": "2026-06-30",
-                "consensus_usd": 589.0097504971347,
+                "as_of": "2026-06-30",
                 "n_families": 2,
-                "dispersion": {
-                  "pct": 0.00008471943464127048,
-                  "high": {
-                    "family_slug": "innovation-access-fund",
-                    "family_name": "Innovation Access Fund",
-                    "mark_per_share_usd": 589.01,
-                    "as_of": "2026-06-30"
-                  },
-                  "low": {
-                    "family_slug": "t-rowe-price",
-                    "family_name": "T. Rowe Price",
-                    "mark_per_share_usd": 589.0095009942694,
-                    "as_of": "2026-06-30"
-                  }
-                },
+                "consensus_usd": null,
+                "dispersion": null,
                 "families": [
                   {
                     "family_slug": "innovation-access-fund",
@@ -270,7 +261,7 @@
                 ],
                 "mark_vs_print": {
                   "status": "none",
-                  "reason": "no_certificate_price"
+                  "reason": "no_consensus"
                 }
               }
             ],
@@ -361,11 +352,9 @@
             "security_label": "Series B Preferred",
             "consensus": [
               {
-                "quarter": "2024Q1",
-                "quarter_start": "2024-01-01",
-                "quarter_end": "2024-03-31",
-                "consensus_usd": 30.004500057296376,
+                "as_of": "2024-03-31",
                 "n_families": 1,
+                "consensus_usd": null,
                 "dispersion": null,
                 "families": [
                   {
@@ -377,27 +366,25 @@
                 ],
                 "mark_vs_print": {
                   "status": "none",
-                  "reason": "no_certificate_price"
+                  "reason": "no_consensus"
                 }
               },
               {
-                "quarter": "2024Q2",
-                "quarter_start": "2024-04-01",
-                "quarter_end": "2024-06-30",
-                "consensus_usd": 30,
+                "as_of": "2024-04-30",
                 "n_families": 1,
+                "consensus_usd": null,
                 "dispersion": null,
                 "families": [
                   {
                     "family_slug": "fidelity-fmr",
                     "family_name": "Fidelity (FMR)",
-                    "mark_per_share_usd": 30,
-                    "as_of": "2024-06-30"
+                    "mark_per_share_usd": 30.0045,
+                    "as_of": "2024-04-30"
                   }
                 ],
                 "mark_vs_print": {
                   "status": "none",
-                  "reason": "no_certificate_price"
+                  "reason": "no_consensus"
                 }
               }
             ],
@@ -623,7 +610,7 @@
         },
         {
           "path": "labels[1].consensus",
-          "length": 11
+          "length": 27
         },
         {
           "path": "labels[1].family_marks",
@@ -646,11 +633,11 @@
     "marks": {
       "request": "GET /api/ref/anthropic/marks?limit=2",
       "response": {
-        "methodology_version": "0.1.0",
+        "methodology_version": "0.2.0",
         "ce_version": "0.1.0",
         "rulebook_version": "2.0.0",
-        "as_of": "2026-11-05T01:08:57.803Z",
-        "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so the latest quarter can change as late reports arrive.",
+        "as_of": "2026-11-07T23:33:26.758Z",
+        "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so figures for the latest dates can change as late reports arrive.",
         "families_version": "0.1.0",
         "issuer": {
           "slug": "anthropic",
@@ -748,11 +735,11 @@
     "revisions": {
       "request": "GET /api/ref/anthropic/revisions",
       "response": {
-        "methodology_version": "0.1.0",
+        "methodology_version": "0.2.0",
         "ce_version": "0.1.0",
         "rulebook_version": "2.0.0",
-        "as_of": "2026-11-05T01:08:57.803Z",
-        "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so the latest quarter can change as late reports arrive.",
+        "as_of": "2026-11-07T23:33:26.758Z",
+        "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so figures for the latest dates can change as late reports arrive.",
         "families_version": "0.1.0",
         "issuer": {
           "slug": "anthropic",
@@ -805,11 +792,11 @@
     "spv": {
       "request": "GET /api/ref/anthropic/spv",
       "response": {
-        "methodology_version": "0.1.0",
+        "methodology_version": "0.2.0",
         "ce_version": "0.1.0",
         "rulebook_version": "2.0.0",
-        "as_of": "2026-11-05T01:08:57.803Z",
-        "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so the latest quarter can change as late reports arrive.",
+        "as_of": "2026-11-07T23:33:26.758Z",
+        "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so figures for the latest dates can change as late reports arrive.",
         "families_version": "0.1.0",
         "issuer": {
           "slug": "anthropic",
@@ -817,10 +804,10 @@
         },
         "headline": {
           "security_label": "Series H-1 Preferred",
-          "quarter": "2026Q3",
+          "as_of": "2026-08-31",
           "consensus_usd": 777.53,
-          "n_families": 5,
-          "dispersion_pct": 25.77141717152199
+          "n_families": 4,
+          "dispersion_pct": 4.896274098748593
         },
         "vehicles": [
           {
@@ -896,21 +883,22 @@
     "methodology": {
       "request": "GET /api/ref/methodology",
       "response": {
-        "methodology_version": "0.1.0",
+        "methodology_version": "0.2.0",
         "ce_version": "0.1.0",
         "rulebook_version": "2.0.0",
-        "as_of": "2026-11-05T01:08:57.803Z",
-        "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so the latest quarter can change as late reports arrive.",
+        "as_of": "2026-11-07T23:33:26.758Z",
+        "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so figures for the latest dates can change as late reports arrive.",
         "families_version": "0.1.0",
         "methodology": {
-          "methodology_version": "0.1.0",
+          "methodology_version": "0.2.0",
           "ce_version": "0.1.0",
           "ce_basis": "authorized",
           "per_share_units": "NS",
           "revision_threshold_ln": 0.005,
           "leader_window_days": 180,
           "intra_family_split_tolerance": 0.001,
-          "min_families_for_dispersion": 2
+          "min_families_for_consensus": 3,
+          "min_families_for_dispersion": 3
         },
         "security_labels": {
           "per_share_common": "Common",
@@ -953,11 +941,11 @@
     "corrections": {
       "request": "GET /api/ref/corrections?limit=1",
       "response": {
-        "methodology_version": "0.1.0",
+        "methodology_version": "0.2.0",
         "ce_version": "0.1.0",
         "rulebook_version": "2.0.0",
-        "as_of": "2026-11-05T01:08:57.803Z",
-        "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so the latest quarter can change as late reports arrive.",
+        "as_of": "2026-11-07T23:33:26.758Z",
+        "lag_note": "Filer marks come mostly from Form N-PORT-P, which is public only about 60 days after the month-end it reports (54 to 60 days in the filings METHODOLOGY.md cites), so figures for the latest dates can change as late reports arrive.",
         "corrections": [
           {
             "correction_id": "b5a904a0-6f18-4acd-b41d-3b1185fc9038",

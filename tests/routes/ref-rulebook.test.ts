@@ -18,7 +18,7 @@ describe("GET /api/ref/rulebook", () => {
     const body = await response.json();
     expect(Object.keys(body).slice(0, ENVELOPE_KEYS.length)).toEqual([...ENVELOPE_KEYS]);
     expect(body).toMatchObject({
-      methodology_version: "0.1.0",
+      methodology_version: "0.2.0",
       ce_version: "0.1.0",
       lag_note: LAG_NOTE,
       rulebook_version: RULEBOOK_VERSION,
