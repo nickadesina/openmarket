@@ -172,15 +172,19 @@ export function MarkChart({ label, lastPrint }: MarkChartProps) {
           <span className={styles.keyDot} aria-hidden="true" />
           Family mark (links its filing)
         </li>
-        <li>
-          <span className={styles.keyConsensus} aria-hidden="true" />
-          Consensus: median of {METHODOLOGY.min_families_for_consensus} or more families on one
-          as-of date
-        </li>
-        <li>
-          <span className={styles.keyBand} aria-hidden="true" />
-          Range of that date's family marks
-        </li>
+        {points.length === 0 ? null : (
+          <>
+            <li>
+              <span className={styles.keyConsensus} aria-hidden="true" />
+              Consensus: median of {METHODOLOGY.min_families_for_consensus} or more families on one
+              as-of date
+            </li>
+            <li>
+              <span className={styles.keyBand} aria-hidden="true" />
+              Range of that date's family marks
+            </li>
+          </>
+        )}
         {printShown ? (
           <li>
             <span className={styles.keyPrint} aria-hidden="true" />
@@ -280,19 +284,6 @@ export function MarkChart({ label, lastPrint }: MarkChartProps) {
               )}
             </g>
           ) : null}
-          {points.map((point) => (
-            <circle
-              key={`c${point.as_of}`}
-              className={styles.consensusPoint}
-              cx={x(day(point.as_of))}
-              cy={y.at(point.consensus_usd)}
-              r={4}
-            >
-              <title>
-                {`${point.as_of} consensus ${formatPerShare(point.consensus_usd)} from ${plural(point.n_families, "family", "families")}${point.dispersion === null ? "" : `, dispersion ${formatPercent(point.dispersion.pct)}`}`}
-              </title>
-            </circle>
-          ))}
           {marks.map((mark) => {
             const document = mark.documents[0];
             const cx = x(day(mark.as_of));
@@ -314,6 +305,20 @@ export function MarkChart({ label, lastPrint }: MarkChartProps) {
               </a>
             );
           })}
+          {/* Consensus points last: they share their date with the family dots and would hide beneath them. */}
+          {points.map((point) => (
+            <circle
+              key={`c${point.as_of}`}
+              className={styles.consensusPoint}
+              cx={x(day(point.as_of))}
+              cy={y.at(point.consensus_usd)}
+              r={4}
+            >
+              <title>
+                {`${point.as_of} consensus ${formatPerShare(point.consensus_usd)} from ${plural(point.n_families, "family", "families")}${point.dispersion === null ? "" : `, dispersion ${formatPercent(point.dispersion.pct)}`}`}
+              </title>
+            </circle>
+          ))}
         </svg>
       </div>
       <figcaption className={styles.caption}>
