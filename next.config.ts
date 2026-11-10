@@ -12,8 +12,11 @@ const LEGACY_HOSTS = [
 
 // v1's pages (the dealer's markets, the tournament, the portfolio and the
 // admin screens), archived at the tags archive/dealer-v1 and
-// archive/tournament-v1. Temporary: v2 may reuse a path.
+// archive/tournament-v1, and served read-only by the archive deployment (the
+// Vercel project openmarket-v1, branch archive/v1-site), so an old link opens
+// the page it named. Temporary: v2 may reuse a path.
 const V1_PATHS = ["/m", "/t", "/portfolio", "/admin", "/for-policy"];
+const V1_ARCHIVE_ORIGIN = "https://v1.openmarket.systems";
 
 const nextConfig: NextConfig = {
   webpack(config) {
@@ -31,7 +34,11 @@ const nextConfig: NextConfig = {
         destination: `https://${CANONICAL_HOST}/:path*`,
         permanent: true,
       })),
-      ...V1_PATHS.map((path) => ({ source: `${path}/:path*`, destination: "/", permanent: false })),
+      ...V1_PATHS.map((path) => ({
+        source: `${path}/:path*`,
+        destination: `${V1_ARCHIVE_ORIGIN}${path}/:path*`,
+        permanent: false,
+      })),
       { source: "/ref/trial", destination: "/ref", permanent: false },
     ]);
   },

@@ -5,7 +5,7 @@ import { expect, test } from "@playwright/test";
  * real filings: Fidelity's N-PORT with three Anthropic holdings, New Economy
  * Fund's Epic Games holding (Unclassified, so outside every series), the
  * round history and two Form Ds. Plus the published documents, the
- * rulebook's JSON and v1's paths sent home.
+ * rulebook's JSON and v1's paths sent to the v1 archive.
  */
 test.skip(
   !process.env.DATABASE_URL_TEST,
@@ -141,11 +141,9 @@ for (const path of [
   "/admin/dealer",
   "/for-policy",
 ]) {
-  test(`v1's ${path} redirects home`, async ({ page }) => {
-    await page.goto(path);
-    await expect(page).toHaveURL(/\/$/);
-    await expect(
-      page.getByRole("heading", { level: 1, name: "Private-company marks from public filings" }),
-    ).toBeVisible();
+  test(`v1's ${path} redirects to the v1 archive`, async ({ request }) => {
+    const response = await request.get(path, { maxRedirects: 0 });
+    expect(response.status()).toBe(307);
+    expect(response.headers().location).toBe(`https://v1.openmarket.systems${path}`);
   });
 }

@@ -106,6 +106,13 @@
   text-transform: uppercase;
 }
 
+.footerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-4);
+}
+
 .footerLink {
   color: var(--color-ink);
   font-family: var(--font-caps);
