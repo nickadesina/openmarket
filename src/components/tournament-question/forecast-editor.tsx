@@ -1,8 +1,6 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { type ReactNode, useId, useState } from "react";
 
 import { ApiClientError, apiRequest } from "../../lib/client/api.js";
@@ -27,7 +25,6 @@ import {
   forwardScoreLadder,
   isForecastLevel,
   PUBLIC_FORECAST_HEADING,
-  signInHref,
   tournamentCrowdValue,
   tournamentMarketValue,
   useNow,
@@ -477,7 +474,6 @@ function ForwardEditor({
  * number would earn is shown before it is submitted.
  */
 export function ForecastEditor({ question }: { readonly question: QuestionDetail }) {
-  const pathname = usePathname();
   const viewerQuery = useTournamentViewer();
   const viewer = viewerQuery.data?.viewer ?? null;
 
@@ -489,9 +485,6 @@ export function ForecastEditor({ question }: { readonly question: QuestionDetail
     return (
       <div className={styles.signInPanel}>
         <SignInExplanation />
-        <Link className={styles.primaryButton} href={signInHref(pathname)}>
-          Sign in
-        </Link>
       </div>
     );
   }

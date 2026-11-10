@@ -2,7 +2,6 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { apiRequest, requestPortfolioIdentity } from "../../lib/client/api.js";
@@ -10,7 +9,6 @@ import { errorMessage, formatCents, formatForecasterName } from "../../lib/clien
 import { queryKeys } from "../../lib/client/query-keys.js";
 import {
   forecasterHref,
-  signInHref,
   useTournamentSignOut,
   useTournamentViewer,
 } from "../../lib/client/tournament.js";
@@ -79,7 +77,6 @@ function PaperCash() {
  * pages also show the identity's paper cash.
  */
 export function TournamentAccount({ paperCash = false }: { readonly paperCash?: boolean }) {
-  const pathname = usePathname();
   const viewerQuery = useTournamentViewer();
   const signOut = useTournamentSignOut();
 
@@ -115,11 +112,6 @@ export function TournamentAccount({ paperCash = false }: { readonly paperCash?: 
 
   return (
     <div className={styles.account}>
-      {pathname === "/t/signin" ? null : (
-        <Link className={styles.signInButton} href={signInHref(pathname)}>
-          Sign in
-        </Link>
-      )}
       {data?.signIn.dev === true ? (
         <span className={styles.wideOnly}>
           <DevSignIn />

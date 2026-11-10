@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { formatCentsAsUsd, INITIAL_USER_BALANCE_CENTS } from "../../lib/api/money.js";
+import { formatCentsAsUsd } from "../../lib/api/money.js";
 
 import { ApiClientError, apiRequest } from "../../lib/client/api.js";
 import {
@@ -16,7 +15,6 @@ import {
   formatVersion,
   formatWholeUsd,
 } from "../../lib/client/format.js";
-import { signInHref } from "../../lib/client/tournament.js";
 import {
   BINARY_STRIKE_INDEX,
   binarySlippageGuard,
@@ -486,17 +484,7 @@ function BinaryReview({ order }: { readonly order: ReturnType<typeof useBinaryOr
 }
 
 function BinaryNotices({ order }: { readonly order: ReturnType<typeof useBinaryOrder> }) {
-  const {
-    pathname,
-    errorTitle,
-    quote,
-    error,
-    result,
-    refreshStale,
-    needsSignIn,
-    movedPrice,
-    requestQuote,
-  } = order;
+  const { errorTitle, error, result, refreshStale, needsSignIn, movedPrice, requestQuote } = order;
   return (
     <>
       {error !== null ? (
@@ -513,13 +501,7 @@ function BinaryNotices({ order }: { readonly order: ReturnType<typeof useBinaryO
 
       {needsSignIn ? (
         <div className={styles.signIn}>
-          <p>
-            {quote === null ? "Quoting a sale" : "Trading"} needs a signed-in account. Your first
-            trade opens a {formatWholeUsd(Number(INITIAL_USER_BALANCE_CENTS) / 100)} paper balance.
-          </p>
-          <Link className={styles.primary} href={signInHref(pathname)}>
-            Sign in to trade
-          </Link>
+          <p>Trading is closed: this is the archived v1, read-only since its last dealer run.</p>
         </div>
       ) : null}
 

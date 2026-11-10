@@ -4,7 +4,6 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { INITIAL_USER_BALANCE_CENTS } from "../../lib/api/money.js";
 
 import { ApiClientError, apiRequest, POLL_INTERVAL_MS } from "../../lib/client/api.js";
 import {
@@ -17,7 +16,6 @@ import {
   formatWholeUsd,
 } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
-import { signInHref } from "../../lib/client/tournament.js";
 import {
   canonicalDollarAmount,
   type ForwardRequote,
@@ -385,7 +383,6 @@ function ForwardReview({ order }: { readonly order: ReturnType<typeof useForward
 
 function ForwardNotices({ order }: { readonly order: ReturnType<typeof useForwardOrder> }) {
   const {
-    pathname,
     fill,
     refusal,
     errorTitle,
@@ -429,13 +426,7 @@ function ForwardNotices({ order }: { readonly order: ReturnType<typeof useForwar
 
       {needsSignIn ? (
         <div className={styles.signIn}>
-          <p>
-            Trading needs a signed-in account. Your first trade opens a{" "}
-            {formatWholeUsd(Number(INITIAL_USER_BALANCE_CENTS) / 100)} paper balance.
-          </p>
-          <Link className={styles.primary} href={signInHref(pathname)}>
-            Sign in to trade
-          </Link>
+          <p>Trading is closed: this is the archived v1, read-only since its last dealer run.</p>
         </div>
       ) : null}
 

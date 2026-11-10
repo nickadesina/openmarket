@@ -1,12 +1,9 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { ApiClientError, apiRequest } from "../../lib/client/api.js";
 import { formatForecasterName } from "../../lib/client/format.js";
-import { signInHref } from "../../lib/client/tournament.js";
 import type { CommentAuthor, MarketComment } from "../../lib/services/list-comments.js";
 import styles from "./market-comments.module.css";
 import { commentsPath } from "./use-comment-thread.js";
@@ -51,7 +48,6 @@ export function CommentComposer({
   onCancel,
 }: CommentComposerProps) {
   const id = useId();
-  const pathname = usePathname();
   const inputId = `comment-draft-${id}`;
   const [body, setBody] = useState("");
   const [owner, setOwner] = useState<CommentIdentity | null>(null);
@@ -209,11 +205,7 @@ export function CommentComposer({
       );
     }
     if (identity === null) {
-      return (
-        <Link className={styles.secondaryButton} href={signInHref(pathname)}>
-          Sign in to comment
-        </Link>
-      );
+      return <span>Comments are closed in the archive.</span>;
     }
     if (!needsAdoption || frozen) return null;
     return (

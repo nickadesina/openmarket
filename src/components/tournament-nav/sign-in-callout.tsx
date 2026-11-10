@@ -1,33 +1,20 @@
 "use client";
 
-import Link from "next/link";
-
-import { signInHref, useTournamentViewer } from "../../lib/client/tournament.js";
-import styles from "./tournament-nav.module.css";
-
 /**
- * The questions list's one call to action for a signed-out visitor. Sign-in
- * returns here, through the welcome step for a new account.
+ * The questions list's call to action for a signed-out visitor. In the archive
+ * there is no sign-in to call to, so it renders nothing; the shell's banner
+ * says forecasting is closed.
  */
-export function SignInCallout({ returnTo }: { readonly returnTo: string }) {
-  const viewer = useTournamentViewer();
-  if (!viewer.isSuccess || viewer.data.viewer !== null) return null;
-  return (
-    <div className={styles.callout}>
-      <SignInExplanation />
-      <Link className={styles.signInButton} href={signInHref(returnTo)}>
-        Sign in to forecast
-      </Link>
-    </div>
-  );
+export function SignInCallout(_props: { readonly returnTo: string }) {
+  return null;
 }
 
-/** Shared explanation; the surrounding call to action keeps each page's existing label. */
+/** Where a question's forecast editor would ask for sign-in. */
 export function SignInExplanation() {
   return (
     <p>
-      <strong>Sign in to forecast.</strong> Use your X account, or a username and password; your
-      name is how the leaderboard shows you.
+      <strong>Forecasting is closed.</strong> This is the archived v1; every forecast shown is as it
+      stood at its last dealer run.
     </p>
   );
 }

@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
-import { formatCentsAsUsd, INITIAL_USER_BALANCE_CENTS } from "../../lib/api/money.js";
+import { formatCentsAsUsd } from "../../lib/api/money.js";
 
 import {
   ApiClientError,
@@ -22,11 +22,9 @@ import {
   formatPrice,
   formatQuantity,
   formatUsd,
-  formatWholeUsd,
   sideLabel,
 } from "../../lib/client/format.js";
 import { queryKeys } from "../../lib/client/query-keys.js";
-import { signInHref } from "../../lib/client/tournament.js";
 import {
   BINARY_STRIKE_INDEX,
   slippageCents,
@@ -548,14 +546,8 @@ export function PortfolioPage() {
     return (
       <section className={styles.statePanel}>
         <p className={styles.stateLabel}>Portfolio access</p>
-        <h1>Sign in to see your portfolio</h1>
-        <p>
-          The tournament account is the only account. Its first visit here opens a{" "}
-          {formatWholeUsd(Number(INITIAL_USER_BALANCE_CENTS) / 100)} paper balance.
-        </p>
-        <Link className={styles.primaryButton} href={signInHref("/portfolio")}>
-          Sign in
-        </Link>
+        <h1>Portfolios are closed in the archive</h1>
+        <p>A portfolio belongs to a signed-in account, and sign-in is closed in the archived v1.</p>
       </section>
     );
   }

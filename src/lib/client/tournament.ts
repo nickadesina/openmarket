@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-
+import { archiveNow } from "../config/archive.js";
 import { MAX_FORECAST_LEVEL } from "../engine/tournament/forecast.js";
 import { binaryScore, forwardScore } from "../engine/tournament/score.js";
 import type { Viewer, ViewerForecast } from "../services/tournament/forecaster.js";
@@ -109,14 +109,16 @@ export function xSignInHref(returnTo: string): string {
 }
 
 /**
- * The current time, null until mounted: relative times ("in 3 days") render
- * only on the client so the server's clock never mismatches hydration.
+ * The archive's time, null until mounted: relative times ("in 3 days") count
+ * from the freeze (`archiveNow`), not from the reader's clock, and render only
+ * on the client so hydration never mismatches. The interval stays so the
+ * signature is v1's; the archive's clock does not move.
  */
 export function useNow(intervalMs = 60_000): number | null {
   const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
-    setNow(Date.now());
-    const timer = window.setInterval(() => setNow(Date.now()), intervalMs);
+    setNow(archiveNow().getTime());
+    const timer = window.setInterval(() => setNow(archiveNow().getTime()), intervalMs);
     return () => window.clearInterval(timer);
   }, [intervalMs]);
   return now;
