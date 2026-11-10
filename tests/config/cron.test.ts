@@ -50,17 +50,12 @@ it("keeps statically extractable route durations within the reaper budget", () =
   }
 });
 
-it("registers exactly the three existing schedules and retains build commands", () => {
+it("schedules no job in the archive and retains build commands", () => {
   const config = JSON.parse(readFileSync("vercel.json", "utf8"));
   expect(config).toMatchObject({
     framework: "nextjs",
     installCommand: "npm ci",
     buildCommand: "npm exec -- tsx --env-file-if-exists=.env.local scripts/vercel-build.ts",
-    crons: [
-      { path: "/api/cron/dealer", schedule: "5,20,35,50 * * * *" },
-      { path: "/api/cron/settle", schedule: "41 * * * *" },
-      { path: "/api/t/cron/provenance", schedule: "7 * * * *" },
-    ],
   });
-  expect(config.crons).toHaveLength(3);
+  expect(config.crons).toBeUndefined();
 });

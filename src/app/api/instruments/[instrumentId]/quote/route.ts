@@ -8,6 +8,7 @@ import {
   resolveTournamentSession,
   TOURNAMENT_SESSION_COOKIE,
 } from "../../../../../lib/auth/tournament-session.js";
+import { archiveNow } from "../../../../../lib/config/archive.js";
 import {
   getInstrumentQuote,
   parseInstrumentId,
@@ -48,7 +49,7 @@ export function GET(
       context.db,
       id,
       parsed.data,
-      new Date(),
+      archiveNow(),
       session === null ? null : { tournamentUserId: session.userId },
     );
     return jsonSuccess(quote, { requestId: context.requestId });

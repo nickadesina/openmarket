@@ -1,6 +1,7 @@
 import type { Kysely } from "kysely";
 
 import { ServiceError } from "../api/errors.js";
+import { archiveNow } from "../config/archive.js";
 import { MODEL_VERSION } from "../config/dealer.js";
 import type { Database } from "../db/schema.js";
 import { RULEBOOK_VERSION } from "../engine/dealer/rulebook.js";
@@ -26,7 +27,7 @@ export async function listMarkets(
   db: Kysely<Database>,
   options: MarketListOptions = {},
 ): Promise<MarketListResult> {
-  const at = options.now === undefined ? new Date() : new Date(options.now.getTime());
+  const at = options.now === undefined ? archiveNow() : new Date(options.now.getTime());
   if (!Number.isFinite(at.getTime())) {
     throw new ServiceError("INVALID_INPUT", "Read clock must be a valid date.");
   }

@@ -1,3 +1,4 @@
+import { archiveNow } from "../config/archive.js";
 import { consumeRefQuota } from "../services/dealer/ref-access.js";
 import { ServiceError } from "./errors.js";
 import {
@@ -38,7 +39,7 @@ export async function withRefRoute(
           return context.db;
         },
         searchParams,
-        now: new Date(),
+        now: archiveNow(),
       });
       return jsonSuccess(body, { requestId: context.requestId });
     },

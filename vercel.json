@@ -2,19 +2,5 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "installCommand": "npm ci",
-  "buildCommand": "npm exec -- tsx --env-file-if-exists=.env.local scripts/vercel-build.ts",
-  "crons": [
-    {
-      "path": "/api/cron/dealer",
-      "schedule": "5,20,35,50 * * * *"
-    },
-    {
-      "path": "/api/cron/settle",
-      "schedule": "41 * * * *"
-    },
-    {
-      "path": "/api/t/cron/provenance",
-      "schedule": "7 * * * *"
-    }
-  ]
+  "buildCommand": "npm exec -- tsx --env-file-if-exists=.env.local scripts/vercel-build.ts"
 }

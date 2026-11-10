@@ -1,6 +1,7 @@
 import { type Kysely, sql, type Transaction } from "kysely";
 
 import { isServiceError, ServiceError } from "../api/errors.js";
+import { archiveNow } from "../config/archive.js";
 import { DEALER_PARAMS, MODEL_VERSION } from "../config/dealer.js";
 import type {
   BinaryEventKind,
@@ -140,7 +141,7 @@ export type ListingWithCompany = ListingRow & {
 };
 
 function readClock(now: Date | undefined): Date {
-  const at = now === undefined ? new Date() : new Date(now.getTime());
+  const at = now === undefined ? archiveNow() : new Date(now.getTime());
   if (!Number.isFinite(at.getTime())) {
     throw new ServiceError("INVALID_INPUT", "Read clock must be a valid date.");
   }

@@ -1,6 +1,7 @@
 import type { Kysely } from "kysely";
 
 import { ServiceError } from "../../api/errors.js";
+import { archiveNow } from "../../config/archive.js";
 import type {
   Database,
   TournamentQuestionKind,
@@ -88,7 +89,7 @@ export async function getForecaster(
     throw new ServiceError("FORECASTER_NOT_FOUND", "No forecaster has that handle.");
   }
 
-  const now = new Date();
+  const now = archiveNow();
   const open: OpenPosition[] = [];
   const resolved: ResolvedPosition[] = [];
   for (const question of await positionsFor(db, userId)) {

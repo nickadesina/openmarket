@@ -1,6 +1,7 @@
 import type { Kysely, Transaction } from "kysely";
 
 import { ServiceError } from "../api/errors.js";
+import { archiveNow } from "../config/archive.js";
 import type {
   ClaimSide,
   ContractSide,
@@ -211,7 +212,7 @@ function normalizeOptions(options: PortfolioOptions): {
       `Portfolio trade limit must be from 1 to ${PORTFOLIO_MAX_TRADE_LIMIT}.`,
     );
   }
-  const now = options.now === undefined ? new Date() : new Date(options.now.getTime());
+  const now = options.now === undefined ? archiveNow() : new Date(options.now.getTime());
   if (!Number.isFinite(now.getTime())) {
     throw new ServiceError("INVALID_INPUT", "Read clock must be a valid date.");
   }

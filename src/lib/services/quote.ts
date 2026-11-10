@@ -2,6 +2,7 @@ import type { Kysely, Transaction } from "kysely";
 
 import { ServiceError } from "../api/errors.js";
 import type { QuoteInput } from "../api/schemas.js";
+import { archiveNow } from "../config/archive.js";
 import type { Database, MetricKind } from "../db/schema.js";
 import { parseRequestedAmount, previewTrade } from "./preview-trade.js";
 import { assertMayTrade } from "./tournament/restrictions.js";
@@ -98,7 +99,7 @@ export async function quoteMarket(
   db: Kysely<Database>,
   input: QuoteInput,
   userId?: string,
-  now: Date = new Date(),
+  now: Date = archiveNow(),
 ): Promise<QuoteResult> {
   return db
     .transaction()

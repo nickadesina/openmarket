@@ -2,6 +2,7 @@ import type { Kysely, Transaction } from "kysely";
 import { ServiceError } from "../../api/errors.js";
 import { parseUsdToCents } from "../../api/money.js";
 import type { ForwardQuoteQuery } from "../../api/schemas.js";
+import { archiveNow } from "../../config/archive.js";
 import { MODEL_VERSION } from "../../config/dealer.js";
 import type {
   CompanyRow,
@@ -308,7 +309,7 @@ export async function getInstrumentQuote(
   db: Kysely<Database>,
   instrumentId: string,
   query: ForwardQuoteQuery,
-  at: Date = new Date(),
+  at: Date = archiveNow(),
   viewer: Trader | null = null,
 ): Promise<InstrumentQuote> {
   return db

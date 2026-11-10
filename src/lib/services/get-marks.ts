@@ -1,6 +1,7 @@
 import type { Kysely } from "kysely";
 
 import { ServiceError } from "../api/errors.js";
+import { archiveNow } from "../config/archive.js";
 import type { Database, MetricKind } from "../db/schema.js";
 import { latestMid } from "./dealer/dealer-books.js";
 import { type DownsampleMarkPoint, downsampleMarks } from "./downsample-marks.js";
@@ -54,7 +55,7 @@ function normalizeOptions(options: GetMarksOptions): {
   readonly now: Date;
   readonly maxPoints: number;
 } {
-  const now = options.now === undefined ? new Date() : new Date(options.now.getTime());
+  const now = options.now === undefined ? archiveNow() : new Date(options.now.getTime());
   if (!Number.isFinite(now.getTime())) {
     throw new ServiceError("INVALID_INPUT", "Read clock must be a valid date.");
   }

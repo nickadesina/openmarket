@@ -1,5 +1,5 @@
 import type { Kysely, Selectable } from "kysely";
-
+import { archiveNow } from "../../config/archive.js";
 import { DISPUTE_WINDOW_MS } from "../../config/tournament.js";
 import type {
   Database,
@@ -241,7 +241,7 @@ export async function listQuestions(db: Kysely<Database>): Promise<QuestionSumma
     .orderBy("closes_at", "asc")
     .orderBy("slug", "asc")
     .execute();
-  const now = new Date();
+  const now = archiveNow();
   const ids = rows.map((row) => row.id);
   const resolutions = await liveResolutions(db, ids);
   const instruments = await linkedInstruments(db, ids);
@@ -361,7 +361,7 @@ export async function getQuestion(db: Kysely<Database>, slug: string): Promise<Q
   const summary = await summarize(
     db,
     question,
-    new Date(),
+    archiveNow(),
     resolutions.get(question.id),
     instruments.get(question.id),
   );

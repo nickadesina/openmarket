@@ -26,10 +26,11 @@ const archivoBlack = Archivo_Black({
 
 export const metadata: Metadata = {
   title: {
-    default: "OpenMarket",
-    template: "%s | OpenMarket",
+    default: "OpenMarket v1 (archived)",
+    template: "%s | OpenMarket v1 (archived)",
   },
-  description: "Paper-money markets for evaluating private-company valuation expectations.",
+  description:
+    "The archived first version of OpenMarket: a dealer quoting a quarterly binary and a next-print forward on five private companies, frozen read-only.",
 };
 
 export const viewport: Viewport = {
