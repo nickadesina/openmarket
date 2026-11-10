@@ -12,7 +12,10 @@ v1 (paper-money markets quoted by the venue as dealer, and a
 forecasting tournament) is archived at the tags `archive/dealer-v1` and
 `archive/tournament-v1` (both on `5335ae5`). Its decision record is
 `docs/archive/v1/README-decisions.md` (D1–D14); its design documents
-are under `docs/archive/v1/`.
+are under `docs/archive/v1/`. A read-only copy runs at
+<https://v1.openmarket.systems> (branch `archive/v1-site`, Vercel
+project `openmarket-v1`, Neon branch `v1-archive`), linked from the
+footer.
 
 ## 1. Product
 
@@ -45,7 +48,7 @@ are under `docs/archive/v1/`.
   `/rulebook` (and `/rulebook/changelog`); `/ref` (the API docs);
   `/resolution-sources`. The API is `/api/ref/*` and the CSVs are under
   `/data/` (CC BY 4.0). v1's paths (`/m`, `/t`, `/portfolio`, `/admin`,
-  `/for-policy`) redirect to `/`. How it is built: `TECHNICAL_DESIGN.md`.
+  `/for-policy`) redirect to the same path on the v1 archive. How it is built: `TECHNICAL_DESIGN.md`.
 
 ## 2. Decisions
 
