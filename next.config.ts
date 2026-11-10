@@ -34,11 +34,16 @@ const nextConfig: NextConfig = {
         destination: `https://${CANONICAL_HOST}/:path*`,
         permanent: true,
       })),
-      ...V1_PATHS.map((path) => ({
-        source: `${path}/:path*`,
-        destination: `${V1_ARCHIVE_ORIGIN}${path}/:path*`,
-        permanent: false,
-      })),
+      // The bare path and its subpaths are separate rules: one `/:path*` rule
+      // sends a bare `/m` to `/m/`, which costs the archive a slash redirect.
+      ...V1_PATHS.flatMap((path) => [
+        { source: path, destination: `${V1_ARCHIVE_ORIGIN}${path}`, permanent: false },
+        {
+          source: `${path}/:path+`,
+          destination: `${V1_ARCHIVE_ORIGIN}${path}/:path+`,
+          permanent: false,
+        },
+      ]),
       { source: "/ref/trial", destination: "/ref", permanent: false },
     ]);
   },
